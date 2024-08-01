@@ -4,19 +4,42 @@ import React, { useState, useEffect } from 'react';
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-export default function Receptor() {
-    const [RFC, setRFC] = useState("No rfc");
+export default function Receptor( {enviarAlPadre} ) {
+    const [receptor, setReceptor] = useState({
+        Rfc: "",
+        DomicilioFiscalReceptor: ""
+    });
+    const [domicilioFiscal, setDomicilioFiscal] = useState();
+    const [regimenFiscal, setRegimenFiscal] = useState();
+    const [metodoPago, setMetodoPago] = useState();
+    const [formaPago, setFormaPago] = useState();
+    const [usoCFDI, setUsoCFDI] = useState();
+    const [exportaciones, setExportaciones] = useState();
+
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState("hidden");
 
-    const getRFC = (result) => {
-        setRFC(result["Rfc"])
+    useEffect(() => {
+        let result = {
+            Receptor: receptor,
+            RegimenFiscal: regimenFiscal,
+            MetodoPago: metodoPago,
+            FormaPago: formaPago,
+            UsoCFDI: usoCFDI,
+            Exportaciones: exportaciones,
+        }
 
+        enviarAlPadre(result)
+    }, [receptor, regimenFiscal, metodoPago, formaPago, usoCFDI, exportaciones])
+    
+    function getReceptor(result) {
         if (result["Rfc"] == "XAXX010101000") {
-           setHiddeInfoGlobal("") 
+            setHiddeInfoGlobal("") 
+            result["DomicilioFiscalReceptor"] = "Mismo que Emisor"
         }
         else {
            setHiddeInfoGlobal("hidden") 
         }
+        setReceptor(result)
     }
 
     return (
@@ -29,28 +52,36 @@ export default function Receptor() {
                         className = "select select-bordered w-full" 
                         url = "http://localhost:8080/Catalogos/Receptor" 
                         clave = "Nombre"
-                        funcionPadre = {getRFC}
+                        funcionPadre = {getReceptor}
                     />
                 </div>
                 <div className = "">
                     <label className = "">RFC</label>
                     <div>
-                        <input type = "text" value = {RFC} className = "input input-md input-bordered w-full" disabled/>
+                        <input type = "text" value = {receptor["Rfc"]} className = "input input-md input-bordered w-full" disabled/>
                     </div>
                 </div>
                 <div className = "">
                     <label className = "" >Domicilio Fiscal</label>
                     <div>
-                        <input type = "text" className = "input input-md input-bordered w-full" />
+                        <input type = "text" value = {receptor["DomicilioFiscalReceptor"]} className = "input input-md input-bordered w-full" disabled/>
                     </div>
                 </div>
                 <div className = "">
                     <label className = "">Regimen Fiscal</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/RegimenFiscal"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8080/Catalogos/RegimenFiscal"
+                        funcionPadre = {setRegimenFiscal}
+                    />
                 </div>
                 <div className = "">
                     <label className = "">Metodo de Pago</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/MetodoPago"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8080/Catalogos/MetodoPago"
+                        funcionPadre = {setMetodoPago}
+                    />
                 </div>
                 <div>
                     <button className="">
@@ -59,15 +90,27 @@ export default function Receptor() {
                 </div>
                 <div className = "">
                     <label className = "">Forma de Pago</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/FormaPago"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8080/Catalogos/FormaPago"
+                        funcionPadre = {setFormaPago}
+                    />
                 </div>
                 <div className = "">
                     <label className = "">Uso de CFDI</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/UsoCFDI"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8080/Catalogos/UsoCFDI"
+                        funcionPadre = {setUsoCFDI}
+                    />
                 </div>
                 <div className = "">
                     <label className = "">Exportaciones</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/RegimenFiscal"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8080/Catalogos/Exportaciones"
+                        funcionPadre = {setExportaciones}
+                    />
                 </div>
                 <div className = {`sm:col-span-2 md:col-span-3 lg:col-span-6 divider w-full ${hiddeInfoGlobal}`} />
                 <div className = {hiddeInfoGlobal}>

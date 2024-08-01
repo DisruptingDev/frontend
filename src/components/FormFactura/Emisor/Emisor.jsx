@@ -4,8 +4,18 @@ import React, { useState, useEffect } from 'react';
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-export default function Emisor() {
-    const [RFC, setRFC] = useState("No rfc");
+function EnviarAlPadre(result) {
+    
+}
+
+export default function Emisor( {enviarAlPadre} ) {
+    const [emisor, setEmisor] = useState({
+        Rfc: ""
+    });
+    const [lugarExpedicion, setLugarExpedicion] = useState();
+    const [serie, setSerie] = useState();
+    const [fecha, setFecha] = useState();
+
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
 
@@ -25,8 +35,23 @@ export default function Emisor() {
         setMaxDate(formatDate(today));
     }, []);
 
-    const getRFC = (result) => {
-        setRFC(result["Rfc"])
+    useEffect(() => {
+        let result = {
+            Emisor: emisor,
+            LugarExpedicion: lugarExpedicion,
+            Serie: serie,
+            Fecha: fecha,
+        }
+        enviarAlPadre(result)
+
+    }, [emisor, lugarExpedicion, serie, fecha]);
+
+    function getLugarExpedicion(event) {
+        setLugarExpedicion(event.target.value)
+    }
+
+    function getFecha(event) {
+        setFecha(event.target.value)
     }
 
     return (
@@ -35,28 +60,28 @@ export default function Emisor() {
             <div className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 <div className = "">
                     <label className = "">Emisor</label>
-                    <Select className = "select select-md select-bordered w-full" url = "http://localhost:8080/Catalogos/Emisor" funcionPadre = {getRFC} clave = "Nombre"/>
+                    <Select className = "select select-md select-bordered w-full" url = "http://localhost:8080/Catalogos/Emisor" funcionPadre = {setEmisor} clave = "Nombre"/>
                 </div>
                 <div className = "">
                     <label className = "" >RFC</label>
                     <div>
-                        <input type = "text" value = {RFC} className = "input input-md input-bordered w-full" disabled/>
+                        <input type = "text" value = {emisor["Rfc"]} className = "input input-md input-bordered w-full" disabled/>
                     </div>
                 </div>
                 <div className = "">
                     <label className = "" >Lugar Expedicion</label>
                     <div>
-                        <input type = "text" className = "input input-md input-bordered w-full"/>
+                        <input type = "text" className = "input input-md input-bordered w-full" onChange = {getLugarExpedicion}/>
                     </div>
                 </div>
                 <div className = "">
                     <label className = "">Serie</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/Serie"/>
+                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/Serie" funcionPadre = {setSerie}/>
                 </div>
                 <div className = "">
                     <label className = "">Fecha</label>
                     <div>
-                        <input type="date" min={minDate} max={maxDate} className="input input-md input-bordered w-full"/>
+                        <input type="date" min={minDate} max={maxDate} className="input input-md input-bordered w-full" onChange = {getFecha}/>
                     </div>
                 </div>
             </div>

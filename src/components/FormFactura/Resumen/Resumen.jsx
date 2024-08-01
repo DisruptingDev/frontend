@@ -1,7 +1,7 @@
 import Input from "@/components/Input/Input.jsx"
 import {Select, SelectNoLabel} from "@/components/Select/Select.jsx"
 
-export default function Resumen() {
+export default function Resumen( {children} ) {
     return (
         <div className = "bg-white mx-4 p-4 shadow-xl rounded-md m-100">
             <h3 className = "card-title mb-6">Resumen</h3>
@@ -75,11 +75,7 @@ export default function Resumen() {
                     </tfoot>
                 </table>
             </div>
-            <div className = "flex justify-end w-full mt-10 space-x-2">
-                <button className="btn btn-secondary bg-red-700">Cancelar</button>
-                <button className="btn btn-accent">Vista previa</button>
-                <button className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
-            </div>
+            {children}
         </div>
     )
 }
