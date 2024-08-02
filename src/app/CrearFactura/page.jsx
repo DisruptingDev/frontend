@@ -1,5 +1,6 @@
 "use client"
 import {useState} from "react"
+import { useForm } from 'react-hook-form';
 
 import Header from "@/components/Header/Header.jsx"
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx"
@@ -49,23 +50,21 @@ function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
 }
 
 export default function CrearFactura() {
-    const [emisor, setEmisor] = useState({
-        LugarExpedicion: ""
-    });
-    const [receptor, setReceptor] = useState();
-    const [conceptos, setConceptos] = useState();
+    const { register, watch, handleSubmit, getValues } = useForm();
 
-    function handleSubmit(e) {
-        e.preventDefault();
-        EnviarAEmisionTimbrado(emisor, receptor, conceptos)
+    const [lugarExpedicion, setLugarExpedicion] = useState("")
+    const [conceptos, setConceptos] = useState();
+    
+    const onSubmit = (data) => {
+        console.log(data)
     }
 
     return (
         <div>
             <Header /> 
-            <form onSubmit={handleSubmit} method="post">
-                <Emisor enviarAlPadre={setEmisor} /> 
-                <Receptor enviarAlPadre={setReceptor} emisor = {emisor}/> 
+            <form onSubmit={handleSubmit(onSubmit)} method="post">
+                <Emisor register = {register} setLugarExpedicion = {setLugarExpedicion} /> 
+                <Receptor register = {register} lugarExpedicion = {lugarExpedicion} getValues = {getValues} watch = {watch}/> 
                 <Conceptos enviarAlPadre={setConceptos}/> 
                 <Resumen> 
                     <div className = "flex justify-end w-full space-x-2 mt-10">

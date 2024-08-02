@@ -1,65 +1,27 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-export default function Receptor( {enviarAlPadre, emisor} ) {
-    const [receptor, setReceptor] = useState({
-        Rfc: "",
-        DomicilioFiscalReceptor: ""
-    });
-    const [regimenFiscal, setRegimenFiscal] = useState()
-    const [usoCFDI, setUsoCFDI] = useState()
-    const [metodoPago, setMetodoPago] = useState({
-        Clave: ""
-    });
-    const [formaPago, setFormaPago] = useState({
-        Clave: ""
-    });
-    const [exportaciones, setExportaciones] = useState();
-
+export default function Receptor( {register, watch, lugarExpedicion, getValues} ) {
+    const [receptor, setReceptor] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState("hidden");
+    const [domicilioFiscal, setDomicilioFiscal] = useState("");
 
     useEffect(() => {
-        let result = {
-            Receptor: receptor,
-            MetodoPago: metodoPago["Clave"],
-            FormaPago: formaPago["Clave"],
+        if (receptor !== undefined) {
+            let data = JSON.parse(receptor)
+            if (data["Rfc"] !== "XAXX010101000") {
+                setDomicilioFiscal(data["DomicilioFiscalReceptor"]) 
+                setHiddeInfoGlobal("hidden")
+            }
+            else{
+                setDomicilioFiscal(lugarExpedicion) 
+                setHiddeInfoGlobal("")
+            }
         }
-
-        enviarAlPadre(result)
-    }, [receptor, regimenFiscal, usoCFDI, metodoPago, formaPago])
-
-    useEffect(() => {
-        if (receptor["Rfc"] === "XAXX010101000") {
-            setReceptor(prevEstado => ({
-                ...prevEstado,
-                DomicilioFiscalReceptor: emisor["LugarExpedicion"]
-            }));
-        }
-    }, [emisor])
-    
-    function getReceptor(result) {
-        if (result["Rfc"] === "XAXX010101000") {
-            result["DomicilioFiscalReceptor"] = emisor["LugarExpedicion"]
-            setHiddeInfoGlobal("") 
-        }
-        else {
-           setHiddeInfoGlobal("hidden") 
-        }
-        setReceptor(result)
-    }
-
-    function ChangeUsoCFDI(result) {
-        setUsoCFDI(result)
-        receptor["UsoCFDI"] = result["Clave"]
-    }
-
-    function ChangeRegimenFiscal(result) {
-        setRegimenFiscal(result)
-        receptor["RegimenFiscalReceptor"] = result["Clave"]
-    }
+    }, [receptor, lugarExpedicion])
 
     return (
         <div className = "bg-white mx-4 p-4 shadow-xl rounded-md m-100">
@@ -71,19 +33,30 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                         className = "select select-bordered w-full" 
                         url = "http://localhost:8081/Catalogos/Receptor" 
                         clave = "Nombre"
-                        funcionPadre = {getReceptor}
+                        register = {register}
+                        nombre = "Receptor"
+                        onChange = {(e) => setReceptor(e.target.value)}
                     />
                 </div>
                 <div className = "">
                     <label className = "">RFC</label>
                     <div>
-                        <input type = "text" value = {receptor["Rfc"]} className = "input input-md input-bordered w-full" disabled/>
+                        <input 
+                            type = "text" 
+                            value = ""
+                            className = "input input-md input-bordered w-full" 
+                            disabled/>
                     </div>
                 </div>
                 <div className = "">
                     <label className = "" >Domicilio Fiscal</label>
                     <div>
-                        <input type = "text" value = {receptor["DomicilioFiscalReceptor"]} className = "input input-md input-bordered w-full" disabled/>
+                        <input 
+                            type = "text" 
+                            value = {domicilioFiscal} 
+                            className = "input input-md input-bordered w-full" 
+                            disabled
+                        />
                     </div>
                 </div>
                 <div className = "">
@@ -91,7 +64,8 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                     <Select 
                         className = "select select-bordered select-md w-full" 
                         url = "http://localhost:8081/Catalogos/RegimenFiscal"
-                        funcionPadre = {ChangeRegimenFiscal}
+                        register = {register}
+                        nombre = "RegimenFiscal"
                     />
                 </div>
                 <div className = "">
@@ -99,7 +73,8 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                     <Select 
                         className = "select select-bordered select-md w-full" 
                         url = "http://localhost:8081/Catalogos/MetodoPago"
-                        funcionPadre = {setMetodoPago}
+                        register = {register}
+                        nombre = "MetodoPago"
                     />
                 </div>
                 <div>
@@ -112,7 +87,8 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                     <Select 
                         className = "select select-bordered select-md w-full" 
                         url = "http://localhost:8081/Catalogos/FormaPago"
-                        funcionPadre = {setFormaPago}
+                        register = {register}
+                        nombre = "FormaPago"
                     />
                 </div>
                 <div className = "">
@@ -120,7 +96,8 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                     <Select 
                         className = "select select-bordered select-md w-full" 
                         url = "http://localhost:8081/Catalogos/UsoCFDI"
-                        funcionPadre = {ChangeUsoCFDI}
+                        register = {register}
+                        nombre = "UsoCFDI"
                     />
                 </div>
                 <div className = "">
@@ -128,7 +105,8 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                     <Select 
                         className = "select select-bordered select-md w-full" 
                         url = "http://localhost:8081/Catalogos/Exportaciones"
-                        funcionPadre = {setExportaciones}
+                        register = {register}
+                        nombre = "Exportaciones"
                     />
                 </div>
                 <div className = {`sm:col-span-2 md:col-span-3 lg:col-span-6 divider w-full ${hiddeInfoGlobal}`} />
@@ -137,11 +115,21 @@ export default function Receptor( {enviarAlPadre, emisor} ) {
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Periodicidad</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/Periodicidad"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/Periodicidad"
+                        register = {register}
+                        nombre = "Periodicidad"
+                    />
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Meses</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/PeriodicidadMeses"/>
+                    <Select 
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/PeriodicidadMeses"
+                        register = {register}
+                        nombre = "Meses"
+                    />
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Año</label>

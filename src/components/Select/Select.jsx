@@ -15,34 +15,18 @@ async function obtener_opciones(url) {
         });
 }
 
-export default function Select( {children, url, className, clave = "Clave", descripcion = "Descripcion", funcionPadre = () => (1) } ) {
-    const [opciones, setOptions] = useState([]);
-    const [opcionSeleccionada, setSelectedOption] = useState("");
+export default function Select( {register = () => (1), nombre, url, className, clave = "Clave", descripcion = "Descripcion", onChange} ) {
+    const [opciones, setOpciones] = useState([])
 
     useEffect(() => {
-        obtener_opciones(url).then(data => setOptions(data));
+        obtener_opciones(url).then(data => setOpciones(data));
     }, []);
 
-    function handleChange(event) {
-        setSelectedOption(event.target.value)
-        const result = opciones.find(item => item["ID"] == event.target.value);
-        funcionPadre(result);
-    };
-
-    function handleClick(event) {
-        if (opciones.length === 0) {
-            //obtener_opciones(url).then(data => {
-                //setOptions(data)
-            //});
-        }
-    }
-
     return (
-        <select className={`${className}`} value = {opcionSeleccionada} onChange = {handleChange} onFocus = {handleClick}>
-            {children}
-            <option value="" disabled selected>Selecciona una opción</option>
+        <select {...register(nombre)} className={`${className}`} defaultValue = "Default" onChange = {onChange}>
+            <option key="Default" value="Default">Selecciona una opcion</option>
             {opciones.map((opcion) => (
-                <option value={opcion["ID"]}>
+                <option key = {opcion["ID"]} value={JSON.stringify(opcion)}>
                     {opcion[clave]} - {opcion[descripcion]}
                 </option>
             ))}

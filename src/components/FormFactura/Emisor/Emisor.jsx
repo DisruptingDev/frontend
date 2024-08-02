@@ -4,16 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-export default function Emisor( {enviarAlPadre} ) {
-    const [emisor, setEmisor] = useState({
-        Rfc: ""
-    });
-    const [lugarExpedicion, setLugarExpedicion] = useState();
-    const [serie, setSerie] = useState({
-        Clave: ""
-    });
-    const [fecha, setFecha] = useState();
+export default function Emisor( {register, setLugarExpedicion} ) {
 
+    const [emisor, setEmisor] = useState();
+    const [rfc, setRFC] = useState();
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
 
@@ -34,23 +28,11 @@ export default function Emisor( {enviarAlPadre} ) {
     }, []);
 
     useEffect(() => {
-        let result = {
-            Emisor: emisor,
-            LugarExpedicion: lugarExpedicion,
-            Serie: serie["Clave"],
-            Fecha: fecha,
+        if (emisor !== undefined) {
+            let data = JSON.parse(emisor)
+            setRFC(data["Rfc"]) 
         }
-        enviarAlPadre(result)
-
-    }, [emisor, lugarExpedicion, serie, fecha]);
-
-    function getLugarExpedicion(event) {
-        setLugarExpedicion(event.target.value)
-    }
-
-    function getFecha(event) {
-        setFecha(event.target.value)
-    }
+    }, [emisor])
 
     return (
         <div className = "bg-white my-6 mx-4 p-4 shadow-xl rounded-md">
@@ -58,28 +40,57 @@ export default function Emisor( {enviarAlPadre} ) {
             <div className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 <div className = "">
                     <label className = "">Emisor</label>
-                    <Select className = "select select-md select-bordered w-full" url = "http://localhost:8081/Catalogos/Emisor" funcionPadre = {setEmisor} clave = "Nombre"/>
+                    <Select 
+                        register = {register}
+                        nombre = "Emisor"
+                        className = "select select-md select-bordered w-full" 
+                        url = "http://localhost:8081/Catalogos/Emisor" 
+                        clave = "Nombre"
+                        onChange = {(e) => setEmisor(e.target.value)}
+                    />
                 </div>
                 <div className = "">
                     <label className = "" >RFC</label>
                     <div>
-                        <input type = "text" value = {emisor["Rfc"]} className = "input input-md input-bordered w-full" disabled/>
+                        <input 
+                            type = "text" 
+                            value = {rfc}
+                            className = "input input-md input-bordered w-full" 
+                            disabled
+                        />
                     </div>
                 </div>
                 <div className = "">
                     <label className = "" >Lugar Expedicion</label>
                     <div>
-                        <input type = "text" className = "input input-md input-bordered w-full" onChange = {getLugarExpedicion}/>
+                        <input 
+                            type = "text" 
+                            className = "input input-md input-bordered w-full"
+                            {...register("LugarExpedicion")}
+                            onChange = {(e) => setLugarExpedicion(e.target.value)}
+                        />
                     </div>
                 </div>
                 <div className = "">
                     <label className = "">Serie</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/Serie" funcionPadre = {setSerie}/>
+                    <Select 
+                        register = {register}
+                        nombre = "Serie"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/Serie" 
+                    />
                 </div>
                 <div className = "">
                     <label className = "">Fecha</label>
                     <div>
-                        <input type="datetime-local" step="1" min={minDate} max={maxDate} className="input input-md input-bordered w-full" onChange = {getFecha}/>
+                        <input 
+                            type="datetime-local" 
+                            {...register("Fecha")}
+                            step="1" 
+                            min={minDate} 
+                            max={maxDate} 
+                            className="input input-md input-bordered w-full" 
+                        />
                     </div>
                 </div>
             </div>
