@@ -43,6 +43,13 @@ export default function Conceptos( {enviarAlPadre} ) {
     const [baseImpuesto, setBaseImpuesto] = useState(0);
     const [monto, setMonto] = useState(0);
 
+    const [seccionImpuestos, setSeccionImpuestos] = useState([
+        {
+            Retenciones: {},
+            Traslados: {}
+        }
+    ]);
+
     useEffect(() => {
         let sub = CalcularSubtotal(cantidad, precioUnitario, descuento)
         setSubtotal(sub)
@@ -127,6 +134,10 @@ export default function Conceptos( {enviarAlPadre} ) {
         setDescuento(event.target.value)
     }
 
+    function ClickAgregarImpuesto(event) {
+        setSeccionImpuestos([...seccionImpuestos, { Nombre:"Caco" }]);
+    }
+
     return (
         <div className = "bg-white my-6 mx-4 p-4 shadow-xl rounded-md">
             <h3 className = "card-title mb-6">Conceptos</h3>
@@ -168,44 +179,50 @@ export default function Conceptos( {enviarAlPadre} ) {
                     <input type="number" value={subtotal} name="" id="" className = "input input-bordered input-md w-full" disabled/>
                 </div>
 
-                <div className = "sm:col-span-2 md:col-span-3 lg:col-span-7 divider"/>
-                <div className = "">
-                    <label className = "">Objeto Impuesto</label>
-                    <Select 
-                        className = "select select-md select-bordered w-full" 
-                        url = "http://localhost:8081/Catalogos/ObjetoImpuestos"
-                        funcionPadre = {setObjetoImpuesto}
-                    />
+                {seccionImpuestos.map((seccion) => (
+                    <div className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-6 sm:col-span-2 md:col-span-3 lg:col-span-7">
+                    
+                    <div className = "sm:col-span-2 md:col-span-3 lg:col-span-7 divider"/>
+                    <div className = "">
+                        <label className = "">Objeto Impuesto</label>
+                        <Select 
+                            className = "select select-md select-bordered w-full" 
+                            url = "http://localhost:8081/Catalogos/ObjetoImpuestos"
+                            funcionPadre = {setObjetoImpuesto}
+                        />
+                    </div>
+                    <div className = "">
+                        <label className = "">Impuesto</label>
+                        <Select 
+                            className = "select select-md select-bordered w-full" 
+                            url = "http://localhost:8081/Catalogos/ImpuestoClave"
+                            funcionPadre = {setImpuesto}
+                        />
+                    </div>
+                    <div className = "">
+                        <label className = "">Tasa</label>
+                        <input type="number" value = {tasa} className = "input input-bordered input-md w-full" disabled/>
+                    </div>
+                    <div className = "">
+                        <label className = "">Base Impuesto</label>
+                        <input type="number" value = {baseImpuesto} className = "input input-bordered input-md w-full" disabled/>
+                    </div>
+                    <div className = "">
+                        <label className = "">Monto</label>
+                        <input type="number" value = {monto} className = "input input-bordered input-md w-full" disabled/>
+                    </div>
                 </div>
-                <div className = "">
-                    <label className = "">Impuesto</label>
-                    <Select 
-                        className = "select select-md select-bordered w-full" 
-                        url = "http://localhost:8081/Catalogos/ImpuestoClave"
-                        funcionPadre = {setImpuesto}
-                    />
-                </div>
-                <div className = "">
-                    <label className = "">Tasa</label>
-                    <input type="number" value = {tasa} className = "input input-bordered input-md w-full" disabled/>
-                </div>
-                <div className = "">
-                    <label className = "">Base Impuesto</label>
-                    <input type="number" value = {baseImpuesto} className = "input input-bordered input-md w-full" disabled/>
-                </div>
-                <div className = "">
-                    <label className = "">Monto</label>
-                    <input type="number" value = {monto} className = "input input-bordered input-md w-full" disabled/>
-                </div>
-                <div>
-                    <button className="">
+                ))}
+
+                <div className = "sm:col-span-2 md:col-span-3 lg:col-span-6">
+                    <button type = "button" className="" onClick = {ClickAgregarImpuesto}>
                         <img src="add_circle.png" className = "mt-6" />
                     </button>
                 </div>
 
                 <div className = "sm:col-span-2 md:col-span-3 lg:col-span-6"/>
                 <div>
-                    <button className="btn bg-primary-dark-total text-white hover:underline hover:bg-primary-dark-total">Agregar Concepto</button>
+                    <button type="button" className="btn bg-primary-dark-total text-white hover:underline hover:bg-primary-dark-total">Agregar Concepto</button>
                 </div>
             </div>
         </div>
