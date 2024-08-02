@@ -4,16 +4,14 @@ import React, { useState, useEffect } from 'react';
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-function EnviarAlPadre(result) {
-    
-}
-
 export default function Emisor( {enviarAlPadre} ) {
     const [emisor, setEmisor] = useState({
         Rfc: ""
     });
     const [lugarExpedicion, setLugarExpedicion] = useState();
-    const [serie, setSerie] = useState();
+    const [serie, setSerie] = useState({
+        Clave: ""
+    });
     const [fecha, setFecha] = useState();
 
     const [minDate, setMinDate] = useState('');
@@ -39,7 +37,7 @@ export default function Emisor( {enviarAlPadre} ) {
         let result = {
             Emisor: emisor,
             LugarExpedicion: lugarExpedicion,
-            Serie: serie,
+            Serie: serie["Clave"],
             Fecha: fecha,
         }
         enviarAlPadre(result)
@@ -60,7 +58,7 @@ export default function Emisor( {enviarAlPadre} ) {
             <div className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 <div className = "">
                     <label className = "">Emisor</label>
-                    <Select className = "select select-md select-bordered w-full" url = "http://localhost:8080/Catalogos/Emisor" funcionPadre = {setEmisor} clave = "Nombre"/>
+                    <Select className = "select select-md select-bordered w-full" url = "http://localhost:8081/Catalogos/Emisor" funcionPadre = {setEmisor} clave = "Nombre"/>
                 </div>
                 <div className = "">
                     <label className = "" >RFC</label>
@@ -76,12 +74,12 @@ export default function Emisor( {enviarAlPadre} ) {
                 </div>
                 <div className = "">
                     <label className = "">Serie</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/Serie" funcionPadre = {setSerie}/>
+                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/Serie" funcionPadre = {setSerie}/>
                 </div>
                 <div className = "">
                     <label className = "">Fecha</label>
                     <div>
-                        <input type="date" min={minDate} max={maxDate} className="input input-md input-bordered w-full" onChange = {getFecha}/>
+                        <input type="datetime-local" step="1" min={minDate} max={maxDate} className="input input-md input-bordered w-full" onChange = {getFecha}/>
                     </div>
                 </div>
             </div>

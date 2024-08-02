@@ -4,16 +4,19 @@ import React, { useState, useEffect } from 'react';
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
-export default function Receptor( {enviarAlPadre} ) {
+export default function Receptor( {enviarAlPadre, emisor} ) {
     const [receptor, setReceptor] = useState({
         Rfc: "",
         DomicilioFiscalReceptor: ""
     });
-    const [domicilioFiscal, setDomicilioFiscal] = useState();
-    const [regimenFiscal, setRegimenFiscal] = useState();
-    const [metodoPago, setMetodoPago] = useState();
-    const [formaPago, setFormaPago] = useState();
-    const [usoCFDI, setUsoCFDI] = useState();
+    const [regimenFiscal, setRegimenFiscal] = useState()
+    const [usoCFDI, setUsoCFDI] = useState()
+    const [metodoPago, setMetodoPago] = useState({
+        Clave: ""
+    });
+    const [formaPago, setFormaPago] = useState({
+        Clave: ""
+    });
     const [exportaciones, setExportaciones] = useState();
 
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState("hidden");
@@ -21,25 +24,41 @@ export default function Receptor( {enviarAlPadre} ) {
     useEffect(() => {
         let result = {
             Receptor: receptor,
-            RegimenFiscal: regimenFiscal,
-            MetodoPago: metodoPago,
-            FormaPago: formaPago,
-            UsoCFDI: usoCFDI,
-            Exportaciones: exportaciones,
+            MetodoPago: metodoPago["Clave"],
+            FormaPago: formaPago["Clave"],
         }
 
         enviarAlPadre(result)
-    }, [receptor, regimenFiscal, metodoPago, formaPago, usoCFDI, exportaciones])
+    }, [receptor, regimenFiscal, usoCFDI, metodoPago, formaPago])
+
+    useEffect(() => {
+        if (receptor["Rfc"] === "XAXX010101000") {
+            setReceptor(prevEstado => ({
+                ...prevEstado,
+                DomicilioFiscalReceptor: emisor["LugarExpedicion"]
+            }));
+        }
+    }, [emisor])
     
     function getReceptor(result) {
-        if (result["Rfc"] == "XAXX010101000") {
+        if (result["Rfc"] === "XAXX010101000") {
+            result["DomicilioFiscalReceptor"] = emisor["LugarExpedicion"]
             setHiddeInfoGlobal("") 
-            result["DomicilioFiscalReceptor"] = "Mismo que Emisor"
         }
         else {
            setHiddeInfoGlobal("hidden") 
         }
         setReceptor(result)
+    }
+
+    function ChangeUsoCFDI(result) {
+        setUsoCFDI(result)
+        receptor["UsoCFDI"] = result["Clave"]
+    }
+
+    function ChangeRegimenFiscal(result) {
+        setRegimenFiscal(result)
+        receptor["RegimenFiscalReceptor"] = result["Clave"]
     }
 
     return (
@@ -50,7 +69,7 @@ export default function Receptor( {enviarAlPadre} ) {
                     <label className = "">Receptor</label>
                     <Select 
                         className = "select select-bordered w-full" 
-                        url = "http://localhost:8080/Catalogos/Receptor" 
+                        url = "http://localhost:8081/Catalogos/Receptor" 
                         clave = "Nombre"
                         funcionPadre = {getReceptor}
                     />
@@ -71,15 +90,15 @@ export default function Receptor( {enviarAlPadre} ) {
                     <label className = "">Regimen Fiscal</label>
                     <Select 
                         className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8080/Catalogos/RegimenFiscal"
-                        funcionPadre = {setRegimenFiscal}
+                        url = "http://localhost:8081/Catalogos/RegimenFiscal"
+                        funcionPadre = {ChangeRegimenFiscal}
                     />
                 </div>
                 <div className = "">
                     <label className = "">Metodo de Pago</label>
                     <Select 
                         className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8080/Catalogos/MetodoPago"
+                        url = "http://localhost:8081/Catalogos/MetodoPago"
                         funcionPadre = {setMetodoPago}
                     />
                 </div>
@@ -92,7 +111,7 @@ export default function Receptor( {enviarAlPadre} ) {
                     <label className = "">Forma de Pago</label>
                     <Select 
                         className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8080/Catalogos/FormaPago"
+                        url = "http://localhost:8081/Catalogos/FormaPago"
                         funcionPadre = {setFormaPago}
                     />
                 </div>
@@ -100,15 +119,15 @@ export default function Receptor( {enviarAlPadre} ) {
                     <label className = "">Uso de CFDI</label>
                     <Select 
                         className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8080/Catalogos/UsoCFDI"
-                        funcionPadre = {setUsoCFDI}
+                        url = "http://localhost:8081/Catalogos/UsoCFDI"
+                        funcionPadre = {ChangeUsoCFDI}
                     />
                 </div>
                 <div className = "">
                     <label className = "">Exportaciones</label>
                     <Select 
                         className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8080/Catalogos/Exportaciones"
+                        url = "http://localhost:8081/Catalogos/Exportaciones"
                         funcionPadre = {setExportaciones}
                     />
                 </div>
@@ -118,11 +137,11 @@ export default function Receptor( {enviarAlPadre} ) {
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Periodicidad</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/Periodicidad"/>
+                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/Periodicidad"/>
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Meses</label>
-                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8080/Catalogos/PeriodicidadMeses"/>
+                    <Select className = "select select-bordered select-md w-full" url = "http://localhost:8081/Catalogos/PeriodicidadMeses"/>
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Año</label>
