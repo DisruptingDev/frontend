@@ -6,6 +6,7 @@ import Select from "@/components/Select/Select.jsx"
 
 export default function Receptor( {register, watch, lugarExpedicion, getValues} ) {
     const [receptor, setReceptor] = useState();
+    const [rfc, setRFC] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState("hidden");
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
 
@@ -20,6 +21,7 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                 setDomicilioFiscal(lugarExpedicion) 
                 setHiddeInfoGlobal("")
             }
+            setRFC(data["Rfc"])
         }
     }, [receptor, lugarExpedicion])
 
@@ -30,11 +32,11 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                 <div className = "">
                     <label className = "">Receptor</label>
                     <Select 
+                        register = {register}
+                        nombre = "Receptor"
                         className = "select select-bordered w-full" 
                         url = "http://localhost:8081/Catalogos/Receptor" 
                         clave = "Nombre"
-                        register = {register}
-                        nombre = "Receptor"
                         onChange = {(e) => setReceptor(e.target.value)}
                     />
                 </div>
@@ -43,7 +45,7 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                     <div>
                         <input 
                             type = "text" 
-                            value = ""
+                            value = {rfc}
                             className = "input input-md input-bordered w-full" 
                             disabled/>
                     </div>
@@ -53,6 +55,7 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                     <div>
                         <input 
                             type = "text" 
+                            {...register("DomicilioFiscalReceptor")}
                             value = {domicilioFiscal} 
                             className = "input input-md input-bordered w-full" 
                             disabled
@@ -62,19 +65,19 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                 <div className = "">
                     <label className = "">Regimen Fiscal</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/RegimenFiscal"
                         register = {register}
                         nombre = "RegimenFiscal"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/RegimenFiscal"
                     />
                 </div>
                 <div className = "">
                     <label className = "">Metodo de Pago</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/MetodoPago"
                         register = {register}
                         nombre = "MetodoPago"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/MetodoPago"
                     />
                 </div>
                 <div>
@@ -85,28 +88,28 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                 <div className = "">
                     <label className = "">Forma de Pago</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/FormaPago"
                         register = {register}
                         nombre = "FormaPago"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/FormaPago"
                     />
                 </div>
                 <div className = "">
                     <label className = "">Uso de CFDI</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/UsoCFDI"
                         register = {register}
                         nombre = "UsoCFDI"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/UsoCFDI"
                     />
                 </div>
                 <div className = "">
                     <label className = "">Exportaciones</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/Exportaciones"
                         register = {register}
                         nombre = "Exportaciones"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/Exportaciones"
                     />
                 </div>
                 <div className = {`sm:col-span-2 md:col-span-3 lg:col-span-6 divider w-full ${hiddeInfoGlobal}`} />
@@ -116,25 +119,30 @@ export default function Receptor( {register, watch, lugarExpedicion, getValues} 
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Periodicidad</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/Periodicidad"
                         register = {register}
                         nombre = "Periodicidad"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/Periodicidad"
                     />
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Meses</label>
                     <Select 
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/PeriodicidadMeses"
                         register = {register}
                         nombre = "Meses"
+                        className = "select select-bordered select-md w-full" 
+                        url = "http://localhost:8081/Catalogos/PeriodicidadMeses"
                     />
                 </div>
                 <div className = {hiddeInfoGlobal}>
                     <label className = "">Año</label>
                     <div>
-                        <input className = "input input-bordered" type="number" min="1900" max="2100" />
+                        <input 
+                            type="number" 
+                            {...register("Año")}
+                            className = "input input-bordered" 
+                            min="1900" 
+                            max="2100" />
                     </div>
                 </div>
             </div>

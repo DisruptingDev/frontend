@@ -1,11 +1,11 @@
 "use client"
+
 import React, { useState, useEffect } from 'react';
 
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 
 export default function Emisor( {register, setLugarExpedicion} ) {
-
     const [emisor, setEmisor] = useState();
     const [rfc, setRFC] = useState();
     const [minDate, setMinDate] = useState('');
@@ -65,8 +65,8 @@ export default function Emisor( {register, setLugarExpedicion} ) {
                     <div>
                         <input 
                             type = "text" 
-                            className = "input input-md input-bordered w-full"
                             {...register("LugarExpedicion")}
+                            className = "input input-md input-bordered w-full"
                             onChange = {(e) => setLugarExpedicion(e.target.value)}
                         />
                     </div>

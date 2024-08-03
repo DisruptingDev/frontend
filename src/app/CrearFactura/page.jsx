@@ -50,22 +50,20 @@ function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
 }
 
 export default function CrearFactura() {
-    const { register, watch, handleSubmit, getValues } = useForm();
-
+    const { register, watch, handleSubmit, setValue } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("")
-    const [conceptos, setConceptos] = useState();
     
     const onSubmit = (data) => {
         console.log(data)
     }
-
+    
     return (
         <div>
             <Header /> 
             <form onSubmit={handleSubmit(onSubmit)} method="post">
                 <Emisor register = {register} setLugarExpedicion = {setLugarExpedicion} /> 
-                <Receptor register = {register} lugarExpedicion = {lugarExpedicion} getValues = {getValues} watch = {watch}/> 
-                <Conceptos enviarAlPadre={setConceptos}/> 
+                <Receptor register = {register} lugarExpedicion = {lugarExpedicion}/> 
+                <Conceptos register = {register} setValue = {setValue}/> 
                 <Resumen> 
                     <div className = "flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700">Cancelar</button>
