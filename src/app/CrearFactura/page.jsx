@@ -30,23 +30,6 @@ function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
         ...receptor,
         ...conceptos
     }
-    console.log(factura);
-    const url = 'http://localhost:8080/TimbradoSimple';
-    const opciones = {
-        method: 'POST',
-        headers: {
-           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(factura)
-    };
-
-    fetch(url, opciones)
-        .then(response => {
-            return response.json(); // Convierte la respuesta a JSON
-        })
-        .then(data => {
-            console.log('Éxito:', data);
-        })
 }
 
 export default function CrearFactura() {
@@ -63,7 +46,7 @@ export default function CrearFactura() {
             <form onSubmit={handleSubmit(onSubmit)} method="post">
                 <Emisor register = {register} setLugarExpedicion = {setLugarExpedicion} /> 
                 <Receptor register = {register} lugarExpedicion = {lugarExpedicion}/> 
-                <Conceptos register = {register} setValue = {setValue}/> 
+                <Conceptos register = {register} watch = {watch} setValue = {setValue}/> 
                 <Resumen> 
                     <div className = "flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700">Cancelar</button>

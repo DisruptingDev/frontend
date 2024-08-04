@@ -6,25 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 
 import React, { useState, useEffect } from 'react';
 
-function CalcularSubtotal(cantidad, precioUnitario, descuento) {
-    let sub = (cantidad * precioUnitario) - descuento
-    if (sub >= 0) {
-        return sub
-    }
-    return 0
-}
-
-function CalcularTotal(subtotal, monto) {
-    let total = (subtotal - monto)
-    return total
-}
-
-function CalcularMonto(baseImpuesto, tasa) {
-    let monto = baseImpuesto * tasa;
-    return monto
-}
-
-export default function Conceptos( {register, setValue} ) {
+export default function Conceptos( {register, watch, setValue} ) {
     const [seccionImpuestos, setSeccionImpuestos] = useState([])
     const [cantidad, setCantidad] = useState(1)
     const [precioUnitario, setPrecioUnitario] = useState(0)
@@ -60,47 +42,6 @@ export default function Conceptos( {register, setValue} ) {
                 setTasa(0)
         }
     }, [impuesto])
-
-    useEffect(() => {
-        let total = CalcularTotal(subtotal, monto)
-        let conceptos_data = {
-            Total: total,
-            SubTotal: subtotal,
-
-            Conceptos: {
-                TotalImpuestosTrasladados: 0,
-                TotalImpuestosRetenidos: monto,
-                ListaConceptos: [
-                    {
-                        //ClaveProdServ: claveProductoServicio,
-                        ClaveProdServ: "50211503",
-                        NoIdentificacion: "UT421511",
-                        Cantidad: cantidad, 
-                        ClaveUnidad: claveUnidad["Clave"], 
-                        Unidad: claveUnidad["Descripcion"],
-                        Descripcion: descripcion,
-                        ValorUnitario: parseFloat(precioUnitario),
-                        Descuento: parseFloat(descuento), 
-                        Importe: subtotal,
-                        ObjetoImp: objetoImpuesto["Clave"],
-                        Impuestos: {
-                            Retenciones: [
-                                {
-                                    Base: baseImpuesto,
-                                    ImpuestoClave: impuesto["Clave"],
-                                    TipoFactor: "Tasa",
-                                    TasaOCuota: tasa,
-                                    Importe: monto,
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
-        }
-        enviarAlPadre(conceptos_data)
-
-    }, [claveProductoServicio, claveUnidad, descripcion, cantidad, precioUnitario, descuento, subtotal, objetoImpuesto, impuesto, tasa, baseImpuesto, monto])
     */
 
     const { control } = useForm({
@@ -113,6 +54,32 @@ export default function Conceptos( {register, setValue} ) {
         control,
         name: 'impuestos'
     });
+
+    const calculateMonto = (baseImpuesto, tasa) => {
+        return baseImpuesto * tasa;
+    };
+
+    const calculateTasa = (impuesto) => {
+        const tasas = {
+            'Impuesto1': 0.16,
+            'Impuesto2': 0.08,
+        };
+        return tasas[impuesto] || 0;
+    };
+
+    useEffect(() => {
+        fields.forEach((field, index) => {
+            const baseImpuesto = watch(`impuestos[${index}].BaseImpuesto`);
+            const impuesto = watch(`impuestos[${index}].Impuesto`);
+
+            if (baseImpuesto !== undefined && impuesto !== undefined) {
+                const tasa = calculateTasa(impuesto);
+                setValue(`impuestos[${index}].Tasa`, tasa);
+                const monto = calculateMonto(baseImpuesto, tasa);
+                setValue(`impuestos[${index}].Monto`, monto);
+            }
+        });
+    }, [fields, watch, setValue]);
 
     return (
         <div className = "bg-white my-6 mx-4 p-4 shadow-xl rounded-md">
