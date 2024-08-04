@@ -1,7 +1,11 @@
 "use client"
 
+import CalcularSubtotal from "./Calculos/CalcularSubtotal.jsx"
+import CalcularMonto from "./Calculos/CalcularMonto.jsx"
+
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
+import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx"
 import { useForm, useFieldArray } from 'react-hook-form';
 
 import React, { useState, useEffect } from 'react';
@@ -12,37 +16,12 @@ export default function Conceptos( {register, watch, setValue} ) {
     const [precioUnitario, setPrecioUnitario] = useState(0)
     const [descuento, setDescuento] = useState(0)
     const [subTotal, setSubtotal] = useState(0)
-    const [baseImpuesto, setBaseImpuesto] = useState(0)
 
     useEffect(() => {
         let sub = CalcularSubtotal(cantidad, precioUnitario, descuento)
         setValue("SubTotal", sub)
         setSubtotal(sub)
-        setBaseImpuesto(sub)
     }, [cantidad, precioUnitario, descuento])
-
-    /*
-    useEffect(() => {
-        let monto = CalcularMonto(baseImpuesto, tasa)
-        setMonto(monto)
-    }, [baseImpuesto, tasa])
-
-    useEffect(() => {
-        switch (impuesto["Clave"]) {
-            case '001':
-                setTasa(0.5) 
-            break;
-            case '002':
-                setTasa(0.16) 
-            break;
-            case '003':
-                setTasa(0.1) 
-            break;
-            default:
-                setTasa(0)
-        }
-    }, [impuesto])
-    */
 
     const { control } = useForm({
         defaultValues: {
@@ -54,32 +33,6 @@ export default function Conceptos( {register, watch, setValue} ) {
         control,
         name: 'impuestos'
     });
-
-    const calculateMonto = (baseImpuesto, tasa) => {
-        return baseImpuesto * tasa;
-    };
-
-    const calculateTasa = (impuesto) => {
-        const tasas = {
-            'Impuesto1': 0.16,
-            'Impuesto2': 0.08,
-        };
-        return tasas[impuesto] || 0;
-    };
-
-    useEffect(() => {
-        fields.forEach((field, index) => {
-            const baseImpuesto = watch(`impuestos[${index}].BaseImpuesto`);
-            const impuesto = watch(`impuestos[${index}].Impuesto`);
-
-            if (baseImpuesto !== undefined && impuesto !== undefined) {
-                const tasa = calculateTasa(impuesto);
-                setValue(`impuestos[${index}].Tasa`, tasa);
-                const monto = calculateMonto(baseImpuesto, tasa);
-                setValue(`impuestos[${index}].Monto`, monto);
-            }
-        });
-    }, [fields, watch, setValue]);
 
     return (
         <div className = "bg-white my-6 mx-4 p-4 shadow-xl rounded-md">
@@ -151,60 +104,13 @@ export default function Conceptos( {register, watch, setValue} ) {
                         disabled/>
                 </div>
                 {fields.map((field, index) => (
-                <div key={field.id} className = "grid gap-6 sm:col-span-2 md:col-span-3 lg:col-span-7">
-                    <div className="sm:col-span-2 md:col-span-3 lg:col-span-7 divider" />
-                    <div>
-                        <label>Objeto Impuesto</label>
-                        <Select
-                            register={register}
-                            nombre={`impuestos[${index}].ObjetoImpuesto`}
-                            className="select select-md select-bordered w-full"
-                            url="http://localhost:8081/Catalogos/ObjetoImpuestos"
-                        />
-                    </div>
-                    <div>
-                        <label>Impuesto</label>
-                        <Select
-                            register={register}
-                            nombre={`impuestos[${index}].Impuesto`}
-                            className="select select-md select-bordered w-full"
-                            url="http://localhost:8081/Catalogos/ImpuestoClave"
-                        />
-                    </div>
-                    <div>
-                        <label>Tasa</label>
-                        <input
-                            type="number"
-                            {...register(`impuestos[${index}].Tasa`)}
-                            className="input input-bordered input-md w-full"
-                            disabled
-                        />
-                    </div>
-                    <div>
-                        <label>Base Impuesto</label>
-                        <input
-                            type="number"
-                            {...register(`impuestos[${index}].BaseImpuesto`)}
-                            className="input input-bordered input-md w-full"
-                            disabled
-                        />
-                    </div>
-                    <div>
-                        <label>Monto</label>
-                        <input
-                            type="number"
-                            {...register(`impuestos[${index}].Monto`)}
-                            className="input input-bordered input-md w-full"
-                            disabled
-                        />
-                    </div>
-                    <div className="sm:col-span-2 md:col-span-3 lg:col-span-6">
-                        <button type="button" onClick={() => remove(index)}>
-                            <img src="remove_circle.png" className="mt-6" alt="Eliminar" />
-                        </button>
-                    </div>
-                </div>
-            ))}
+                    <Impuesto 
+                        register = {register}
+                        setValue = {setValue}
+                        index = {index}
+                        baseImpuesto = {subTotal}
+                    />
+                ))}
             <div className="sm:col-span-2 md:col-span-3 lg:col-span-6">
                 <button
                     type="button"
