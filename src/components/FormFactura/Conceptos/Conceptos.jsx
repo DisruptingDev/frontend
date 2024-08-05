@@ -2,6 +2,7 @@
 
 import CalcularSubtotal from "./Calculos/CalcularSubtotal.jsx"
 import CalcularMonto from "./Calculos/CalcularMonto.jsx"
+import CrearConcepto from "./ModelConceptos.js"
 
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
@@ -10,8 +11,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 
 import React, { useState, useEffect } from 'react';
 
-export default function Conceptos( {register, watch, setValue} ) {
-    const [seccionImpuestos, setSeccionImpuestos] = useState([])
+export default function Conceptos( {register, watch, setValue, getValues, setConceptos} ) {
     const [cantidad, setCantidad] = useState(1)
     const [precioUnitario, setPrecioUnitario] = useState(0)
     const [descuento, setDescuento] = useState(0)
@@ -23,9 +23,9 @@ export default function Conceptos( {register, watch, setValue} ) {
         setSubtotal(sub)
     }, [cantidad, precioUnitario, descuento])
 
-    const { control } = useForm({
+    const { control, reset } = useForm({
         defaultValues: {
-            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
+            impuestos: [{ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
         }
     });
 
@@ -51,7 +51,7 @@ export default function Conceptos( {register, watch, setValue} ) {
                     <label className = "">Clave Unidad</label>
                     <Select 
                         register = {register}
-                        nombre = "ClaveProdServ"
+                        nombre = "ClaveUnidad"
                         className = "select select-md select-bordered w-full" 
                         url = "http://localhost:8081/Catalogos/ClaveUnidad"
                     />
@@ -114,7 +114,7 @@ export default function Conceptos( {register, watch, setValue} ) {
             <div className="sm:col-span-2 md:col-span-3 lg:col-span-6">
                 <button
                     type="button"
-                    onClick={() => append({ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
+                    onClick={() => append({Concepto: '', ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
                 >
                     <img src="add_circle.png" className="mt-6" alt="Agregar" />
                 </button>
@@ -122,7 +122,19 @@ export default function Conceptos( {register, watch, setValue} ) {
 
                 <div className = "sm:col-span-2 md:col-span-3 lg:col-span-6"/>
                 <div>
-                    <button type="button" className="btn bg-primary-dark-total text-white hover:underline hover:bg-primary-dark-total">Agregar Concepto</button>
+                    <button 
+                        type="button" 
+                        className="btn bg-primary-dark-total text-white hover:underline hover:bg-primary-dark-total"
+                        onClick = {() => {
+                            let nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"))
+                            setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
+
+                            reset({ impuestos: [{ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }] });
+                            setValue("impuestos", [])
+                        }}
+                    >
+                        Agregar Concepto
+                    </button>
                 </div>
             </div>
         </div>

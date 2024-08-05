@@ -1,7 +1,7 @@
 import Input from "@/components/Input/Input.jsx"
 import {Select, SelectNoLabel} from "@/components/Select/Select.jsx"
 
-export default function Resumen( {children} ) {
+export default function Resumen( {children, conceptos} ) {
     return (
         <div className = "bg-white mx-4 p-4 shadow-xl rounded-md m-100">
             <h3 className = "card-title mb-6">Resumen</h3>
@@ -11,7 +11,7 @@ export default function Resumen( {children} ) {
                       <tr>
                         <th></th>
                         <th>Clave Prod.</th>
-                        <th>Clave Serv.</th>
+                        <th>Clave Unidad.</th>
                         <th>Concepto</th>
                         <th>Cantidad</th>
                         <th>Precio Unitario</th>
@@ -22,42 +22,20 @@ export default function Resumen( {children} ) {
                       </tr>
                     </thead>
                     <tbody>
+                    {conceptos.map((concepto, index) => (
                       <tr>
-                        <th>1</th>
-                        <td>81235980</td>
-                        <td>H68</td>
-                        <td>Diseño de Software a la medida</td>
-                        <td>1</td>
-                        <td>25,000</td>
-                        <td>0</td>
-                        <td>4,000</td>
-                        <td>0</td>
-                        <td>29,000</td>
+                        <th>{index}</th>
+                        <td>{concepto.ClaveProdServ}</td>
+                        <td>{concepto.ClaveUnidad.Clave}</td>
+                        <td>{concepto.Descripcion}</td>
+                        <td>{concepto.Cantidad}</td>
+                        <td>{concepto.ValorUnitario}</td>
+                        <td>{concepto.Descuento}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
                       </tr>
-                      <tr>
-                        <th>1</th>
-                        <td>81235980</td>
-                        <td>H68</td>
-                        <td>Diseño de Software a la medida</td>
-                        <td>1</td>
-                        <td>25,000</td>
-                        <td>0</td>
-                        <td>4,000</td>
-                        <td>0</td>
-                        <td>29,000</td>
-                      </tr>
-                      <tr>
-                        <th>1</th>
-                        <td>81235980</td>
-                        <td>H68</td>
-                        <td>Diseño de Software a la medida</td>
-                        <td>1</td>
-                        <td>25,000</td>
-                        <td>0</td>
-                        <td>4,000</td>
-                        <td>0</td>
-                        <td>29,000</td>
-                      </tr>
+                    ))}
                     </tbody>
                     <tfoot className = "bg-primary-dark-total text-white h-12">
                         <tr>
