@@ -15,6 +15,10 @@ export default function Impuesto( {register, setValue, index, baseImpuesto} ) {
         setValue(`impuestos[${index}].Monto`, resultado)
     }, [tasa, baseImpuesto])
 
+    useEffect(() => {
+        setValue(`impuestos[${index}].BaseImpuesto`, baseImpuesto)
+    }, [baseImpuesto])
+
     const ChangeSelectImpuesto = (e) => {
         let data = JSON.parse(e.target.value)
         setTasa(data.Tasa)

@@ -19,7 +19,7 @@ export default function Conceptos( {register, watch, setValue, getValues, setCon
 
     useEffect(() => {
         let sub = CalcularSubtotal(cantidad, precioUnitario, descuento)
-        setValue("SubTotal", sub)
+        setValue("Subtotal", sub)
         setSubtotal(sub)
     }, [cantidad, precioUnitario, descuento])
 
@@ -98,7 +98,7 @@ export default function Conceptos( {register, watch, setValue, getValues, setCon
                     <label className = "">Subtotal</label>
                     <input 
                         type="number" 
-                        {...register("SubTotal")}
+                        {...register("Subtotal")}
                         value = {subTotal}
                         className = "input input-bordered input-md w-full" 
                         disabled/>
@@ -127,10 +127,15 @@ export default function Conceptos( {register, watch, setValue, getValues, setCon
                         className="btn bg-primary-dark-total text-white hover:underline hover:bg-primary-dark-total"
                         onClick = {() => {
                             let nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"))
-                            setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
+                            if (nuevoConcepto !== "Error") {
+                                setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
 
-                            reset({ impuestos: [{ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }] });
-                            setValue("impuestos", [])
+                                reset({ impuestos: [{ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }] });
+                                setValue("impuestos", [])
+                            }
+                            else {
+                                console.log("Ocurrió un error en el concepto");
+                            }
                         }}
                     >
                         Agregar Concepto

@@ -55,7 +55,7 @@ export default function CrearFactura() {
                     getValues = {getValues} 
                     setConceptos = {setConceptos}
                 /> 
-                <Resumen conceptos = {conceptos}> 
+                <Resumen conceptos = {conceptos} subTotal = {watch("Subtotal")}> 
                     <div className = "flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700">Cancelar</button>
                         <button className="btn btn-accent">Vista previa</button>

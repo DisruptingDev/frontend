@@ -1,7 +1,11 @@
 import Input from "@/components/Input/Input.jsx"
 import {Select, SelectNoLabel} from "@/components/Select/Select.jsx"
+import { CalculosFinales } from "./Calculos/Calculo.js"
 
-export default function Resumen( {children, conceptos} ) {
+export default function Resumen( {children, conceptos, subTotal, Descuento} ) {
+
+    let finales = CalculosFinales(conceptos)
+
     return (
         <div className = "bg-white mx-4 p-4 shadow-xl rounded-md m-100">
             <h3 className = "card-title mb-6">Resumen</h3>
@@ -24,16 +28,16 @@ export default function Resumen( {children, conceptos} ) {
                     <tbody>
                     {conceptos.map((concepto, index) => (
                       <tr>
-                        <th>{index}</th>
+                        <th>{index + 1}</th>
                         <td>{concepto.ClaveProdServ}</td>
                         <td>{concepto.ClaveUnidad.Clave}</td>
                         <td>{concepto.Descripcion}</td>
                         <td>{concepto.Cantidad}</td>
                         <td>{concepto.ValorUnitario}</td>
                         <td>{concepto.Descuento}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>{concepto.TotalTraslados}</td>
+                        <td>{concepto.TotalRetenciones}</td>
+                        <td>{concepto.Subtotal + concepto.TotalTraslados + concepto.TotalRetenciones}</td>
                       </tr>
                     ))}
                     </tbody>
@@ -42,11 +46,11 @@ export default function Resumen( {children, conceptos} ) {
                             <th></th>
                             <th></th>
                             <th></th>
-                            <th className="text-right">Subtotal: 150,256</th>
-                            <th>Descuento: 0</th>
-                            <th>Retenciones: 0</th>
-                            <th>Traslados: 20,560</th>
-                            <th>Total: 170,789.00</th>
+                            <th className="text-right">Subtotal: {finales.SubTotalFinal}</th>
+                            <th>Descuento: {finales.DescuentoFinal}</th>
+                            <th>Retenciones: {finales.RetencionesFinal}</th>
+                            <th>Traslados: {finales.TrasladosFinal}</th>
+                            <th>Total: {finales.TotalFinal}</th>
                             <th></th>
                             <th></th>
                         </tr>
