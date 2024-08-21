@@ -27,18 +27,18 @@ export default function Resumen( {children, conceptos, subTotal, Descuento} ) {
                     </thead>
                     <tbody>
                     {conceptos.map((concepto, index) => (
-                      <tr>
-                        <th>{index + 1}</th>
-                        <td>{concepto.ClaveProdServ}</td>
-                        <td>{concepto.ClaveUnidad.Clave}</td>
-                        <td>{concepto.Descripcion}</td>
-                        <td>{concepto.Cantidad}</td>
-                        <td>{concepto.ValorUnitario}</td>
-                        <td>{concepto.Descuento}</td>
-                        <td>{concepto.TotalTraslados}</td>
-                        <td>{concepto.TotalRetenciones}</td>
-                        <td>{concepto.Subtotal + concepto.TotalTraslados + concepto.TotalRetenciones}</td>
-                      </tr>
+                        <tr key={index}>
+                          <th>{index + 1}</th>
+                          <td>{concepto.ClaveProdServ}</td>
+                          <td>{concepto.ClaveUnidad.Clave}</td>
+                          <td>{concepto.Descripcion}</td>
+                          <td>{concepto.Cantidad}</td>
+                          <td>{concepto.ValorUnitario}</td>
+                          <td>{concepto.Descuento}</td>
+                          <td>{concepto.TotalTraslados}</td>
+                          <td>{concepto.TotalRetenciones}</td>
+                          <td>{concepto.Subtotal + concepto.TotalTraslados + concepto.TotalRetenciones}</td>
+                        </tr>
                     ))}
                     </tbody>
                     <tfoot className = "bg-primary-dark-total text-white h-12">

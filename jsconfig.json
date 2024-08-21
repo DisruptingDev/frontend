@@ -1,7 +1,44 @@
 {
   "compilerOptions": {
+    "target": "ESNext",
+    "downlevelIteration": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./*"], // Para acceder a cualquier cosa dentro de src
+      "@core/*": ["@core/*"],
+      "@layouts/*": ["@layouts/*"],
+      "@menu/*": ["@menu/*"],
+      "@assets/*": ["assets/*"],
+      "@components/*": ["components/*"],
+      "@configs/*": ["configs/*"],
+      "@views/*": ["views/*"],
+      "@contexts/*": ["contexts/*"],
+      "@redux-store/*": ["redux-store/*"]
     }
-  }
+  },
+  "include": [
+    "next.config.mjs",
+    "tailwind.config.js",
+    "**/*.js",
+    "**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

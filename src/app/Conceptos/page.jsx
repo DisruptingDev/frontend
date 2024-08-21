@@ -12,11 +12,11 @@ export default function Conceptos() {
                 </div>
 
                 <div className="card-body">
-                    <Select name = "Clave Producto o Servicio" url = "http://localhost:8080/usocfdi"/>
+                    <Select name = "Clave Producto o Servicio" url = "http://31.220.31.152:8081/Catalogos/usocfdi"/>
 
                     <Input name = "NoIdentificacion" type = "text" placeholder = "Numero de identificacion"/>
                     <Input name = "Cantidad" type = "number" placeholder = "Ingresa la cantidad"/>
-                    <Select name = "ClaveUnidad" url = "http://localhost:8080/usocfdi"/>
+                    <Select name = "ClaveUnidad" url = "http://31.220.31.152:8081/Catalogos/usocfdi"/>
 
                     <Input name = "Descripcion" type = "text" placeholder = "Descripcion"/>
                     <Input name = "Valor Unitario" type = "number" placeholder = "Valor Unitario"/>

@@ -1,152 +1,212 @@
-"use client"
-import React, { useState, useEffect, useRef } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { Box, TextField, Button, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import Select from "@/components/Select/Select.jsx";
+import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 
-import Input from "@/components/Input/Input.jsx"
-import Select from "@/components/Select/Select.jsx"
-
-export default function Receptor( {register, watch, lugarExpedicion, getValues} ) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues }) {
     const [receptor, setReceptor] = useState();
     const [rfc, setRFC] = useState();
-    const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState("hidden");
+    const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
+    const [openModal, setOpenModal] = useState(false); // Estado para controlar la visibilidad de la ventana modal
 
     useEffect(() => {
         if (receptor !== undefined) {
-            let data = JSON.parse(receptor)
+            let data = JSON.parse(receptor);
             if (data["Rfc"] !== "XAXX010101000") {
-                setDomicilioFiscal(data["DomicilioFiscalReceptor"]) 
-                setHiddeInfoGlobal("hidden")
+                setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
+                setHiddeInfoGlobal(false);
+            } else {
+                setDomicilioFiscal(lugarExpedicion);
+                setHiddeInfoGlobal(true);
             }
-            else{
-                setDomicilioFiscal(lugarExpedicion) 
-                setHiddeInfoGlobal("")
-            }
-            setRFC(data["Rfc"])
+            setRFC(data["Rfc"]);
         }
-    }, [receptor, lugarExpedicion])
+    }, [receptor, lugarExpedicion]);
+
+    const handleOpenModal = () => {
+        setOpenModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setOpenModal(false);
+    };
 
     return (
-        <div className = "bg-white mx-4 p-4 shadow-xl rounded-md m-100">
-            <h3 className = "card-title mb-6">Datos del Receptor</h3>
-            <div className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-                <div className = "">
-                    <label className = "">Receptor</label>
-                    <Select 
-                        register = {register}
-                        nombre = "Receptor"
-                        className = "select select-bordered w-full" 
-                        url = "http://localhost:8081/Catalogos/Receptor" 
-                        clave = "Nombre"
-                        onChange = {(e) => setReceptor(e.target.value)}
-                    />
-                </div>
-                <div className = "">
-                    <label className = "">RFC</label>
-                    <div>
-                        <input 
-                            type = "text" 
-                            value = {rfc}
-                            className = "input input-md input-bordered w-full" 
-                            disabled/>
-                    </div>
-                </div>
-                <div className = "">
-                    <label className = "" >Domicilio Fiscal</label>
-                    <div>
-                        <input 
-                            type = "text" 
-                            {...register("DomicilioFiscalReceptor")}
-                            value = {domicilioFiscal} 
-                            className = "input input-md input-bordered w-full" 
-                            disabled
-                        />
-                    </div>
-                </div>
-                <div className = "">
-                    <label className = "">Regimen Fiscal</label>
-                    <Select 
-                        register = {register}
-                        nombre = "RegimenFiscal"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/RegimenFiscal"
-                    />
-                </div>
-                <div className = "">
-                    <label className = "">Metodo de Pago</label>
-                    <Select 
-                        register = {register}
-                        nombre = "MetodoPago"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/MetodoPago"
-                    />
-                </div>
-                <div>
-                    <button className="">
-                        <img src="add_circle.png" className = "mt-6" />
-                    </button>
-                </div>
-                <div className = "">
-                    <label className = "">Forma de Pago</label>
-                    <Select 
-                        register = {register}
-                        nombre = "FormaPago"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/FormaPago"
-                    />
-                </div>
-                <div className = "">
-                    <label className = "">Uso de CFDI</label>
-                    <Select 
-                        register = {register}
-                        nombre = "UsoCFDI"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/UsoCFDI"
-                    />
-                </div>
-                <div className = "">
-                    <label className = "">Exportaciones</label>
-                    <Select 
-                        register = {register}
-                        nombre = "Exportaciones"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/Exportaciones"
-                    />
-                </div>
-                <div className = {`sm:col-span-2 md:col-span-3 lg:col-span-6 divider w-full ${hiddeInfoGlobal}`} />
-                <div className = {hiddeInfoGlobal}>
-                    <label className = "text-slate-500" >Informacion<br/>Global</label>
-                </div>
-                <div className = {hiddeInfoGlobal}>
-                    <label className = "">Periodicidad</label>
-                    <Select 
-                        register = {register}
-                        nombre = "Periodicidad"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/Periodicidad"
-                    />
-                </div>
-                <div className = {hiddeInfoGlobal}>
-                    <label className = "">Meses</label>
-                    <Select 
-                        register = {register}
-                        nombre = "Meses"
-                        className = "select select-bordered select-md w-full" 
-                        url = "http://localhost:8081/Catalogos/PeriodicidadMeses"
-                    />
-                </div>
-                <div className = {hiddeInfoGlobal}>
-                    <label className = "">Año</label>
-                    <div>
-                        <input 
-                            type="number" 
-                            {...register("Año")}
-                            className = "input input-bordered" 
-                            min="1900" 
-                            max="2100" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
+        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
+            <Typography variant="h6" mb={4}>Datos del Receptor</Typography>
 
+            <Box
+                display="grid"
+                gridTemplateColumns={{
+                    xs: '1fr',
+                    sm: '1fr 1fr',
+                    md: '1fr 0.5fr 0.5fr',
+                    lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.2fr 0.2fr'
+                }}
+                gap={3}
+            >
+                <Select
+                    register={register}
+                    nombre="Receptor"
+                    url="http://31.220.31.152:8081/Catalogos/Receptor"
+                    clave="Rfc"
+                    descripcion="Nombre"
+                    onChange={(e) => setReceptor(e.target.value)}
+                />
+
+                <TextField
+                    label="RFC"
+                    value={rfc || ""}
+                    fullWidth
+                    InputProps={{
+                        readOnly: true,
+                    }}
+                    disabled
+                />
+
+                <TextField
+                    label="Domicilio Fiscal"
+                    {...register("DomicilioFiscalReceptor")}
+                    value={domicilioFiscal}
+                    fullWidth
+                    InputProps={{
+                        readOnly: true,
+                    }}
+                    disabled
+                />
+
+                <Select
+                    register={register}
+                    nombre="RegimenFiscal"
+                    url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                    clave="Clave"
+                    descripcion="Descripcion"
+                />
+
+                <Select
+                    register={register}
+                    nombre="MetodoPago"
+                    url="http://31.220.31.152:8081/Catalogos/MetodoPago"
+                    clave="Clave"
+                    descripcion="Descripcion"
+                />
+
+                <Select
+                    register={register}
+                    nombre="FormaPago"
+                    url="http://31.220.31.152:8081/Catalogos/FormaPago"
+                    clave="Clave"
+                    descripcion="Descripcion"
+                />
+
+                <Select
+                    register={register}
+                    nombre="UsoCFDI"
+                    url="http://31.220.31.152:8081/Catalogos/UsoCFDI"
+                    clave="Clave"
+                    descripcion="Descripcion"
+                />
+
+                <Button
+                    variant="contained"
+                    sx={{
+                        backgroundColor: 'rgba(29, 57, 77, 1)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        '&:hover': {
+                            backgroundColor: 'rgba(19, 47, 67, 1)',
+                        }
+                    }}
+                    onClick={handleOpenModal} // Abre la ventana modal al hacer clic
+                >
+                    <AddCircleIcon sx={{ fontSize: '30px' }} />
+                </Button>
+            </Box>
+                {hiddeInfoGlobal && ( // Solo muestra si "hiddeInfoGlobal" es true
+                <Box
+                    display="grid"
+                    gridTemplateColumns={{
+                        xs: '1fr',                 // Una columna en pantallas extra pequeñas
+                        sm: '1fr 1fr',             // Dos columnas en pantallas pequeñas
+                        md: '1fr 0.5fr 0.5fr',     // Tres columnas en pantallas medianas
+                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 1.6fr'  // Configuración completa en pantallas grandes
+                    }}
+                    gap={3}
+                    mt={4}
+                >
+                    <Select
+                        register={register}
+                        nombre="Exportación"
+                        url="http://31.220.31.152:8081/Catalogos/Exportacion"
+                        clave="Clave"
+                        descripcion="Exportación"
+                    />
+                    <Typography color="textSecondary" align='center'>Información Global</Typography>
+
+                    <Select
+                        register={register}
+                        nombre="Periodicidad"
+                        url="http://31.220.31.152:8081/Catalogos/Periodicidad"
+                        clave="Clave"
+                        descripcion="Descripcion"
+                    />
+
+                    <Select
+                        register={register}
+                        nombre="Meses"
+                        url="http://31.220.31.152:8081/Catalogos/PeriodicidadMeses"
+                        clave="Clave"
+                        descripcion="Descripcion"
+                    />
+
+                    <TextField
+                        label="Año"
+                        type="number"
+                        {...register("Año")}
+                        fullWidth
+                        inputProps={{ min: 1900, max: 2100 }}
+                    />
+                </Box>
+            )} 
+            <Dialog
+                open={openModal}
+                onClose={handleCloseModal}
+                fullWidth
+                maxWidth={false} // Desactiva el tamaño máximo predeterminado
+                PaperProps={{
+                    sx: {
+                        width: '65%', // Ancho del 90%
+                        margin: 'auto', // Centrar horizontalmente
+                    }
+                }}
+            >
+                <DialogTitle>Alta de Cliente</DialogTitle>
+                <DialogContent>
+                    <AltaCliente register={register} />
+                </DialogContent>
+                <DialogActions>
+                    <Button 
+                     variant="contained"
+                     color="error"
+                     sx={{ width: '150px' }}
+                    onClick={handleCloseModal}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{ width: '250px' }} // Ajusta el ancho del botón
+                        onClick={handleCloseModal}>
+                        Guardar
+                    </Button>
+
+                </DialogActions>
+            </Dialog>
+
+        </Box>
+    );
+}

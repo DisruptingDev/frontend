@@ -1,87 +1,110 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from 'react';
+import { Box, TextField, Button, Divider } from '@mui/material';
+import Select from "@/components/Select/Select.jsx";
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 
-import Input from "@/components/Input/Input.jsx"
-import Select from "@/components/Select/Select.jsx"
-
-export default function Impuesto( {register, setValue, index, baseImpuesto} ) {
-    const [tasa, setTasa] = useState(0)
-    const [monto, setMonto] = useState(0)
-
-    useEffect(() => {
-        let resultado = tasa * baseImpuesto
-        setMonto(resultado) 
-        setValue(`impuestos[${index}].Monto`, resultado)
-    }, [tasa, baseImpuesto])
+export default function Impuesto({ register, setValue, index, baseImpuesto, remove, fieldsLength, isLast }) {
+    const [tasa, setTasa] = useState(0);
+    const [monto, setMonto] = useState(0);
 
     useEffect(() => {
-        setValue(`impuestos[${index}].BaseImpuesto`, baseImpuesto)
-    }, [baseImpuesto])
+        const resultado = tasa * baseImpuesto;
+        setMonto(resultado);
+        setValue(`impuestos[${index}].Monto`, resultado);
+    }, [tasa, baseImpuesto, setValue, index]);
+
+    useEffect(() => {
+        setValue(`impuestos[${index}].BaseImpuesto`, baseImpuesto);
+    }, [baseImpuesto, setValue, index]);
 
     const ChangeSelectImpuesto = (e) => {
-        let data = JSON.parse(e.target.value)
-        setTasa(data.Tasa)
-        setValue(`impuestos[${index}].Tasa`, data.Tasa)
-    }
+        const data = JSON.parse(e.target.value);
+        setTasa(data.Tasa);
+        setValue(`impuestos[${index}].Tasa`, data.Tasa);
+    };
 
     return (
-        <div className = "grid gap-6 sm:col-span-2 md:col-span-3 lg:col-span-7">
-            <div className="sm:col-span-2 md:col-span-3 lg:col-span-7 divider" />
-            <div>
-                <label>Objeto Impuesto</label>
-                <Select
-                    register={register}
-                    nombre={`impuestos[${index}].ObjetoImpuesto`}
-                    className="select select-md select-bordered w-full"
-                    url="http://localhost:8081/Catalogos/ObjetoImpuestos"
-                />
-            </div>
-            <div>
-                <label>Impuesto</label>
-                <Select
-                    register={register}
-                    nombre={`impuestos[${index}].Impuesto`}
-                    className="select select-md select-bordered w-full"
-                    url="http://localhost:8081/Catalogos/ImpuestoClave"
-                    onChange = {(e) => ChangeSelectImpuesto(e)}
-                />
-            </div>
-            <div>
-                <label>Tasa</label>
-                <input
-                    type="number"
-                    {...register(`impuestos[${index}].Tasa`)}
-                    value = {tasa}
-                    className="input input-bordered input-md w-full"
-                    disabled
-                />
-            </div>
-            <div>
-                <label>Base Impuesto</label>
-                <input
-                    type="number"
-                    value = {baseImpuesto}
-                    {...register(`impuestos[${index}].BaseImpuesto`)}
-                    className="input input-bordered input-md w-full"
-                    disabled
-                />
-            </div>
-            <div>
-                <label>Monto</label>
-                <input
-                    type="number"
-                    value = {monto}
-                    {...register(`impuestos[${index}].Monto`)}
-                    className="input input-bordered input-md w-full"
-                    disabled
-                />
-            </div>
-            <div className="sm:col-span-2 md:col-span-3 lg:col-span-6">
-                <button type="button" onClick={() => remove(index)}>
-                    <img src="remove_circle.png" className="mt-6" alt="Eliminar" />
-                </button>
-            </div>
-        </div>
-    )
+        <Box>
+            <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
+                <Box flex={1}>
+                    <Select
+                        register={register}
+                        nombre={`Objeto Impuesto`}
+                        url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
+                    />
+                </Box>
+
+                <Box flex={1}>
+                    <Select
+                        register={register}
+                        nombre={`Impuesto`}
+                        url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
+                        onChange={ChangeSelectImpuesto}
+                    />
+                </Box>
+
+                <Box flex={1}>
+                    <TextField
+                        label="Tasa"
+                        type="number"
+                        {...register(`impuestos[${index}].Tasa`)}
+                        value={tasa}
+                        fullWidth
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                    />
+                </Box>
+
+                <Box flex={1}>
+                    <TextField
+                        label="Base Impuesto"
+                        type="number"
+                        {...register(`impuestos[${index}].BaseImpuesto`)}
+                        value={baseImpuesto}
+                        fullWidth
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                    />
+                </Box>
+
+                <Box flex={1}>
+                    <TextField
+                        label="Monto"
+                        type="number"
+                        {...register(`impuestos[${index}].Monto`)}
+                        value={monto}
+                        fullWidth
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                    />
+                </Box>
+
+                {/* Mostrar el botón "Eliminar" solo si hay más de un impuesto */}
+                {fieldsLength > 1 && (
+                    <Box>
+                        <Button
+                            variant="contained"
+                            sx={{
+                                backgroundColor: 'rgba(29, 57, 77, 1)',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(19, 47, 67, 1)',
+                                }
+                            }}
+                            onClick={() => remove(index)} // Llama a la función remove con el índice correcto
+                        >
+                            <RemoveCircleIcon sx={{ fontSize: '30px' }} />
+                        </Button>
+                    </Box>
+                )}
+            </Box>
+        </Box>
+    );
 }
