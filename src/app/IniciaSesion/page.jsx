@@ -1,12 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation'; // Importa useRouter de next/navigation
 import { TextField, Button, Box, Checkbox, FormControlLabel, Link, Alert, Collapse } from "@mui/material";
 import Image from 'next/image';
 
 export default function Login() {
     const { register, handleSubmit } = useForm();
     const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+    const router = useRouter();
+    const [isMounted, setIsMounted] = useState(false); // Estado para verificar si el componente está montado
+
+    useEffect(() => {
+        setIsMounted(true); // Marca el componente como montado
+    }, []);
 
     const onSubmit = async (data) => {
         try {
@@ -27,14 +34,18 @@ export default function Login() {
             if (response.ok) {
                 const result = JSON.parse(text);
 
-                // Verifica si la respuesta contiene un error
                 if (result.error) {
                     setAlert({ open: true, message: result.error, severity: 'error' });
                 } else {
-                    // Almacenar el token en localStorage
                     localStorage.setItem('authToken', result.token);
                     setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
                     console.log('Login exitoso', result.token);
+
+                    if (isMounted) { // Solo redirige si el componente está montado
+                        setTimeout(() => {
+                            router.push('/Home');
+                        }, 2000);
+                    }
                 }
             } else {
                 setAlert({ open: true, message: 'Error en la autenticación', severity: 'error' });
@@ -65,7 +76,6 @@ export default function Login() {
                     <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
                 </Box>
 
-                {/* Alert Component */}
                 <Collapse in={alert.open}>
                     <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, open: false })}>
                         {alert.message}

@@ -1,0 +1,26 @@
+/* custom-datepicker.css */
+.custom-datepicker {
+    background-color: #c41a1a; /* Color de fondo del calendario */
+    border-radius: 8px; /* Bordes redondeados */
+    padding: 10px; /* Espaciado interno */
+  }
+  
+  .custom-datepicker .react-datepicker__day--selected {
+    background-color: #1976d2 !important; /* Fondo azul para los días seleccionados */
+    color: white; /* Texto blanco en los días seleccionados */
+  }
+  
+  .custom-datepicker .react-datepicker__header {
+    background-color: #1976d2; /* Color de fondo del encabezado del calendario */
+    color: white; /* Color del texto del encabezado */
+  }
+  
+  .custom-datepicker .react-datepicker__current-month {
+    font-weight: bold;
+    color: white; /* Color del mes actual */
+  }
+  
+  .custom-datepicker .react-datepicker__day-name {
+    color: #1976d2; /* Color de los nombres de los días */
+  }
+  

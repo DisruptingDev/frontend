@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, Typography, Button, Divider, Autocomplete } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
@@ -8,7 +10,7 @@ import Select from "@/components/Select/Select.jsx";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 
 export default function Conceptos({ register, watch, setValue, getValues, setConceptos }) {
-    const [cantidad, setCantidad] = useState(1);
+    const [cantidad, setCantidad] = useState(0);
     const [precioUnitario, setPrecioUnitario] = useState(0);
     const [descuento, setDescuento] = useState(0);
     const [subTotal, setSubtotal] = useState(0);
@@ -24,7 +26,6 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Host': '31.220.31.152:8081',
                 },
             })
             .then(response => response.json())
@@ -53,16 +54,44 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
     });
 
     const handleAgregarConcepto = () => {
+        // Obtener los valores actuales del formulario
+        const objetoImpuesto = getValues("impuestos")[0].ObjetoImpuesto;
+        console.log(getValues("impuestos"))
+        
+        // Verificar si ObjetoImpuesto tiene un valor válido
+        if (!objetoImpuesto || objetoImpuesto === "Default") {
+            console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
+            return;
+        }
+    
+        // Proceder a crear el concepto si la validación es exitosa
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
         if (nuevoConcepto !== "Error") {
             setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
-            reset({ impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }] });
+    
+            // Resetear todos los campos del formulario
+            reset({
+                Descripcion: '',
+                ClaveProdServ: '',
+                ClaveUnidad: '',
+                Cantidad: 0,
+                ValorUnitario: 0,
+                Descuento: 0,
+                Subtotal: 0,
+                impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
+            });
+    
+            // Reiniciar los estados locales
+            setCantidad(0);
+            setPrecioUnitario(0);
+            setDescuento(0);
+            setSubtotal(0);
             setValue("impuestos", []);
         } else {
             console.log("Ocurrió un error en el concepto");
         }
     };
-
+    
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
@@ -88,8 +117,19 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                 {/* Autocomplete para ClaveProdServ */}
                 <Autocomplete
                     options={claveOptions}
-                    getOptionLabel={(option) => option.Descripcion} // Ajusta según tu estructura de datos
+                    getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`} // Combina Clave y Descripcion
                     onInputChange={(event, newInputValue) => setQuery(newInputValue)}
+                    filterOptions={(options, { inputValue }) => 
+                        options.filter((option) => 
+                            option.Clave.toLowerCase().includes(inputValue.toLowerCase()) || 
+                            option.Descripcion.toLowerCase().includes(inputValue.toLowerCase())
+                        )
+                    }
+                    renderOption={(props, option) => (
+                        <Box component="li" {...props}>
+                            {option.Clave} - {option.Descripcion}
+                        </Box>
+                    )}
                     renderInput={(params) => (
                         <TextField 
                             {...params} 
@@ -103,7 +143,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                         }
                     }}
                 />
-
+                
                 <Select
                     register={register}
                     nombre="ClaveUnidad"
@@ -118,7 +158,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     {...register("Cantidad")}
                     value={cantidad}
                     fullWidth
-                    onChange={(e) => setCantidad(e.target.value)}
+                    onChange={(e) => setCantidad(Number(e.target.value))}
                 />
 
                 <TextField
@@ -127,7 +167,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     {...register("ValorUnitario")}
                     value={precioUnitario}
                     fullWidth
-                    onChange={(e) => setPrecioUnitario(e.target.value)}
+                    onChange={(e) => setPrecioUnitario(Number(e.target.value))}
                 />
 
                 <TextField
@@ -136,7 +176,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     {...register("Descuento")}
                     value={descuento}
                     fullWidth
-                    onChange={(e) => setDescuento(e.target.value)}
+                    onChange={(e) => setDescuento(Number(e.target.value))}
                 />
 
                 <TextField
@@ -169,9 +209,8 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                                 register={register}
                                 setValue={setValue}
                                 index={index}
-                                baseImpuesto={field.BaseImpuesto || 0}
+                                baseImpuesto={subTotal || 0}
                                 remove={remove} // Pasa la función remove al componente Impuesto
-                                fieldsLength={fields.length}
                                 isLast={index === fields.length - 1}
                             />
                         </Box>
@@ -204,11 +243,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     </Button>
                 </Box>
             </Box>
-        </Box>
-    );
-}
-
-{/* <Box gridColumn="span 6" textAlign="end" mt={3}>
+            <Box gridColumn="span 6" textAlign="end" mt={3}>
                 <Button
                     startIcon={<AddCircleIcon />}
                     variant="contained"
@@ -220,4 +255,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                 >
                     Agregar Concepto
                 </Button>
-            </Box> */}
+            </Box>
+        </Box>
+    );
+}
