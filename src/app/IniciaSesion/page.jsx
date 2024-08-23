@@ -42,9 +42,9 @@ export default function Login() {
                     console.log('Login exitoso', result.token);
 
                     if (isMounted) { // Solo redirige si el componente está montado
-                        setTimeout(() => {
+                      
                             router.push('/Home');
-                        }, 2000);
+                        
                     }
                 }
             } else {

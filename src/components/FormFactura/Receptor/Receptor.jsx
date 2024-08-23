@@ -126,7 +126,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
             </Box>
-                {hiddeInfoGlobal && ( // Solo muestra si "hiddeInfoGlobal" es true
+            {hiddeInfoGlobal && ( // Solo muestra si "hiddeInfoGlobal" es true
                 <Box
                     display="grid"
                     gridTemplateColumns={{
@@ -162,16 +162,26 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                         clave="Clave"
                         descripcion="Descripcion"
                     />
-
                     <TextField
                         label="Año"
                         type="number"
                         {...register("Año")}
                         fullWidth
-                        inputProps={{ min: 1900, max: 2100 }}
+                        inputProps={{
+                            min: 1900,
+                            max: 2100,
+                            step: 1,
+                        }}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (value.length > 4) {
+                                e.target.value = value.slice(0, 4);  // Limita a 4 caracteres
+                            }
+                        }}
                     />
+
                 </Box>
-            )} 
+            )}
             <Dialog
                 open={openModal}
                 onClose={handleCloseModal}
@@ -189,11 +199,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     <AltaCliente register={register} />
                 </DialogContent>
                 <DialogActions>
-                    <Button 
-                     variant="contained"
-                     color="error"
-                     sx={{ width: '150px' }}
-                    onClick={handleCloseModal}>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ width: '150px' }}
+                        onClick={handleCloseModal}>
                         Cancelar
                     </Button>
                     <Button
