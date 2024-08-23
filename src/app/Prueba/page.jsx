@@ -21,7 +21,7 @@ export default function CrearFactura() {
         <div>
             <Header /> 
             <AltaEmpresa />
-            <AltaCliente />
+            {/* <AltaCliente /> */}
            
         </div>
     );

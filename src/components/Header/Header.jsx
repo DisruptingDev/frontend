@@ -26,6 +26,9 @@ export default function Header ( {name} ) {
             <Link href="#" className="text-muted-foreground text-white text-lg hover:underline underline-offset-4 focus:text-selected-color focus:underline" prefetch={false}>
               Estatus + 
             </Link>
+            <Link href="/Prueba" className="text-muted-foreground text-white text-lg hover:underline underline-offset-4 focus:text-selected-color focus:underline" prefetch={false}>
+              Alta de Empresa +
+            </Link>
           </nav>
         </header>
     )
