@@ -19,7 +19,7 @@ export default function validarConcepto(concepto) {
             }
         } else {
             // Para otros campos, aplicar la validación general
-            if (!concepto[field]) {
+            if (!concepto[field] && concepto[field] !== 0) {
                 return { isValid: false, message: `${field} is required and cannot be empty` };
             }
         }

@@ -72,24 +72,27 @@ export default function Conceptos({ setConceptos }) {
         const precioUnitario = getValues('ValorUnitario');
         const descuento = getValues('Descuento');
         const subtotal = (cantidad * precioUnitario) - descuento;
+
         setValue("Subtotal", subtotal);
         return subtotal;
     };
 
+    // Actualizar el subtotal y baseImpuesto en cada cambio de Cantidad, ValorUnitario o Descuento
     useEffect(() => {
-        calcularSubtotal();
-    }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento')]);
+        const subtotal = calcularSubtotal();
+        fields.forEach((field, index) => {
+            setValue(`impuestos.${index}.BaseImpuesto`, subtotal);
+        });
+    }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento'), fields, setValue]);
 
     const handleAgregarConcepto = () => {
         const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
-        console.log(getValues("impuestos"))
         if (!objetoImpuesto || objetoImpuesto === "Default") {
             console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
             return;
         }
-        console.log("Datos",getValues)
+
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
-        console.log("nuevo",nuevoConcepto)
         if (nuevoConcepto !== "Error") {
             setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
 
@@ -230,7 +233,7 @@ export default function Conceptos({ setConceptos }) {
                                 register={register}
                                 setValue={setValue}
                                 index={index}
-                                baseImpuesto={getValues("Subtotal") || 0}
+                                baseImpuesto={getValues(`impuestos.${index}.BaseImpuesto`) || 0} // Usar el Subtotal actualizado
                                 remove={remove}
                                 isLast={index === fields.length - 1}
                             />
