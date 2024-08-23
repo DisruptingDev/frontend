@@ -32,8 +32,9 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                     <Select
                         register={register}
                         // nombre={`Objeto Impuesto`}
-             
+                        clave='Clave'
                         nombre={`impuestos[${index}].ObjetoImpuesto`}
+                        descripcion='Descripcion'
                         url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
                     />
                 </Box>
@@ -42,6 +43,8 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                     <Select
                         register={register}
                         // nombre={`Impuesto`}
+                        clave='Clave'
+                        descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
                         onChange={ChangeSelectImpuesto}

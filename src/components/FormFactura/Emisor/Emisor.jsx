@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
@@ -30,9 +29,14 @@ export default function Emisor({ register, setLugarExpedicion }) {
 
     useEffect(() => {
         if (emisor !== undefined) {
-            let data = JSON.parse(emisor);
-            setRFC(data["Rfc"]);
-            console.log(data);
+            try {
+                let data = JSON.parse(emisor);
+                setRFC(data["Rfc"]);
+                setLugarExpedicion(data["LugarExpedicion"]);
+                console.log(data);
+            } catch (e) {
+                console.error("El valor de emisor no es un JSON válido:", emisor);
+            }
         }
     }, [emisor]);
 
@@ -44,10 +48,10 @@ export default function Emisor({ register, setLugarExpedicion }) {
                 gap={3}
                 sx={{
                     gridTemplateColumns: {
-                        xs: '1fr',                 // Una columna en pantallas extra pequeñas
-                        sm: 'repeat(2, 1fr)',      // Dos columnas en pantallas pequeñas
-                        md: 'repeat(3, 1fr)',      // Tres columnas en pantallas medianas
-                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'  // Configuración completa en pantallas grandes
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(3, 1fr)',
+                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'
                     }
                 }}
             >
@@ -55,8 +59,8 @@ export default function Emisor({ register, setLugarExpedicion }) {
                     register={register}
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
-                    clave="Nombre"
-                    descripcion="NombreCompleto"
+                    clave="Rfc"
+                    descripcion="Nombre"
                     onChange={(e) => setEmisor(e.target.value)}
                 />
 
@@ -74,6 +78,7 @@ export default function Emisor({ register, setLugarExpedicion }) {
                     label="Lugar Expedicion"
                     {...register("LugarExpedicion")}
                     fullWidth
+                    value={emisor ? JSON.parse(emisor)["LugarExpedicion"] : ""}
                     onChange={(e) => setLugarExpedicion(e.target.value)}
                     disabled
                 />
@@ -115,7 +120,6 @@ export default function Emisor({ register, setLugarExpedicion }) {
                     disabled
                 />
             </Box>
-
         </Box>
     );
 }

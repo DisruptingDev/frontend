@@ -32,7 +32,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, url, className, clave = "Clave", descripcion = "Descripcion", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
+export default function Select({ register = () => (1), nombre, url, className, clave = "Rfc", descripcion = "Nombre", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(""); // Controla el valor seleccionado
 
@@ -43,7 +43,11 @@ export default function Select({ register = () => (1), nombre, url, className, c
     const handleChange = (e) => {
         const value = e.target.value;
         setSelectedValue(value);
-        if (onChange) onChange(e); // Propaga el cambio al padre si es necesario
+        if (onChange) {
+            // Propaga los datos completos del emisor seleccionado al padre
+            const selectedOption = opciones.find(opcion => opcion[clave] === value);
+            onChange({ target: { value: JSON.stringify(selectedOption) } });
+        }
     };
 
     return (
