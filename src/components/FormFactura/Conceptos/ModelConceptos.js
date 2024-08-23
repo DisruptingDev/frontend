@@ -9,7 +9,7 @@ export default function CrearConcepto(getValues, impuestos) {
         Descripcion: getValues("Descripcion"),
         Cantidad: getValues("Cantidad"),
         ValorUnitario: parseFloat(getValues("ValorUnitario")),
-        Descuento: parseFloat(getValues("Descuento")),
+        Descuento: parseFloat(getValues("Descuento")) || 0,
         Subtotal: getValues("Subtotal"),
         Impuestos: impuestos,
 
@@ -18,6 +18,7 @@ export default function CrearConcepto(getValues, impuestos) {
         TotalRetenciones: 0,
         TotalTraslados: 0
     };
+    console.log("Conceptos",concepto);
 
     const resultado = validarConcepto(concepto);
 

@@ -1,50 +1,64 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Typography, Button, Divider, Autocomplete } from '@mui/material';
+import { Box, TextField, Typography, Button, Autocomplete } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
 import { useForm, useFieldArray } from 'react-hook-form';
-import CalcularSubtotal from "./Calculos/CalcularSubtotal.jsx";
 import CrearConcepto from "./ModelConceptos.js";
-import Select from "@/components/Select/Select.jsx";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 
-export default function Conceptos({ register, watch, setValue, getValues, setConceptos }) {
-    const [cantidad, setCantidad] = useState(0);
-    const [precioUnitario, setPrecioUnitario] = useState(0);
-    const [descuento, setDescuento] = useState(0);
-    const [subTotal, setSubtotal] = useState(0);
+export default function Conceptos({ setConceptos }) {
+    const [claveProdServOptions, setClaveProdServOptions] = useState([]);
+    const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
+    const [queryProdServ, setQueryProdServ] = useState('');
+    const [queryUnidad, setQueryUnidad] = useState('');
+    const [selectedClaveProdServ, setSelectedClaveProdServ] = useState(null);
+    const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
 
-    const [claveOptions, setClaveOptions] = useState([]);
-    const [query, setQuery] = useState('');
-
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRCI6NCwiZW1haWwiOiJrZXZpbkBnbWFpbC5jb20iLCJleHAiOjE3MjQ0NDU0MDl9.saQCBzYFAZ_n1gLn_wsCV_wd7BSqvwMoorgMppoDCrY'; // Token válido
+    const token = localStorage.getItem('authToken');
 
     useEffect(() => {
-        if (query.length > 2) {  // Solo buscar si la longitud de la query es mayor a 2 caracteres
-            fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${query}`, {
+        if (queryProdServ.length > 2) {
+            fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
             })
-            .then(response => response.json())
-            .then(data => setClaveOptions(data))  // Ajusta según la estructura de tu respuesta
-            .catch(error => console.error('Error al buscar ClaveProdServ:', error));
+                .then(response => response.json())
+                .then(data => setClaveProdServOptions(Array.isArray(data) ? data : []))
+                .catch(error => console.error('Error al buscar ClaveProdServ:', error));
         } else {
-            setClaveOptions([]);
+            setClaveProdServOptions([]);
         }
-    }, [query]);
+    }, [queryProdServ]);
 
     useEffect(() => {
-        const sub = CalcularSubtotal(cantidad, precioUnitario, descuento);
-        setValue("Subtotal", sub);
-        setSubtotal(sub);
-    }, [cantidad, precioUnitario, descuento, setValue]);
+        if (queryUnidad.length > 1) {
+            fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            })
+                .then(response => response.json())
+                .then(data => setClaveUnidadOptions(Array.isArray(data) ? data : []))
+                .catch(error => console.error('Error al buscar ClaveUnidad:', error));
+        } else {
+            setClaveUnidadOptions([]);
+        }
+    }, [queryUnidad]);
 
-    const { control, reset } = useForm({
+    const { control, register, reset, getValues, setValue, watch } = useForm({
         defaultValues: {
-            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }],
+            Descripcion: '',
+            ClaveProdServ: '',
+            ClaveUnidad: '',
+            Cantidad: 1,
+            ValorUnitario: 0,
+            Descuento: 0,
+            Subtotal: 0,
+            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
         },
     });
 
@@ -53,45 +67,53 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
         name: 'impuestos',
     });
 
+    const calcularSubtotal = () => {
+        const cantidad = getValues('Cantidad');
+        const precioUnitario = getValues('ValorUnitario');
+        const descuento = getValues('Descuento');
+        const subtotal = (cantidad * precioUnitario) - descuento;
+        setValue("Subtotal", subtotal);
+        return subtotal;
+    };
+
+    useEffect(() => {
+        calcularSubtotal();
+    }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento')]);
+
     const handleAgregarConcepto = () => {
-        // Obtener los valores actuales del formulario
-        const objetoImpuesto = getValues("impuestos")[0].ObjetoImpuesto;
+        const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
         console.log(getValues("impuestos"))
-        
-        // Verificar si ObjetoImpuesto tiene un valor válido
         if (!objetoImpuesto || objetoImpuesto === "Default") {
             console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
             return;
         }
-    
-        // Proceder a crear el concepto si la validación es exitosa
+        console.log("Datos",getValues)
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
+        console.log("nuevo",nuevoConcepto)
         if (nuevoConcepto !== "Error") {
             setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
-    
-            // Resetear todos los campos del formulario
+
             reset({
                 Descripcion: '',
                 ClaveProdServ: '',
                 ClaveUnidad: '',
-                Cantidad: 0,
+                Cantidad: 1,
                 ValorUnitario: 0,
                 Descuento: 0,
                 Subtotal: 0,
                 impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
             });
-    
-            // Reiniciar los estados locales
-            setCantidad(0);
-            setPrecioUnitario(0);
-            setDescuento(0);
-            setSubtotal(0);
-            setValue("impuestos", []);
+
+            // Resetear los estados locales
+            setSelectedClaveProdServ(null);
+            setSelectedClaveUnidad(null);
+
+            console.log("Concepto agregado:", nuevoConcepto);
         } else {
             console.log("Ocurrió un error en el concepto");
         }
     };
-    
+
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
@@ -101,7 +123,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     {...register("Descripcion")}
                     fullWidth
                     multiline
-                    rows={4} // Puedes ajustar el número de líneas visibles
+                    rows={4}
                 />
             </Box>
             <Box display="grid"
@@ -113,77 +135,76 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                 }}
                 gap={3}
                 mt={4}>
-                
-                {/* Autocomplete para ClaveProdServ */}
+
                 <Autocomplete
-                    options={claveOptions}
-                    getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`} // Combina Clave y Descripcion
-                    onInputChange={(event, newInputValue) => setQuery(newInputValue)}
-                    filterOptions={(options, { inputValue }) => 
-                        options.filter((option) => 
-                            option.Clave.toLowerCase().includes(inputValue.toLowerCase()) || 
-                            option.Descripcion.toLowerCase().includes(inputValue.toLowerCase())
-                        )
-                    }
-                    renderOption={(props, option) => (
-                        <Box component="li" {...props}>
-                            {option.Clave} - {option.Descripcion}
-                        </Box>
-                    )}
-                    renderInput={(params) => (
-                        <TextField 
-                            {...params} 
-                            label="Clave ProdServ" 
-                            fullWidth 
-                        />
-                    )}
+                    options={claveProdServOptions}
+                    getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`}
+                    value={selectedClaveProdServ}
+                    onInputChange={(event, newInputValue) => setQueryProdServ(newInputValue)}
                     onChange={(event, value) => {
+                        setSelectedClaveProdServ(value);
                         if (value) {
-                            setValue('ClaveProdServ', value.Clave); // Ajusta según la estructura de datos
+                            setValue('ClaveProdServ', value.Clave);
+                        } else {
+                            setValue('ClaveProdServ', '');
                         }
                     }}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Clave ProdServ"
+                            fullWidth
+                        />
+                    )}
                 />
-                
-                <Select
-                    register={register}
-                    nombre="ClaveUnidad"
-                    url="http://31.220.31.152:8081/Catalogos/ClaveUnidad"
-                    clave="Clave"
-                    descripcion="Descripcion"
+
+                <Autocomplete
+                    options={claveUnidadOptions}
+                    getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`}
+                    value={selectedClaveUnidad}
+                    onInputChange={(event, newInputValue) => setQueryUnidad(newInputValue)}
+                    onChange={(event, value) => {
+                        setSelectedClaveUnidad(value);
+                        if (value) {
+                            setValue('ClaveUnidad', value.Clave);
+                        } else {
+                            setValue('ClaveUnidad', '');
+                        }
+                    }}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Clave Unidad"
+                            fullWidth
+                        />
+                    )}
                 />
 
                 <TextField
                     label="Cantidad"
                     type="number"
                     {...register("Cantidad")}
-                    value={cantidad}
                     fullWidth
-                    onChange={(e) => setCantidad(Number(e.target.value))}
                 />
 
                 <TextField
                     label="Precio Unitario"
                     type="number"
                     {...register("ValorUnitario")}
-                    value={precioUnitario}
                     fullWidth
-                    onChange={(e) => setPrecioUnitario(Number(e.target.value))}
                 />
 
                 <TextField
                     label="Descuento"
                     type="number"
                     {...register("Descuento")}
-                    value={descuento}
                     fullWidth
-                    onChange={(e) => setDescuento(Number(e.target.value))}
                 />
 
                 <TextField
                     label="Subtotal"
                     type="number"
                     {...register("Subtotal")}
-                    value={subTotal}
                     fullWidth
                     InputProps={{
                         readOnly: true,
@@ -196,8 +217,8 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                 gridTemplateColumns={{
                     xs: '1fr',
                     sm: '1fr 1fr',
-                    md: '1fr 1fr 1fr 1fr 1fr 1fr', // Ajustado para permitir más columnas
-                    lg: 'repeat(7, 1fr)', // 7 columnas de igual tamaño
+                    md: '1fr 1fr 1fr 1fr 1fr 1fr',
+                    lg: 'repeat(7, 1fr)',
                 }}
                 gap={3}
                 mt={4}
@@ -209,8 +230,8 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                                 register={register}
                                 setValue={setValue}
                                 index={index}
-                                baseImpuesto={subTotal || 0}
-                                remove={remove} // Pasa la función remove al componente Impuesto
+                                baseImpuesto={getValues("Subtotal") || 0}
+                                remove={remove}
                                 isLast={index === fields.length - 1}
                             />
                         </Box>
@@ -219,8 +240,8 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
 
                 <Box
                     gridColumn={{
-                        xs: '1 / -1',  // Ocupa toda la fila en pantallas pequeñas
-                        lg: '7 / 8',   // Coloca el botón en la última columna en pantallas grandes
+                        xs: '1 / -1',
+                        lg: '7 / 8',
                     }}
                     display="flex"
                     justifyContent="start"
@@ -250,7 +271,7 @@ export default function Conceptos({ register, watch, setValue, getValues, setCon
                     sx={{
                         backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
                     }}
-
+                    type="button"
                     onClick={handleAgregarConcepto}
                 >
                     Agregar Concepto

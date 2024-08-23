@@ -12,8 +12,16 @@ export default function validarConcepto(concepto) {
 
     const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal'];
     for (let field of requiredFields) {
-        if (!concepto[field]) {
-            return { isValid: false, message: `${field} is required and cannot be empty` };
+        if (field === 'Descuento') {
+            // Permitir que Descuento sea 0
+            if (concepto[field] === undefined || concepto[field] === null || concepto[field] === '') {
+                return { isValid: false, message: `${field} is required and cannot be empty or undefined` };
+            }
+        } else {
+            // Para otros campos, aplicar la validación general
+            if (!concepto[field]) {
+                return { isValid: false, message: `${field} is required and cannot be empty` };
+            }
         }
     }
 

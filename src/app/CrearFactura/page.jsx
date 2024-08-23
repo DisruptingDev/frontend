@@ -1,5 +1,5 @@
 "use client"
-import {useState} from "react"
+import { useState } from "react"
 import { useForm } from 'react-hook-form';
 
 import Header from "@/components/Header/Header.jsx"
@@ -34,36 +34,37 @@ function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
 
 export default function CrearFactura() {
     const { register, watch, handleSubmit, setValue, getValues } = useForm();
-    const [lugarExpedicion, setLugarExpedicion] = useState("")
-    const [conceptos, setConceptos] = useState([])
+    const [lugarExpedicion, setLugarExpedicion] = useState("");
+    const [conceptos, setConceptos] = useState([]);
     
     const onSubmit = (data) => {
-        console.log(data)
-        console.log(conceptos)
+        console.log(data);
+        console.log(conceptos);
+        // Aquí puedes llamar a EnviarAEmisionTimbrado con los datos necesarios
+        EnviarAEmisionTimbrado(data.emisor, data.receptor, conceptos);
     }
     
     return (
         <div>
             <Header /> 
             <form onSubmit={handleSubmit(onSubmit)} method="post">
-                <Emisor register = {register} setLugarExpedicion = {setLugarExpedicion} /> 
-                <Receptor register = {register} lugarExpedicion = {lugarExpedicion}/> 
+                <Emisor register={register} setLugarExpedicion={setLugarExpedicion} /> 
+                <Receptor register={register} lugarExpedicion={lugarExpedicion}/> 
                 <Conceptos 
-                    register = {register} 
-                    watch = {watch} 
-                    setValue = {setValue} 
-                    getValues = {getValues} 
-                    setConceptos = {setConceptos}
+                    register={register} 
+                    watch={watch} 
+                    setValue={setValue} 
+                    getValues={getValues} 
+                    setConceptos={setConceptos}
                 /> 
-                <Resumen conceptos = {conceptos} subTotal = {watch("Subtotal")}> 
-                    <div className = "flex justify-end w-full space-x-2 mt-10">
-                        <button className="btn btn-secondary bg-red-700">Cancelar</button>
-                        <button className="btn btn-accent">Vista previa</button>
-                        <button type = "submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
+                <Resumen conceptos={conceptos} subTotal={watch("Subtotal")}> 
+                    <div className="flex justify-end w-full space-x-2 mt-10">
+                        <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
+                        <button className="btn btn-accent" type="button">Vista previa</button>
+                        <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
                     </div>
                 </Resumen> 
             </form>
         </div>
     );
 }
-

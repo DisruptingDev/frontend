@@ -30,7 +30,7 @@ export default function Resumen( {children, conceptos, subTotal, Descuento} ) {
                         <tr key={index}>
                           <th>{index + 1}</th>
                           <td>{concepto.ClaveProdServ}</td>
-                          <td>{concepto.ClaveUnidad.Clave}</td>
+                          <td>{concepto.ClaveUnidad}</td>
                           <td>{concepto.Descripcion}</td>
                           <td>{concepto.Cantidad}</td>
                           <td>{concepto.ValorUnitario}</td>
