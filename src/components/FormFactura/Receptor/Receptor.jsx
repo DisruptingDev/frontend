@@ -10,7 +10,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
     const [rfc, setRFC] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
-    const [openModal, setOpenModal] = useState(false); // Estado para controlar la visibilidad de la ventana modal
+    const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
         if (receptor !== undefined) {
@@ -121,19 +121,19 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                             backgroundColor: 'rgba(19, 47, 67, 1)',
                         }
                     }}
-                    onClick={handleOpenModal} // Abre la ventana modal al hacer clic
+                    onClick={handleOpenModal}
                 >
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
             </Box>
-            {hiddeInfoGlobal && ( // Solo muestra si "hiddeInfoGlobal" es true
+            {hiddeInfoGlobal && (
                 <Box
                     display="grid"
                     gridTemplateColumns={{
-                        xs: '1fr',                 // Una columna en pantallas extra pequeñas
-                        sm: '1fr 1fr',             // Dos columnas en pantallas pequeñas
-                        md: '1fr 0.5fr 0.5fr',     // Tres columnas en pantallas medianas
-                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 1.6fr'  // Configuración completa en pantallas grandes
+                        xs: '1fr',
+                        sm: '1fr 1fr',
+                        md: '1fr 0.5fr 0.5fr',
+                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 1.6fr'
                     }}
                     gap={3}
                     mt={4}
@@ -175,48 +175,29 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                         onChange={(e) => {
                             const value = e.target.value;
                             if (value.length > 4) {
-                                e.target.value = value.slice(0, 4);  // Limita a 4 caracteres
+                                e.target.value = value.slice(0, 4);
                             }
                         }}
                     />
-
                 </Box>
             )}
             <Dialog
                 open={openModal}
                 onClose={handleCloseModal}
                 fullWidth
-                maxWidth={false} // Desactiva el tamaño máximo predeterminado
+                maxWidth={false}
                 PaperProps={{
                     sx: {
-                        width: '65%', // Ancho del 90%
-                        margin: 'auto', // Centrar horizontalmente
+                        width: '80%',
+                        margin: 'auto',
                     }
                 }}
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente register={register} />
+                    <AltaCliente register={register} onClose={handleCloseModal} />
                 </DialogContent>
-                <DialogActions>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        sx={{ width: '150px' }}
-                        onClick={handleCloseModal}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        sx={{ width: '250px' }} // Ajusta el ancho del botón
-                        onClick={handleCloseModal}>
-                        Guardar
-                    </Button>
-
-                </DialogActions>
             </Dialog>
-
         </Box>
     );
 }

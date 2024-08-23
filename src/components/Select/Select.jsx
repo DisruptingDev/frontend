@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FormControl, InputLabel, MenuItem, Select as MuiSelect } from '@mui/material';
+import { FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText } from '@mui/material';
 
 async function obtener_opciones(url) {
     try {
@@ -20,7 +20,6 @@ async function obtener_opciones(url) {
             return data;
         }
 
-        // Si la respuesta no es un array, devuelve un array vacío
         console.error('Expected an array but received:', data);
         return [];
     } catch (error) {
@@ -33,7 +32,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, url, className, clave = "Clave", descripcion = "Descripcion", onChange, sx, variant = "outlined" }) {
+export default function Select({ register = () => (1), nombre, url, className, clave = "Clave", descripcion = "Descripcion", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(""); // Controla el valor seleccionado
 
@@ -48,11 +47,11 @@ export default function Select({ register = () => (1), nombre, url, className, c
     };
 
     return (
-        <FormControl fullWidth className={className} sx={sx}  variant={variant}>
+        <FormControl fullWidth className={className} sx={sx} variant={variant} error={error}>
             <InputLabel>{nombre}</InputLabel>
             <MuiSelect
                 {...register(nombre)}
-                value={selectedValue}
+                value={selectedValue || ""}
                 onChange={handleChange}
                 label={nombre}
                 variant={variant} // Aplica la variante seleccionada
@@ -60,7 +59,7 @@ export default function Select({ register = () => (1), nombre, url, className, c
                 <MenuItem value="" disabled>Selecciona una opción</MenuItem>
                 {Array.isArray(opciones) && opciones.length > 0 ? (
                     opciones.map((opcion, index) => (
-                        <MenuItem key={index} value={JSON.stringify(opcion)}>
+                        <MenuItem key={index} value={opcion[clave]}>
                             {opcion[clave]} - {opcion[descripcion]}
                         </MenuItem>
                     ))
@@ -68,6 +67,7 @@ export default function Select({ register = () => (1), nombre, url, className, c
                     <MenuItem value="" disabled>No hay opciones disponibles</MenuItem>
                 )}
             </MuiSelect>
+            {error && <FormHelperText>{helperText}</FormHelperText>}
         </FormControl>
     );
 }
