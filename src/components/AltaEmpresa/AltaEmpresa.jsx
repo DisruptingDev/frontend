@@ -1,281 +1,224 @@
-"use client";
-
 import React, { useState } from 'react';
-import { Button, TextField, Box, Typography, Snackbar, Alert } from '@mui/material';
-import FileInput from "@/components/FileInput/FileInput";
+import { useForm } from 'react-hook-form';
+import { Button, TextField, Box } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
-import padding from 'tailwindcss-logical/plugins/padding';
 
-export default function AltaEmpresa({ register, setLugarExpedicion }) {
-    const [csdFile, setCsdFile] = useState(null);
-    const [keyFile, setKeyFile] = useState(null);
-    const [password, setPassword] = useState('');
+export default function AltaCliente({ onClose }) {
+    const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+    const [loading, setLoading] = useState(false);
 
-    const [openSnackbar, setOpenSnackbar] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // Puede ser 'success', 'error', 'warning', 'info'
+    const onSubmit = async (data) => {
+        // Construir el objeto de datos como lo espera la API
+        const empresaData = {
+            Emisor: {
+                Rfc: data.Rfc,
+                Nombre: data.Nombre,
+                RegimenFiscal: data.RegimenFiscal,
+                LugarExpedicion: data.LugarExpedicion,
+                // Calle: data.Calle,
+                // NumeroExterior: parseInt(data.NumeroExterior, 10), // Convertir a número si es necesario
+                // NumeroInterior: parseInt(data.NumeroInterior, 10), // Convertir a número si es necesario
+                // Colonia: data.Colonia,
+                // Municipio: data.Municipio,
+                // Estado: data.Estado,
+            }
+        };
+        console.log(empresaData);
 
-    const handleFileChange = (event, setFile) => {
-        const file = event.target.files[0];
-        if (file) {
-            setFile(file);
-            console.log(`Archivo seleccionado: ${file.name}`);
-        } else {
-            console.error("No se seleccionó ningún archivo");
-        }
-    };
-
-    const handleSubmit = async () => {
-        if (!csdFile || !keyFile || !password) {
-            console.log("csd + key + pass", csdFile, keyFile, password);
-            console.error("Todos los campos son obligatorios");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('CSD', csdFile);
-        formData.append('KEY', keyFile);
-        formData.append('PASS', password);
+        setLoading(true);
 
         try {
-            const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
+            const response = await fetch('http://31.220.31.152:8086/RegistroEmisor', {
                 method: 'POST',
-                body: formData,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 
+                },
+                body: JSON.stringify(empresaData), // Enviar el objeto correctamente estructurado
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error al subir los archivos: ${response.statusText} - ${errorText}`);
+                const errorData = await response.json();
+                console.error('Error al guardar:', errorData);
+                alert('Error al guardar los datos');
+            } else {
+                const result = await response.json();
+                console.log('Guardado exitoso:', result);
+                if (onClose) onClose(); 
             }
-
-            const data = await response.json();
-            console.log(data);
-
-            if (data.status === 'success') {
-                setSnackbarMessage(data.data);
-                setSnackbarSeverity('success');
-                setOpenSnackbar(true);
-            }
-
         } catch (error) {
-            console.error('Error al subir los archivos:', error);
-            setSnackbarMessage('Error al subir los archivos');
-            setSnackbarSeverity('error');
-            setOpenSnackbar(true);
+            console.error('Error en la solicitud:', error);
+            alert('Ocurrió un error al guardar los datos');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-            <Typography variant="h6" mb={2}>Alta de Empresa</Typography>
-
-            <Box
-                display="grid"
-                gridTemplateColumns="3fr 3fr 1fr 1fr 1fr"
-                gap={3}
-                alignItems="end"
-            >
-                <FileInput
-                    name="Certificado CSD"
-                    onChange={(event) => handleFileChange(event, setCsdFile)}
-                />
-
-                <FileInput
-                    name="Archivo Key"
-                    onChange={(event) => handleFileChange(event, setKeyFile)}
-                />
-
-                <TextField
-                    label="Contraseña"
-                    type="password"
-                    fullWidth
-                    margin="normal"
-                    required
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ alignSelf: 'end', height: '58%', fontSize: '12px', backgroundColor: '#04b2ca',
-                        '&:hover': {
-                            backgroundColor: '#038a9e',
-                        }, }}
-                    onClick={handleSubmit}
+        <Box bgcolor="white">
+            <form>
+                <Box
+                    my={2}
+                    display="grid"
+                    gridTemplateColumns="1.5fr 1fr 1.5fr 1fr "
+                    gap={3}
+                    alignItems="start"
                 >
-                    Cargar certificado
-                </Button>
-            </Box>
-
-            {/* Snackbar para mostrar la notificación */}
-            <Snackbar
-                open={openSnackbar}
-                autoHideDuration={3000} // 6 segundos
-                onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-
-            >
-                <Alert
-                    onClose={() => setOpenSnackbar(false)}
-                    severity={snackbarSeverity}
-                    variant="filled"
-                    sx={{
-                        width: '100%',
-                        fontSize: '1rem',
-                    }}
-                    style={
-                        { padding: '12px' }
-                    }
-                // sx={{ 
-                //     width: '100%', 
-                //     fontSize: '1.2rem', // Texto más grande
-                //     backgroundColor: snackbarSeverity === 'success' ? '#4caf50' : '#f44336', // Colores sólidos
-                //     color: 'white', // Color del texto
-                // }}
-                // style={{
-                //     padding: '12px', // Aumentar el padding
-                // }}
+                    <TextField
+                        label="Emisor"
+                        fullWidth
+                        placeholder=""
+                        margin="normal"
+                        required
+                        error={!!errors.Nombre}
+                        helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
+                        {...register("Nombre", { required: true })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <TextField
+                        label="R.F.C."
+                        fullWidth
+                        placeholder="EDS156842456"
+                        margin="normal"
+                        required
+                        error={!!errors.Rfc}
+                        helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
+                        {...register("Rfc", { required: true })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <Select
+                        nombre="RegimenFiscal"
+                        url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                        clave="Descripcion"
+                        descripcion="Descripcion"
+                        fullWidth
+                        required
+                        error={!!errors.RegimenFiscal}
+                        helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
+                        {...register("RegimenFiscal", { required: true })}
+                        onChange={(e) => setValue('RegimenFiscal', e.target.value)}
+                        sx={{ alignSelf: 'start' }}
+                    />
+                    <TextField
+                        label="Lugar Expedición"
+                        fullWidth
+                        placeholder="Ej: CDMX"
+                        margin="normal"
+                        required
+                        error={!!errors.LugarExpedicion}
+                        helperText={errors.LugarExpedicion ? "Este campo es obligatorio" : ""}
+                        {...register("LugarExpedicion", { required: true })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                </Box>
+                <Box
+                    my={2}
+                    display="grid"
+                    gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.7fr "
+                    gap={3}
+                    alignItems="end"
                 >
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-
-
-            <Box
-                my={4}
-                display="grid"
-                gridTemplateColumns="1fr 1fr 1fr 1fr 2fr"
-                gap={3}
-                alignItems="end"
-            >
-                <Select
-                    register={register}
-                    nombre="Emisor"
-                    url="http://31.220.31.152:8081/Catalogos/Emisor"
-                    clave="Nombre"
-                    descripcion="NombreCompleto"
-                    fullWidth
-                    sx={{ alignSelf: 'end' }}
-                />
-
-                <TextField
-                    label="R.F.C."
-                    fullWidth
-                    placeholder="EDS156842456"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <Select
-                    register={register}
-                    nombre="RegimenFiscal"
-                    url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                    clave="Descripcion"
-                    descripcion="Descripcion"
-                    fullWidth
-                    required
-                    sx={{ alignSelf: 'end' }}
-                />
-
-                <TextField
-                    label="Lugar Expedición"
-                    fullWidth
-                    placeholder="Ej: CDMX"
-                    margin="normal"
-                    required
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-            </Box>
-
-            <Box
-                my={4}
-                display="grid"
-                gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.7fr 1fr"
-                gap={3}
-                alignItems="end"
-            >
-                <TextField
-                    label="Calle"
-                    fullWidth
-                    placeholder="Ej: Av. Siempre Viva"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <TextField
-                    label="Número exterior"
-                    fullWidth
-                    placeholder="Ej: 742"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <TextField
-                    label="Número interior"
-                    fullWidth
-                    placeholder="Ej: 5"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <TextField
-                    label="Colonia"
-                    fullWidth
-                    placeholder="Ej: Centro"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <TextField
-                    label="Municipio"
-                    fullWidth
-                    placeholder="Ej: Benito Juárez"
-                    margin="normal"
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
-                />
-
-                <Select
-                    register={register}
-                    nombre="Estado"
-                    url="http://31.220.31.152:8081/Catalogos/Estados"
-                    clave="Nombre"
-                    descripcion="Nombre"
-                    fullWidth
-                    sx={{ alignSelf: 'end' }}
-                />
-            </Box>
-            <Box
-                my={4}
-                mx={20}
-                display="flex"
-                justifyContent="flex-end"
-                gap={3}
-            >
-                <Button
-                    variant="contained"
-                    color="error"
-                    sx={{ width: '150px', backgroundColor: '#da0404' }}
+                    <TextField
+                        label="Calle"
+                        fullWidth
+                        placeholder="Ej: Av. Siempre Viva"
+                        margin="normal"
+                        error={!!errors.Calle}
+                        helperText={errors.Calle ? "Este campo es obligatorio" : ""}
+                        {...register("Calle", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <TextField
+                        label="Número exterior"
+                        fullWidth
+                        placeholder="Ej: 742"
+                        margin="normal"
+                        error={!!errors.NumeroExterior}
+                        helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
+                        {...register("NumeroExterior", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <TextField
+                        label="Número interior"
+                        fullWidth
+                        placeholder="Ej: 5"
+                        margin="normal"
+                        error={!!errors.NumeroInterior}
+                        helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
+                        {...register("NumeroInterior", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <TextField
+                        label="Colonia"
+                        fullWidth
+                        placeholder="Ej: Centro"
+                        margin="normal"
+                        error={!!errors.Colonia}
+                        helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
+                        {...register("Colonia", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    <TextField
+                        label="Municipio"
+                        fullWidth
+                        placeholder="Ej: Benito Juárez"
+                        margin="normal"
+                        error={!!errors.Municipio}
+                        helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
+                        {...register("Municipio", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                     <TextField
+                        label="Estado"
+                        fullWidth
+                        placeholder="Ej: Benito Juárez"
+                        margin="normal"
+                        error={!!errors.Estado}
+                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
+                        {...register("Estado", { required: false })}
+                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                    />
+                    {/* <Select
+                        nombre="Estado"
+                        url="http://31.220.31.152:8081/Catalogos/Estados"
+                        clave="Nombre"
+                        descripcion="Nombre"
+                        fullWidth
+                        error={!!errors.Estado}
+                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
+                        {...register("Estado", { required: true })}
+                        onChange={(e) => setValue('Estado', e.target.value)}
+                    /> */}
+                </Box>
+                <Box
+                    my={4}
+                    mx={20}
+                    display="flex"
+                    justifyContent="flex-end"
+                    gap={3}
                 >
-                    Cancelar
-                </Button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        sx={{ width: '150px' }}
+                        type="button"
+                        onClick={onClose}
+                    >
+                        Cancelar
+                    </Button>
 
-                <Button
-                    variant="contained"
-                    color="primary"
-                    sx={{
-                        width: '250px',
-                        backgroundColor: '#04b2ca',
-                        '&:hover': {
-                            backgroundColor: '#038a9e',
-                        },
-                    }}
-                >
-                    Guardar empresa
-                </Button>
-            </Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{ width: '250px' }}
+                        type="button"
+                        onClick={handleSubmit(onSubmit)} // Llama manualmente a handleSubmit
+                        disabled={loading}
+                    >
+                        {loading ? "Guardando..." : "Guardar Cliente"}
+                    </Button>
+                </Box>
+            </form>
         </Box>
     );
 }

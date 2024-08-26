@@ -124,7 +124,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.Calle}
                         helperText={errors.Calle ? "Este campo es obligatorio" : ""}
-                        {...register("Calle", { required: true })}
+                        {...register("Calle", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <TextField
@@ -134,7 +134,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.NumeroExterior}
                         helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroExterior", { required: true })}
+                        {...register("NumeroExterior", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <TextField
@@ -144,7 +144,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.NumeroInterior}
                         helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroInterior", { required: true })}
+                        {...register("NumeroInterior", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <TextField
@@ -154,7 +154,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.Colonia}
                         helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
-                        {...register("Colonia", { required: true })}
+                        {...register("Colonia", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <TextField
@@ -164,7 +164,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.Municipio}
                         helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
-                        {...register("Municipio", { required: true })}
+                        {...register("Municipio", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                      <TextField
@@ -174,7 +174,7 @@ export default function AltaCliente({ onClose }) {
                         margin="normal"
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Estado", { required: true })}
+                        {...register("Estado", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     {/* <Select
