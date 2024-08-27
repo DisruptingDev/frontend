@@ -1,29 +1,39 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
-export default function AltaCliente({ onClose }) {
-    const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
+    const { register, handleSubmit, setValue, formState: { errors }, watch } = useForm();
     const [loading, setLoading] = useState(false);
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+
+    useEffect(() => {
+        setValue("Nombre", issuerName);
+        setValue("Rfc", issuerRfc);
+    }, [issuerName, issuerRfc, setValue]);
+
+    const validateAndSubmit = (data) => {
+        if (!issuerName || !issuerRfc) {
+            setSnackbarMessage('Se requiere subir el certificado CSD.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+            return;
+        }
+        handleSubmit(onSubmit)(data);
+    };
 
     const onSubmit = async (data) => {
-        // Construir el objeto de datos como lo espera la API
         const empresaData = {
             Emisor: {
                 Rfc: data.Rfc,
                 Nombre: data.Nombre,
                 RegimenFiscal: data.RegimenFiscal,
                 LugarExpedicion: data.LugarExpedicion,
-                // Calle: data.Calle,
-                // NumeroExterior: parseInt(data.NumeroExterior, 10), // Convertir a número si es necesario
-                // NumeroInterior: parseInt(data.NumeroInterior, 10), // Convertir a número si es necesario
-                // Colonia: data.Colonia,
-                // Municipio: data.Municipio,
-                // Estado: data.Estado,
             }
         };
-        console.log(empresaData);
 
         setLoading(true);
 
@@ -34,21 +44,24 @@ export default function AltaCliente({ onClose }) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 
                 },
-                body: JSON.stringify(empresaData), // Enviar el objeto correctamente estructurado
+                body: JSON.stringify(empresaData),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('Error al guardar:', errorData);
-                alert('Error al guardar los datos');
+                setSnackbarMessage('Error al guardar los datos.');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
             } else {
-                const result = await response.json();
-                console.log('Guardado exitoso:', result);
-                if (onClose) onClose(); 
+                setSnackbarMessage('Empresa guardada correctamente.');
+                setSnackbarSeverity('success');
+                setOpenSnackbar(true);
+                if (onClose) onClose();
             }
         } catch (error) {
-            console.error('Error en la solicitud:', error);
-            alert('Ocurrió un error al guardar los datos');
+            setSnackbarMessage('Ocurrió un error al guardar los datos.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
         } finally {
             setLoading(false);
         }
@@ -60,30 +73,34 @@ export default function AltaCliente({ onClose }) {
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="1.5fr 1fr 1.5fr 1fr "
+                    gridTemplateColumns="1.5fr 1fr 1.5fr 1fr"
                     gap={3}
                     alignItems="start"
                 >
                     <TextField
                         label="Emisor"
                         fullWidth
-                        placeholder=""
                         margin="normal"
                         required
+                        disabled
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
+                        onChange={(e) => setValue("Nombre", e.target.value)}
+                        value={watch("Nombre", issuerName)}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <TextField
                         label="R.F.C."
                         fullWidth
-                        placeholder="EDS156842456"
                         margin="normal"
                         required
+                        disabled
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
                         {...register("Rfc", { required: true })}
+                        onChange={(e) => setValue("Rfc", e.target.value)}
+                        value={watch("Rfc", issuerRfc)}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                     <Select
@@ -178,21 +195,10 @@ export default function AltaCliente({ onClose }) {
                         {...register("Estado", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
-                    {/* <Select
-                        nombre="Estado"
-                        url="http://31.220.31.152:8081/Catalogos/Estados"
-                        clave="Nombre"
-                        descripcion="Nombre"
-                        fullWidth
-                        error={!!errors.Estado}
-                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Estado", { required: true })}
-                        onChange={(e) => setValue('Estado', e.target.value)}
-                    /> */}
                 </Box>
                 <Box
                     my={4}
-                    mx={20}
+                    mx={0}
                     display="flex"
                     justifyContent="flex-end"
                     gap={3}
@@ -200,7 +206,7 @@ export default function AltaCliente({ onClose }) {
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px' }}
+                        sx={{ width: '150px', backgroundColor: '#da0404'}}
                         type="button"
                         onClick={onClose}
                     >
@@ -210,15 +216,35 @@ export default function AltaCliente({ onClose }) {
                     <Button
                         variant="contained"
                         color="primary"
-                        sx={{ width: '250px' }}
+                        sx={{ width: '250px', backgroundColor:'#04b2ca' }}
                         type="button"
-                        onClick={handleSubmit(onSubmit)} // Llama manualmente a handleSubmit
+                        onClick={validateAndSubmit}
                         disabled={loading}
                     >
-                        {loading ? "Guardando..." : "Guardar Cliente"}
+                        {loading ? "Guardando..." : "Guardar Empresa"}
                     </Button>
                 </Box>
             </form>
+
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={3000}
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setOpenSnackbar(false)}
+                    severity={snackbarSeverity}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        fontSize: '1rem',
+                    }}
+                    style={{ padding: '12px' }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

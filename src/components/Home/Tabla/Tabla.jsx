@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -18,14 +18,54 @@ function createData(id, folio, emisor, receptor, estatus, subtotal, traslados, r
   return { id, folio, emisor, receptor, estatus, subtotal, traslados, retenciones, total, usuario };
 }
 
-const rows = [
-  createData('01', '100', 'Empresa demo S.A de C.V.', 'Empresa Demo2 S.A de C.V.', 'Timbrada', '135,159.25', '18,536.25', '0', '204,169.50', 'Mauricio'),
-  // Añade más filas según sea necesario...
-];
-
 export default function DataTable() {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+  
+
+        const token = localStorage.getItem('authToken'); // Recupera el token del localStorage
+
+        const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
+          headers: {
+            'Authorization': `Bearer ${token}`, // Incluye el token en los headers
+            'Content-Type': 'application/json',
+          }
+        });
+        const data = await response.json();
+        console.log('Data received from API:', data); // Verifica qué se está recibiendo
+
+        if (Array.isArray(data)) {
+          const transformedData = data.map((item) =>
+            createData(
+              item.ID,
+              item.Folio,
+              item.Emisor.Nombre || 'Desconocido',
+              item.Receptor.Nombre || 'Desconocido',
+              'Timbrada',
+              item.SubTotal,
+              item.Conceptos?.TotalImpuestosTrasladados || 0,
+              item.Conceptos?.TotalImpuestosRetenidos || 0,
+              item.Total,
+              'Usuario'
+            )
+          );
+          setRows(transformedData);
+        } else {
+          console.error('Expected an array but received:', typeof data);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);

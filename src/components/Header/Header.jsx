@@ -10,7 +10,7 @@ const inter = Inter({
 export default function Header ( {name} ) {
     return (
         <header className="flex m-2 bg-primary-dark-total items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-md">
-          <Link href="/" className="flex items-center justify-center mr-6 pr-8" prefetch={false}>
+          <Link href="/Home" className="flex items-center justify-center mr-6 pr-8" prefetch={false}>
             <Image src="/images/logo.png" alt="Descripción de la imagen" width={203} height={64} />
           </Link>
           <nav className="flex gap-4 sm:gap-6 text-sm font-medium">

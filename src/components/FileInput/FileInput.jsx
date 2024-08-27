@@ -1,17 +1,24 @@
-export default function FileInput({ name, onChange }) {
+import React from 'react';
+import { Typography } from '@mui/material';
+
+export default function FileInput({ name, onChange, error }) {
     return (
         <div>
-            <label className="form-control w-full h-full">
+            <label className={`form-control w-full h-full ${error ? 'border-red-500' : ''}`}>
                 <div className="label">
-                    <span className="label-text text-black">{name}</span>
+                    <span className={`label-text ${error ? 'text-red-500' : 'text-black'}`}>{name}</span>
                 </div>
                 <input 
                     type="file" 
-                    className="file-input file-input-bordered w-full" 
-                    
+                    className={`file-input file-input-bordered w-full ${error ? 'border-red-500' : ''}`}
                     onChange={onChange} // Llama al onChange que se pasa desde el componente padre
                 />
             </label>
+            {error && (
+                <Typography color="error" variant="body2">
+                    Este campo es obligatorio.
+                </Typography>
+            )}
         </div>
     );
 }
