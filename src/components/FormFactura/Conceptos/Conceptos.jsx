@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, Typography, Button, Autocomplete } from '@mui/material';
@@ -16,38 +16,6 @@ export default function Conceptos({ setConceptos }) {
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
 
     const token = localStorage.getItem('authToken');
-
-    useEffect(() => {
-        if (queryProdServ.length > 2) {
-            fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
-                .then(response => response.json())
-                .then(data => setClaveProdServOptions(Array.isArray(data) ? data : []))
-                .catch(error => console.error('Error al buscar ClaveProdServ:', error));
-        } else {
-            setClaveProdServOptions([]);
-        }
-    }, [queryProdServ]);
-
-    useEffect(() => {
-        if (queryUnidad.length > 1) {
-            fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            })
-                .then(response => response.json())
-                .then(data => setClaveUnidadOptions(Array.isArray(data) ? data : []))
-                .catch(error => console.error('Error al buscar ClaveUnidad:', error));
-        } else {
-            setClaveUnidadOptions([]);
-        }
-    }, [queryUnidad]);
 
     const { control, register, reset, getValues, setValue, watch } = useForm({
         defaultValues: {
@@ -67,23 +35,53 @@ export default function Conceptos({ setConceptos }) {
         name: 'impuestos',
     });
 
-    const calcularSubtotal = () => {
-        const cantidad = getValues('Cantidad');
-        const precioUnitario = getValues('ValorUnitario');
-        const descuento = getValues('Descuento');
-        const subtotal = (cantidad * precioUnitario) - descuento;
-
-        setValue("Subtotal", subtotal);
-        return subtotal;
-    };
-
-    // Actualizar el subtotal y baseImpuesto en cada cambio de Cantidad, ValorUnitario o Descuento
+    // Función para obtener datos de ClaveProdServ y ClaveUnidad
     useEffect(() => {
+        if (queryProdServ.length > 2) {
+            fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(response => response.json())
+                .then(data => setClaveProdServOptions(Array.isArray(data) ? data : []))
+                .catch(error => console.error('Error al buscar ClaveProdServ:', error));
+        } else {
+            setClaveProdServOptions([]);
+        }
+
+        if (queryUnidad.length > 1) {
+            fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            })
+                .then(response => response.json())
+                .then(data => setClaveUnidadOptions(Array.isArray(data) ? data : []))
+                .catch(error => console.error('Error al buscar ClaveUnidad:', error));
+        } else {
+            setClaveUnidadOptions([]);
+        }
+    }, [queryProdServ, queryUnidad, token]);
+
+    // Calcular y actualizar Subtotal y BaseImpuesto
+    useEffect(() => {
+        const calcularSubtotal = () => {
+            const cantidad = getValues('Cantidad');
+            const precioUnitario = getValues('ValorUnitario');
+            const descuento = getValues('Descuento');
+            const subtotal = (cantidad * precioUnitario) - descuento;
+            setValue("Subtotal", subtotal);
+            return subtotal;
+        };
+
         const subtotal = calcularSubtotal();
-        fields.forEach((field, index) => {
+        setValue("Subtotal", subtotal);
+
+        // Actualizar BaseImpuesto para cada impuesto
+        fields.forEach((_, index) => {
             setValue(`impuestos.${index}.BaseImpuesto`, subtotal);
         });
-    }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento'), fields, setValue]);
+
+    }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento'), fields, setValue, getValues]);
 
     const handleAgregarConcepto = () => {
         const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
@@ -95,23 +93,9 @@ export default function Conceptos({ setConceptos }) {
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
         if (nuevoConcepto !== "Error") {
             setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
-
-            reset({
-                Descripcion: '',
-                ClaveProdServ: '',
-                ClaveUnidad: '',
-                Cantidad: 1,
-                ValorUnitario: 0,
-                Descuento: 0,
-                Subtotal: 0,
-                impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
-            });
-
-            // Resetear los estados locales
+            reset();
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
-
-            console.log("Concepto agregado:", nuevoConcepto);
         } else {
             console.log("Ocurrió un error en el concepto");
         }
@@ -146,18 +130,10 @@ export default function Conceptos({ setConceptos }) {
                     onInputChange={(event, newInputValue) => setQueryProdServ(newInputValue)}
                     onChange={(event, value) => {
                         setSelectedClaveProdServ(value);
-                        if (value) {
-                            setValue('ClaveProdServ', value.Clave);
-                        } else {
-                            setValue('ClaveProdServ', '');
-                        }
+                        setValue('ClaveProdServ', value?.Clave || '');
                     }}
                     renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Clave ProdServ"
-                            fullWidth
-                        />
+                        <TextField {...params} label="Clave ProdServ" fullWidth />
                     )}
                 />
 
@@ -168,98 +144,40 @@ export default function Conceptos({ setConceptos }) {
                     onInputChange={(event, newInputValue) => setQueryUnidad(newInputValue)}
                     onChange={(event, value) => {
                         setSelectedClaveUnidad(value);
-                        if (value) {
-                            setValue('ClaveUnidad', value.Clave);
-                        } else {
-                            setValue('ClaveUnidad', '');
-                        }
+                        setValue('ClaveUnidad', value?.Clave || '');
                     }}
                     renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Clave Unidad"
-                            fullWidth
-                        />
+                        <TextField {...params} label="Clave Unidad" fullWidth />
                     )}
                 />
 
-                <TextField
-                    label="Cantidad"
-                    type="number"
-                    {...register("Cantidad")}
-                    fullWidth
-                />
-
-                <TextField
-                    label="Precio Unitario"
-                    type="number"
-                    {...register("ValorUnitario")}
-                    fullWidth
-                />
-
-                <TextField
-                    label="Descuento"
-                    type="number"
-                    {...register("Descuento")}
-                    fullWidth
-                />
-
-                <TextField
-                    label="Subtotal"
-                    type="number"
-                    {...register("Subtotal")}
-                    fullWidth
-                    InputProps={{
-                        readOnly: true,
-                    }}
-                    disabled
-                />
+                <TextField label="Cantidad" type="number" {...register("Cantidad")} fullWidth />
+                <TextField label="Precio Unitario" type="number" {...register("ValorUnitario")} fullWidth />
+                <TextField label="Descuento" type="number" {...register("Descuento")} fullWidth />
+                <TextField label="Subtotal" type="number" {...register("Subtotal")} fullWidth InputProps={{ readOnly: true }} disabled />
             </Box>
-            <Box
-                display="grid"
-                gridTemplateColumns={{
-                    xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: '1fr 1fr 1fr 1fr 1fr 1fr',
-                    lg: 'repeat(7, 1fr)',
-                }}
-                gap={3}
-                mt={4}
-            >
+
+            <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
                 {fields.map((field, index) => (
-                    <React.Fragment key={field.id || index}>
-                        <Box gridColumn="span 6">
-                            <Impuesto
-                                register={register}
-                                setValue={setValue}
-                                index={index}
-                                baseImpuesto={getValues(`impuestos.${index}.BaseImpuesto`) || 0} // Usar el Subtotal actualizado
-                                remove={remove}
-                                isLast={index === fields.length - 1}
-                            />
-                        </Box>
-                    </React.Fragment>
+                    <Box key={field.id || index} gridColumn="span 6">
+                        <Impuesto
+                            register={register}
+                            setValue={setValue}
+                            getValues={getValues}
+                            index={index}
+                            baseImpuesto={watch('Subtotal') || 0}
+                            remove={remove}
+                            fieldsLength={fields.length}
+                        />
+                    </Box>
                 ))}
 
-                <Box
-                    gridColumn={{
-                        xs: '1 / -1',
-                        lg: '7 / 8',
-                    }}
-                    display="flex"
-                    justifyContent="start"
-                    alignItems="center"
-                >
+                <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="center">
                     <Button
                         variant="contained"
                         sx={{
                             backgroundColor: 'rgba(29, 57, 77, 1)',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            '&:hover': {
-                                backgroundColor: 'rgba(19, 47, 67, 1)',
-                            }
+                            '&:hover': { backgroundColor: 'rgba(19, 47, 67, 1)' }
                         }}
                         onClick={() => append({ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
                     >
@@ -267,14 +185,12 @@ export default function Conceptos({ setConceptos }) {
                     </Button>
                 </Box>
             </Box>
-            <Box gridColumn="span 6" textAlign="end" mt={3}>
+
+            <Box textAlign="end" mt={3}>
                 <Button
                     startIcon={<AddCircleIcon />}
                     variant="contained"
-                    sx={{
-                        backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
-                    }}
-                    type="button"
+                    sx={{ backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))' }}
                     onClick={handleAgregarConcepto}
                 >
                     Agregar Concepto

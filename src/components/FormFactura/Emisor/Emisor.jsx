@@ -7,25 +7,23 @@ export default function Emisor({ register, setLugarExpedicion }) {
     const [emisor, setEmisor] = useState();
     const [rfc, setRFC] = useState();
     const [minDate, setMinDate] = useState('');
-    const [maxDate, setMaxDate] = useState('');
+const [maxDate, setMaxDate] = useState('');
 
-    useEffect(() => {
-        const today = new Date();
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(today.getDate() - 3);
+useEffect(() => {
+    const today = new Date();
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(today.getDate() - 3);
 
-        const formatDateTime = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        };
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
-        setMinDate(formatDateTime(threeDaysAgo));
-        setMaxDate(formatDateTime(today));
-    }, []);
+    setMinDate(formatDate(threeDaysAgo));
+    setMaxDate(formatDate(today));
+}, []);
 
     useEffect(() => {
         if (emisor !== undefined) {
@@ -93,21 +91,21 @@ export default function Emisor({ register, setLugarExpedicion }) {
 
                 <TextField
                     label="Fecha"
-                    type="datetime-local"
+                    type="date"
                     {...register("Fecha")}
                     fullWidth
                     InputLabelProps={{
                         shrink: true,
                     }}
                     InputProps={{
-                        inputProps: { min: minDate, max: maxDate, step: 1 },
+                        inputProps: { min: minDate, max: maxDate },
                     }}
                 />
 
                 <Select
                     register={register}
                     nombre="Divisa"
-                    url="http://31.220.31.152:8081/Catalogos/Divisa"
+                    url=""
                     clave="Codigo"
                     descripcion="Descripcion"
                 />

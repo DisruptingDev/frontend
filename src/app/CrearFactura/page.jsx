@@ -41,7 +41,7 @@ export default function CrearFactura() {
         console.log(data);
         console.log(conceptos);
         // Aquí puedes llamar a EnviarAEmisionTimbrado con los datos necesarios
-        EnviarAEmisionTimbrado(data.emisor, data.receptor, conceptos);
+        // EnviarAEmisionTimbrado(data.emisor, data.receptor, conceptos);
     }
     
     return (

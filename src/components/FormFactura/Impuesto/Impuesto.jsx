@@ -1,13 +1,25 @@
 "use client";
-
 import { useEffect, useState } from 'react';
-import { Box, TextField, Button, Divider } from '@mui/material';
+import { Box, TextField, Button } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 
-export default function Impuesto({ register, setValue, index, baseImpuesto, remove, fieldsLength, isLast }) {
+export default function Impuesto({ register, setValue, getValues, index, baseImpuesto, remove, fieldsLength }) {
+    const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState(0);
     const [monto, setMonto] = useState(0);
+
+    useEffect(() => {
+        if (impuesto) {
+            try {
+                const data = JSON.parse(impuesto);
+                setTasa(data["Tasa"]);
+                setValue(`impuestos[${index}].Tasa`, data["Tasa"]);
+            } catch (e) {
+                console.error("El valor de impuesto no es un JSON válido:", impuesto);
+            }
+        }
+    }, [impuesto, index, setValue]);
 
     useEffect(() => {
         const resultado = tasa * baseImpuesto;
@@ -15,23 +27,12 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
         setValue(`impuestos[${index}].Monto`, resultado);
     }, [tasa, baseImpuesto, setValue, index]);
 
-    useEffect(() => {
-        setValue(`impuestos[${index}].BaseImpuesto`, baseImpuesto);
-    }, [baseImpuesto, setValue, index]);
-
-    const ChangeSelectImpuesto = (e) => {
-        const data = JSON.parse(e.target.value);
-        setTasa(data.Tasa);
-        setValue(`impuestos[${index}].Tasa`, data.Tasa);
-    };
-
     return (
         <Box>
             <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
                 <Box flex={1}>
                     <Select
                         register={register}
-                        // nombre={`Objeto Impuesto`}
                         clave='Clave'
                         nombre={`impuestos[${index}].ObjetoImpuesto`}
                         descripcion='Descripcion'
@@ -42,12 +43,11 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                 <Box flex={1}>
                     <Select
                         register={register}
-                        // nombre={`Impuesto`}
                         clave='Clave'
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
-                        onChange={ChangeSelectImpuesto}
+                        onChange={(e) => setImpuesto(e.target.value)}
                     />
                 </Box>
 
@@ -58,9 +58,7 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                         {...register(`impuestos[${index}].Tasa`)}
                         value={tasa}
                         fullWidth
-                        InputProps={{
-                            readOnly: true,
-                        }}
+                        InputProps={{ readOnly: true }}
                     />
                 </Box>
 
@@ -71,9 +69,7 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                         {...register(`impuestos[${index}].BaseImpuesto`)}
                         value={baseImpuesto}
                         fullWidth
-                        InputProps={{
-                            readOnly: true,
-                        }}
+                        InputProps={{ readOnly: true }}
                     />
                 </Box>
 
@@ -84,27 +80,19 @@ export default function Impuesto({ register, setValue, index, baseImpuesto, remo
                         {...register(`impuestos[${index}].Monto`)}
                         value={monto}
                         fullWidth
-                        InputProps={{
-                            readOnly: true,
-                        }}
+                        InputProps={{ readOnly: true }}
                     />
                 </Box>
 
-                {/* Mostrar el botón "Eliminar" solo si hay más de un impuesto */}
                 {fieldsLength > 1 && (
                     <Box>
                         <Button
                             variant="contained"
                             sx={{
                                 backgroundColor: 'rgba(29, 57, 77, 1)',
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(19, 47, 67, 1)',
-                                }
+                                '&:hover': { backgroundColor: 'rgba(19, 47, 67, 1)' }
                             }}
-                            onClick={() => remove(index)} // Llama a la función remove con el índice correcto
+                            onClick={() => remove(index)}
                         >
                             <RemoveCircleIcon sx={{ fontSize: '30px' }} />
                         </Button>
