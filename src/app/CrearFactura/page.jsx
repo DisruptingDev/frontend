@@ -45,8 +45,14 @@ export default function CrearFactura() {
         console.log("Datos de conceptos:", conceptos);
         
         // Aquí se llama a la función para construir la factura
-        // EnviarAEmisionTimbrado(data, data, conceptos);
+        EnviarAEmisionTimbrado(data, data, conceptos);
     };
+
+    // Función para manejar la vista previa, también realiza la validación
+    const handlePreview = handleSubmit((data) => {
+        console.log("Vista previa de los datos:", data);
+        // Lógica para mostrar la vista previa
+    });
 
     return (
         <div>
@@ -70,7 +76,8 @@ export default function CrearFactura() {
                 <Resumen conceptos={conceptos} subTotal={watch("Subtotal")}> 
                     <div className="flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
-                        {/* Maneja la validación y vista previa sin un botón adicional */}
+
+                        <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
                     </div>
                 </Resumen> 

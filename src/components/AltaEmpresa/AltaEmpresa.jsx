@@ -98,7 +98,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         disabled
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
-                        {...register("Rfc", { required: true })}
+                       register={register} // Pasa register como prop
                         onChange={(e) => setValue("Rfc", e.target.value)}
                         value={watch("Rfc", issuerRfc)}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
@@ -112,7 +112,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         required
                         error={!!errors.RegimenFiscal}
                         helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                        {...register("RegimenFiscal", { required: true })}
+                        register={register} // Pasa register como prop
                         onChange={(e) => setValue('RegimenFiscal', e.target.value)}
                         sx={{ alignSelf: 'start' }}
                     />

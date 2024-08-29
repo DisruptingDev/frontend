@@ -5,17 +5,16 @@ import { FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText 
 
 async function obtener_opciones(url) {
     try {
-        const token = localStorage.getItem('authToken'); // Recupera el token del localStorage
+        const token = localStorage.getItem('authToken');
 
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${token}`, // Incluye el token en los headers
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             }
         });
         const data = await response.json();
 
-        // Verifica si los datos recibidos son un array
         if (Array.isArray(data)) {
             return data;
         }
@@ -32,9 +31,8 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, url, className, clave = "", id= clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
+export default function Select({ register, nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
     const [opciones, setOpciones] = useState([]);
-    const [selectedValue, setSelectedValue] = useState(""); // Controla el valor seleccionado
 
     useEffect(() => {
         obtener_opciones(url).then(data => setOpciones(data));
@@ -42,10 +40,10 @@ export default function Select({ register = () => (1), nombre, url, className, c
 
     const handleChange = (e) => {
         const value = e.target.value;
-        setSelectedValue(value);
+        
+        const selectedOption = opciones.find(opcion => opcion[id] === value);
+        
         if (onChange) {
-            // Propaga los datos completos del emisor seleccionado al padre
-            const selectedOption = opciones.find(opcion => opcion[id] === value);
             onChange({ target: { value: JSON.stringify(selectedOption) } });
         }
     };
@@ -54,11 +52,13 @@ export default function Select({ register = () => (1), nombre, url, className, c
         <FormControl fullWidth className={className} sx={sx} variant={variant} error={error}>
             <InputLabel>{nombre}</InputLabel>
             <MuiSelect
-                {...register(nombre)}
-                value={selectedValue || ""}
-                onChange={handleChange}
+                {...register(nombre, {
+                    required: "Este campo es obligatorio", 
+                    onChange: handleChange 
+                })}
+                defaultValue="" 
                 label={nombre}
-                variant={variant} // Aplica la variante seleccionada
+                variant={variant}
             >
                 <MenuItem value="" disabled>Selecciona una opción</MenuItem>
                 {Array.isArray(opciones) && opciones.length > 0 ? (

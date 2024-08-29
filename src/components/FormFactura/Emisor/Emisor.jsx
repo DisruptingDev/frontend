@@ -44,6 +44,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
         try {
             const data = JSON.parse(e.target.value); // Asegura que es un JSON válido
             setEmisor(data);
+            console.log(data);
         } catch (e) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
@@ -64,13 +65,15 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     }
                 }}
             >
-                <Select
-                    register={register}
+               <Select
+                    register={register} // Pasa register como prop
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
                     clave="Rfc"
                     descripcion="Nombre"
                     onChange={handleEmisorChange}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                 />
 
                 <TextField

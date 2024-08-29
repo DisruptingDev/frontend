@@ -85,19 +85,17 @@ export default function AltaCliente({ onClose }) {
                         {...register("Rfc", { required: true })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
-                    <Select
-                        nombre="RegimenFiscal"
-                        url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                        clave="Descripcion"
-                        descripcion="Descripcion"
-                        fullWidth
-                        required
-                        error={!!errors.RegimenFiscal}
-                        helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                        {...register("RegimenFiscal", { required: true })}
-                        onChange={(e) => setValue('RegimenFiscal', e.target.value)}
-                        sx={{ alignSelf: 'start' }}
-                    />
+                   <Select
+                    register={register} // Pasa register como prop
+                    nombre="RegimenFiscal"
+                    url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                    clave="Descripcion"
+                    descripcion="Descripcion"
+                    onChange={(e) => setValue('RegimenFiscal', e.target.value)}
+                    error={!!errors.RegimenFiscal}
+                    helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
+                    sx={{ alignSelf: 'start' }}
+                />
                     <TextField
                         label="Domicilio Fiscal"
                         fullWidth
