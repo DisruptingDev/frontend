@@ -112,14 +112,14 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                 />
 
                 <Select
-                    register={register}
+                    // register={register}
                     nombre="Serie"
                     url="http://31.220.31.152:8081/Catalogos/Serie"
                     clave="Codigo"
                     descripcion="Descripcion"
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
-                    {...register("Serie", { required: "La serie es requerida." })}
+                   
                 />
 
                 <TextField
@@ -138,19 +138,19 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                 />
 
                 <Select
-                    register={register}
+                    // register={register}
                     nombre="Divisa"
                     url=""
                     clave="Codigo"
                     descripcion="Descripcion"
                     error={!!errors.Divisa}
                     helperText={errors.Divisa ? "Este campo es obligatorio" : ""}
-                    {...register("Divisa", { required: "La divisa es requerida." })}
+                  
                 />
 
                 <TextField
                     label="Tipo de cambio"
-                    {...register("TipoCambio", { required: "El tipo de cambio es requerido." })}
+                    // {...register("TipoCambio", { required: "El tipo de cambio es requerido." })}
                     fullWidth
                     disabled
                     error={!!errors.TipoCambio}

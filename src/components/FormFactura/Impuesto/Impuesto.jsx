@@ -4,7 +4,19 @@ import { Box, TextField, Button } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 
-export default function Impuesto({ register, setValue, getValues, index, baseImpuesto, remove, fieldsLength }) {
+export default function Impuesto({
+    register,
+    setValue,
+    getValues,
+    index,
+    baseImpuesto,
+    remove,
+    fieldsLength,
+    objetoImpuestoError,
+    impuestoError,
+    setObjetoImpuestoError, // Recibir la función para manejar el error
+    setImpuestoError // Recibir la función para manejar el error
+}) {
     const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState(0);
     const [monto, setMonto] = useState(0);
@@ -27,16 +39,40 @@ export default function Impuesto({ register, setValue, getValues, index, baseImp
         setValue(`impuestos[${index}].Monto`, resultado);
     }, [tasa, baseImpuesto, setValue, index]);
 
+    // Validaciones cuando el campo es cambiado
+    const handleObjetoImpuestoChange = (e) => {
+        const value = e.target.value;
+        setValue(`impuestos[${index}].ObjetoImpuesto`, value);
+        if (!value) {
+            setObjetoImpuestoError(true);
+        } else {
+            setObjetoImpuestoError(false);
+        }
+    };
+
+    const handleImpuestoChange = (e) => {
+        const value = e.target.value;
+        setImpuesto(value);
+        if (!value) {
+            setImpuestoError(true);
+        } else {
+            setImpuestoError(false);
+        }
+    };
+
     return (
         <Box>
-            <Box display="flex" flexDirection="row" alignItems="center" gap={2}>
-                <Box flex={1}>
+            <Box display="flex" flexDirection="row" alignItems="start" gap={2}>
+                <Box flex={2}>
                     <Select
                         register={register}
                         clave='Clave'
                         nombre={`impuestos[${index}].ObjetoImpuesto`}
                         descripcion='Descripcion'
                         url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
+                        onChange={handleObjetoImpuestoChange}
+                        error={objetoImpuestoError}
+                        helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
                     />
                 </Box>
 
@@ -48,7 +84,9 @@ export default function Impuesto({ register, setValue, getValues, index, baseImp
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
-                        onChange={(e) => setImpuesto(e.target.value)}
+                        onChange={handleImpuestoChange}
+                        error={impuestoError}
+                        helperText={impuestoError ? "El impuesto es requerido." : ""}
                     />
                 </Box>
 

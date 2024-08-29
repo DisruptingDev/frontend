@@ -31,7 +31,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register, nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
+export default function Select({ register = () => (1), nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
     const [opciones, setOpciones] = useState([]);
 
     useEffect(() => {

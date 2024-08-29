@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Typography, Button, Autocomplete } from '@mui/material';
+import { Box, TextField, Typography, Button, Autocomplete, Snackbar, Alert } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
 import { useForm, useFieldArray } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
@@ -16,6 +16,21 @@ export default function Conceptos({ setConceptos }) {
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
 
     const token = localStorage.getItem('authToken');
+
+    // Estados de error para los campos de Conceptos
+    const [descripcionError, setDescripcionError] = useState(false);
+    const [claveProdServError, setClaveProdServError] = useState(false);
+    const [claveUnidadError, setClaveUnidadError] = useState(false);
+    const [cantidadError, setCantidadError] = useState(false);
+    const [valorUnitarioError, setValorUnitarioError] = useState(false);
+
+    // Estados de error para los campos de Impuesto
+    const [objetoImpuestoError, setObjetoImpuestoError] = useState(false);
+    const [impuestoError, setImpuestoError] = useState(false);
+
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
     const { control, register, reset, getValues, setValue, watch } = useForm({
         defaultValues: {
@@ -35,7 +50,6 @@ export default function Conceptos({ setConceptos }) {
         name: 'impuestos',
     });
 
-    // Función para obtener datos de ClaveProdServ y ClaveUnidad
     useEffect(() => {
         if (queryProdServ.length > 2) {
             fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
@@ -62,7 +76,6 @@ export default function Conceptos({ setConceptos }) {
         }
     }, [queryProdServ, queryUnidad, token]);
 
-    // Calcular y actualizar Subtotal y BaseImpuesto
     useEffect(() => {
         const calcularSubtotal = () => {
             const cantidad = getValues('Cantidad');
@@ -76,7 +89,6 @@ export default function Conceptos({ setConceptos }) {
         const subtotal = calcularSubtotal();
         setValue("Subtotal", subtotal);
 
-        // Actualizar BaseImpuesto para cada impuesto
         fields.forEach((_, index) => {
             setValue(`impuestos.${index}.BaseImpuesto`, subtotal);
         });
@@ -84,6 +96,64 @@ export default function Conceptos({ setConceptos }) {
     }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento'), fields, setValue, getValues]);
 
     const handleAgregarConcepto = () => {
+        // Resetear errores antes de validar
+        setDescripcionError(false);
+        setClaveProdServError(false);
+        setClaveUnidadError(false);
+        setCantidadError(false);
+        setValorUnitarioError(false);
+        setObjetoImpuestoError(false);
+        setImpuestoError(false);
+
+        let hasError = false;
+
+        // Validaciones para los campos de Conceptos
+        if (!getValues('Descripcion')) {
+            setDescripcionError(true);
+            hasError = true;
+        }
+
+        if (!getValues('ClaveProdServ')) {
+            setClaveProdServError(true);
+            hasError = true;
+        }
+
+        if (!getValues('ClaveUnidad')) {
+            setClaveUnidadError(true);
+            hasError = true;
+        }
+
+        if (!getValues('Cantidad') || getValues('Cantidad') <= 0) {
+            setCantidadError(true);
+            hasError = true;
+        }
+
+        if (!getValues('ValorUnitario') || getValues('ValorUnitario') < 0) {
+            setValorUnitarioError(true);
+            hasError = true;
+        }
+
+        // Validaciones para los campos de Impuesto
+        const impuestos = getValues("impuestos");
+        impuestos.forEach((impuesto, index) => {
+            if (!impuesto.ObjetoImpuesto) {
+                setObjetoImpuestoError(true);
+                hasError = true;
+            }
+
+            if (!impuesto.Impuesto) {
+                setImpuestoError(true);
+                hasError = true;
+            }
+        });
+
+        // if (hasError) {
+        //     setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
+        //     setSnackbarSeverity('warning');
+        //     setOpenSnackbar(true);
+        //     return;
+        // }
+
         const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
         if (!objetoImpuesto || objetoImpuesto === "Default") {
             console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
@@ -108,6 +178,8 @@ export default function Conceptos({ setConceptos }) {
                 <TextField
                     label="Descripción"
                     {...register("Descripcion")}
+                    error={descripcionError}
+                    helperText={descripcionError && "La descripción es obligatoria."}
                     fullWidth
                     multiline
                     rows={4}
@@ -131,9 +203,16 @@ export default function Conceptos({ setConceptos }) {
                     onChange={(event, value) => {
                         setSelectedClaveProdServ(value);
                         setValue('ClaveProdServ', value?.Clave || '');
+                        setClaveProdServError(false);
                     }}
                     renderInput={(params) => (
-                        <TextField {...params} label="Clave ProdServ" fullWidth />
+                        <TextField 
+                            {...params} 
+                            label="Clave ProdServ" 
+                            fullWidth 
+                            error={claveProdServError}
+                            helperText={claveProdServError && "La clave ProdServ es obligatoria."}
+                        />
                     )}
                 />
 
@@ -145,30 +224,76 @@ export default function Conceptos({ setConceptos }) {
                     onChange={(event, value) => {
                         setSelectedClaveUnidad(value);
                         setValue('ClaveUnidad', value?.Clave || '');
+                        setClaveUnidadError(false);
                     }}
                     renderInput={(params) => (
-                        <TextField {...params} label="Clave Unidad" fullWidth />
+                        <TextField 
+                            {...params} 
+                            label="Clave Unidad" 
+                            fullWidth 
+                            error={claveUnidadError}
+                            helperText={claveUnidadError && "La clave Unidad es obligatoria."}
+                        />
                     )}
                 />
 
-                <TextField label="Cantidad" type="number" {...register("Cantidad")} fullWidth />
-                <TextField label="Precio Unitario" type="number" {...register("ValorUnitario")} fullWidth />
-                <TextField label="Descuento" type="number" {...register("Descuento")} fullWidth />
-                <TextField label="Subtotal" type="number" {...register("Subtotal")} fullWidth InputProps={{ readOnly: true }} disabled />
+                <TextField 
+                    label="Cantidad" 
+                    type="number" 
+                    value={getValues("Cantidad")}
+                    onChange={(e) => {
+                        setValue('Cantidad', e.target.value);
+                        setCantidadError(false);
+                    }}
+                    error={cantidadError}
+                    helperText={cantidadError && "La cantidad es obligatoria y debe ser mayor que 0."}
+                    fullWidth 
+                />
+                <TextField 
+                    label="Precio Unitario" 
+                    type="number" 
+                    value={getValues("ValorUnitario")}
+                    onChange={(e) => {
+                        setValue('ValorUnitario', e.target.value);
+                        setValorUnitarioError(false);
+                    }}
+                    error={valorUnitarioError}
+                    helperText={valorUnitarioError && "El precio unitario es obligatorio y no puede ser negativo."}
+                    fullWidth 
+                />
+                <TextField 
+                    label="Descuento" 
+                    type="number" 
+                    value={getValues("Descuento")}
+                    onChange={(e) => setValue('Descuento', e.target.value)}
+                    fullWidth 
+                />
+                <TextField 
+                    label="Subtotal" 
+                    type="number" 
+                    value={getValues("Subtotal")} 
+                    fullWidth 
+                    InputProps={{ readOnly: true }} 
+                    disabled 
+                />
             </Box>
 
             <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
                 {fields.map((field, index) => (
                     <Box key={field.id || index} gridColumn="span 6">
-                        <Impuesto
-                            register={register}
-                            setValue={setValue}
-                            getValues={getValues}
-                            index={index}
-                            baseImpuesto={watch('Subtotal') || 0}
-                            remove={remove}
-                            fieldsLength={fields.length}
-                        />
+                       <Impuesto
+    register={register}
+    setValue={setValue}
+    getValues={getValues}
+    index={index}
+    baseImpuesto={watch('Subtotal') || 0}
+    remove={remove}
+    fieldsLength={fields.length}
+    objetoImpuestoError={objetoImpuestoError} 
+    impuestoError={impuestoError}
+    setObjetoImpuestoError={setObjetoImpuestoError} // Pasar la función para manejar el error
+    setImpuestoError={setImpuestoError} // Pasar la función para manejar el error
+/>
                     </Box>
                 ))}
 
@@ -196,6 +321,26 @@ export default function Conceptos({ setConceptos }) {
                     Agregar Concepto
                 </Button>
             </Box>
+
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={3000}
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setOpenSnackbar(false)}
+                    severity={snackbarSeverity}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        fontSize: '1rem',
+                    }}
+                    style={{ padding: '12px' }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
