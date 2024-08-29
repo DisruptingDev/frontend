@@ -65,8 +65,9 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     }
                 }}
             >
-               <Select
-                    register={register} // Pasa register como prop
+                <Select
+                    register={register}
+                    trigger={trigger} // Pasa trigger como prop
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
                     clave="Rfc"
@@ -109,18 +110,22 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     helperText={errors.LugarExpedicion && errors.LugarExpedicion.message}
                     disabled
                 />
+
                 <Select
                     register={register}
                     nombre="Serie"
                     url="http://31.220.31.152:8081/Catalogos/Serie"
                     clave="Codigo"
                     descripcion="Descripcion"
+                    error={!!errors.Serie}
+                    helperText={errors.Serie ? "Este campo es obligatorio" : ""}
+                    {...register("Serie", { required: "La serie es requerida." })}
                 />
 
                 <TextField
                     label="Fecha"
                     type="date"
-                    {...register("Fecha")}
+                    {...register("Fecha", { required: "La fecha es requerida." })}
                     fullWidth
                     InputLabelProps={{
                         shrink: true,
@@ -128,6 +133,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     InputProps={{
                         inputProps: { min: minDate, max: maxDate },
                     }}
+                    error={!!errors.Fecha}
+                    helperText={errors.Fecha && errors.Fecha.message}
                 />
 
                 <Select
@@ -136,13 +143,25 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     url=""
                     clave="Codigo"
                     descripcion="Descripcion"
+                    error={!!errors.Divisa}
+                    helperText={errors.Divisa ? "Este campo es obligatorio" : ""}
+                    {...register("Divisa", { required: "La divisa es requerida." })}
                 />
 
                 <TextField
                     label="Tipo de cambio"
-                    {...register("TipoCambio")}
+                    {...register("TipoCambio", { required: "El tipo de cambio es requerido." })}
                     fullWidth
                     disabled
+                    error={!!errors.TipoCambio}
+                    helperText={errors.TipoCambio && errors.TipoCambio.message}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
+                    }}
                 />
             </Box>
         </Box>
