@@ -5,7 +5,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue}) {
     const [receptor, setReceptor] = useState();
     const [rfc, setRFC] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
@@ -17,15 +17,23 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
             let data = JSON.parse(receptor);
             if (data["Rfc"] !== "XAXX010101000") {
                 setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
+                setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
                 setHiddeInfoGlobal(false);
             } else {
                 setDomicilioFiscal(lugarExpedicion);
                 setHiddeInfoGlobal(true);
             }
             setRFC(data["Rfc"]);
+            setValue("RFCReceptor", data["Rfc"]);
+            console.log("RFCReceptor", data["Rfc"]);
+             // Dispara la validación de estos campos
+             trigger("RFCReceptor");
+             trigger("DomicilioFiscalReceptor");
+ 
         }
-    }, [receptor, lugarExpedicion]);
+    }, [receptor, lugarExpedicion,trigger,setValue]);
 
+   
     const handleOpenModal = () => {
         setOpenModal(true);
     };
@@ -55,27 +63,41 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     clave="Rfc"
                     descripcion="Nombre"
                     onChange={(e) => setReceptor(e.target.value)}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                 />
 
                 <TextField
                     label="RFC"
-                    {...register("RFCReceptor")}
+                    {...register("RFCReceptor", { required: "Este campo es obligatorio." })}
                     value={rfc || ""}
                     fullWidth
-                    InputProps={{
-                        readOnly: true,
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
                     }}
+                    error={!!errors.RFCReceptor} // Muestra error si hay errores en RFCEmisor
+                    helperText={errors.RFCReceptor && errors.RFCReceptor.message}
                     disabled
                 />
 
                 <TextField
                     label="Domicilio Fiscal"
-                    {...register("DomicilioFiscalReceptor")}
+                    {...register("DomicilioFiscalReceptor", { required: "Este campo es obligatorio." })}
                     value={domicilioFiscal}
                     fullWidth
-                    InputProps={{
-                        readOnly: true,
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
                     }}
+                    error={!!errors.DomicilioFiscalReceptor} // Muestra error si hay errores en RFCEmisor
+                    helperText={errors.DomicilioFiscalReceptor && errors.DomicilioFiscalReceptor.message}
                     disabled
                 />
 
@@ -85,6 +107,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
                     clave="Clave"
                     descripcion="Descripcion"
+                    error={!!errors.RegimenFiscal}
+                    helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
                 />
 
                 <Select
@@ -93,6 +117,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     url="http://31.220.31.152:8081/Catalogos/MetodoPago"
                     clave="Clave"
                     descripcion="Descripcion"
+                    error={!!errors.MetodoPago}
+                    helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
                 />
 
                 <Select
@@ -101,6 +127,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     url="http://31.220.31.152:8081/Catalogos/FormaPago"
                     clave="Clave"
                     descripcion="Descripcion"
+                    error={!!errors.FormaPago}
+                    helperText={errors.FormaPago ? "Este campo es obligatorio" : ""}
                 />
 
                 <Select
@@ -109,6 +137,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
                     url="http://31.220.31.152:8081/Catalogos/UsoCFDI"
                     clave="Clave"
                     descripcion="Descripcion"
+                    error={!!errors.UsoCFDI}
+                    helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
                 />
 
                 <Button

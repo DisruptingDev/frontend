@@ -65,7 +65,8 @@ export default function CrearFactura() {
                     trigger={trigger} 
                     errors={errors} 
                 /> 
-                <Receptor register={register} lugarExpedicion={lugarExpedicion} errors={errors} /> 
+                <Receptor register={register} lugarExpedicion={lugarExpedicion} errors={errors}  setValue={setValue} 
+                    trigger={trigger}  /> 
                 <Conceptos 
                     register={register} 
                     watch={watch} 
