@@ -44,6 +44,7 @@ export default function Impuesto({ register, setValue, getValues, index, baseImp
                     <Select
                         register={register}
                         clave='Clave'
+                        id='ID'
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
