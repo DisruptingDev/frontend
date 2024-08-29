@@ -68,6 +68,7 @@ export default function Impuesto({
                         register={register}
                         clave='Clave'
                         nombre={`impuestos[${index}].ObjetoImpuesto`}
+                        label='ObjetoImpuesto'
                         descripcion='Descripcion'
                         url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
                         onChange={handleObjetoImpuestoChange}
@@ -83,6 +84,7 @@ export default function Impuesto({
                         id='ID'
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
+                        label='Impuesto'
                         url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
                         onChange={handleImpuestoChange}
                         error={impuestoError}

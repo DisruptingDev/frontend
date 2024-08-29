@@ -31,7 +31,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
+export default function Select({ register = () => (1), nombre, label=nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
     const [opciones, setOpciones] = useState([]);
 
     useEffect(() => {
@@ -50,14 +50,14 @@ export default function Select({ register = () => (1), nombre, url, className, c
 
     return (
         <FormControl fullWidth className={className} sx={sx} variant={variant} error={error}>
-            <InputLabel>{nombre}</InputLabel>
+            <InputLabel>{label}</InputLabel>
             <MuiSelect
                 {...register(nombre, {
                     required: "Este campo es obligatorio", 
                     onChange: handleChange 
                 })}
                 defaultValue="" 
-                label={nombre}
+                label={label}
                 variant={variant}
             >
                 <MenuItem value="" disabled>Selecciona una opción</MenuItem>
