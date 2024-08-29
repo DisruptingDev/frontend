@@ -211,7 +211,7 @@ export default function Conceptos({ setConceptos }) {
                             label="Clave ProdServ"
                             fullWidth
                             error={claveProdServError}
-                            helperText={claveProdServError && "La clave ProdServ es obligatoria."}
+                            helperText={claveProdServError && "Campo obligatorio."}
                         />
                     )}
                 />
@@ -232,7 +232,7 @@ export default function Conceptos({ setConceptos }) {
                             label="Clave Unidad"
                             fullWidth
                             error={claveUnidadError}
-                            helperText={claveUnidadError && "La clave Unidad es obligatoria."}
+                            helperText={claveUnidadError && "Campo obligatorio."}
                         />
                     )}
                 />
@@ -246,7 +246,7 @@ export default function Conceptos({ setConceptos }) {
                         setCantidadError(false);
                     }}
                     error={cantidadError}
-                    helperText={cantidadError && "La cantidad es obligatoria y debe ser mayor que 0."}
+                    helperText={cantidadError && "Campo obligatorio."}
                     fullWidth
                 />
                 <TextField
@@ -258,7 +258,7 @@ export default function Conceptos({ setConceptos }) {
                         setValorUnitarioError(false);
                     }}
                     error={valorUnitarioError}
-                    helperText={valorUnitarioError && "El precio unitario es obligatorio y no puede ser negativo."}
+                    helperText={valorUnitarioError && "Campo obligatorio."}
                     fullWidth
                 />
                 <TextField

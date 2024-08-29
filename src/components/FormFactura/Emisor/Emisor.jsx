@@ -39,6 +39,10 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
             setLugarExpedicion(emisor.LugarExpedicion);
         }
     }, [emisor, setValue, setLugarExpedicion, trigger]);
+    useEffect(() => {
+        // Establece el valor por defecto para 'Divisa'
+        setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
+    }, [setValue]);
 
     const handleEmisorChange = (e) => {
         try {
@@ -70,7 +74,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     trigger={trigger} // Pasa trigger como prop
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
-                    clave="Rfc"
+                    id="ID"
+                    clave=""
                     descripcion="Nombre"
                     onChange={handleEmisorChange}
                     error={!!errors.Emisor}
@@ -112,10 +117,10 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                 />
 
                 <Select
-                    // register={register}
+                    register={register}
                     nombre="Serie"
                     url="http://31.220.31.152:8081/Catalogos/Serie"
-                    clave="Codigo"
+                    id="Clave"
                     descripcion="Descripcion"
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
@@ -137,7 +142,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     helperText={errors.Fecha && errors.Fecha.message}
                 />
 
-                <Select
+                {/* <Select
                     // register={register}
                     nombre="Divisa"
                     url=""
@@ -146,6 +151,22 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     error={!!errors.Divisa}
                     helperText={errors.Divisa ? "Este campo es obligatorio" : ""}
                   
+                /> */}
+                  <TextField
+                    label="Divisa"
+                    {...register("Divisa", { required: "Campo obligatorio" })}
+                    fullWidth
+                    defaultValue="MXN"
+                    disabled
+                    error={!!errors.Divisa}
+                    helperText={errors.Divisa && errors.Divisa.message}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
+                    }}
                 />
 
                 <TextField

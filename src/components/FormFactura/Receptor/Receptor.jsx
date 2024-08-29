@@ -60,7 +60,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     register={register}
                     nombre="Receptor"
                     url="http://31.220.31.152:8081/Catalogos/Receptor"
-                    clave="Rfc"
+                    id="ID"
                     descripcion="Nombre"
                     onChange={(e) => setReceptor(e.target.value)}
                     error={!!errors.Emisor}
