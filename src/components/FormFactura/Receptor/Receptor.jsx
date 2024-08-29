@@ -59,6 +59,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues }
 
                 <TextField
                     label="RFC"
+                    {...register("RFCReceptor")}
                     value={rfc || ""}
                     fullWidth
                     InputProps={{

@@ -3,40 +3,51 @@ import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
-export default function Emisor({ register, setLugarExpedicion }) {
-    const [emisor, setEmisor] = useState();
-    const [rfc, setRFC] = useState();
+export default function Emisor({ register, setLugarExpedicion, setValue, trigger, errors }) {
+    const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
-const [maxDate, setMaxDate] = useState('');
-
-useEffect(() => {
-    const today = new Date();
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(today.getDate() - 3);
-
-    const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    setMinDate(formatDate(threeDaysAgo));
-    setMaxDate(formatDate(today));
-}, []);
+    const [maxDate, setMaxDate] = useState('');
 
     useEffect(() => {
-        if (emisor !== undefined) {
-            try {
-                let data = JSON.parse(emisor);
-                setRFC(data["Rfc"]);
-                setLugarExpedicion(data["LugarExpedicion"]);
-                console.log(data);
-            } catch (e) {
-                console.error("El valor de emisor no es un JSON válido:", emisor);
-            }
+        const today = new Date();
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(today.getDate() - 3);
+
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        setMinDate(formatDate(threeDaysAgo));
+        setMaxDate(formatDate(today));
+    }, []);
+
+    // Cada vez que se selecciona un nuevo Emisor
+    useEffect(() => {
+        if (emisor && emisor.Rfc) {
+            // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
+            setValue("RFCEmisor", emisor.Rfc);
+            setValue("LugarExpedicion", emisor.LugarExpedicion);
+
+            // Dispara la validación de estos campos
+            trigger("RFCEmisor");
+            trigger("LugarExpedicion");
+
+            // También actualiza el lugar de expedición en el componente padre
+            setLugarExpedicion(emisor.LugarExpedicion);
         }
-    }, [emisor]);
+    }, [emisor, setValue, setLugarExpedicion, trigger]);
+
+    const handleEmisorChange = (e) => {
+        try {
+            const data = JSON.parse(e.target.value); // Asegura que es un JSON válido
+            setEmisor(data);
+        } catch (e) {
+            console.error("El valor de emisor no es un JSON válido:", e.target.value);
+        }
+    };
 
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
@@ -59,28 +70,42 @@ useEffect(() => {
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
                     clave="Rfc"
                     descripcion="Nombre"
-                    onChange={(e) => setEmisor(e.target.value)}
+                    onChange={handleEmisorChange}
                 />
 
                 <TextField
                     label="RFC"
-                    value={rfc || ""}
+                    {...register("RFCEmisor", { required: "El RFC del emisor es requerido." })}
                     fullWidth
-                    InputProps={{
-                        readOnly: true,
+                    value={emisor.Rfc || ""}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
                     }}
+                    error={!!errors.RFCEmisor} // Muestra error si hay errores en RFCEmisor
+                    helperText={errors.RFCEmisor && errors.RFCEmisor.message}
                     disabled
                 />
 
                 <TextField
                     label="Lugar Expedicion"
-                    {...register("LugarExpedicion")}
+                    {...register("LugarExpedicion", { required: "El lugar de expedición es requerido." })}
                     fullWidth
-                    value={emisor ? JSON.parse(emisor)["LugarExpedicion"] : ""}
-                    onChange={(e) => setLugarExpedicion(e.target.value)}
+                    value={emisor.LugarExpedicion || ""}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
+                    }}
+                    error={!!errors.LugarExpedicion} // Muestra error si hay errores en LugarExpedicion
+                    helperText={errors.LugarExpedicion && errors.LugarExpedicion.message}
                     disabled
                 />
-
                 <Select
                     register={register}
                     nombre="Serie"
@@ -114,7 +139,6 @@ useEffect(() => {
                     label="Tipo de cambio"
                     {...register("TipoCambio")}
                     fullWidth
-                    onChange={(e) => setLugarExpedicion(e.target.value)}
                     disabled
                 />
             </Box>
