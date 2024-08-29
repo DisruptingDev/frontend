@@ -64,7 +64,7 @@ export default function Select({ register = () => (1), nombre, label=nombre, url
                 {Array.isArray(opciones) && opciones.length > 0 ? (
                     opciones.map((opcion, index) => (
                         <MenuItem key={index} value={opcion[id]}>
-                            {opcion[id]} - {opcion[descripcion]}
+                            {opcion[clave]} - {opcion[descripcion]}
                         </MenuItem>
                     ))
                 ) : (

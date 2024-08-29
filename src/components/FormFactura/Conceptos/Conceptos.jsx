@@ -206,10 +206,10 @@ export default function Conceptos({ setConceptos }) {
                         setClaveProdServError(false);
                     }}
                     renderInput={(params) => (
-                        <TextField 
-                            {...params} 
-                            label="Clave ProdServ" 
-                            fullWidth 
+                        <TextField
+                            {...params}
+                            label="Clave ProdServ"
+                            fullWidth
                             error={claveProdServError}
                             helperText={claveProdServError && "La clave ProdServ es obligatoria."}
                         />
@@ -227,19 +227,19 @@ export default function Conceptos({ setConceptos }) {
                         setClaveUnidadError(false);
                     }}
                     renderInput={(params) => (
-                        <TextField 
-                            {...params} 
-                            label="Clave Unidad" 
-                            fullWidth 
+                        <TextField
+                            {...params}
+                            label="Clave Unidad"
+                            fullWidth
                             error={claveUnidadError}
                             helperText={claveUnidadError && "La clave Unidad es obligatoria."}
                         />
                     )}
                 />
 
-                <TextField 
-                    label="Cantidad" 
-                    type="number" 
+                <TextField
+                    label="Cantidad"
+                    type="number"
                     value={getValues("Cantidad")}
                     onChange={(e) => {
                         setValue('Cantidad', e.target.value);
@@ -247,11 +247,11 @@ export default function Conceptos({ setConceptos }) {
                     }}
                     error={cantidadError}
                     helperText={cantidadError && "La cantidad es obligatoria y debe ser mayor que 0."}
-                    fullWidth 
+                    fullWidth
                 />
-                <TextField 
-                    label="Precio Unitario" 
-                    type="number" 
+                <TextField
+                    label="Precio Unitario"
+                    type="number"
                     value={getValues("ValorUnitario")}
                     onChange={(e) => {
                         setValue('ValorUnitario', e.target.value);
@@ -259,41 +259,41 @@ export default function Conceptos({ setConceptos }) {
                     }}
                     error={valorUnitarioError}
                     helperText={valorUnitarioError && "El precio unitario es obligatorio y no puede ser negativo."}
-                    fullWidth 
+                    fullWidth
                 />
-                <TextField 
-                    label="Descuento" 
-                    type="number" 
+                <TextField
+                    label="Descuento"
+                    type="number"
                     value={getValues("Descuento")}
                     onChange={(e) => setValue('Descuento', e.target.value)}
-                    fullWidth 
+                    fullWidth
                 />
-                <TextField 
-                    label="Subtotal" 
-                    type="number" 
-                    value={getValues("Subtotal")} 
-                    fullWidth 
-                    InputProps={{ readOnly: true }} 
-                    disabled 
+                <TextField
+                    label="Subtotal"
+                    type="number"
+                    value={getValues("Subtotal")}
+                    fullWidth
+                    InputProps={{ readOnly: true }}
+                    disabled
                 />
             </Box>
 
             <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
                 {fields.map((field, index) => (
                     <Box key={field.id || index} gridColumn="span 6">
-                       <Impuesto
-    register={register}
-    setValue={setValue}
-    getValues={getValues}
-    index={index}
-    baseImpuesto={watch('Subtotal') || 0}
-    remove={remove}
-    fieldsLength={fields.length}
-    objetoImpuestoError={objetoImpuestoError} 
-    impuestoError={impuestoError}
-    setObjetoImpuestoError={setObjetoImpuestoError} // Pasar la función para manejar el error
-    setImpuestoError={setImpuestoError} // Pasar la función para manejar el error
-/>
+                        <Impuesto
+                            register={register}
+                            setValue={setValue}
+                            getValues={getValues}
+                            index={index}
+                            baseImpuesto={watch('Subtotal') || 0}
+                            remove={remove}
+                            fieldsLength={fields.length}
+                            objetoImpuestoError={objetoImpuestoError}
+                            impuestoError={impuestoError}
+                            setObjetoImpuestoError={setObjetoImpuestoError} // Pasar la función para manejar el error
+                            setImpuestoError={setImpuestoError} // Pasar la función para manejar el error
+                        />
                     </Box>
                 ))}
 

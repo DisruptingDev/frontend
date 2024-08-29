@@ -27,6 +27,10 @@ export default function Impuesto({
                 const data = JSON.parse(impuesto);
                 setTasa(data["Tasa"]);
                 setValue(`impuestos[${index}].Tasa`, data["Tasa"]);
+
+                // Establece y registra el valor del campo 'Tipo'
+                setValue(`impuestos[${index}].Tipo`, data["Tipo"]); // Registra el tipo
+                // console.log("Tipo del impuesto:", data["Tipo"]); // Muestra el tipo en la consola (opcional)
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
             }

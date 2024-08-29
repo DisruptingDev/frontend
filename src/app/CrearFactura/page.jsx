@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useForm } from 'react-hook-form';
+import { Snackbar, Alert } from '@mui/material'; // Importa Snackbar y Alert
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
@@ -39,17 +40,31 @@ export default function CrearFactura() {
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
     const [conceptos, setConceptos] = useState([]);
-    
+    const [openSnackbar, setOpenSnackbar] = useState(false); // Estado para controlar la visibilidad del Snackbar
+    const [snackbarMessage, setSnackbarMessage] = useState(''); // Estado para el mensaje del Snackbar
+
     const onSubmit = (data) => {
+        if (conceptos.length === 0) {
+            // Mostrar Snackbar si no hay conceptos
+            setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
+            setOpenSnackbar(true);
+            return;
+        }
+
         console.log("Datos del formulario:", data);
         console.log("Datos de conceptos:", conceptos);
         
         // Aquí se llama a la función para construir la factura
-        EnviarAEmisionTimbrado(data, data, conceptos);
+        // EnviarAEmisionTimbrado(data, data, conceptos);
     };
 
     // Función para manejar la vista previa, también realiza la validación
     const handlePreview = handleSubmit((data) => {
+        if (conceptos.length === 0) {
+            setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
+            setOpenSnackbar(true);
+            return;
+        }
         console.log("Vista previa de los datos:", data);
         // Lógica para mostrar la vista previa
     });
@@ -83,6 +98,18 @@ export default function CrearFactura() {
                     </div>
                 </Resumen> 
             </form>
+
+            {/* Snackbar para mostrar mensajes de error */}
+            <Snackbar
+                open={openSnackbar}
+                autoHideDuration={3000}
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert onClose={() => setOpenSnackbar(false)} severity="error" variant="filled">
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </div>
     );
 }
