@@ -31,16 +31,23 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, label=nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "" }) {
+export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value }) {
     const [opciones, setOpciones] = useState([]);
+    const [selectedValue, setSelectedValue] = useState(value || '');
 
     useEffect(() => {
         obtener_opciones(url).then(data => setOpciones(data));
     }, [url]);
 
+    useEffect(() => {
+        // Update the selected value when `value` prop changes
+        setSelectedValue(value || '');
+    }, [value]);
+
     const handleChange = (e) => {
         const value = e.target.value;
-        
+        setSelectedValue(value);  // Update local state
+
         const selectedOption = opciones.find(opcion => opcion[id] === value);
         
         if (onChange) {
@@ -53,19 +60,19 @@ export default function Select({ register = () => (1), nombre, label=nombre, url
             <InputLabel>{label}</InputLabel>
             <MuiSelect
                 {...register(nombre, {
-                    required: "Este campo es obligatorio", 
+                    required: "Este campo es obligatorio",
                     onChange: handleChange 
                 })}
-                defaultValue="" 
+                value={selectedValue}  // Use controlled value
                 label={label}
                 variant={variant}
+                onChange={handleChange}
             >
                 <MenuItem value="" disabled>Selecciona una opción</MenuItem>
                 {Array.isArray(opciones) && opciones.length > 0 ? (
                     opciones.map((opcion, index) => (
-                        
                         <MenuItem key={index} value={opcion[id]}>
-                              {clave !== "" ? `${opcion[clave]} - ${opcion[descripcion]}` : `${opcion[descripcion]}`}
+                            {clave !== "" ? `${opcion[clave]} - ${opcion[descripcion]}` : `${opcion[descripcion]}`}
                         </MenuItem>
                     ))
                 ) : (

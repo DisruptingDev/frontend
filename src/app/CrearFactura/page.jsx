@@ -19,14 +19,14 @@ async function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
         Version: "4.0",
         Serie: emisor.Serie,
         Folio: "2080427804",
-        Fecha:fechaISO, // Asegúrate de que la fecha esté en formato ISO-8601
+        Fecha: fechaISO,
         Sello: "",
         FormaPago: receptor.FormaPago,
         NoCertificado: "",
         Certificado: "",
         CondicionesDePago: "Condiciones de Pago",
         SubTotal: subtotal,
-        Moneda: emisor.Divisa || "MXN", // Usa "MXN" si no se especifica una divisa
+        Moneda: emisor.Divisa || "MXN",
         TipoCambio: "1",
         Total: total,
         TipoDeComprobante: "I",
@@ -43,10 +43,10 @@ async function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
         ReceptorID: receptor.Receptor,
         Conceptos: {
             ListaConceptos: conceptos.map(concepto => ({
-                ClaveProdServ: String(concepto.ClaveProdServ), // Asegúrate de que esté en formato de cadena
+                ClaveProdServ: String(concepto.ClaveProdServ),
                 NoIdentificacion: concepto.NoIdentificacion || "",
                 Cantidad: parseInt(concepto.Cantidad, 10),
-                ClaveUnidad: String(concepto.ClaveUnidad), // Asegúrate de que esté en formato de cadena
+                ClaveUnidad: String(concepto.ClaveUnidad),
                 Unidad: concepto.Unidad || "",
                 Descripcion: concepto.Descripcion,
                 ValorUnitario: concepto.ValorUnitario,
@@ -56,15 +56,15 @@ async function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
                 Impuestos: {
                     Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
                         Base: retencion.BaseImpuesto,
-                        ImpuestoClave: String(retencion.Impuesto), // Asegúrate de que esté en formato de cadena
-                        TipoFactor: "Tasa", // Ajusta el valor si es necesario
+                        ImpuestoClave: String(retencion.Impuesto),
+                        TipoFactor: "Tasa",
                         TasaOCuota: retencion.Tasa,
                         Importe: retencion.Monto
                     })) : [],
                     Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                         Base: traslado.BaseImpuesto,
-                        ImpuestoClave: String(traslado.Impuesto), // Asegúrate de que esté en formato de cadena
-                        TipoFactor: "Tasa", // Ajusta el valor si es necesario
+                        ImpuestoClave: String(traslado.Impuesto),
+                        TipoFactor: "Tasa",
                         TasaOCuota: traslado.Tasa,
                         Importe: traslado.Monto
                     })) : []
@@ -77,8 +77,6 @@ async function EnviarAEmisionTimbrado(emisor, receptor, conceptos) {
     };
     console.log(factura);
 
-    const prueba = JSON.stringify(factura)
-    console.log(prueba);
     try {
         const token = localStorage.getItem('authToken');
         const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
@@ -108,6 +106,7 @@ export default function CrearFactura() {
     const [conceptos, setConceptos] = useState([]);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [editIndex, setEditIndex] = useState(null);
 
     const onSubmit = (data) => {
         if (conceptos.length === 0) {
@@ -115,10 +114,8 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        console.log("Datos del formulario:", data);
-        console.log("Datos de conceptos:", conceptos);
 
-        EnviarAEmisionTimbrado(data, data, conceptos); // Enviar datos al backend
+        EnviarAEmisionTimbrado(data, data, conceptos);
     };
 
     const handlePreview = handleSubmit((data) => {
@@ -130,9 +127,27 @@ export default function CrearFactura() {
         console.log("Vista previa de los datos:", data);
     });
 
+    const handleEditConcepto = (index) => {
+        console.log("Edit concepto");
+        const conceptoToEdit = conceptos[index];
+        setEditIndex(index);
+        // Setear los valores del concepto en el formulario
+        setValue('Descripcion', conceptoToEdit.Descripcion);
+        setValue('ClaveProdServ', conceptoToEdit.ClaveProdServ);
+        setValue('ClaveUnidad', conceptoToEdit.ClaveUnidad);
+        setValue('Cantidad', conceptoToEdit.Cantidad);
+        setValue('ValorUnitario', conceptoToEdit.ValorUnitario);
+        setValue('Descuento', conceptoToEdit.Descuento);
+        setValue('impuestos', conceptoToEdit.Impuestos);
+    };
+
+    const handleDeleteConcepto = (index) => {
+        setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
+    };
+
     return (
         <div>
-            <Header /> 
+            <Header />
             <form onSubmit={handleSubmit(onSubmit)} method="post">
                 <Emisor 
                     register={register} 
@@ -141,15 +156,30 @@ export default function CrearFactura() {
                     trigger={trigger} 
                     errors={errors} 
                 /> 
-                <Receptor register={register} lugarExpedicion={lugarExpedicion} errors={errors} setValue={setValue} trigger={trigger} /> 
-                <Conceptos 
+                <Receptor 
                     register={register} 
-                    watch={watch} 
+                    lugarExpedicion={lugarExpedicion} 
+                    errors={errors} 
                     setValue={setValue} 
-                    getValues={getValues} 
-                    setConceptos={setConceptos}
+                    trigger={trigger} 
                 /> 
-                <Resumen conceptos={conceptos} subTotal={watch("Subtotal")}> 
+                
+                <Conceptos
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    getValues={getValues}
+                    setConceptos={setConceptos}
+                    conceptos={conceptos} // Pasar los conceptos
+                    editIndex={editIndex} // Pasar editIndex
+                    setEditIndex={setEditIndex} // Pasar setEditIndex
+                />
+                <Resumen 
+                    conceptos={conceptos} 
+                    subTotal={watch("Subtotal")} 
+                    handleEditConcepto={handleEditConcepto} 
+                    handleDeleteConcepto={handleDeleteConcepto}
+                > 
                     <div className="flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
                         <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>

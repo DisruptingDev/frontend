@@ -62,11 +62,15 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
         formData.append('PASS', password);
 
         try {
+            const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
+
             const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                },
                 body: formData,
             });
-
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Error al subir los archivos: ${response.statusText} - ${errorText}`);

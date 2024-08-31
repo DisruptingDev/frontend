@@ -10,6 +10,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [rfc, setRFC] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
+    const [regimenFiscal, setRegimenFiscal] = useState("");
     const [openModal, setOpenModal] = useState(false);
 
     useEffect(() => {
@@ -19,6 +20,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
                 setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
                 setHiddeInfoGlobal(false);
+                setRegimenFiscal(data["RegimenFiscalReceptor"]);
+                setValue("RegimenFiscal", data["RegimenFiscalReceptor"]);
             } else {
                 setDomicilioFiscal(lugarExpedicion);
                 setHiddeInfoGlobal(true);
@@ -29,6 +32,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
              // Dispara la validación de estos campos
              trigger("RFCReceptor");
              trigger("DomicilioFiscalReceptor");
+             trigger("RegimenFiscal");
  
         }
     }, [receptor, lugarExpedicion,trigger,setValue]);
@@ -100,8 +104,24 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.DomicilioFiscalReceptor && errors.DomicilioFiscalReceptor.message}
                     disabled
                 />
+                 <TextField
+                    label="Regimen Fiscal"
+                    {...register("RegimenFiscal", { required: "Este campo es obligatorio." })}
+                    value={regimenFiscal}
+                    fullWidth
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            '&.Mui-error fieldset': {
+                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                            }
+                        }
+                    }}
+                    error={!!errors.RegimenFiscal} // Muestra error si hay errores en RFCEmisor
+                    helperText={errors.RegimenFiscal && errors.RegimenFiscal.message}
+                    disabled
+                />
 
-                <Select
+                {/* <Select
                     register={register}
                     nombre="RegimenFiscal"
                     url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
@@ -109,7 +129,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     descripcion="Descripcion"
                     error={!!errors.RegimenFiscal}
                     helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                />
+                /> */}
 
                 <Select
                     register={register}

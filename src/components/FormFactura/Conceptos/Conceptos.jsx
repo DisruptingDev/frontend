@@ -1,13 +1,11 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, Typography, Button, Autocomplete, Snackbar, Alert } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, get } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 
-export default function Conceptos({ setConceptos }) {
+export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex }) {
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
     const [queryProdServ, setQueryProdServ] = useState('');
@@ -17,14 +15,12 @@ export default function Conceptos({ setConceptos }) {
 
     const token = localStorage.getItem('authToken');
 
-    // Estados de error para los campos de Conceptos
+    // Estados de error
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
     const [cantidadError, setCantidadError] = useState(false);
     const [valorUnitarioError, setValorUnitarioError] = useState(false);
-
-    // Estados de error para los campos de Impuesto
     const [objetoImpuestoError, setObjetoImpuestoError] = useState(false);
     const [impuestoError, setImpuestoError] = useState(false);
 
@@ -50,31 +46,32 @@ export default function Conceptos({ setConceptos }) {
         name: 'impuestos',
     });
 
-    useEffect(() => {
-        if (queryProdServ.length > 2) {
-            fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
+    // Función para consultar ClaveProdServ y ClaveUnidad
+    const fetchOptions = async () => {
+        try {
+            // Consulta ClaveProdServ
+            const prodServResponse = await fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(response => response.json())
-                .then(data => setClaveProdServOptions(Array.isArray(data) ? data : []))
-                .catch(error => console.error('Error al buscar ClaveProdServ:', error));
-        } else {
-            setClaveProdServOptions([]);
-        }
+            });
+            const prodServData = await prodServResponse.json();
+            setClaveProdServOptions(Array.isArray(prodServData) ? prodServData : []);
 
-        if (queryUnidad.length > 1) {
-            fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
+            // Consulta ClaveUnidad
+            const unidadResponse = await fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
-            })
-                .then(response => response.json())
-                .then(data => setClaveUnidadOptions(Array.isArray(data) ? data : []))
-                .catch(error => console.error('Error al buscar ClaveUnidad:', error));
-        } else {
-            setClaveUnidadOptions([]);
+            });
+            const unidadData = await unidadResponse.json();
+            setClaveUnidadOptions(Array.isArray(unidadData) ? unidadData : []);
+        } catch (error) {
+            console.error('Error al buscar ClaveProdServ o ClaveUnidad:', error);
         }
-    }, [queryProdServ, queryUnidad, token]);
+    };
+
+    useEffect(() => {
+        fetchOptions(); // Realiza la consulta al cargar el componente y cada vez que cambian las queries
+    }, [queryProdServ, queryUnidad]);
 
     useEffect(() => {
         const calcularSubtotal = () => {
@@ -94,6 +91,85 @@ export default function Conceptos({ setConceptos }) {
         });
 
     }, [watch('Cantidad'), watch('ValorUnitario'), watch('Descuento'), fields, setValue, getValues]);
+
+    useEffect(() => {
+        if (editIndex !== null && conceptos[editIndex]) {
+            const concepto = conceptos[editIndex];
+            console.log('Concepto seleccionado para editar:', concepto);
+
+            // Establecer valores del concepto
+            setValue("Descripcion", concepto.Descripcion || '');
+            setValue("ClaveProdServ", concepto.ClaveProdServ || '');
+            setValue("ClaveUnidad", concepto.ClaveUnidad || '');
+            setValue("Cantidad", concepto.Cantidad || 1);
+            setValue("ValorUnitario", concepto.ValorUnitario || 0);
+            setValue("Descuento", concepto.Descuento || 0);
+            setValue("Subtotal", concepto.Subtotal || 0);
+
+            // Actualizar los impuestos del concepto
+            concepto.Impuestos.forEach((impuesto, index) => {
+                setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
+                setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
+                setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
+                setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
+                
+                // console.log('Concepto editado:', getValues(`impuestos.${index}`);
+            });
+            console.log('Concepto editado:', getValues(`impuestos`));
+            // En el componente padre, al actualizar `impuestos`
+setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para forzar un nuevo renderizado
+
+
+            // Fetch ClaveProdServ options if needed
+            if (!claveProdServOptions.some(opt => opt.Clave === concepto.ClaveProdServ)) {
+                console.log(`Consultando opciones de ClaveProdServ para: ${concepto.ClaveProdServ}`);
+                fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${concepto.ClaveProdServ}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Opciones recibidas de ClaveProdServ:", data);
+                        setClaveProdServOptions(prevOptions => [...prevOptions, ...data]);
+                        const selectedProdServ = data.find(opt => opt.Clave == concepto.ClaveProdServ);
+                        console.log("ClaveProdServ seleccionada tras la consulta:", selectedProdServ);
+                        setSelectedClaveProdServ(selectedProdServ || null);
+                    })
+                    .catch(error => console.error('Error al buscar ClaveProdServ:', error));
+            } else {
+                console.log("Opciones ClaveProdServ ya disponibles:", claveProdServOptions);
+                const selectedProdServ = claveProdServOptions.find(opt => opt.Clave == concepto.ClaveProdServ);
+                console.log("ClaveProdServ seleccionada:", selectedProdServ);
+                setSelectedClaveProdServ(selectedProdServ || null);
+            }
+
+            // Fetch ClaveUnidad options if needed
+            if (!claveUnidadOptions.some(opt => opt.Clave === concepto.ClaveUnidad)) {
+                console.log(`Consultando opciones de ClaveUnidad para: ${concepto.ClaveUnidad}`);
+                fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${concepto.ClaveUnidad}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Opciones recibidas de ClaveUnidad:", data);
+                        setClaveUnidadOptions(prevOptions => [...prevOptions, ...data]);
+                        const selectedUnidad = data.find(opt => opt.Clave == concepto.ClaveUnidad);
+                        console.log("ClaveUnidad seleccionada tras la consulta:", selectedUnidad);
+                        setSelectedClaveUnidad(selectedUnidad || null);
+                    })
+                    .catch(error => console.error('Error al buscar ClaveUnidad:', error));
+            } else {
+                console.log("Opciones ClaveUnidad ya disponibles:", claveUnidadOptions);
+                const selectedUnidad = claveUnidadOptions.find(opt => opt.Clave == concepto.ClaveUnidad);
+                console.log("ClaveUnidad seleccionada:", selectedUnidad);
+                setSelectedClaveUnidad(selectedUnidad || null);
+            }
+        }
+
+    }, [editIndex, conceptos, setValue]);
+
+
 
     const handleAgregarConcepto = () => {
         // Resetear errores antes de validar
@@ -135,7 +211,7 @@ export default function Conceptos({ setConceptos }) {
 
         // Validaciones para los campos de Impuesto
         const impuestos = getValues("impuestos");
-        impuestos.forEach((impuesto, index) => {
+        impuestos.forEach((impuesto) => {
             if (!impuesto.ObjetoImpuesto) {
                 setObjetoImpuestoError(true);
                 hasError = true;
@@ -147,12 +223,12 @@ export default function Conceptos({ setConceptos }) {
             }
         });
 
-        // if (hasError) {
-        //     setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
-        //     setSnackbarSeverity('warning');
-        //     setOpenSnackbar(true);
-        //     return;
-        // }
+        if (hasError) {
+            // setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
+            // setSnackbarSeverity('warning');
+            // setOpenSnackbar(true);
+            return;
+        }
 
         const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
         if (!objetoImpuesto || objetoImpuesto === "Default") {
@@ -161,14 +237,26 @@ export default function Conceptos({ setConceptos }) {
         }
 
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
+
         if (nuevoConcepto !== "Error") {
-            setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
+            if (editIndex !== null) {
+                // Editar concepto existente
+                setConceptos(prevConceptos => prevConceptos.map((concepto, index) => index === editIndex ? nuevoConcepto : concepto));
+                setEditIndex(null);
+            } else {
+                // Agregar nuevo concepto
+                setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
+            }
             reset();
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
         } else {
             console.log("Ocurrió un error en el concepto");
         }
+    };
+
+    const handleDeleteConcepto = (index) => {
+        setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
     return (
@@ -190,7 +278,7 @@ export default function Conceptos({ setConceptos }) {
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.2fr 0.2fr'
+                    lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.2fr 0.2fr'
                 }}
                 gap={3}
                 mt={4}>
@@ -199,6 +287,7 @@ export default function Conceptos({ setConceptos }) {
                     options={claveProdServOptions}
                     getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`}
                     value={selectedClaveProdServ}
+                    isOptionEqualToValue={(option, value) => option.Clave === value.Clave}
                     onInputChange={(event, newInputValue) => setQueryProdServ(newInputValue)}
                     onChange={(event, value) => {
                         setSelectedClaveProdServ(value);
@@ -220,6 +309,7 @@ export default function Conceptos({ setConceptos }) {
                     options={claveUnidadOptions}
                     getOptionLabel={(option) => `${option.Clave} - ${option.Descripcion}`}
                     value={selectedClaveUnidad}
+                    isOptionEqualToValue={(option, value) => option.Clave === value.Clave}
                     onInputChange={(event, newInputValue) => setQueryUnidad(newInputValue)}
                     onChange={(event, value) => {
                         setSelectedClaveUnidad(value);
@@ -279,24 +369,28 @@ export default function Conceptos({ setConceptos }) {
             </Box>
 
             <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
-                {fields.map((field, index) => (
-                    <Box key={field.id || index} gridColumn="span 6">
-                        <Impuesto
-                            register={register}
-                            setValue={setValue}
-                            getValues={getValues}
-                            index={index}
-                            baseImpuesto={watch('Subtotal') || 0}
-                            remove={remove}
-                            fieldsLength={fields.length}
-                            objetoImpuestoError={objetoImpuestoError}
-                            impuestoError={impuestoError}
-                            setObjetoImpuestoError={setObjetoImpuestoError} // Pasar la función para manejar el error
-                            setImpuestoError={setImpuestoError} // Pasar la función para manejar el error
-                        />
-                    </Box>
-                ))}
-
+                {fields.map((field, index) => {
+                    // const impuestoEditor = getValues(`impuestos.${index}`);
+                    // console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
+                    return (
+                        <Box key={field.id || index} gridColumn="span 6">
+                            <Impuesto
+                                register={register}
+                                setValue={setValue}
+                                getValues={getValues}
+                                index={index}
+                                baseImpuesto={watch('Subtotal') || 0}
+                                remove={remove}
+                                fieldsLength={fields.length}
+                                objetoImpuestoError={objetoImpuestoError}
+                                impuestoError={impuestoError}
+                                setObjetoImpuestoError={setObjetoImpuestoError}
+                                setImpuestoError={setImpuestoError}
+                                impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
+                            />
+                        </Box>
+                    );
+                })}
                 <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="center">
                     <Button
                         variant="contained"
@@ -318,7 +412,7 @@ export default function Conceptos({ setConceptos }) {
                     sx={{ backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))' }}
                     onClick={handleAgregarConcepto}
                 >
-                    Agregar Concepto
+                    {editIndex !== null ? "Guardar Cambios" : "Agregar Concepto"}
                 </Button>
             </Box>
 

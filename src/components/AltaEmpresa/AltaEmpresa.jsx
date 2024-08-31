@@ -106,7 +106,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     <Select
                         nombre="RegimenFiscal"
                         url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                        clave="Descripcion"
+                        clave="Clave"
                         descripcion="Descripcion"
                         fullWidth
                         required

@@ -15,12 +15,25 @@ export default function Impuesto({
     objetoImpuestoError,
     impuestoError,
     setObjetoImpuestoError, // Recibir la función para manejar el error
-    setImpuestoError // Recibir la función para manejar el error
+    setImpuestoError, // Recibir la función para manejar el error
+    impuestoEditor,
 }) {
     const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState(0);
     const [monto, setMonto] = useState(0);
 
+
+    useEffect(() => {
+        console.log('Cambio')
+        if (impuestoEditor) {
+            console.log('Impuesto Editor', impuestoEditor, index);
+            setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
+            setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
+            setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
+
+            setTasa(impuestoEditor.Tasa);
+        }
+    }, [impuestoEditor, index, setValue]);
     useEffect(() => {
         if (impuesto) {
             try {
@@ -78,6 +91,7 @@ export default function Impuesto({
                         onChange={handleObjetoImpuestoChange}
                         error={objetoImpuestoError}
                         helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
+                        value={getValues(`impuestos[${index}].ObjetoImpuesto`) || ''}  // Asegúrate de pasar el valor correcto
                     />
                 </Box>
 
@@ -93,6 +107,7 @@ export default function Impuesto({
                         onChange={handleImpuestoChange}
                         error={impuestoError}
                         helperText={impuestoError ? "El impuesto es requerido." : ""}
+                        value={getValues(`impuestos[${index}].Impuesto`) || ''}
                     />
                 </Box>
 
@@ -104,6 +119,7 @@ export default function Impuesto({
                         value={tasa}
                         fullWidth
                         InputProps={{ readOnly: true }}
+
                     />
                 </Box>
 
@@ -115,6 +131,7 @@ export default function Impuesto({
                         value={baseImpuesto}
                         fullWidth
                         InputProps={{ readOnly: true }}
+
                     />
                 </Box>
 
