@@ -1,3 +1,4 @@
+"use client"
 export default function Input( {name, type, placeholder, className = ""} ) {
     return (
         <div>

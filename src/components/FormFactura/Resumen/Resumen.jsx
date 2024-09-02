@@ -1,3 +1,4 @@
+"use client"
 import Input from "@/components/Input/Input.jsx";
 import { Select, SelectNoLabel } from "@/components/Select/Select.jsx";
 import { CalculosFinales } from "./Calculos/Calculo.js";

@@ -7,6 +7,7 @@ import { forwardRef } from 'react'
 import MuiAvatar from '@mui/material/Avatar'
 import { lighten, styled } from '@mui/material/styles'
 
+// Estilos personalizados para el avatar
 const Avatar = styled(MuiAvatar)(({ skin, color, size, theme }) => {
   return {
     ...(color &&
@@ -31,11 +32,15 @@ const Avatar = styled(MuiAvatar)(({ skin, color, size, theme }) => {
   }
 })
 
+// Componente personalizado con forwardRef
 const CustomAvatar = forwardRef((props, ref) => {
   // Props
   const { color, skin = 'filled', ...rest } = props
 
   return <Avatar color={color} skin={skin} ref={ref} {...rest} />
 })
+
+// Añadir displayName para mejor depuración
+CustomAvatar.displayName = 'CustomAvatar'
 
 export default CustomAvatar

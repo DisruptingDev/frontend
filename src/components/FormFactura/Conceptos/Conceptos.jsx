@@ -1,7 +1,8 @@
+"use client"
 import React, { useState, useEffect } from 'react';
 import { Box, TextField, Typography, Button, Autocomplete, Snackbar, Alert } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
-import { useForm, useFieldArray, get } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 
@@ -12,10 +13,16 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [queryUnidad, setQueryUnidad] = useState('');
     const [selectedClaveProdServ, setSelectedClaveProdServ] = useState(null);
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
+    const [token, setToken] = useState(null);
 
-    const token = localStorage.getItem('authToken');
+    // Acceder a localStorage solo en el cliente
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setToken(localStorage.getItem('authToken'));
+        }
+    }, []);
 
-    // Estados de error
+    // Resto del código para los estados de error y el manejo del formulario
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
@@ -46,10 +53,10 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         name: 'impuestos',
     });
 
-    // Función para consultar ClaveProdServ y ClaveUnidad
     const fetchOptions = async () => {
+        if (!token) return;
+
         try {
-            // Consulta ClaveProdServ
             const prodServResponse = await fetch(`http://31.220.31.152:8081/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -57,7 +64,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             const prodServData = await prodServResponse.json();
             setClaveProdServOptions(Array.isArray(prodServData) ? prodServData : []);
 
-            // Consulta ClaveUnidad
             const unidadResponse = await fetch(`http://31.220.31.152:8081/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -70,8 +76,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     };
 
     useEffect(() => {
-        fetchOptions(); // Realiza la consulta al cargar el componente y cada vez que cambian las queries
-    }, [queryProdServ, queryUnidad]);
+        fetchOptions();
+    }, [queryProdServ, queryUnidad, token]);
 
     useEffect(() => {
         const calcularSubtotal = () => {

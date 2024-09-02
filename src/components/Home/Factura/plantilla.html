@@ -1,0 +1,59 @@
+<!-- plantilla.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .factura-info, .conceptos, .impuestos {
+            margin-bottom: 20px;
+        }
+        .factura-info div, .concepto-item, .impuesto-item {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .impuestos {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Factura Electrónica</h1>
+    <div class="factura-info">
+        <div>Versión: {{version}}</div>
+        <div>Serie: {{serie}}</div>
+        <div>Folio: {{folio}}</div>
+        <div>Fecha: {{fecha}}</div>
+        <div>Forma de Pago: {{formaPago}}</div>
+        <div>Condiciones de Pago: {{condicionesDePago}}</div>
+        <div>SubTotal: {{subTotal}}</div>
+        <div>Total: {{total}}</div>
+        <div>Lugar de Expedición: {{lugarExpedicion}}</div>
+    </div>
+
+    <h2>Conceptos</h2>
+    <div class="conceptos">
+        {{conceptos}}
+    </div>
+
+    <h2>Impuestos Retenidos</h2>
+    <div class="impuestos retenidos">
+        {{retenciones}}
+    </div>
+
+    <h2>Impuestos Trasladados</h2>
+    <div class="impuestos trasladados">
+        {{traslados}}
+    </div>
+</body>
+</html>

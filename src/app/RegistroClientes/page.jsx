@@ -1,3 +1,4 @@
+"use client"
 import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 import Button from "@mui/material/Button"; // Importa el componente Button de Material UI

@@ -20,16 +20,16 @@
     "jsx": "preserve",
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"], // Para acceder a cualquier cosa dentro de src
+      "@/*": ["./*"],// Para acceder a cualquier cosa dentro de src
       "@core/*": ["@core/*"],
       "@layouts/*": ["@layouts/*"],
-      "@menu/*": ["@menu/*"],
+      // "@menu/*": ["@menu/*"],
       "@assets/*": ["assets/*"],
       "@components/*": ["components/*"],
       "@configs/*": ["configs/*"],
-      "@views/*": ["views/*"],
-      "@contexts/*": ["contexts/*"],
-      "@redux-store/*": ["redux-store/*"]
+      // "@views/*": ["views/*"],
+      // "@contexts/*": ["contexts/*"],
+      // "@redux-store/*": ["redux-store/*"]
     }
   },
   "include": [

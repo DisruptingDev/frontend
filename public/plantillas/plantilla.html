@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            font-size: 12px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .section h2 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .info-grid, .conceptos-grid, .impuestos-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .info-grid div, .concepto-item, .impuesto-item {
+            padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-grid div span:first-child, 
+        .concepto-item span:first-child, 
+        .impuesto-item span:first-child {
+            font-weight: bold;
+        }
+        .conceptos-grid, .impuestos-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+        .conceptos-grid span, .impuestos-grid span {
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Comprobante Fiscal Digital por Internet</h1>
+
+    <!-- Datos Generales -->
+    <div class="section">
+        <h2>Datos Generales</h2>
+        <div class="info-grid">
+            <div><span>Versión:</span> <span>{{version}}</span></div>
+            <div><span>Serie:</span> <span>{{serie}}</span></div>
+            <div><span>Folio:</span> <span>{{folio}}</span></div>
+            <div><span>Fecha:</span> <span>{{fecha}}</span></div>
+            <div><span>Forma de Pago:</span> <span>{{formaPago}}</span></div>
+            <div><span>Condiciones de Pago:</span> <span>{{condicionesDePago}}</span></div>
+            <div><span>SubTotal:</span> <span>{{subTotal}} {{moneda}}</span></div>
+            <div><span>Total:</span> <span>{{total}} {{moneda}}</span></div>
+            <div><span>Lugar de Expedición:</span> <span>{{lugarExpedicion}}</span></div>
+        </div>
+    </div>
+
+    <!-- Información Global -->
+    <div class="section">
+        <h2>Información Global</h2>
+        <div class="info-grid">
+            <div><span>Periodicidad:</span> <span>{{periodicidad}}</span></div>
+            <div><span>Meses:</span> <span>{{meses}}</span></div>
+            <div><span>Año:</span> <span>{{año}}</span></div>
+        </div>
+    </div>
+
+    <!-- Conceptos -->
+    <div class="section">
+        <h2>Conceptos</h2>
+        <div class="conceptos-grid">
+            <span>Clave ProdServ</span>
+            <span>Descripción</span>
+            <span>Cantidad</span>
+            <span>Valor Unitario</span>
+            <span>Importe</span>
+            <span>Objeto Imp</span>
+            {{conceptos}}
+        </div>
+    </div>
+
+    <!-- Impuestos Retenidos -->
+    <div class="section">
+        <h2>Impuestos Retenidos</h2>
+        <div class="impuestos-grid">
+            <span>Base</span>
+            <span>Impuesto Clave</span>
+            <span>Tipo Factor</span>
+            <span>Tasa o Cuota</span>
+            <span>Importe</span>
+            {{retenciones}}
+        </div>
+    </div>
+
+    <!-- Impuestos Trasladados -->
+    <div class="section">
+        <h2>Impuestos Trasladados</h2>
+        <div class="impuestos-grid">
+            <span>Base</span>
+            <span>Impuesto Clave</span>
+            <span>Tipo Factor</span>
+            <span>Tasa o Cuota</span>
+            <span>Importe</span>
+            {{traslados}}
+        </div>
+    </div>
+</body>
+</html>

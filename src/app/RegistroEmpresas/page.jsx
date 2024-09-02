@@ -1,3 +1,4 @@
+"use client"
 import Input from "@/components/Input/Input.jsx"
 import FileInput from "@/components/FileInput/FileInput.jsx"
 import Select from "@/components/Select/Select.jsx"

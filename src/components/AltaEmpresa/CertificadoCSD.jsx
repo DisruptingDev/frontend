@@ -1,3 +1,4 @@
+"use client"
 import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Snackbar, Alert } from '@mui/material';
 import FileInput from "@/components/FileInput/FileInput";
