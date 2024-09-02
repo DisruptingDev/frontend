@@ -32,7 +32,7 @@ export default function DataTable() {
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [filters, setFilters] = useState({ id: '', folio: '', emisor: '', receptor: '' });
+  // const [filters, setFilters] = useState({ id: '', folio: '', emisor: '', receptor: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,20 +80,20 @@ export default function DataTable() {
   }, []);
 
   // Filtra los datos basándose en los filtros
-  const filteredRows = rows.filter((row) =>
-    (filters.id ? row.id.toString().includes(filters.id) : true) &&
-    (filters.folio ? row.folio.toLowerCase().includes(filters.folio.toLowerCase()) : true) &&
-    (filters.emisor ? row.emisor.toLowerCase().includes(filters.emisor.toLowerCase()) : true) &&
-    (filters.receptor ? row.receptor.toLowerCase().includes(filters.receptor.toLowerCase()) : true)
-  );
+  // const filteredRows = rows.filter((row) =>
+  //   (filters.id ? row.id.toString().includes(filters.id) : true) &&
+  //   (filters.folio ? row.folio.toLowerCase().includes(filters.folio.toLowerCase()) : true) &&
+  //   (filters.emisor ? row.emisor.toLowerCase().includes(filters.emisor.toLowerCase()) : true) &&
+  //   (filters.receptor ? row.receptor.toLowerCase().includes(filters.receptor.toLowerCase()) : true)
+  // );
 
-  const handleFilterChange = (event) => {
-    const { name, value } = event.target;
-    setFilters({
-      ...filters,
-      [name]: value,
-    });
-  };
+  // const handleFilterChange = (event) => {
+  //   const { name, value } = event.target;
+  //   setFilters({
+  //     ...filters,
+  //     [name]: value,
+  //   });
+  // };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -126,7 +126,7 @@ export default function DataTable() {
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Total</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Usuario</TableCell>
               </TableRow>
-              <TableRow sx={{ padding: 0 }}>
+              {/* <TableRow sx={{ padding: 0 }}>
                 <TableCell padding="checkbox" sx={{ textAlign: 'center' }}></TableCell>
                 <TableCell sx={{ padding: 0 }} align='center'>
                   <TextField
@@ -193,10 +193,11 @@ export default function DataTable() {
                 <TableCell></TableCell>
                 <TableCell></TableCell>
                 <TableCell></TableCell>
-              </TableRow>
+              </TableRow> */}
             </TableHead>
             <TableBody>
-              {filteredRows
+              
+              {rows
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row) => (
                   <TableRow key={row.id}>
@@ -222,7 +223,8 @@ export default function DataTable() {
         <TablePagination
           rowsPerPageOptions={[10, 25, 50]}
           component="div"
-          count={filteredRows.length}
+          count={rows.length}
+          // count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
