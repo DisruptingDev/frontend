@@ -1,4 +1,5 @@
 "use client";
+
 import jsPDF from 'jspdf';
 import html2pdf from 'html2pdf.js';
 
@@ -61,45 +62,41 @@ const fillTemplate = (template, factura) => {
         .replace('{{condicionesDePago}}', factura.CondicionesDePago)
         .replace('{{subTotal}}', factura.SubTotal)
         .replace('{{total}}', factura.Total)
+        .replace('{{periodicidad}}', factura.InformacionGlobal.Periodicidad)
         .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
         .replace('{{conceptos}}', conceptosHTML)
         .replace('{{retenciones}}', retencionesHTML)
         .replace('{{traslados}}', trasladosHTML);
-        //Informacion Global
-        // .replace('{{periodicidad}}', factura.InformacionGlobal);
 };
 
 // Función para generar el PDF usando html2pdf
-// Función para generar el PDF usando html2pdf
 const generatePDF = async (factura) => {
+    console.log('Ejecutando generatePDF con la factura:', factura);  // Agrega este log
     try {
         if (typeof window === 'undefined') {
-            console.error('html2pdf solo debe ejecutarse en el cliente.');
+            console.error('generatePDF se está ejecutando en el servidor y no debería.');
             return;
         }
-
+        console.log('Generating PDF');
         const template = await loadTemplate('/plantillas/plantilla.html');
 
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para generar el PDF.');
         }
 
-        const filledTemplate = fillTemplate(template, factura); // Rellenar la plantilla con los datos
-
-        // Crear un elemento div temporal para renderizar el HTML
+        const filledTemplate = fillTemplate(template, factura);  // Rellenar la plantilla con los datos
         const element = document.createElement('div');
         element.innerHTML = filledTemplate;
 
-        // Configuraciones para html2pdf
         const options = {
             margin: 10,
             filename: 'factura.pdf',
             html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
         };
 
-        // Generar el PDF
         html2pdf().from(element).set(options).save();
+        console.log('PDF generado exitosamente.');  // Log adicional para confirmar
     } catch (error) {
         console.error("Error al generar el PDF: ", error);
     }

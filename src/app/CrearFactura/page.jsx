@@ -1,15 +1,24 @@
 "use client";
 import { useState } from "react";
 import { useForm } from 'react-hook-form';
-import { Snackbar, Alert } from '@mui/material';
+import { Snackbar, Alert,Modal, Box } from '@mui/material';
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
 import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
+import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
+// import generatePDF from "@/components/Home/Factura/GenerarPDF.js";
+// import dynamic from 'next/dynamic';
 
-// import generatePDF from "@/components/Home/Factura/GenerarPDF";
+// const generatePDF = dynamic(
+//   () => import('@/components/Home/Factura/GenerarPDF.js').then(mod => {
+//     console.log('Módulo GenerarPDF importado:', mod);
+//     return mod.default;
+//   }),
+//   { ssr: false }
+// );
 
 function CrearObjetoFactura(emisor, receptor, conceptos) {
      // Calcula el subtotal y total
@@ -85,8 +94,10 @@ async function EnviarAEmisionTimbrado(factura) {
    
 
     try {
-        const token = localStorage.getItem('authToken');
-        const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('authToken');
+            // Continúa con el uso de token 
+            const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -102,6 +113,9 @@ async function EnviarAEmisionTimbrado(factura) {
         const result = await response.json();
         console.log('Factura creada con éxito:', result);
 
+        }
+        // const token = localStorage.getItem('authToken');
+       
     } catch (error) {
         console.error('Error al enviar la factura:', error);
     }
@@ -114,6 +128,8 @@ export default function CrearFactura() {
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [editIndex, setEditIndex] = useState(null);
+    const [openModal, setOpenModal] = useState(false);
+    const [previewContent, setPreviewContent] = useState('');
 
     const onSubmit = (data) => {
         if (conceptos.length === 0) {
@@ -125,7 +141,7 @@ export default function CrearFactura() {
         EnviarAEmisionTimbrado(factura);
     };
 
-    const handlePreview = handleSubmit((data) => {
+    const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
             setOpenSnackbar(true);
@@ -223,8 +239,17 @@ export default function CrearFactura() {
             UUID: "",
             Version: "4.0"
         };    
-       
-        // generatePDF(factura, 'facturaBasica');
+       console.log('Llamando a generatePDF con la factura:', factura);
+       const vistaPrevia = generarVistaPrevia(factura);
+       setPreviewContent(vistaPrevia);
+       setOpenModal(true);
+
+    // if (generatePDF) {
+    //     console.log('generatePDF está definido, llamando a generatePDF...');
+    //     generatePDF(factura);
+    // } else {
+    //     console.error('generatePDF no está definido.');
+    // }
     });
 
     const handleEditConcepto = (index) => {
@@ -287,7 +312,16 @@ export default function CrearFactura() {
                     </div>
                 </Resumen> 
             </form>
-
+            <Modal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                aria-labelledby="modal-vista-previa"
+                aria-describedby="vista-previa-factura"
+            >
+                <Box sx={{ maxHeight: '90vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '80%', maxWidth: '800px' }}>
+                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                </Box>
+            </Modal>
             <Snackbar
                 open={openSnackbar}
                 autoHideDuration={3000}

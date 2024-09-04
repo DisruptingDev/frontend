@@ -84,3 +84,6 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
+# vs code
+/.vscode
