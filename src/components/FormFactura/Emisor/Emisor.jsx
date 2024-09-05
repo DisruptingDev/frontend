@@ -30,6 +30,14 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
             // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
             setValue("RFCEmisor", emisor.Rfc);
             setValue("LugarExpedicion", emisor.LugarExpedicion);
+            setValue("NombreEmisor", emisor.Nombre);
+            setValue("Caller", emisor.Calle)
+            setValue("NoExterior", emisor.NoExterior)
+            setValue("NoInterior", emisor.NoInterior)
+            setValue("ColoniaEmisor", emisor.Colonia)
+            setValue("MunicipioEmisor", emisor.Municipio)
+            setValue("EstadoEmisor", emisor.Estado)
+            setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
 
             // Dispara la validación de estos campos
             trigger("RFCEmisor");

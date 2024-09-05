@@ -145,7 +145,7 @@ export default function Pruebas() {
                 aria-labelledby="modal-vista-previa"
                 aria-describedby="vista-previa-factura"
             >
-                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '80%', maxWidth: '800px' }}>
+                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
                     <div dangerouslySetInnerHTML={{ __html: previewContent }} />
                 </Box>
             </Modal>

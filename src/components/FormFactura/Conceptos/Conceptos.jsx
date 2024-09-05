@@ -35,7 +35,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-    const { control, register, reset, getValues, setValue, watch } = useForm({
+    const { control, register, reset, getValues, setValue, watch, trigger } = useForm({
         defaultValues: {
             Descripcion: '',
             ClaveProdServ: '',
@@ -44,7 +44,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             ValorUnitario: 0,
             Descuento: 0,
             Subtotal: 0,
-            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' }]
+            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '', Tipo:''}]
         },
     });
 
@@ -111,20 +111,42 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("ValorUnitario", concepto.ValorUnitario || 0);
             setValue("Descuento", concepto.Descuento || 0);
             setValue("Subtotal", concepto.Subtotal || 0);
+            console.log('Impuestos:', getValues(`impuestos`));
+            console.log("IMPUESTOS ACT", concepto.Impuestos);
+            // concepto.Impuestos.forEach((impuesto, index) => {
+            //     setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
+            //     setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
+            //     setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
+            //     setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
+            //     setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
+            //     setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');
 
-            // Actualizar los impuestos del concepto
-            concepto.Impuestos.forEach((impuesto, index) => {
-                setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
-                setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
-                setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
-                setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
+
                 
-                // console.log('Concepto editado:', getValues(`impuestos.${index}`);
-            });
-            console.log('Concepto editado:', getValues(`impuestos`));
-            // En el componente padre, al actualizar `impuestos`
-setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para forzar un nuevo renderizado
+            //     // console.log('Concepto editado:', getValues(`impuestos.${index}`);
+            // });
+            setValue("impuestos", concepto.Impuestos)
+          
 
+             trigger('impuestos'); 
+
+            // // // Actualizar los impuestos del concepto
+            // concepto.Impuestos.forEach((impuesto, index) => {
+            //     setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
+            //     setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
+            //     setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
+            //     setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
+            //     setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
+            //     setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');});
+
+                
+            // //     // console.log('Concepto editado:', getValues(`impuestos.${index}`);
+            // });
+            // console.log('Concepto editado:', getValues(`impuestos`));
+            
+            // En el componente padre, al actualizar `impuestos`
+            // setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para forzar un nuevo renderizado
+            console.log('Concepto editado:', getValues(`impuestos`));
 
             // Fetch ClaveProdServ options if needed
             if (!claveProdServOptions.some(opt => opt.Clave === concepto.ClaveProdServ)) {
@@ -173,7 +195,7 @@ setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para fo
             }
         }
 
-    }, [editIndex, conceptos, setValue]);
+    }, [editIndex, conceptos, setValue, trigger]);
 
 
 
@@ -242,6 +264,7 @@ setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para fo
             return;
         }
 
+        console.log('ImpuestosENVIANDOS',getValues("impuestos"));
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
 
         if (nuevoConcepto !== "Error") {
@@ -381,6 +404,7 @@ setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para fo
                     return (
                         <Box key={field.id || index} gridColumn="span 6">
                             <Impuesto
+                                watch={watch}
                                 register={register}
                                 setValue={setValue}
                                 getValues={getValues}

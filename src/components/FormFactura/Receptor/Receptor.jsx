@@ -7,6 +7,9 @@ import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el co
 
 export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue}) {
     const [receptor, setReceptor] = useState();
+    const [metodoPago, setMetodoPago] = useState();
+    const [usoCFDI, setUsoCFDI] = useState();
+    const [formaPago, setFormaPago] = useState();
     const [rfc, setRFC] = useState();
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
@@ -28,6 +31,16 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             }
             setRFC(data["Rfc"]);
             setValue("RFCReceptor", data["Rfc"]);
+            setValue("NombreReceptor", data["Nombre"]);
+            setValue("Calle", data["Calle"]);
+            setValue("NoExterior", data["NoExterior"]);
+            // setValue("NoInterior", data["NoInterior"]);
+            setValue("Colonia", data["Colonia"]);
+            setValue("Municipio", data["Municipio"]);
+            setValue("Estado", data["Estado"]);
+
+
+
             console.log("RFCReceptor", data["Rfc"]);
              // Dispara la validación de estos campos
              trigger("RFCReceptor");
@@ -36,6 +49,29 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
  
         }
     }, [receptor, lugarExpedicion,trigger,setValue]);
+
+    useEffect(()=>{
+        if(metodoPago !==undefined){
+            let data = JSON.parse(metodoPago);
+            setValue("MetodoPagoDescripcion", data["Descripcion"]);
+        }
+    },[metodoPago,setValue])
+
+    useEffect(()=>{
+        if(formaPago !==undefined){
+            let data = JSON.parse(formaPago);
+            setValue("FormaPagoDescripcion", data["Descripcion"]);
+        }
+    },[formaPago,setValue])
+
+    useEffect(()=>{
+        if(usoCFDI !==undefined){
+            let data = JSON.parse(usoCFDI);
+            setValue("UsoCFDIDescripcion", data["Descripcion"]);
+        }
+    },[usoCFDI,setValue])
+
+
 
    
     const handleOpenModal = () => {
@@ -139,6 +175,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     descripcion="Descripcion"
                     error={!!errors.MetodoPago}
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
+                    onChange={(e) => setMetodoPago(e.target.value)}
+                    
                 />
 
                 <Select
@@ -149,6 +187,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     descripcion="Descripcion"
                     error={!!errors.FormaPago}
                     helperText={errors.FormaPago ? "Este campo es obligatorio" : ""}
+                    onChange={(e) => setFormaPago(e.target.value)}
                 />
 
                 <Select
@@ -159,6 +198,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     descripcion="Descripcion"
                     error={!!errors.UsoCFDI}
                     helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
+                    onChange={(e) => setUsoCFDI(e.target.value)}
                 />
 
                 <Button

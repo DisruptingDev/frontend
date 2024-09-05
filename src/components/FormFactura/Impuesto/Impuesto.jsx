@@ -5,6 +5,7 @@ import Select from "@/components/Select/Select.jsx";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 
 export default function Impuesto({
+    watch,
     register,
     setValue,
     getValues,
@@ -14,36 +15,34 @@ export default function Impuesto({
     fieldsLength,
     objetoImpuestoError,
     impuestoError,
-    setObjetoImpuestoError, // Recibir la función para manejar el error
-    setImpuestoError, // Recibir la función para manejar el error
+    setObjetoImpuestoError,
+    setImpuestoError,
     impuestoEditor,
 }) {
     const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState(0);
     const [monto, setMonto] = useState(0);
 
-
     useEffect(() => {
-        console.log('Cambio')
         if (impuestoEditor) {
-            console.log('Impuesto Editor', impuestoEditor, index);
+            console.log('Impuesto Editor:', impuestoEditor, index);
             setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
-
-            setTasa(impuestoEditor.Tasa);
+            setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
+            setTasa(impuestoEditor.Tasa || 0);
         }
     }, [impuestoEditor, index, setValue]);
+
     useEffect(() => {
         if (impuesto) {
             try {
                 const data = JSON.parse(impuesto);
                 setTasa(data["Tasa"]);
                 setValue(`impuestos[${index}].Tasa`, data["Tasa"]);
-
-                // Establece y registra el valor del campo 'Tipo'
-                setValue(`impuestos[${index}].Tipo`, data["Tipo"]); // Registra el tipo
-                // console.log("Tipo del impuesto:", data["Tipo"]); // Muestra el tipo en la consola (opcional)
+                setValue(`impuestos[${index}].NombreImpuesto`, data["Descripcion"] || ''); // Asegúrate de que NombreImpuesto se actualice
+                setValue(`impuestos[${index}].Tipo`, data["Tipo"] || ''); // Actualiza el tipo
+                console.log("Tipo del impuesto:", data["Tipo"]); // Muestra el tipo en la consola
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
             }
@@ -56,7 +55,6 @@ export default function Impuesto({
         setValue(`impuestos[${index}].Monto`, resultado);
     }, [tasa, baseImpuesto, setValue, index]);
 
-    // Validaciones cuando el campo es cambiado
     const handleObjetoImpuestoChange = (e) => {
         const value = e.target.value;
         setValue(`impuestos[${index}].ObjetoImpuesto`, value);
@@ -91,7 +89,7 @@ export default function Impuesto({
                         onChange={handleObjetoImpuestoChange}
                         error={objetoImpuestoError}
                         helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
-                        value={getValues(`impuestos[${index}].ObjetoImpuesto`) || ''}  // Asegúrate de pasar el valor correcto
+                        value={getValues(`impuestos[${index}].ObjetoImpuesto`) || ''} 
                     />
                 </Box>
 
@@ -119,7 +117,6 @@ export default function Impuesto({
                         value={tasa}
                         fullWidth
                         InputProps={{ readOnly: true }}
-
                     />
                 </Box>
 
@@ -131,7 +128,6 @@ export default function Impuesto({
                         value={baseImpuesto}
                         fullWidth
                         InputProps={{ readOnly: true }}
-
                     />
                 </Box>
 

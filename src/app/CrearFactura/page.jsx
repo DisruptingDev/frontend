@@ -43,6 +43,7 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
          TipoDeComprobante: "I",
          Exportacion: "01",
          MetodoPago: receptor.MetodoPago,
+        
          LugarExpedicion: emisor.LugarExpedicion,
          Confirmacion: "",
          InformacionGlobal: {
@@ -88,6 +89,89 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
      };
      console.log(factura);
      return factura;
+}
+function FacturaVistaPrevia(emisor, receptor, conceptos) {
+    const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
+    const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
+    const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
+        let factura = {
+            UUID: "",
+            Version: "4.0",
+            Serie: emisor.Serie,
+            Folio: "2080427804",
+            Fecha: fechaISO,
+            Sello: "",
+            FormaPago: receptor.FormaPago,
+            FormaPagoDescripcion: receptor.FormaPagoDescripcion,
+            NoCertificado: "",
+            Certificado: "",
+            CondicionesDePago: "Condiciones de Pago",
+            SubTotal: subtotal,
+            Moneda: emisor.Divisa || "MXN",
+            TipoCambio: "1",
+            Total: total,
+            TipoDeComprobante: "I",
+            Exportacion: "01",
+            MetodoPago: receptor.MetodoPago,
+            MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
+            LugarExpedicion: emisor.LugarExpedicion,
+            Confirmacion: "",
+            InformacionGlobal: {
+                Periodicidad: "01",
+                Meses: "01",
+                Año: "2024"
+            },
+            EmisorID: emisor.Emisor,
+            EmisorNombre: emisor.NombreEmisor,
+            EmisorRFC: emisor.RFCEmisor,
+            EmisorDireccion: emisor.Calle + " # " + emisor.NumerorExterior + "," + emisor.Colonia + "," + emisor.Municipio + "," + emisor.Estado,
+            EmisorRegimenFiscal: emisor.RegimenFiscal,
+
+            ReceptorID: receptor.Receptor,
+            ReceptorNombre: receptor.NombreReceptor,
+            ReceptorRFC: receptor.RFCReceptor,
+            ReceptorRegimenFiscal: receptor.RegimenFiscal,
+            ReceptorDireccion: receptor.Calle + " # " + receptor.NumerorExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            ReceptorUsoCFDI: receptor.UsoCFDI,
+            ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+            Conceptos: {
+                ListaConceptos: conceptos.map(concepto => ({
+                    ClaveProdServ: String(concepto.ClaveProdServ),
+                    NoIdentificacion: concepto.NoIdentificacion || "",
+                    Cantidad: parseInt(concepto.Cantidad, 10),
+                    ClaveUnidad: String(concepto.ClaveUnidad),
+                    Unidad: concepto.Unidad || "",
+                    Descripcion: concepto.Descripcion,
+                    ValorUnitario: concepto.ValorUnitario,
+                    Importe: concepto.Subtotal,
+                    Descuento: concepto.Descuento,
+                    ObjetoImp: concepto.ObjetoImp || "02",
+                    Impuestos: {
+                        Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                            NombreImpuesto: retencion.NombreImpuesto,
+                            Base: retencion.BaseImpuesto,
+                            ImpuestoClave: String(retencion.Impuesto),
+                            TipoFactor: retencion.Tipo,
+                            TasaOCuota: retencion.Tasa,
+                            Importe: retencion.Monto
+                        })) : [],
+                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                            NombreImpuesto: traslado.NombreImpuesto,
+                            Base: traslado.BaseImpuesto,
+                            ImpuestoClave: String(traslado.Impuesto),
+                            TipoFactor: traslado.Tipo,
+                            TasaOCuota: traslado.Tasa,
+                            Importe: traslado.Monto
+                        })) : []
+                    }
+                })),
+                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+                GrupoID: 1
+            }
+        };
+        console.log(factura);
+        return factura;
 }
 
 async function EnviarAEmisionTimbrado(factura) {
@@ -147,100 +231,11 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        console.log("Vista previa de los datos:", data);
-        // const factura=CrearObjetoFactura(data, data, conceptos);
-        const factura = {
-            Certificado: "",
-            Conceptos: {
-                GrupoID: 1,
-                ListaConceptos: [
-                    {
-                        Cantidad: 1,
-                        ClaveProdServ: "10101501",
-                        ClaveUnidad: "28",
-                        Descripcion: "Prueba",
-                        Descuento: 0,
-                        Importe: 100,
-                        Impuestos: {
-                            Retenciones: [
-                                {
-                                    Base: 100,
-                                    ImpuestoClave: "2",
-                                    TipoFactor: "Tasa",
-                                    TasaOCuota: 0.16,
-                                    Importe: 16
-                                },
-                                {
-                                    Base: 100,
-                                    ImpuestoClave: "4",
-                                    TipoFactor: "Tasa",
-                                    TasaOCuota: 0,
-                                    Importe: 0
-                                }
-                            ],
-                            Traslados: []
-                        },
-                        NoIdentificacion: "",
-                        ObjetoImp: "02",
-                        Unidad: "",
-                        ValorUnitario: 100
-                    },
-                    {
-                        Cantidad: 2,
-                        ClaveProdServ: "10151902",
-                        ClaveUnidad: "29",
-                        Descripcion: "prueba2",
-                        Descuento: 0,
-                        Importe: 400,
-                        Impuestos: {
-                            Retenciones: [],
-                            Traslados: [
-                                {
-                                    Base: 400,
-                                    ImpuestoClave: "1",
-                                    TipoFactor: "Tasa",
-                                    TasaOCuota: 0.5,
-                                    Importe: 200
-                                }
-                            ]
-                        },
-                        NoIdentificacion: "",
-                        ObjetoImp: "02",
-                        Unidad: "",
-                        ValorUnitario: 200
-                    }
-                ],
-                TotalImpuestosRetenidos: 16,
-                TotalImpuestosTrasladados: 200
-            },
-            CondicionesDePago: "Condiciones de Pago",
-            Confirmacion: "",
-            EmisorID: 93,
-            Exportacion: "01",
-            Fecha: "2024-08-29T06:00:00.000Z",
-            Folio: "2080427804",
-            FormaPago: "01",
-            InformacionGlobal: {
-                Año: "2024",
-                Meses: "01",
-                Periodicidad: "01"
-            },
-            LugarExpedicion: "72580",
-            MetodoPago: "PUE",
-            Moneda: "MXN",
-            NoCertificado: "",
-            ReceptorID: 28,
-            Sello: "",
-            Serie: "F",
-            SubTotal: 500,
-            TipoCambio: "1",
-            TipoDeComprobante: "I",
-            Total: 700,
-            UUID: "",
-            Version: "4.0"
-        };    
+        // console.log("Vista previa de los datos:", data);
+        const factura=FacturaVistaPrevia(data, data, conceptos);
+       
        console.log('Llamando a generatePDF con la factura:', factura);
-       const vistaPrevia = generarVistaPrevia(factura);
+       const vistaPrevia = await generarVistaPrevia(factura);
        setPreviewContent(vistaPrevia);
        setOpenModal(true);
 
@@ -253,8 +248,9 @@ export default function CrearFactura() {
     });
 
     const handleEditConcepto = (index) => {
-        console.log("Edit concepto");
+        // console.log("Edit concepto");
         const conceptoToEdit = conceptos[index];
+        console.log("Edit concepto",conceptos[index]);
         setEditIndex(index);
         // Setear los valores del concepto en el formulario
         setValue('Descripcion', conceptoToEdit.Descripcion);
@@ -290,6 +286,7 @@ export default function CrearFactura() {
                 /> 
                 
                 <Conceptos
+                trigger={trigger} 
                     register={register}
                     watch={watch}
                     setValue={setValue}
@@ -318,7 +315,7 @@ export default function CrearFactura() {
                 aria-labelledby="modal-vista-previa"
                 aria-describedby="vista-previa-factura"
             >
-                <Box sx={{ maxHeight: '90vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '80%', maxWidth: '800px' }}>
+                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
                     <div dangerouslySetInnerHTML={{ __html: previewContent }} />
                 </Box>
             </Modal>
