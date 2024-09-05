@@ -76,6 +76,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 Logo: imagePath, // Incluye la ruta de la imagen en los datos
             }
         };
+        console.log('EmpresaData:', JSON.stringify(empresaData));
 
         setLoading(true);
 
