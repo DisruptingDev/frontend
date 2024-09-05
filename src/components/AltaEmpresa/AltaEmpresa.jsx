@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
+import Image from 'next/image';
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     const { register, handleSubmit, setValue, formState: { errors }, watch } = useForm();
@@ -247,7 +248,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     />
                     {imagePreview && (
                         <Box mt={2}>
-                            <img src={imagePreview} alt="Vista previa" width="200" />
+                             <Image src={imagePreview} alt="Vista previa" width={200} height={150} />
                         </Box>
                     )}
                 </Box>
