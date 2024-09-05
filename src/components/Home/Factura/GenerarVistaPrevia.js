@@ -126,6 +126,8 @@ const impuestos = retencionesHTML + trasladosHTML;
 
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
+
+    .replace('{{logo}}',"/uploads/pngegg.png")
     .replace('{{nombreEmisor}}',factura.EmisorNombre)
     .replace('{{rfcEmisor}}',factura.EmisorRFC)
     .replace('{{direccionEmisor}}',factura.EmisorDireccion)

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
@@ -10,6 +10,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [image, setImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
+    const [imagePath, setImagePath] = useState('');
 
     useEffect(() => {
         setValue("Nombre", issuerName);
@@ -26,6 +29,43 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
         handleSubmit(onSubmit)(data);
     };
 
+    const handleImageChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Crear vista previa de la imagen seleccionada
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));
+    
+            // Subir imagen al servidor para obtener la ruta
+            const formData = new FormData();
+            formData.append('file', file); // Asegúrate de que el nombre coincida con lo que espera la API
+    
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                if (!response.ok) {
+                    throw new Error('Error al subir la imagen');
+                }
+    
+                const result = await response.json();
+                console.log('Ruta del archivo:', result.filePath);
+                setImagePath(result.filePath); // Guardar la ruta de la imagen
+                setSnackbarMessage('Imagen subida correctamente.');
+                setSnackbarSeverity('success');
+                setOpenSnackbar(true);
+            } catch (error) {
+                console.error('Error al subir la imagen:', error);
+                setSnackbarMessage('Error al subir la imagen.');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+            }
+        }
+    };
+    
+
     const onSubmit = async (data) => {
         const empresaData = {
             Emisor: {
@@ -33,6 +73,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 Nombre: data.Nombre,
                 RegimenFiscal: data.RegimenFiscal,
                 LugarExpedicion: data.LugarExpedicion,
+                Logo: imagePath, // Incluye la ruta de la imagen en los datos
             }
         };
 
@@ -49,7 +90,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
                 setSnackbarMessage('Error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
@@ -196,6 +236,19 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         {...register("Estado", { required: false })}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
+                </Box>
+                <Box my={2}>
+                    <Typography variant="h6">Subir Logo</Typography>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                    />
+                    {imagePreview && (
+                        <Box mt={2}>
+                            <img src={imagePreview} alt="Vista previa" width="200" />
+                        </Box>
+                    )}
                 </Box>
                 <Box
                     my={4}
