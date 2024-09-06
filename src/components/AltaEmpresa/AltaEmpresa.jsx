@@ -15,6 +15,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     const [imagePreview, setImagePreview] = useState('');
     const [imagePath, setImagePath] = useState('');
 
+    const rfcValue = watch("Rfc"); // Observar el valor del RFC
+
     useEffect(() => {
         setValue("Nombre", issuerName);
         setValue("Rfc", issuerRfc);
@@ -39,7 +41,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     
             // Subir imagen al servidor para obtener la ruta
             const formData = new FormData();
-            formData.append('file', file); // Asegúrate de que el nombre coincida con lo que espera la API
+            formData.append('file', file); 
+            formData.append('rfc', rfcValue); // Añadir RFC al FormData
     
             try {
                 const response = await fetch('/api/upload', {
@@ -66,7 +69,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
         }
     };
     
-
     const onSubmit = async (data) => {
         const empresaData = {
             Emisor: {
@@ -74,7 +76,13 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 Nombre: data.Nombre,
                 RegimenFiscal: data.RegimenFiscal,
                 LugarExpedicion: data.LugarExpedicion,
-                Logo: imagePath, // Incluye la ruta de la imagen en los datos
+                LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
+                Calle:data.Calle || "",
+                NumeroExterior: parseInt(data.NumeroExterior) || "",
+                NumeroInterior: parseInt(data.NumeroInterior) || "",
+                Colonia: data.Colonia || "",
+                Municipio: data.Municipio || "",
+                Estado: data.Estado || "",
             }
         };
         console.log('EmpresaData:', JSON.stringify(empresaData));
@@ -141,7 +149,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         disabled
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
-                       register={register} // Pasa register como prop
+                        {...register("Rfc", { required: "El RFC es obligatorio" })} // Añadir validación requerida
                         onChange={(e) => setValue("Rfc", e.target.value)}
                         value={watch("Rfc", issuerRfc)}
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
@@ -239,19 +247,23 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         sx={{ alignSelf: 'start', 'margin-top': '0px' }}
                     />
                 </Box>
-                <Box my={2}>
-                    <Typography variant="h6">Subir Logo</Typography>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                    />
-                    {imagePreview && (
-                        <Box mt={2}>
-                             <Image src={imagePreview} alt="Vista previa" width={200} height={150} />
-                        </Box>
-                    )}
-                </Box>
+
+                {rfcValue && ( // Mostrar input de subir imagen solo si RFC tiene valor
+                    <Box my={2}>
+                        <Typography variant="h6">Subir Logo</Typography>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                        />
+                        {imagePreview && (
+                            <Box mt={2}>
+                                <Image src={imagePreview} alt="Vista previa" width={200} height={150} />
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
                 <Box
                     my={4}
                     mx={0}

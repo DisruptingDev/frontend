@@ -4,20 +4,16 @@ import path from 'path';
 
 export const runtime = 'nodejs'; 
 
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+const uploadDir = path.join(process.cwd(), 'public', 'logos');
 
 export async function POST(request) {
   try {
-    // Verificar y crear la carpeta de subida si no existe
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     const data = await request.formData();
     const file = data.get('file');
+    const rfc = data.get('rfc'); // Obtén el RFC del formulario
 
-    if (!file) {
-      return new Response(JSON.stringify({ success: false, message: 'No file uploaded' }), {
+    if (!file || !rfc) {
+      return new Response(JSON.stringify({ success: false, message: 'No file or RFC provided' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -26,7 +22,14 @@ export async function POST(request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const filePath = path.join(uploadDir, file.name);
+    // Crear la carpeta del RFC si no existe
+    const companyDir = path.join(uploadDir, rfc);
+    if (!fs.existsSync(companyDir)) {
+      fs.mkdirSync(companyDir, { recursive: true });
+    }
+
+    // Guardar el archivo como logo.png dentro de la carpeta del RFC
+    const filePath = path.join(companyDir, 'logo.png');
 
     // Manejo de errores al escribir el archivo
     try {
@@ -41,7 +44,7 @@ export async function POST(request) {
 
     console.log(`Archivo guardado en: ${filePath}`);
 
-    return new Response(JSON.stringify({ success: true, filePath: `/uploads/${file.name}` }), {
+    return new Response(JSON.stringify({ success: true, filePath: `/logos/${rfc}/logo.png` }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
