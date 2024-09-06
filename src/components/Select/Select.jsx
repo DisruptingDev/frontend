@@ -31,7 +31,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value }) {
+export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(value || '');
 
@@ -56,7 +56,7 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
     };
 
     return (
-        <FormControl fullWidth className={className} sx={sx} variant={variant} error={error}>
+        <FormControl fullWidth className={className} sx={sx} variant={variant} error={error} disabled={disabled}>
             <InputLabel>{label}</InputLabel>
             <MuiSelect
                 {...register(nombre, {
@@ -67,6 +67,7 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
                 label={label}
                 variant={variant}
                 onChange={handleChange}
+                disabled={disabled}
             >
                 <MenuItem value="" disabled>Selecciona una opción</MenuItem>
                 {Array.isArray(opciones) && opciones.length > 0 ? (
