@@ -126,6 +126,7 @@ function FacturaVistaPrevia(emisor, receptor, conceptos) {
             EmisorRFC: emisor.RFCEmisor,
             EmisorDireccion: emisor.Calle + " # " + emisor.NumerorExterior + "," + emisor.Colonia + "," + emisor.Municipio + "," + emisor.Estado,
             EmisorRegimenFiscal: emisor.RegimenFiscal,
+            EmisorLogo:emisor.LogoEmisor,
 
             ReceptorID: receptor.Receptor,
             ReceptorNombre: receptor.NombreReceptor,

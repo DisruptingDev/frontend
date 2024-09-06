@@ -12,11 +12,11 @@ import {
   Checkbox,
   TablePagination,
   Box,
-  TextField,
 } from '@mui/material';
 
-function createData(id, folio, emisor, receptor, serie, estatus, subtotal, traslados, retenciones, total, usuario) {
-  return { id, folio, emisor, receptor, serie, estatus, subtotal, traslados, retenciones, total, usuario };
+function createData(item) {
+  // Retorna todo el objeto original para que contenga toda la información
+  return { ...item };
 }
 
 // Función para formatear como moneda
@@ -32,7 +32,7 @@ export default function DataTable() {
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  // const [filters, setFilters] = useState({ id: '', folio: '', emisor: '', receptor: '' });
+  const [selectedRow, setSelectedRow] = useState(null); // Estado para la fila seleccionada
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,23 +50,11 @@ export default function DataTable() {
 
         if (Array.isArray(data)) {
           const transformedData = data.map((item) =>
-            createData(
-              item.ID,
-              item.Folio,
-              item.Emisor.Nombre || 'Desconocido',
-              item.Receptor.Nombre || 'Desconocido',
-              item.Serie,
-              'Timbrada',
-              item.SubTotal,
-              item.Conceptos?.TotalImpuestosTrasladados || 0,
-              item.Conceptos?.TotalImpuestosRetenidos || 0,
-              item.Total,
-              'Usuario'
-            )
+            createData(item) // Guarda todo el objeto original
           );
 
           // Ordena los datos por id en orden descendente
-          const sortedData = transformedData.sort((a, b) => b.id - a.id);
+          const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
           setRows(sortedData);
         } else {
           console.error('Expected an array but received:', typeof data);
@@ -79,21 +67,10 @@ export default function DataTable() {
     fetchData();
   }, []);
 
-  // Filtra los datos basándose en los filtros
-  // const filteredRows = rows.filter((row) =>
-  //   (filters.id ? row.id.toString().includes(filters.id) : true) &&
-  //   (filters.folio ? row.folio.toLowerCase().includes(filters.folio.toLowerCase()) : true) &&
-  //   (filters.emisor ? row.emisor.toLowerCase().includes(filters.emisor.toLowerCase()) : true) &&
-  //   (filters.receptor ? row.receptor.toLowerCase().includes(filters.receptor.toLowerCase()) : true)
-  // );
-
-  // const handleFilterChange = (event) => {
-  //   const { name, value } = event.target;
-  //   setFilters({
-  //     ...filters,
-  //     [name]: value,
-  //   });
-  // };
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    console.log('Selected row:', row); // Muestra la fila seleccionada en la consola
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -126,95 +103,30 @@ export default function DataTable() {
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Total</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Usuario</TableCell>
               </TableRow>
-              {/* <TableRow sx={{ padding: 0 }}>
-                <TableCell padding="checkbox" sx={{ textAlign: 'center' }}></TableCell>
-                <TableCell sx={{ padding: 0 }} align='center'>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    name="id"
-                    value={filters.id}
-                    onChange={handleFilterChange}
-                    placeholder="ID"
-                    fullWidth
-                    sx={{
-                      width: { xs: '60px', sm: '80px', md: '80px' }, // Ancho responsivo
-             
-                    }}
-                  />
-                </TableCell>
-                <TableCell sx={{ px: "1" }} align='center'>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    name="folio"
-                    value={filters.folio}
-                    onChange={handleFilterChange}
-                    placeholder="Folio"
-                    fullWidth
-                    sx={{
-                      width: { xs: '80px', sm: '100px', md: '140px' }, // Ancho responsivo
-                    }}
-                  />
-                </TableCell>
-                <TableCell align='center' sx={{ padding: 0 }}>
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    name="emisor"
-                    value={filters.emisor}
-                    onChange={handleFilterChange}
-                    placeholder="Emisor"
-                    fullWidth
-                    // sx={{
-                    //   width: { xs: '100px', sm: '120px', md: '120px' }, // Ancho responsivo
-                    // }}
-                  />
-                </TableCell>
-                <TableCell align='center' sx={{ padding: 0 }}> 
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    name="receptor"
-                    value={filters.receptor}
-                    onChange={handleFilterChange}
-                    placeholder="Receptor"
-                    fullWidth
-                    // sx={{
-                    //   width: { xs: '100px', sm: '120px', md: '150px' }, // Ancho responsivo
-                    //   marginBottom: '4px',
-                    // }}
-                  />
-                </TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-                <TableCell></TableCell>
-              </TableRow> */}
             </TableHead>
             <TableBody>
-              
               {rows
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow 
+                    key={row.ID} 
+                    onClick={() => handleRowClick(row)} 
+                    style={{ cursor: 'pointer' }} // Cambia el cursor para indicar que la fila es clickeable
+                  >
                     <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
                       <Checkbox color="primary" />
                     </TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.id}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.folio}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.emisor}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.receptor}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.serie}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.estatus}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.subtotal)}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.traslados)}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.retenciones)}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.total)}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.usuario}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Folio}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Estatus || 'Timbrada'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Total)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Usuario || 'Usuario'}</TableCell>
                   </TableRow>
                 ))}
             </TableBody>
@@ -224,7 +136,6 @@ export default function DataTable() {
           rowsPerPageOptions={[10, 25, 50]}
           component="div"
           count={rows.length}
-          // count={filteredRows.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -233,6 +144,13 @@ export default function DataTable() {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
         />
       </Paper>
+      {/* Muestra la información completa de la fila seleccionada */}
+      {selectedRow && (
+        <Box mt={2}>
+          <h3>Información Completa de la Fila Seleccionada:</h3>
+          <pre>{JSON.stringify(selectedRow, null, 2)}</pre>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -38,6 +38,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
             setValue("MunicipioEmisor", emisor.Municipio)
             setValue("EstadoEmisor", emisor.Estado)
             setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
+            setValue("LogoEmisor", emisor.LogoPath)
 
             // Dispara la validación de estos campos
             trigger("RFCEmisor");
