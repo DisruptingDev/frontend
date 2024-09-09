@@ -30,6 +30,24 @@ export default function EditarFactura() {
         Serie: FacturaEdit.Serie,
         Fecha: FacturaEdit.Fecha
     });
+    const getDatosReceptor = (FacturaEdit) => ({
+        ID: FacturaEdit.ReceptorID,
+        Rfc: FacturaEdit.Receptor.Rfc,
+        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscal,
+        Nombre: FacturaEdit.Receptor.Nombre,
+        UsoCFDI: FacturaEdit.Receptor.UsoCFDI,
+        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscal,
+        LugarExpedicion: FacturaEdit.Receptor.LugarExpedicion,
+        Calle: FacturaEdit.Receptor.Calle,
+        NoExterior: FacturaEdit.Receptor.NoExterior,
+        NoInterior: FacturaEdit.Receptor.NoInterior,
+        Colonia: FacturaEdit.Receptor.Colonia,
+        Municipio: FacturaEdit.Receptor.Municipio,
+        Estado: FacturaEdit.Receptor.Estado,
+        MetodoPago: FacturaEdit.MetodoPago,
+        FormaPago: FacturaEdit.FormaPago
+
+    });
     useEffect(() => {
         // Este bloque solo se ejecuta en el cliente
         const factura = JSON.parse(localStorage.getItem('EditFactura'));
@@ -38,7 +56,7 @@ export default function EditarFactura() {
 
     // Memoize emisorData para evitar renders innecesarios
     const emisorData = useMemo(() => facturaEdit ? getDatosEmisor(facturaEdit) : {}, [facturaEdit]); // Usa facturaEdit aquí
-
+    const receptorData = useMemo(() => facturaEdit ? getDatosReceptor(facturaEdit) : {}, [facturaEdit]);
    
 
     const onSubmit = (data) => {
@@ -99,7 +117,9 @@ export default function EditarFactura() {
                     lugarExpedicion={lugarExpedicion}
                     errors={errors}
                     setValue={setValue}
+                    getValues={getValues}
                     trigger={trigger}
+                    receptorData={receptorData}
                 />
 
                 <Conceptos

@@ -5,7 +5,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue}) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData}) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -15,6 +15,34 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
     const [regimenFiscal, setRegimenFiscal] = useState("");
     const [openModal, setOpenModal] = useState(false);
+
+    useEffect(() =>{
+        if(receptorData){
+         
+            setValue("RecetorID",receptorData.ID); 
+            setRFC(receptorData.Rfc);
+            setValue("RFCReceptor", receptorData.Rfc);
+            setValue("NombreReceptor", receptorData.Nombre);
+            setValue("Calle", receptorData.Calle);
+            setValue("NoExterior", receptorData.NumeroExterior);
+            // setValue("NoInterior", data["NoInterior"]);
+            setValue("Colonia",receptorData.Colonia);
+            setValue("Municipio", receptorData.Municipio);
+            setValue("Estado", receptorData.Estado);
+
+            // setDomicilioFiscal(receptorData.DomicilioFiscalReceptor);
+            setValue("DomicilioFiscalReceptor", receptorData.DomicilioFiscalReceptor);
+            // setRegimenFiscal(receptorData.RegimenFiscalReceptor);
+            setValue("RegimenFiscalReceptor",receptorData.RegimenFiscalReceptor);
+            // setFormaPago(receptorData.FormaPago);
+            setValue("FormaPago", receptorData.FormaPago);
+            // setMetodoPago(receptorData.MetodoPago);
+            setValue("MetodoPago",receptorData.MetodoPago);
+            // setUsoCFDI(receptorData.UsoCFDI);
+            setValue("UsoCFDI", receptorData.UsoCFDI);
+
+        }
+    },[receptorData, setValue, trigger, getValues]);
 
     useEffect(() => {
         if (receptor !== undefined) {
@@ -105,6 +133,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     onChange={(e) => setReceptor(e.target.value)}
                     error={!!errors.Emisor}
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("ReceptorID") || ""}
                 />
 
                 <TextField
@@ -157,15 +186,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     disabled
                 />
 
-                {/* <Select
-                    register={register}
-                    nombre="RegimenFiscal"
-                    url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                    clave="Clave"
-                    descripcion="Descripcion"
-                    error={!!errors.RegimenFiscal}
-                    helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                /> */}
 
                 <Select
                     register={register}
@@ -176,6 +196,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     error={!!errors.MetodoPago}
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setMetodoPago(e.target.value)}
+                    value={getValues("MetodoPago") || ""}
                     
                 />
 
@@ -188,6 +209,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     error={!!errors.FormaPago}
                     helperText={errors.FormaPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setFormaPago(e.target.value)}
+                    value={getValues("FormaPago") || ""}
                 />
 
                 <Select
@@ -199,6 +221,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     error={!!errors.UsoCFDI}
                     helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setUsoCFDI(e.target.value)}
+                    value={getValues("UsoCFDI") || ""}
                 />
 
                 <Button

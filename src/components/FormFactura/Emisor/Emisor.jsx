@@ -29,12 +29,13 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
         if (emisorData) {
             console.log('EmisorEdit', emisorData);
             setEmisor(emisorData);
+            //Checar, posible usar un useState
             setValue("EmisorID", emisorData.ID);
             setValue("RFCEmisor", emisorData.Rfc);
             setValue("LugarExpedicion", emisorData.LugarExpedicion);
             setValue("NombreEmisor", emisorData.Nombre);
             setValue("Calle", emisorData.Calle);
-            setValue("NoExterior", emisorData.NoExterior);
+            setValue("NoExterior", emisorData.NumeroExterior);
             setValue("NoInterior", emisorData.NoInterior);
             setValue("ColoniaEmisor", emisorData.Colonia);
             setValue("MunicipioEmisor", emisorData.Municipio);
