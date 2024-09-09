@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
-export default function Emisor({ register, setLugarExpedicion, setValue, trigger, errors }) {
+export default function Emisor({ register, setValue, getValues, trigger, errors, emisorData }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -24,41 +24,42 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
         setMaxDate(formatDate(today));
     }, []);
 
-    // Cada vez que se selecciona un nuevo Emisor
+    // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
-        if (emisor && emisor.Rfc) {
-            // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
-            setValue("RFCEmisor", emisor.Rfc);
-            setValue("LugarExpedicion", emisor.LugarExpedicion);
-            setValue("NombreEmisor", emisor.Nombre);
-            setValue("Caller", emisor.Calle)
-            setValue("NoExterior", emisor.NoExterior)
-            setValue("NoInterior", emisor.NoInterior)
-            setValue("ColoniaEmisor", emisor.Colonia)
-            setValue("MunicipioEmisor", emisor.Municipio)
-            setValue("EstadoEmisor", emisor.Estado)
-            setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
-            setValue("LogoEmisor", emisor.LogoPath)
+        if (emisorData) {
+            console.log('EmisorEdit', emisorData);
+            setEmisor(emisorData);
+            setValue("EmisorID", emisorData.ID);
+            setValue("RFCEmisor", emisorData.Rfc);
+            setValue("LugarExpedicion", emisorData.LugarExpedicion);
+            setValue("NombreEmisor", emisorData.Nombre);
+            setValue("Calle", emisorData.Calle);
+            setValue("NoExterior", emisorData.NoExterior);
+            setValue("NoInterior", emisorData.NoInterior);
+            setValue("ColoniaEmisor", emisorData.Colonia);
+            setValue("MunicipioEmisor", emisorData.Municipio);
+            setValue("EstadoEmisor", emisorData.Estado);
+            setValue("RegimenFiscalEmisor", emisorData.RegimenFiscal);
+            setValue("LogoEmisor", emisorData.LogoPath);
+            setValue("Serie", emisorData.Serie);
+
+            // Solo establece la fecha si no está definida
+            if (!getValues("Fecha")) {
+                const formattedDate = emisorData.Fecha ? new Date(emisorData.Fecha).toISOString().split('T')[0] : '';
+                setValue("Fecha", formattedDate);
+            }
 
             // Dispara la validación de estos campos
-            trigger("RFCEmisor");
-            trigger("LugarExpedicion");
-
-            // También actualiza el lugar de expedición en el componente padre
-            setLugarExpedicion(emisor.LugarExpedicion);
+            trigger(["RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
-    }, [emisor, setValue, setLugarExpedicion, trigger]);
-    useEffect(() => {
-        // Establece el valor por defecto para 'Divisa'
-        setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
-    }, [setValue]);
+    }, [emisorData, setValue, trigger, getValues]);
 
     const handleEmisorChange = (e) => {
         try {
-            const data = JSON.parse(e.target.value); // Asegura que es un JSON válido
+            const data = JSON.parse(e.target.value);
             setEmisor(data);
             console.log(data);
-        } catch (e) {
+        } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
@@ -80,7 +81,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
             >
                 <Select
                     register={register}
-                    trigger={trigger} // Pasa trigger como prop
+                    trigger={trigger}
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
                     id="ID"
@@ -89,21 +90,22 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     onChange={handleEmisorChange}
                     error={!!errors.Emisor}
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("EmisorID") || ""}
                 />
 
                 <TextField
                     label="RFC"
                     {...register("RFCEmisor", { required: "El RFC del emisor es requerido." })}
                     fullWidth
-                    value={emisor.Rfc || ""}
+                    value={getValues("RFCEmisor") || ""}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             '&.Mui-error fieldset': {
-                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                                borderColor: '#d32f2f',
                             }
                         }
                     }}
-                    error={!!errors.RFCEmisor} // Muestra error si hay errores en RFCEmisor
+                    error={!!errors.RFCEmisor}
                     helperText={errors.RFCEmisor && errors.RFCEmisor.message}
                     disabled
                 />
@@ -112,15 +114,15 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     label="Lugar Expedicion"
                     {...register("LugarExpedicion", { required: "El lugar de expedición es requerido." })}
                     fullWidth
-                    value={emisor.LugarExpedicion || ""}
+                    value={getValues("LugarExpedicion") || ""}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             '&.Mui-error fieldset': {
-                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                                borderColor: '#d32f2f',
                             }
                         }
                     }}
-                    error={!!errors.LugarExpedicion} // Muestra error si hay errores en LugarExpedicion
+                    error={!!errors.LugarExpedicion}
                     helperText={errors.LugarExpedicion && errors.LugarExpedicion.message}
                     disabled
                 />
@@ -133,13 +135,25 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     descripcion="Descripcion"
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
-                   
+                    value={getValues("Serie") || ""}
                 />
 
                 <TextField
                     label="Fecha"
                     type="date"
-                    {...register("Fecha", { required: "La fecha es requerida." })}
+                    // {...register("Fecha", { required: "La fecha es requerida." })}
+                    {...register("Fecha", { 
+                        required: "La fecha es requerida.",
+                        validate: {
+                            notTooOld: (value) => {
+                                const currentDate = new Date();
+                                const inputDate = new Date(value);
+                                const threeDaysAgo = new Date();
+                                threeDaysAgo.setDate(currentDate.getDate() - 3);
+                                return inputDate >= threeDaysAgo || "Fecha invalida";
+                            }
+                        }
+                    })}
                     fullWidth
                     InputLabelProps={{
                         shrink: true,
@@ -149,19 +163,11 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     }}
                     error={!!errors.Fecha}
                     helperText={errors.Fecha && errors.Fecha.message}
+                    // value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
+                    // onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
                 />
 
-                {/* <Select
-                    // register={register}
-                    nombre="Divisa"
-                    url=""
-                    clave="Codigo"
-                    descripcion="Descripcion"
-                    error={!!errors.Divisa}
-                    helperText={errors.Divisa ? "Este campo es obligatorio" : ""}
-                  
-                /> */}
-                  <TextField
+                <TextField
                     label="Divisa"
                     {...register("Divisa", { required: "Campo obligatorio" })}
                     fullWidth
@@ -172,7 +178,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             '&.Mui-error fieldset': {
-                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                                borderColor: '#d32f2f',
                             }
                         }
                     }}
@@ -180,7 +186,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
 
                 <TextField
                     label="Tipo de cambio"
-                    // {...register("TipoCambio", { required: "El tipo de cambio es requerido." })}
                     fullWidth
                     disabled
                     error={!!errors.TipoCambio}
@@ -188,7 +193,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, trigger
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             '&.Mui-error fieldset': {
-                                borderColor: '#d32f2f', // Cambia el borde a rojo si hay error
+                                borderColor: '#d32f2f',
                             }
                         }
                     }}

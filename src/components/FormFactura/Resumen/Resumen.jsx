@@ -40,20 +40,20 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                 <td>{concepto.TotalRetenciones}</td>
                                 <td>{concepto.Subtotal + concepto.TotalTraslados + concepto.TotalRetenciones}</td>
                                 <td>
-                                <button
-    type="button"
-    onClick={() => handleEditConcepto(index)}
-    className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-md shadow-sm transition duration-200 ease-in-out"
->
-    Editar
-</button>
-<button
-    type="button"
-    onClick={() => handleDeleteConcepto(index)}
-    className="px-3 py-1 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md shadow-sm transition duration-200 ease-in-out ml-2"
->
-    Eliminar
-</button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleEditConcepto(index)}
+                                        className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-md shadow-sm transition duration-200 ease-in-out"
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteConcepto(index)}
+                                        className="px-3 py-1 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md shadow-sm transition duration-200 ease-in-out ml-2"
+                                    >
+                                        Eliminar
+                                    </button>
                                 </td>
                             </tr>
                         ))}

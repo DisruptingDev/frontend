@@ -12,7 +12,12 @@ import {
   Checkbox,
   TablePagination,
   Box,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { useRouter } from 'next/navigation';
 
 function createData(item) {
   // Retorna todo el objeto original para que contenga toda la información
@@ -33,6 +38,9 @@ export default function DataTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedRow, setSelectedRow] = useState(null); // Estado para la fila seleccionada
+  const [anchorEl, setAnchorEl] = useState(null); // Estado para el ancla del menú
+  const [menuRow, setMenuRow] = useState(null); // Estado para la fila asociada al menú abierto
+  const router = useRouter(); // Hook de Next.js para manejar la navegación
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,6 +80,32 @@ export default function DataTable() {
     console.log('Selected row:', row); // Muestra la fila seleccionada en la consola
   };
 
+  const handleMenuClick = (event, row) => {
+    setAnchorEl(event.currentTarget);
+    setMenuRow(row);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuRow(null);
+  };
+
+  const handleEdit = () => {
+    // Guarda los datos de la fila seleccionada en localStorage
+    localStorage.setItem('EditFactura', JSON.stringify(menuRow));
+    handleMenuClose();
+    // Redirige a la página de edición con los datos
+    router.push('/EditarFactura'); // Cambia '/editar' por la ruta real de tu página de edición
+  };
+
+  const handleClone = () => {
+    // Guarda los datos de la fila seleccionada en localStorage
+    localStorage.setItem('selectedRowData', JSON.stringify(menuRow));
+    handleMenuClose();
+    // Redirige a la página de clonación con los datos
+    // router.push('/clonar'); // Cambia '/clonar' por la ruta real de tu página de clonación
+  };
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -101,7 +135,7 @@ export default function DataTable() {
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Traslados</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Total</TableCell>
-                <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Usuario</TableCell>
+                <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -126,7 +160,22 @@ export default function DataTable() {
                     <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Total)}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.Usuario || 'Usuario'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <IconButton onClick={(event) => handleMenuClick(event, row)}>
+                        <MoreVertIcon />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleMenuClose}
+                      >
+                        {/* Mostrar "Editar" solo si el estatus es diferente a "Timbrada" */}
+                        {menuRow && menuRow.Estatus !== 'Timbrada' && (
+                          <MenuItem onClick={handleEdit}>Editar</MenuItem>
+                        )}
+                        <MenuItem onClick={handleClone}>Clonar</MenuItem>
+                      </Menu>
+                    </TableCell>
                   </TableRow>
                 ))}
             </TableBody>
