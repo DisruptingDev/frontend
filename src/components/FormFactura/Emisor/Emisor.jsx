@@ -36,7 +36,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             setValue("NombreEmisor", emisorData.Nombre);
             setValue("Calle", emisorData.Calle);
             setValue("NoExterior", emisorData.NumeroExterior);
-            setValue("NoInterior", emisorData.NoInterior);
+            setValue("NoInterior", emisorData.NumeroInterior);
             setValue("ColoniaEmisor", emisorData.Colonia);
             setValue("MunicipioEmisor", emisorData.Municipio);
             setValue("EstadoEmisor", emisorData.Estado);
@@ -54,6 +54,35 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             trigger(["RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
     }, [emisorData, setValue, trigger, getValues]);
+
+     // Cada vez que se selecciona un nuevo Emisor
+     useEffect(() => {
+        if (emisor && emisor.Rfc) {
+            // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
+            setValue("RFCEmisor", emisor.Rfc);
+            setValue("LugarExpedicion", emisor.LugarExpedicion);
+            setValue("NombreEmisor", emisor.Nombre);
+            setValue("Calle", emisor.Calle)
+            setValue("NoExterior", emisor.NumeroExterior)
+            setValue("NoInterior", emisor.NumeroInterior)
+            setValue("ColoniaEmisor", emisor.Colonia)
+            setValue("MunicipioEmisor", emisor.Municipio)
+            setValue("EstadoEmisor", emisor.Estado)
+            setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
+            setValue("LogoEmisor", emisor.LogoPath)
+
+
+            // Dispara la validación de estos campos
+            trigger("RFCEmisor");
+            trigger("LugarExpedicion");
+
+     
+        }
+    }, [emisor, setValue,  trigger]);
+    useEffect(() => {
+        // Establece el valor por defecto para 'Divisa'
+        setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
+    }, [setValue]);
 
     const handleEmisorChange = (e) => {
         try {

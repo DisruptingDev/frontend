@@ -5,7 +5,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData}) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -16,33 +16,41 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [regimenFiscal, setRegimenFiscal] = useState("");
     const [openModal, setOpenModal] = useState(false);
 
-    useEffect(() =>{
-        if(receptorData){
-         
-            setValue("RecetorID",receptorData.ID); 
+    useEffect(() => {
+        if (receptorData) {
+            console.log("Receptor data", receptorData);
+            setValue("ReceptorID", receptorData.ID);
             setRFC(receptorData.Rfc);
             setValue("RFCReceptor", receptorData.Rfc);
             setValue("NombreReceptor", receptorData.Nombre);
             setValue("Calle", receptorData.Calle);
             setValue("NoExterior", receptorData.NumeroExterior);
             // setValue("NoInterior", data["NoInterior"]);
-            setValue("Colonia",receptorData.Colonia);
+            setValue("Colonia", receptorData.Colonia);
             setValue("Municipio", receptorData.Municipio);
             setValue("Estado", receptorData.Estado);
 
             // setDomicilioFiscal(receptorData.DomicilioFiscalReceptor);
             setValue("DomicilioFiscalReceptor", receptorData.DomicilioFiscalReceptor);
             // setRegimenFiscal(receptorData.RegimenFiscalReceptor);
-            setValue("RegimenFiscalReceptor",receptorData.RegimenFiscalReceptor);
+            setValue("RegimenFiscalReceptor", receptorData.RegimenFiscalReceptor);
             // setFormaPago(receptorData.FormaPago);
             setValue("FormaPago", receptorData.FormaPago);
             // setMetodoPago(receptorData.MetodoPago);
-            setValue("MetodoPago",receptorData.MetodoPago);
+            setValue("MetodoPago", receptorData.MetodoPago);
             // setUsoCFDI(receptorData.UsoCFDI);
             setValue("UsoCFDI", receptorData.UsoCFDI);
 
+            
+            if (rfc === "XAXX010101000") {
+                setHiddeInfoGlobal(false);
+              
+            } else {
+                setHiddeInfoGlobal(true);
+            }
+
         }
-    },[receptorData, setValue, trigger, getValues]);
+    }, [receptorData, setValue, trigger, getValues]);
 
     useEffect(() => {
         if (receptor !== undefined) {
@@ -61,8 +69,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("RFCReceptor", data["Rfc"]);
             setValue("NombreReceptor", data["Nombre"]);
             setValue("Calle", data["Calle"]);
-            setValue("NoExterior", data["NoExterior"]);
-            // setValue("NoInterior", data["NoInterior"]);
+            setValue("NoExterior", data["NumeroExterior"]);
+            setValue("NoInterior", data["NumeroInterior"]);
             setValue("Colonia", data["Colonia"]);
             setValue("Municipio", data["Municipio"]);
             setValue("Estado", data["Estado"]);
@@ -70,38 +78,38 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
 
             console.log("RFCReceptor", data["Rfc"]);
-             // Dispara la validación de estos campos
-             trigger("RFCReceptor");
-             trigger("DomicilioFiscalReceptor");
-             trigger("RegimenFiscal");
- 
-        }
-    }, [receptor, lugarExpedicion,trigger,setValue]);
+            // Dispara la validación de estos campos
+            trigger("RFCReceptor");
+            trigger("DomicilioFiscalReceptor");
+            trigger("RegimenFiscal");
 
-    useEffect(()=>{
-        if(metodoPago !==undefined){
+        }
+    }, [receptor, lugarExpedicion, trigger, setValue]);
+
+    useEffect(() => {
+        if (metodoPago !== undefined) {
             let data = JSON.parse(metodoPago);
             setValue("MetodoPagoDescripcion", data["Descripcion"]);
         }
-    },[metodoPago,setValue])
+    }, [metodoPago, setValue])
 
-    useEffect(()=>{
-        if(formaPago !==undefined){
+    useEffect(() => {
+        if (formaPago !== undefined) {
             let data = JSON.parse(formaPago);
             setValue("FormaPagoDescripcion", data["Descripcion"]);
         }
-    },[formaPago,setValue])
+    }, [formaPago, setValue])
 
-    useEffect(()=>{
-        if(usoCFDI !==undefined){
+    useEffect(() => {
+        if (usoCFDI !== undefined) {
             let data = JSON.parse(usoCFDI);
             setValue("UsoCFDIDescripcion", data["Descripcion"]);
         }
-    },[usoCFDI,setValue])
+    }, [usoCFDI, setValue])
 
 
 
-   
+
     const handleOpenModal = () => {
         setOpenModal(true);
     };
@@ -120,7 +128,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.2fr 0.2fr'
+                    lg: '1fr 0.6fr 0.5fr 0.5fr 1.2fr 0.2fr 0.2fr' //4.5
                 }}
                 gap={3}
             >
@@ -169,7 +177,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.DomicilioFiscalReceptor && errors.DomicilioFiscalReceptor.message}
                     disabled
                 />
-                 <TextField
+                <TextField
                     label="Regimen Fiscal"
                     {...register("RegimenFiscal", { required: "Este campo es obligatorio." })}
                     value={regimenFiscal}
@@ -197,9 +205,39 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setMetodoPago(e.target.value)}
                     value={getValues("MetodoPago") || ""}
-                    
+
                 />
 
+
+
+                <Button
+                    variant="contained"
+                    sx={{
+                        backgroundColor: 'rgba(29, 57, 77, 1)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        '&:hover': {
+                            backgroundColor: 'rgba(19, 47, 67, 1)',
+                        }
+                    }}
+                    onClick={handleOpenModal}
+                >
+                    <AddCircleIcon sx={{ fontSize: '30px' }} />
+                </Button>
+            </Box>
+
+            <Box
+                display="grid"
+                gridTemplateColumns={{
+                    xs: '1fr',
+                    sm: '1fr 1fr',
+                    md: '1fr 0.5fr 0.5fr',
+                    lg: '1.1fr 1.3fr 0.7fr 1.8fr'
+                }}
+                gap={3}
+                mt={4}
+            >
                 <Select
                     register={register}
                     nombre="FormaPago"
@@ -223,22 +261,13 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     onChange={(e) => setUsoCFDI(e.target.value)}
                     value={getValues("UsoCFDI") || ""}
                 />
-
-                <Button
-                    variant="contained"
-                    sx={{
-                        backgroundColor: 'rgba(29, 57, 77, 1)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        '&:hover': {
-                            backgroundColor: 'rgba(19, 47, 67, 1)',
-                        }
-                    }}
-                    onClick={handleOpenModal}
-                >
-                    <AddCircleIcon sx={{ fontSize: '30px' }} />
-                </Button>
+                <Select
+                        register={register}
+                        nombre="Exportación"
+                        url="http://31.220.31.152:8081/Catalogos/Exportacion"
+                        clave="Clave"
+                        descripcion="Exportación"
+                    />
             </Box>
             {hiddeInfoGlobal && (
                 <Box
@@ -247,18 +276,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         xs: '1fr',
                         sm: '1fr 1fr',
                         md: '1fr 0.5fr 0.5fr',
-                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 1.6fr'
+                        lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 1.6fr'
                     }}
                     gap={3}
                     mt={4}
                 >
-                    <Select
-                        register={register}
-                        nombre="Exportación"
-                        url="http://31.220.31.152:8081/Catalogos/Exportacion"
-                        clave="Clave"
-                        descripcion="Exportación"
-                    />
+                    
                     <Typography color="textSecondary" align='center'>Información Global</Typography>
 
                     <Select

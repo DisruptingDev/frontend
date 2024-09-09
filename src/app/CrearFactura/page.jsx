@@ -124,7 +124,7 @@ function FacturaVistaPrevia(emisor, receptor, conceptos) {
             EmisorID: emisor.Emisor,
             EmisorNombre: emisor.NombreEmisor,
             EmisorRFC: emisor.RFCEmisor,
-            EmisorDireccion: emisor.Calle + " # " + emisor.NumerorExterior + "," + emisor.Colonia + "," + emisor.Municipio + "," + emisor.Estado,
+            EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
             EmisorRegimenFiscal: emisor.RegimenFiscal,
             EmisorLogo:emisor.LogoEmisor,
 
@@ -132,7 +132,7 @@ function FacturaVistaPrevia(emisor, receptor, conceptos) {
             ReceptorNombre: receptor.NombreReceptor,
             ReceptorRFC: receptor.RFCReceptor,
             ReceptorRegimenFiscal: receptor.RegimenFiscal,
-            ReceptorDireccion: receptor.Calle + " # " + receptor.NumerorExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
             ReceptorUsoCFDI: receptor.UsoCFDI,
             ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
             Conceptos: {
@@ -273,8 +273,9 @@ export default function CrearFactura() {
             <form onSubmit={handleSubmit(onSubmit)} method="post">
                 <Emisor 
                     register={register} 
-                    setLugarExpedicion={setLugarExpedicion} 
-                    setValue={setValue} 
+                    setLugarExpedicion={setLugarExpedicion}
+                    setValue={setValue}
+                    getValues={getValues}
                     trigger={trigger} 
                     errors={errors} 
                 /> 
@@ -283,6 +284,7 @@ export default function CrearFactura() {
                     lugarExpedicion={lugarExpedicion} 
                     errors={errors} 
                     setValue={setValue} 
+                    getValues={getValues}
                     trigger={trigger} 
                 /> 
                 
