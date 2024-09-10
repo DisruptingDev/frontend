@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
+import { set } from 'date-fns';
 
 export default function Emisor({ register, setValue, getValues, trigger, errors, emisorData }) {
     const [emisor, setEmisor] = useState({});
@@ -30,6 +31,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             console.log('EmisorEdit', emisorData);
             setEmisor(emisorData);
             //Checar, posible usar un useState
+            setValue("Emisor", emisorData.ID);
             setValue("EmisorID", emisorData.ID);
             setValue("RFCEmisor", emisorData.Rfc);
             setValue("LugarExpedicion", emisorData.LugarExpedicion);
@@ -59,6 +61,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
      useEffect(() => {
         if (emisor && emisor.Rfc) {
             // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
+            setValue("Emisor", emisor.ID);
             setValue("RFCEmisor", emisor.Rfc);
             setValue("LugarExpedicion", emisor.LugarExpedicion);
             setValue("NombreEmisor", emisor.Nombre);

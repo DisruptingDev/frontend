@@ -42,11 +42,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("UsoCFDI", receptorData.UsoCFDI);
 
             
-            if (rfc === "XAXX010101000") {
-                setHiddeInfoGlobal(false);
+            if (receptorData.Rfc === "XAXX010101000") {
+                setHiddeInfoGlobal(true);
               
             } else {
-                setHiddeInfoGlobal(true);
+                setHiddeInfoGlobal(false);
             }
 
         }

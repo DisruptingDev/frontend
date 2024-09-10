@@ -62,7 +62,11 @@
 
         .logo {
             width: 120px;
-            height: 120px;
+          
+        }
+        .logo img{
+            max-width: 120px;
+            object-fit: contain;
         }
 
         .datos1 {
@@ -109,11 +113,11 @@
         }
 
         .receptor p :first-child {
-            width: 20%;
+            width: 25%;
         }
 
         .receptor p :last-child {
-            width: 80%;
+            width: 75%;
         }
 
         .conceptos {
@@ -246,7 +250,10 @@
     <div class="emisor">
         <h1>{{nombreEmisor}}</h1>
         <div>
-            <img class="logo" src="{{logo}}" alt="">
+            <div class="logo">
+                 <img  src="{{logo}}" alt="">
+            </div>
+           
             <div class="datos1">
                 <p>RFC: {{rfcEmisor}}</p>
                 <p>{{direccionEmisor}}</p>
@@ -255,14 +262,14 @@
                 <p>E-Mail:{{correoEmisor}}</p> -->
             </div>
             <div class="datos2">
-                <!-- <p><strong>FACTURA:</strong></p>
-                <span class="folio">{{folioFactura}}</span>
+                <p><strong>FACTURA:</strong></p>
+                <!-- <span class="folio">{{folioFactura}}</span> -->
                 <p><strong>Folio Fiscal:</strong></p>
-                <span class="folio-fiscal">{{folioFiscal}}</span>
+                <!-- <span class="folio-fiscal">{{folioFiscal}}</span> -->
                 <p><strong>No de Serie del Certificado del CSD:</strong></p>
-                <span class="serie-csd">{{serieCSD}}</span>
+                <!-- <span class="serie-csd">{{serieCSD}}</span> -->
                 <p><strong>Fecha y hora de emisión:</strong></p>
-                <span class="fecha-emision">{{fechaEmision}}</span> -->
+                <!-- <span class="fecha-emision">{{fechaEmision}}</span> -->
             </div>
         </div>
         <p>LUGAR EXPEDICIÓN: <strong>86125</strong></p>
@@ -316,16 +323,24 @@
             <p><span>MÉTODO DE PAGO:</span> <span>{{metodoPago}}</span> </p>
         </div>
     </div>
-    <!-- <div class="certificado">
+    <div class="certificado">
         <p><strong>Sello Digital del CFDI:</strong></p>
-        <p>{{selloCFDI}}</p>
+        <br>
+        <br>
+        <!-- <p>{{selloCFDI}}</p> -->
         <p><strong>Sello del SAT:</strong></p>
-        <p>{{selloSAT}}</p>
+        <br>
+        <br>
+        <!-- <p>{{selloSAT}}</p> -->
         <p><strong>Cadena Original del complemento de certificación digital del SAT:</strong></p>
-        <p>{{cadenaSAT}}</p>
-        <span><strong>No de Serie del Certificado del SAT:</strong></span> <span>{{serieCertificadoSAT}}</span>
-        <span><strong>Fecha y hora de certificación:</strong></span> <span>{{fechaCertificacion}}</span>
-    </div> -->
+        <br>
+        <br>
+        <!-- <p>{{cadenaSAT}}</p> -->
+        <span><strong>No de Serie del Certificado del SAT:</strong></span> 
+        <!-- <span>{{serieCertificadoSAT}}</span> -->
+        <span><strong>Fecha y hora de certificación:</strong></span>
+         <!-- <span>{{fechaCertificacion}}</span> -->
+    </div>
 
 
 </div>

@@ -1,14 +1,14 @@
 export default function validarConcepto(concepto) {
-    try {
-        if (concepto.ClaveProdServ !== "Default") {
-            concepto.ClaveProdServ = JSON.parse(concepto.ClaveProdServ);
-        }
-        if (concepto.ClaveUnidad !== "Default") {
-            concepto.ClaveUnidad = JSON.parse(concepto.ClaveUnidad);
-        }
-    } catch (e) {
-        return { isValid: false, message: 'Invalid JSON in ClaveProdServ or ClaveUnidad' };
-    }
+    // try {
+    //     if (concepto.ClaveProdServ !== "Default") {
+    //         concepto.ClaveProdServ = JSON.parse(concepto.ClaveProdServ);
+    //     }
+    //     if (concepto.ClaveUnidad !== "Default") {
+    //         concepto.ClaveUnidad = JSON.parse(concepto.ClaveUnidad);
+    //     }
+    // } catch (e) {
+    //     return { isValid: false, message: 'Invalid JSON in ClaveProdServ or ClaveUnidad' };
+    // }
 
     const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal'];
     for (let field of requiredFields) {

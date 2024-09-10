@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useForm } from 'react-hook-form';
-import { Snackbar, Alert,Modal, Box } from '@mui/material';
+import { Snackbar, Alert, Modal, Box } from '@mui/material';
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
@@ -21,186 +21,186 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 // );
 
 function CrearObjetoFactura(emisor, receptor, conceptos) {
-     // Calcula el subtotal y total
-     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
-     const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
-     const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
-     let factura = {
-         UUID: "",
-         Version: "4.0",
-         Serie: emisor.Serie,
-         Folio: "2080427804",
-         Fecha: fechaISO,
-         Sello: "",
-         FormaPago: receptor.FormaPago,
-         NoCertificado: "",
-         Certificado: "",
-         CondicionesDePago: "Condiciones de Pago",
-         SubTotal: subtotal,
-         Moneda: emisor.Divisa || "MXN",
-         TipoCambio: "1",
-         Total: total,
-         TipoDeComprobante: "I",
-         Exportacion: "01",
-         MetodoPago: receptor.MetodoPago,
-        
-         LugarExpedicion: emisor.LugarExpedicion,
-         Confirmacion: "",
-         InformacionGlobal: {
-             Periodicidad: "01",
-             Meses: "01",
-             Año: "2024"
-         },
-         EmisorID: emisor.Emisor,
-         ReceptorID: receptor.Receptor,
-         Conceptos: {
-             ListaConceptos: conceptos.map(concepto => ({
-                 ClaveProdServ: String(concepto.ClaveProdServ),
-                 NoIdentificacion: concepto.NoIdentificacion || "",
-                 Cantidad: parseInt(concepto.Cantidad, 10),
-                 ClaveUnidad: String(concepto.ClaveUnidad),
-                 Unidad: concepto.Unidad || "",
-                 Descripcion: concepto.Descripcion,
-                 ValorUnitario: concepto.ValorUnitario,
-                 Importe: concepto.Subtotal,
-                 Descuento: concepto.Descuento,
-                 ObjetoImp: concepto.ObjetoImp || "02",
-                 Impuestos: {
-                     Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
-                         Base: retencion.BaseImpuesto,
-                         ImpuestoClave: String(retencion.Impuesto),
-                         TipoFactor: "Tasa",
-                         TasaOCuota: retencion.Tasa,
-                         Importe: retencion.Monto
-                     })) : [],
-                     Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
-                         Base: traslado.BaseImpuesto,
-                         ImpuestoClave: String(traslado.Impuesto),
-                         TipoFactor: "Tasa",
-                         TasaOCuota: traslado.Tasa,
-                         Importe: traslado.Monto
-                     })) : []
-                 }
-             })),
-             TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
-             TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
-             GrupoID: 1
-         }
-     };
-     console.log(factura);
-     return factura;
+    // Calcula el subtotal y total
+    const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
+    const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
+    const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
+    let factura = {
+        UUID: "",
+        Version: "4.0",
+        Serie: emisor.Serie,
+        Folio: "2080427804",
+        Fecha: fechaISO,
+        Sello: "",
+        FormaPago: receptor.FormaPago,
+        NoCertificado: "",
+        Certificado: "",
+        CondicionesDePago: "Condiciones de Pago",
+        SubTotal: subtotal,
+        Moneda: emisor.Divisa || "MXN",
+        TipoCambio: "1",
+        Total: total,
+        TipoDeComprobante: "I",
+        Exportacion: "01",
+        MetodoPago: receptor.MetodoPago,
+
+        LugarExpedicion: emisor.LugarExpedicion,
+        Confirmacion: "",
+        InformacionGlobal: {
+            Periodicidad: "01",
+            Meses: "01",
+            Año: "2024"
+        },
+        EmisorID: emisor.Emisor,
+        ReceptorID: receptor.Receptor,
+        Conceptos: {
+            ListaConceptos: conceptos.map(concepto => ({
+                ClaveProdServ: String(concepto.ClaveProdServ),
+                NoIdentificacion: concepto.NoIdentificacion || "",
+                Cantidad: parseInt(concepto.Cantidad, 10),
+                ClaveUnidad: String(concepto.ClaveUnidad),
+                Unidad: concepto.Unidad || "",
+                Descripcion: concepto.Descripcion,
+                ValorUnitario: concepto.ValorUnitario,
+                Importe: concepto.Subtotal,
+                Descuento: concepto.Descuento,
+                ObjetoImp: concepto.ObjetoImp || "02",
+                Impuestos: {
+                    Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                        Base: retencion.BaseImpuesto,
+                        ImpuestoClave: String(retencion.Impuesto),
+                        TipoFactor: "Tasa",
+                        TasaOCuota: retencion.Tasa,
+                        Importe: retencion.Monto
+                    })) : [],
+                    Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                        Base: traslado.BaseImpuesto,
+                        ImpuestoClave: String(traslado.Impuesto),
+                        TipoFactor: "Tasa",
+                        TasaOCuota: traslado.Tasa,
+                        Importe: traslado.Monto
+                    })) : []
+                }
+            })),
+            TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+            TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+            GrupoID: 1
+        }
+    };
+    console.log(factura);
+    return factura;
 }
 function FacturaVistaPrevia(emisor, receptor, conceptos) {
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
     const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
     const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
-        let factura = {
-            UUID: "",
-            Version: "4.0",
-            Serie: emisor.Serie,
-            Folio: "2080427804",
-            Fecha: fechaISO,
-            Sello: "",
-            FormaPago: receptor.FormaPago,
-            FormaPagoDescripcion: receptor.FormaPagoDescripcion,
-            NoCertificado: "",
-            Certificado: "",
-            CondicionesDePago: "Condiciones de Pago",
-            SubTotal: subtotal,
-            Moneda: emisor.Divisa || "MXN",
-            TipoCambio: "1",
-            Total: total,
-            TipoDeComprobante: "I",
-            Exportacion: "01",
-            MetodoPago: receptor.MetodoPago,
-            MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
-            LugarExpedicion: emisor.LugarExpedicion,
-            Confirmacion: "",
-            InformacionGlobal: {
-                Periodicidad: "01",
-                Meses: "01",
-                Año: "2024"
-            },
-            EmisorID: emisor.Emisor,
-            EmisorNombre: emisor.NombreEmisor,
-            EmisorRFC: emisor.RFCEmisor,
-            EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
-            EmisorRegimenFiscal: emisor.RegimenFiscal,
-            EmisorLogo:emisor.LogoEmisor,
+    let factura = {
+        UUID: "",
+        Version: "4.0",
+        Serie: emisor.Serie,
+        Folio: "2080427804",
+        Fecha: fechaISO,
+        Sello: "",
+        FormaPago: receptor.FormaPago,
+        FormaPagoDescripcion: receptor.FormaPagoDescripcion,
+        NoCertificado: "",
+        Certificado: "",
+        CondicionesDePago: "Condiciones de Pago",
+        SubTotal: subtotal,
+        Moneda: emisor.Divisa || "MXN",
+        TipoCambio: "1",
+        Total: total,
+        TipoDeComprobante: "I",
+        Exportacion: "01",
+        MetodoPago: receptor.MetodoPago,
+        MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
+        LugarExpedicion: emisor.LugarExpedicion,
+        Confirmacion: "",
+        InformacionGlobal: {
+            Periodicidad: "01",
+            Meses: "01",
+            Año: "2024"
+        },
+        EmisorID: emisor.Emisor,
+        EmisorNombre: emisor.NombreEmisor,
+        EmisorRFC: emisor.RFCEmisor,
+        EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
+        EmisorRegimenFiscal: emisor.RegimenFiscal,
+        EmisorLogo: emisor.LogoEmisor,
 
-            ReceptorID: receptor.Receptor,
-            ReceptorNombre: receptor.NombreReceptor,
-            ReceptorRFC: receptor.RFCReceptor,
-            ReceptorRegimenFiscal: receptor.RegimenFiscal,
-            ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
-            ReceptorUsoCFDI: receptor.UsoCFDI,
-            ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
-            Conceptos: {
-                ListaConceptos: conceptos.map(concepto => ({
-                    ClaveProdServ: String(concepto.ClaveProdServ),
-                    NoIdentificacion: concepto.NoIdentificacion || "",
-                    Cantidad: parseInt(concepto.Cantidad, 10),
-                    ClaveUnidad: String(concepto.ClaveUnidad),
-                    Unidad: concepto.Unidad || "",
-                    Descripcion: concepto.Descripcion,
-                    ValorUnitario: concepto.ValorUnitario,
-                    Importe: concepto.Subtotal,
-                    Descuento: concepto.Descuento,
-                    ObjetoImp: concepto.ObjetoImp || "02",
-                    Impuestos: {
-                        Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
-                            NombreImpuesto: retencion.NombreImpuesto,
-                            Base: retencion.BaseImpuesto,
-                            ImpuestoClave: String(retencion.Impuesto),
-                            TipoFactor: retencion.Tipo,
-                            TasaOCuota: retencion.Tasa,
-                            Importe: retencion.Monto
-                        })) : [],
-                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
-                            NombreImpuesto: traslado.NombreImpuesto,
-                            Base: traslado.BaseImpuesto,
-                            ImpuestoClave: String(traslado.Impuesto),
-                            TipoFactor: traslado.Tipo,
-                            TasaOCuota: traslado.Tasa,
-                            Importe: traslado.Monto
-                        })) : []
-                    }
-                })),
-                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
-                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
-                GrupoID: 1
-            }
-        };
-        console.log(factura);
-        return factura;
+        ReceptorID: receptor.Receptor,
+        ReceptorNombre: receptor.NombreReceptor,
+        ReceptorRFC: receptor.RFCReceptor,
+        ReceptorRegimenFiscal: receptor.RegimenFiscal,
+        ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+        ReceptorUsoCFDI: receptor.UsoCFDI,
+        ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+        Conceptos: {
+            ListaConceptos: conceptos.map(concepto => ({
+                ClaveProdServ: String(concepto.ClaveProdServ),
+                NoIdentificacion: concepto.NoIdentificacion || "",
+                Cantidad: parseInt(concepto.Cantidad, 10),
+                ClaveUnidad: String(concepto.ClaveUnidad),
+                Unidad: concepto.Unidad || "",
+                Descripcion: concepto.Descripcion,
+                ValorUnitario: concepto.ValorUnitario,
+                Importe: concepto.Subtotal,
+                Descuento: concepto.Descuento,
+                ObjetoImp: concepto.ObjetoImp || "02",
+                Impuestos: {
+                    Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                        NombreImpuesto: retencion.NombreImpuesto,
+                        Base: retencion.BaseImpuesto,
+                        ImpuestoClave: String(retencion.Impuesto),
+                        TipoFactor: retencion.Tipo,
+                        TasaOCuota: retencion.Tasa,
+                        Importe: retencion.Monto
+                    })) : [],
+                    Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                        NombreImpuesto: traslado.NombreImpuesto,
+                        Base: traslado.BaseImpuesto,
+                        ImpuestoClave: String(traslado.Impuesto),
+                        TipoFactor: traslado.Tipo,
+                        TasaOCuota: traslado.Tasa,
+                        Importe: traslado.Monto
+                    })) : []
+                }
+            })),
+            TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+            TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+            GrupoID: 1
+        }
+    };
+    console.log(factura);
+    return factura;
 }
 
 async function EnviarAEmisionTimbrado(factura) {
-   
+
 
     try {
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem('authToken');
             // Continúa con el uso de token 
             const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(factura)
-        });
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(factura)
+            });
 
-        if (!response.ok) {
-            throw new Error('Error al guardar la factura');
-        }
+            if (!response.ok) {
+                throw new Error('Error al guardar la factura');
+            }
 
-        const result = await response.json();
-        console.log('Factura creada con éxito:', result);
+            const result = await response.json();
+            console.log('Factura creada con éxito:', result);
 
         }
         // const token = localStorage.getItem('authToken');
-       
+
     } catch (error) {
         console.error('Error al enviar la factura:', error);
     }
@@ -222,7 +222,7 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura=CrearObjetoFactura(data, data, conceptos);
+        const factura = CrearObjetoFactura(data, data, conceptos);
         EnviarAEmisionTimbrado(factura);
     };
 
@@ -232,26 +232,27 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
+        console.log('CONCEPTOS EN EDIT',conceptos)
         // console.log("Vista previa de los datos:", data);
-        const factura=FacturaVistaPrevia(data, data, conceptos);
-       
-       console.log('Llamando a generatePDF con la factura:', factura);
-       const vistaPrevia = await generarVistaPrevia(factura);
-       setPreviewContent(vistaPrevia);
-       setOpenModal(true);
+        const factura = FacturaVistaPrevia(data, data, conceptos);
 
-    // if (generatePDF) {
-    //     console.log('generatePDF está definido, llamando a generatePDF...');
-    //     generatePDF(factura);
-    // } else {
-    //     console.error('generatePDF no está definido.');
-    // }
+        console.log('Llamando a generatePDF con la factura:', factura);
+        const vistaPrevia = await generarVistaPrevia(factura);
+        setPreviewContent(vistaPrevia);
+        setOpenModal(true);
+
+        // if (generatePDF) {
+        //     console.log('generatePDF está definido, llamando a generatePDF...');
+        //     generatePDF(factura);
+        // } else {
+        //     console.error('generatePDF no está definido.');
+        // }
     });
 
     const handleEditConcepto = (index) => {
         // console.log("Edit concepto");
         const conceptoToEdit = conceptos[index];
-        console.log("Edit concepto",conceptos[index]);
+        console.log("Edit concepto", conceptos[index]);
         setEditIndex(index);
         // Setear los valores del concepto en el formulario
         setValue('Descripcion', conceptoToEdit.Descripcion);
@@ -271,25 +272,25 @@ export default function CrearFactura() {
         <div>
             <Header />
             <form onSubmit={handleSubmit(onSubmit)} method="post">
-                <Emisor 
-                    register={register} 
+                <Emisor
+                    register={register}
                     setLugarExpedicion={setLugarExpedicion}
                     setValue={setValue}
                     getValues={getValues}
-                    trigger={trigger} 
-                    errors={errors} 
-                /> 
-                <Receptor 
-                    register={register} 
-                    lugarExpedicion={lugarExpedicion} 
-                    errors={errors} 
-                    setValue={setValue} 
+                    trigger={trigger}
+                    errors={errors}
+                />
+                <Receptor
+                    register={register}
+                    lugarExpedicion={lugarExpedicion}
+                    errors={errors}
+                    setValue={setValue}
                     getValues={getValues}
-                    trigger={trigger} 
-                /> 
-                
+                    trigger={trigger}
+                />
+
                 <Conceptos
-                trigger={trigger} 
+                    trigger={trigger}
                     register={register}
                     watch={watch}
                     setValue={setValue}
@@ -299,18 +300,21 @@ export default function CrearFactura() {
                     editIndex={editIndex} // Pasar editIndex
                     setEditIndex={setEditIndex} // Pasar setEditIndex
                 />
-                <Resumen 
-                    conceptos={conceptos} 
-                    subTotal={watch("Subtotal")} 
-                    handleEditConcepto={handleEditConcepto} 
+                <Resumen
+                    conceptos={conceptos}
+                    subTotal={watch("Subtotal")}
+                    handleEditConcepto={handleEditConcepto}
                     handleDeleteConcepto={handleDeleteConcepto}
-                > 
+                >
                     <div className="flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
                         <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
                     </div>
-                </Resumen> 
+                </Resumen>
+                <pre>
+                    {JSON.stringify(watch(),null,2)}
+                </pre>
             </form>
             <Modal
                 open={openModal}
