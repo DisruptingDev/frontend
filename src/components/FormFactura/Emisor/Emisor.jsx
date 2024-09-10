@@ -51,7 +51,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             }
 
             // Dispara la validación de estos campos
-            trigger(["RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
+            trigger(["Emisor","RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
     }, [emisorData, setValue, trigger, getValues]);
 

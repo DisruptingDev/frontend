@@ -94,9 +94,8 @@ export default function DataTable() {
 
   const handleClone = () => {
     if (menuRow) {
-      localStorage.setItem('selectedRowData', JSON.stringify(menuRow));
-      handleMenuClose();
-      // router.push('/clonar'); // Redirige a la página de clonación
+      console.log(menuRow);
+      router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
 

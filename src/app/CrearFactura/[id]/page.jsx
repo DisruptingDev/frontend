@@ -11,7 +11,7 @@ import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 
-export default function EditarFactura() {
+export default function CrearFactura() {
     const { id } = useParams(); // Captura la ID de la URL
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");

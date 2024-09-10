@@ -5,6 +5,7 @@ import { CalculosFinales } from "./Calculos/Calculo.js";
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
     let finales = CalculosFinales(conceptos);
+    console.log("Conceptos Rsumen", conceptos);
 
     return (
         <div className="bg-white mx-4 p-4 shadow-xl rounded-md m-100">

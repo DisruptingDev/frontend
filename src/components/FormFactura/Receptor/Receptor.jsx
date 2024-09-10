@@ -262,9 +262,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     value={getValues("UsoCFDI") || ""}
                 />
                 <Select
-                        register={register}
+                        // register={register}
                         nombre="Exportación"
-                        url="http://31.220.31.152:8081/Catalogos/Exportacion"
+                        url=""
                         clave="Clave"
                         descripcion="Exportación"
                     />
