@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useForm } from 'react-hook-form';
 import { Snackbar, Alert, Modal, Box } from '@mui/material';
+import { useParams } from 'next/navigation';
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
@@ -11,6 +12,7 @@ import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 
 export default function EditarFactura() {
+    const { id } = useParams(); // Captura la ID de la URL
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
     const [conceptos, setConceptos] = useState([]);
@@ -20,6 +22,28 @@ export default function EditarFactura() {
     const [openModal, setOpenModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
+
+    useEffect(() => {
+        const fetchFactura = async () => {
+            try {
+                const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+                const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                setFacturaEdit(data);
+            } catch (error) {
+                console.error('Error fetching factura:', error);
+            }
+        };
+
+        if (id) {
+            fetchFactura(); // Solo llama a la API si hay una ID
+        }
+    }, [id]);
 
     const getDatosEmisor = (FacturaEdit) => ({
         ID: FacturaEdit.EmisorID,
