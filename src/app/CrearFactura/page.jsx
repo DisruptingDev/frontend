@@ -25,18 +25,19 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
     const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
     const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
+    const now = new Date();
+    const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
+
+    // Concatenar la fecha con la hora actual
+    const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
     let factura = {
-        UUID: "",
         Version: "4.0",
-        Serie: emisor.Serie,
-        Folio: "2080427804",
-        Fecha: fechaISO,
-        Sello: "",
+        Fecha: fechaFormateada,
+      
         FormaPago: receptor.FormaPago,
-        NoCertificado: "",
-        Certificado: "",
-        CondicionesDePago: "Condiciones de Pago",
+        Serie: emisor.Serie,
         SubTotal: subtotal,
+        Descripcion: "",
         Moneda: emisor.Divisa || "MXN",
         TipoCambio: "1",
         Total: total,
@@ -68,14 +69,14 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
                 Impuestos: {
                     Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
                         Base: retencion.BaseImpuesto,
-                        ImpuestoClave: String(retencion.Impuesto),
+                        ImpuestoClave: String(retencion.ImpuestoClave),
                         TipoFactor: "Tasa",
                         TasaOCuota: retencion.Tasa,
                         Importe: retencion.Monto
                     })) : [],
                     Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                         Base: traslado.BaseImpuesto,
-                        ImpuestoClave: String(traslado.Impuesto),
+                        ImpuestoClave: String(traslado.ImpuestoClave),
                         TipoFactor: "Tasa",
                         TasaOCuota: traslado.Tasa,
                         Importe: traslado.Monto
@@ -84,7 +85,7 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
             })),
             TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
             TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
-            GrupoID: 1
+
         }
     };
     console.log(factura);
@@ -222,7 +223,9 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
+        console.log("Conceptos ante de crear",conceptos)
         const factura = CrearObjetoFactura(data, data, conceptos);
+        console.log('Factura creada:', factura);
         EnviarAEmisionTimbrado(factura);
     };
 
@@ -232,7 +235,7 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        console.log('CONCEPTOS EN EDIT',conceptos)
+        console.log('CONCEPTOS EN EDIT', conceptos)
         // console.log("Vista previa de los datos:", data);
         const factura = FacturaVistaPrevia(data, data, conceptos);
 
@@ -258,6 +261,7 @@ export default function CrearFactura() {
         setValue('Descripcion', conceptoToEdit.Descripcion);
         setValue('ClaveProdServ', conceptoToEdit.ClaveProdServ);
         setValue('ClaveUnidad', conceptoToEdit.ClaveUnidad);
+        setValue('Unidad', conceptoToEdit.Unidad);
         setValue('Cantidad', conceptoToEdit.Cantidad);
         setValue('ValorUnitario', conceptoToEdit.ValorUnitario);
         setValue('Descuento', conceptoToEdit.Descuento);
@@ -313,7 +317,7 @@ export default function CrearFactura() {
                     </div>
                 </Resumen>
                 <pre>
-                    {JSON.stringify(watch(),null,2)}
+                    {JSON.stringify(watch(), null, 2)}
                 </pre>
             </form>
             <Modal

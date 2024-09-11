@@ -31,6 +31,7 @@ export default function Impuesto({
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
+            setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
 
             if (impuestoEditor.Tasa) {
                 setTasa(impuestoEditor.Tasa); 
@@ -50,8 +51,10 @@ export default function Impuesto({
         if (impuesto) {
             try {
                 const data = JSON.parse(impuesto);
+
                 setValue(`impuestos[${index}].NombreImpuesto`, data.Impuesto || '');
                 setValue(`impuestos[${index}].Tipo`, data.Tipo || '');
+                setValue(`impuestos[${index}].ImpuestoClave`, data.Clave || '');
 
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);

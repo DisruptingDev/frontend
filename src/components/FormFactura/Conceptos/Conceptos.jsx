@@ -26,6 +26,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
+
     const [cantidadError, setCantidadError] = useState(false);
     const [valorUnitarioError, setValorUnitarioError] = useState(false);
     const [objetoImpuestoError, setObjetoImpuestoError] = useState(false);
@@ -40,6 +41,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             Descripcion: '',
             ClaveProdServ: '',
             ClaveUnidad: '',
+            Unidad: '',
             Cantidad: 1,
             ValorUnitario: 0,
             Descuento: 0,
@@ -76,6 +78,16 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     };
 
     useEffect(() => {
+        if(selectedClaveUnidad){
+            console.log("Seleccion", selectedClaveUnidad.Descripcion);
+            
+            setValue("Unidad", selectedClaveUnidad.Descripcion);
+
+        }
+
+    },[selectedClaveUnidad, setValue])
+
+    useEffect(() => {
         fetchOptions();
     }, [queryProdServ, queryUnidad, token]);
 
@@ -107,45 +119,19 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("Descripcion", concepto.Descripcion || '');
             setValue("ClaveProdServ", concepto.ClaveProdServ || '');
             setValue("ClaveUnidad", concepto.ClaveUnidad || '');
+            setValue("Unidad", concepto.Unidad || '');
             setValue("Cantidad", concepto.Cantidad || 1);
             setValue("ValorUnitario", concepto.ValorUnitario || 0);
             setValue("Descuento", concepto.Descuento || 0);
             setValue("Subtotal", concepto.Subtotal || 0);
             console.log('Impuestos:', getValues(`impuestos`));
             console.log("IMPUESTOS ACT", concepto.Impuestos);
-            // concepto.Impuestos.forEach((impuesto, index) => {
-            //     setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
-            //     setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
-            //     setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
-            //     setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
-            //     setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
-            //     setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');
-
-
-                
-            //     // console.log('Concepto editado:', getValues(`impuestos.${index}`);
-            // });
+       
             setValue("impuestos", concepto.Impuestos)
           
 
              trigger('impuestos'); 
 
-            // // // Actualizar los impuestos del concepto
-            // concepto.Impuestos.forEach((impuesto, index) => {
-            //     setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
-            //     setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
-            //     setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
-            //     setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
-            //     setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
-            //     setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');});
-
-                
-            // //     // console.log('Concepto editado:', getValues(`impuestos.${index}`);
-            // });
-            // console.log('Concepto editado:', getValues(`impuestos`));
-            
-            // En el componente padre, al actualizar `impuestos`
-            // setValue('impuestos', [...getValues('impuestos')]); // Clona los valores para forzar un nuevo renderizado
             console.log('Concepto editado:', getValues(`impuestos`));
 
             // Fetch ClaveProdServ options if needed
@@ -344,6 +330,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         setSelectedClaveUnidad(value);
                         setValue('ClaveUnidad', value?.Clave || '');
                         setClaveUnidadError(false);
+                        setValue('Unidad',value?.Descripcion || '');
                     }}
                     renderInput={(params) => (
                         <TextField

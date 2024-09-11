@@ -6,6 +6,7 @@ export default function CrearConcepto(getValues, impuestos) {
     let concepto = {
         ClaveProdServ: getValues("ClaveProdServ"),
         ClaveUnidad: getValues("ClaveUnidad"),
+        Unidad: getValues("Unidad"),
         Descripcion: getValues("Descripcion"),
         Cantidad: getValues("Cantidad"),
         ValorUnitario: parseFloat(getValues("ValorUnitario")),
