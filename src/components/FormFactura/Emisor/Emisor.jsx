@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
-import { set } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 export default function Emisor({ register, setValue, getValues, trigger, errors, emisorData }) {
     const [emisor, setEmisor] = useState({});
@@ -48,7 +48,10 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
 
             // Solo establece la fecha si no está definida
             if (!getValues("Fecha")) {
-                const formattedDate = emisorData.Fecha ? new Date(emisorData.Fecha).toISOString().split('T')[0] : '';
+                const formattedDate = emisorData.Fecha 
+                    ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd') 
+                    : '';
+                console.log(formattedDate);
                 setValue("Fecha", formattedDate);
             }
 
@@ -196,8 +199,8 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                     }}
                     error={!!errors.Fecha}
                     helperText={errors.Fecha && errors.Fecha.message}
-                    // value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
-                    // onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
+                    value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
+                    onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
                 />
 
                 <TextField
