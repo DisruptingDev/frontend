@@ -24,18 +24,49 @@ export default function Impuesto({
     const [monto, setMonto] = useState(0);
     const [tasaUrl, setTasaUrl] = useState('');
 
+   
+
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
         if (impuestoEditor) {
+            console.log("Impues a editar", impuestoEditor)
             setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
             setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
+            // // Solo buscar opciones de impuestos si el nombre de impuesto está vacío
+            // if (impuestoEditor.NombreImpuesto === "") {
+            //     const token = localStorage.getItem('authToken');
+            //     fetch(`http://31.220.31.152:8081/Catalogos/ImpuestoClave`, {
+            //         method: 'GET',
+            //         headers: {
+            //             'Authorization': `Bearer ${token}`,
+            //             'Content-Type': 'application/json'
+            //         }
+            //     })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         console.log(data);
+            //         console.log("TIPO", impuestoEditor.TipoFactor);
+                    
+            //       const opcionSeleccionada = data.find(opt => opt.Clave == impuestoEditor.Impuesto && opt.Tipo == impuestoEditor.TipoFactor);
+            //       if (opcionSeleccionada) {
+            //         setValue(`impuestos[${index}].ImpuestoClave`, opcionSeleccionada.Clave);
+            //       }
+                    
+            //       console.log("opcionSeleccionada",opcionSeleccionada);  
+
+            //       // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
+            //     })
+            // }
+            
+            
 
             if (impuestoEditor.Tasa) {
-                setTasa(impuestoEditor.Tasa); 
-                setValue(`impuestos[${index}].TasaOCuota`, impuestoEditor.TasaOCuota || 0);
+                console.log("TASA", impuestoEditor.Tasa);
+                setTasa(impuestoEditor.Tasa);
+                setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || 0);
             }
 
             const nombreImpuesto = impuestoEditor.NombreImpuesto || getValues(`impuestos[${index}].NombreImpuesto`);
@@ -49,6 +80,7 @@ export default function Impuesto({
     // Actualizar URL de tasas y sincronizar valores al cambiar impuesto
     useEffect(() => {
         if (impuesto) {
+            console.log('Entre impuestos')
             try {
                 const data = JSON.parse(impuesto);
 
@@ -60,6 +92,7 @@ export default function Impuesto({
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
                     setTasaUrl(`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                    setValue(`impuestos.${index}.TasaUrl`,`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
                 }
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
@@ -69,8 +102,10 @@ export default function Impuesto({
 
     // Calcular el monto basado en la tasa y base de impuesto
     useEffect(() => {
+        console.log("ENTRRE A CALCULAR");
         const tasaCuota = getValues(`impuestos[${index}].TasaOCuota`);
         if (tasaCuota) {
+            console.log("ENTRRE A CALCULAR2", tasaCuota);
             const resultado = parseFloat(tasaCuota) * baseImpuesto;
             setMonto(resultado);
             setValue(`impuestos[${index}].Monto`, resultado);
@@ -78,7 +113,7 @@ export default function Impuesto({
             setMonto(0);
             setValue(`impuestos[${index}].Monto`, 0);
         }
-    }, [tasa, baseImpuesto, setValue, index, getValues]);
+    }, [tasa, baseImpuesto, setValue, index, getValues,impuestoEditor]);
 
     // Manejar cambios en ObjetoImpuesto
     const handleObjetoImpuestoChange = (e) => {
@@ -146,11 +181,12 @@ export default function Impuesto({
                         clave=""
                         id="ID"
                         nombre={`impuestos[${index}].Tasa`}
-                        label='Tasa'
+                        label='Tasa o Cuota'
                         descripcion="Valor"
-                        url={tasaUrl}
+                        url={getValues(`impuestos.${index}.TasaUrl`)}
                         onChange={handleTasaChange}
-                        value={tasa}
+                        // value={tasa}
+                        value={getValues(`impuestos[${index}].Tasa`)}
                         sx={{ minWidth: 120 }}
                     />
                 </Box>

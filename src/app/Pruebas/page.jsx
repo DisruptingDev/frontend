@@ -57,7 +57,7 @@ const Prueba = {
     "TotalImpuestosTrasladados": 0,
     "TotalImpuestosRetenidos": 20 
   }
-}
+
 }
     return (
         <form action="">

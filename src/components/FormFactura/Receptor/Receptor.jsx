@@ -20,6 +20,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (receptorData) {
             console.log("Receptor data", receptorData);
             setValue("ReceptorID", receptorData.ID);
+            setValue("Receptor",receptorData.ID);
             setRFC(receptorData.Rfc);
             setValue("RFCReceptor", receptorData.Rfc);
             setValue("NombreReceptor", receptorData.Nombre);
@@ -30,10 +31,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("Municipio", receptorData.Municipio);
             setValue("Estado", receptorData.Estado);
 
-            // setDomicilioFiscal(receptorData.DomicilioFiscalReceptor);
+            setDomicilioFiscal(receptorData.DomicilioFiscalReceptor);
             setValue("DomicilioFiscalReceptor", receptorData.DomicilioFiscalReceptor);
-            // setRegimenFiscal(receptorData.RegimenFiscalReceptor);
-            setValue("RegimenFiscalReceptor", receptorData.RegimenFiscalReceptor);
+            setRegimenFiscal(receptorData.RegimenFiscal);
+            setValue("RegimenFiscal", receptorData.RegimenFiscal);
             // setFormaPago(receptorData.FormaPago);
             setValue("FormaPago", receptorData.FormaPago);
             // setMetodoPago(receptorData.MetodoPago);
@@ -48,7 +49,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setHiddeInfoGlobal(false);
             }
-
+            trigger("RFCReceptor");
+            trigger("DomicilioFiscalReceptor");
+            trigger("RegimenFiscal");
         }
     }, [receptorData, setValue, trigger, getValues]);
 

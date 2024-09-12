@@ -244,10 +244,10 @@ export default function CrearFactura() {
     const getDatosReceptor = (FacturaEdit) => ({
         ID: FacturaEdit.ReceptorID,
         Rfc: FacturaEdit.Receptor.Rfc,
-        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscal,
+        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscalReceptor,
         Nombre: FacturaEdit.Receptor.Nombre,
         UsoCFDI: FacturaEdit.Receptor.UsoCFDI,
-        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscal,
+        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscalReceptor,
         LugarExpedicion: FacturaEdit.Receptor.LugarExpedicion,
         Calle: FacturaEdit.Receptor.Calle,
         NoExterior: FacturaEdit.Receptor.NoExterior,

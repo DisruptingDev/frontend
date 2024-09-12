@@ -8,6 +8,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
+    const [serieUrl, setSerieUrl] = useState('');
 
     useEffect(() => {
         const today = new Date();
@@ -55,6 +56,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                 setValue("Fecha", formattedDate);
             }
 
+            setSerieUrl(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
             trigger(["Emisor","RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
@@ -77,6 +79,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
             setValue("LogoEmisor", emisor.LogoPath)
 
+            setSerieUrl(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${emisor.ID}`);
 
             // Dispara la validación de estos campos
             trigger("RFCEmisor");
@@ -166,7 +169,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                 <Select
                     register={register}
                     nombre="Serie"
-                    url="http://31.220.31.152:8081/Catalogos/Serie"
+                    url={serieUrl} 
                     id="Clave"
                     descripcion="Descripcion"
                     error={!!errors.Serie}

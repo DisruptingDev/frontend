@@ -10,6 +10,7 @@ import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
+import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
 function CrearObjetoFactura(emisor, receptor, conceptos, id) {
     // Calcula el subtotal y total
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
@@ -60,16 +61,18 @@ function CrearObjetoFactura(emisor, receptor, conceptos, id) {
                 Impuestos: {
                     Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
                         Base: retencion.BaseImpuesto,
+                        ImpuestoCatalogoID: retencion.Impuesto,
                         ImpuestoClave: String(retencion.ImpuestoClave),
                         TipoFactor: "Tasa",
-                        TasaOCuota: retencion.Tasa,
+                        TasaOCuota: retencion.TasaOCuota,
                         Importe: retencion.Monto
                     })) : [],
                     Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                         Base: traslado.BaseImpuesto,
+                        ImpuestoCatalogoID: traslado.Impuesto,
                         ImpuestoClave: String(traslado.ImpuestoClave),
                         TipoFactor: "Tasa",
-                        TasaOCuota: traslado.Tasa,
+                        TasaOCuota: traslado.TasaOCuota,
                         Importe: traslado.Monto
                     })) : []
                 }
@@ -145,7 +148,7 @@ function FacturaVistaPrevia(emisor, receptor, conceptos) {
                         Base: retencion.BaseImpuesto || retencion.Base,
                            ImpuestoClave: String(retencion.Impuesto),
                            TipoFactor: retencion.Tipo,
-                           TasaOCuota: retencion.Tasa,
+                           TasaOCuota: retencion.TasaO,
                            Importe: retencion.Monto
                        })) : [],
                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
@@ -174,7 +177,7 @@ async function EnviarAEmisionTimbrado(factura) {
             const token = localStorage.getItem('authToken');
             // Continúa con el uso de token 
             const response = await fetch('http://31.220.31.152:8087/EditarFactura', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -183,9 +186,10 @@ async function EnviarAEmisionTimbrado(factura) {
             });
 
             if (!response.ok) {
-                throw new Error('Error al guardar la factura');
+                // Extraer el error del cuerpo de la respuesta
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al guardar la factura');
             }
-
             const result = await response.json();
             console.log('Factura creada con éxito:', result);
 
@@ -246,10 +250,10 @@ export default function EditarFactura() {
     const getDatosReceptor = (FacturaEdit) => ({
         ID: FacturaEdit.ReceptorID,
         Rfc: FacturaEdit.Receptor.Rfc,
-        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscal,
+        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscalReceptor,
         Nombre: FacturaEdit.Receptor.Nombre,
         UsoCFDI: FacturaEdit.Receptor.UsoCFDI,
-        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscal,
+        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscalReceptor,
         LugarExpedicion: FacturaEdit.Receptor.LugarExpedicion,
         Calle: FacturaEdit.Receptor.Calle,
         NoExterior: FacturaEdit.Receptor.NoExterior,
@@ -308,23 +312,27 @@ export default function EditarFactura() {
                     Descuento: concepto.Descuento,
                     Impuestos: Impuestos.map(impuesto => ({
                         ObjetoImpuesto: impuesto.ObjetoImpuesto || concepto.ObjetoImp,
-                        Impuesto: impuesto.ImpuestoClave,
-                        Tasa: impuesto.TasaOCuota,
+                        Impuesto: impuesto.ImpuestoCatalogoID,
+                        ImpuestoClave: impuesto.ImpuestoClave,
+                        TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || Subtotal,
-                        Monto: impuesto.Importe
+                        Monto: impuesto.Importe,
+                        TipoFactor: impuesto.TipoFactor
                     })),
                     Retenciones: Retenciones.map(retencion => ({
                         BaseImpuesto: retencion.Base,
+                        Impuesto:retencion.ImpuestoCatalogoID,
                         ImpuestoClave: retencion.ImpuestoClave,
-                        Tasa: retencion.TasaOCuota,
+                        TasaOCuota: retencion.TasaOCuota,
                         Monto: retencion.Importe,
                         Tipo : retencion.TipoFactor
                     })),
                     // Retenciones: concepto.Impuestos?.Retenciones || [],
                     Traslados: Traslados.map(traslado => ({
                         BaseImpuesto: traslado.Base,
+                        Impuesto: traslado.ImpuestoCatalogoID,
                         ImpuestoClave: traslado.ImpuestoClave,
-                        Tasa: traslado.TasaOCuota,
+                        TasaOCuota: traslado.TasaOCuota,
                         Monto: traslado.Importe,
                         Tipo : traslado.TipoFactor
                     })),
@@ -355,7 +363,7 @@ export default function EditarFactura() {
         }
         const factura = CrearObjetoFactura(data, data, conceptos, id);
         console.log('Factura creada:', factura);
-        // EnviarAEmisionTimbrado(factura);
+        EnviarAEmisionTimbrado(factura);
     };
 
     const handlePreview = handleSubmit(async (data) => {

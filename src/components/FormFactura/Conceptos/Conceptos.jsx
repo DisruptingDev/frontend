@@ -127,9 +127,26 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             console.log('Impuestos:', getValues(`impuestos`));
             console.log("IMPUESTOS ACT", concepto.Impuestos);
        
-            setValue("impuestos", concepto.Impuestos)
+            
           
 
+            console.log('Concepto editado:', getValues(`impuestos`));
+            concepto.Impuestos.forEach((impuesto, index) => {
+                setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
+                setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
+                setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
+                setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
+                setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
+                setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
+                setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');
+                console.log("MONT", impuesto.Monto)
+                setValue(`impuestos.${index}.Monto`, impuesto.Monto || 0);
+                setValue(`impuestos.${index}.TasaUrl`,`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`)
+
+                console.log('Concepto editado:', getValues(`impuestos.${index}`));
+                // console.log('Concepto editado:', getValues(`impuestos.${index}`);
+            });
+            setValue("impuestos", concepto.Impuestos)
              trigger('impuestos'); 
 
             console.log('Concepto editado:', getValues(`impuestos`));

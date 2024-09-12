@@ -69,16 +69,18 @@ function CrearObjetoFactura(emisor, receptor, conceptos) {
                 Impuestos: {
                     Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
                         Base: retencion.BaseImpuesto,
+                        ImpuestoCatalogoID: retencion.Impuesto,
                         ImpuestoClave: String(retencion.ImpuestoClave),
                         TipoFactor: "Tasa",
-                        TasaOCuota: retencion.Tasa,
+                        TasaOCuota: retencion.TasaOCuota,
                         Importe: retencion.Monto
                     })) : [],
                     Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                         Base: traslado.BaseImpuesto,
+                        ImpuestoCatalogoID: traslado.Impuesto,
                         ImpuestoClave: String(traslado.ImpuestoClave),
                         TipoFactor: "Tasa",
-                        TasaOCuota: traslado.Tasa,
+                        TasaOCuota: traslado.TasaOCuota,
                         Importe: traslado.Monto
                     })) : []
                 }
