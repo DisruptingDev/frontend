@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { get, useForm } from 'react-hook-form';
 import { Snackbar, Alert, Modal, Box } from '@mui/material';
 import { useParams } from 'next/navigation';
@@ -10,168 +11,12 @@ import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
-import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
-function CrearObjetoFactura(emisor, receptor, conceptos, id) {
-    // Calcula el subtotal y total
-    const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
-    const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
-    const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
-    const now = new Date();
-    const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
-
-    // Concatenar la fecha con la hora actual
-    const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-    let factura = {
-        ID: parseInt(id),
-        Version: "4.0",
-        Fecha: fechaFormateada,
-      
-        FormaPago: receptor.FormaPago,
-        Serie: emisor.Serie,
-        SubTotal: subtotal,
-        Descripcion: "",
-        Moneda: emisor.Divisa || "MXN",
-        TipoCambio: "1",
-        Total: total,
-        TipoDeComprobante: "I",
-        Exportacion: "01",
-        MetodoPago: receptor.MetodoPago,
-
-        LugarExpedicion: emisor.LugarExpedicion,
-        Confirmacion: "",
-        InformacionGlobal: {
-            Periodicidad: "01",
-            Meses: "01",
-            Año: "2024"
-        },
-        EmisorID: emisor.Emisor,
-        ReceptorID: receptor.Receptor,
-        Conceptos: {
-            ListaConceptos: conceptos.map(concepto => ({
-                ClaveProdServ: String(concepto.ClaveProdServ),
-                NoIdentificacion: concepto.NoIdentificacion || "",
-                Cantidad: parseInt(concepto.Cantidad, 10),
-                ClaveUnidad: String(concepto.ClaveUnidad),
-                Unidad: concepto.Unidad || "",
-                Descripcion: concepto.Descripcion,
-                ValorUnitario: concepto.ValorUnitario,
-                Importe: concepto.Subtotal,
-                Descuento: concepto.Descuento,
-                ObjetoImp: concepto.ObjetoImp || "02",
-                Impuestos: {
-                    Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
-                        Base: retencion.BaseImpuesto,
-                        ImpuestoCatalogoID: retencion.Impuesto,
-                        ImpuestoClave: String(retencion.ImpuestoClave),
-                        TipoFactor: "Tasa",
-                        TasaOCuota: retencion.TasaOCuota,
-                        Importe: retencion.Monto
-                    })) : [],
-                    Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
-                        Base: traslado.BaseImpuesto,
-                        ImpuestoCatalogoID: traslado.Impuesto,
-                        ImpuestoClave: String(traslado.ImpuestoClave),
-                        TipoFactor: "Tasa",
-                        TasaOCuota: traslado.TasaOCuota,
-                        Importe: traslado.Monto
-                    })) : []
-                }
-            })),
-            TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
-            TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
-
-        }
-    };
-    console.log(factura);
-    return factura;
-}
-function FacturaVistaPrevia(emisor, receptor, conceptos) {
-   const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
-   const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
-   const fechaISO = new Date(`${emisor.Fecha}T00:00:00`).toISOString();
-       let factura = {
-           UUID: "",
-           Version: "4.0",
-           Serie: emisor.Serie,
-           Folio: "2080427804",
-           Fecha: fechaISO,
-           Sello: "",
-           FormaPago: receptor.FormaPago,
-           FormaPagoDescripcion: receptor.FormaPagoDescripcion,
-           NoCertificado: "",
-           Certificado: "",
-           CondicionesDePago: "Condiciones de Pago",
-           SubTotal: subtotal,
-           Moneda: emisor.Divisa || "MXN",
-           TipoCambio: "1",
-           Total: total,
-           TipoDeComprobante: "I",
-           Exportacion: "01",
-           MetodoPago: receptor.MetodoPago,
-           MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
-           LugarExpedicion: emisor.LugarExpedicion,
-           Confirmacion: "",
-           InformacionGlobal: {
-               Periodicidad: "01",
-               Meses: "01",
-               Año: "2024"
-           },
-           EmisorID: emisor.Emisor,
-           EmisorNombre: emisor.NombreEmisor,
-           EmisorRFC: emisor.RFCEmisor,
-           EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
-           EmisorRegimenFiscal: emisor.RegimenFiscal,
-           EmisorLogo:emisor.LogoEmisor,
-
-           ReceptorID: receptor.Receptor,
-           ReceptorNombre: receptor.NombreReceptor,
-           ReceptorRFC: receptor.RFCReceptor,
-           ReceptorRegimenFiscal: receptor.RegimenFiscal,
-           ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
-           ReceptorUsoCFDI: receptor.UsoCFDI,
-           ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
-           Conceptos: {
-               ListaConceptos: conceptos.map(concepto => ({
-                   ClaveProdServ: String(concepto.ClaveProdServ),
-                   NoIdentificacion: concepto.NoIdentificacion || "",
-                   Cantidad: parseInt(concepto.Cantidad, 10),
-                   ClaveUnidad: String(concepto.ClaveUnidad),
-                   Unidad: concepto.Unidad || "",
-                   Descripcion: concepto.Descripcion,
-                   ValorUnitario: concepto.ValorUnitario,
-                   Importe: concepto.Subtotal,
-                   Descuento: concepto.Descuento,
-                   ObjetoImp: concepto.ObjetoImp || "02",
-                   Impuestos: {
-                       Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
-                        NombreImpuesto: retencion.NombreImpuesto || retencion.Nombre  || "",
-                        Base: retencion.BaseImpuesto || retencion.Base,
-                           ImpuestoClave: String(retencion.Impuesto),
-                           TipoFactor: retencion.Tipo,
-                           TasaOCuota: retencion.TasaO,
-                           Importe: retencion.Monto
-                       })) : [],
-                       Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
-                        NombreImpuesto: traslado.NombreImpuesto || traslado.Nombre  || "",
-                        Base: traslado.BaseImpuesto || traslado.Base,
-                           ImpuestoClave: String(traslado.Impuesto),
-                           TipoFactor: traslado.Tipo,
-                           TasaOCuota: traslado.Tasa,
-                           Importe: traslado.Monto
-                       })) : []
-                   }
-               })),
-               TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
-               TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
-               GrupoID: 1
-           }
-       };
-       console.log(factura);
-       return factura;
-}
-async function EnviarAEmisionTimbrado(factura) {
+import FormatearFactura from "@/components/FormFactura/FormatearFactura";
+import { isAuthenticated } from "@/utils/authRedirect";
 
 
+
+async function EnviarAEmisionTimbrado(factura, onSuccess, onError) {
     try {
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem('authToken');
@@ -184,22 +29,20 @@ async function EnviarAEmisionTimbrado(factura) {
                 },
                 body: JSON.stringify(factura)
             });
-
             if (!response.ok) {
-                // Extraer el error del cuerpo de la respuesta
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al guardar la factura');
+                throw new Error('Error al guardar la factura');
             }
+
             const result = await response.json();
-            console.log('Factura creada con éxito:', result);
-
+            console.log('Factura actualizada con éxito:', result);
+            onSuccess('Factura actualizada con éxito'); // Llama al callback de éxito
         }
-        // const token = localStorage.getItem('authToken');
-
     } catch (error) {
         console.error('Error al enviar la factura:', error);
+        onError('Error al actualizar la factura'); // Llama al callback de error
     }
 }
+
 
 export default function EditarFactura() {
     const { id } = useParams(); // Captura la ID de la URL
@@ -210,11 +53,20 @@ export default function EditarFactura() {
     const [receptorData, setReceptorData] = useState([])
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('error');
     const [editIndex, setEditIndex] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
+    const router = useRouter(); // Inicializa el router
 
+    useEffect(() => {
+        // Verifica la autenticación al montar el componente
+        if (!isAuthenticated()) {
+            // console.log("SEsion",!isAuthenticated());
+            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+    }, [router]);
     useEffect(() => {
         const fetchFactura = async () => {
             try {
@@ -358,24 +210,40 @@ export default function EditarFactura() {
     const onSubmit = (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
+            setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        const factura = CrearObjetoFactura(data, data, conceptos, id);
+        console.log("Conceptos ante de crear", conceptos);
+        const factura = FormatearFactura(data, data, conceptos, id, "Factura");
         console.log('Factura creada:', factura);
-        EnviarAEmisionTimbrado(factura);
+        EnviarAEmisionTimbrado(
+            factura,
+            (message) => { // Callback de éxito
+                setSnackbarMessage(message);
+                setSnackbarSeverity('success'); // Configura el Snackbar como éxito
+                setOpenSnackbar(true);
+             // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
+             setTimeout(() => {
+                router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
+            }, 3000); // Espera 3 segundos antes de redirigir
+        },
+            (errorMessage) => { // Callback de error
+                setSnackbarMessage(errorMessage);
+                setSnackbarSeverity('error'); // Configura el Snackbar como error
+                setOpenSnackbar(true);
+            }
+        );
     };
 
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
+            setSnackbarSeverity('error');
             setOpenSnackbar(true);
             return;
         }
-        console.log('CONCEPTOS EN EDIT',conceptos)
-        const factura = FacturaVistaPrevia(data, data, conceptos);
-
-        console.log('Llamando a generatePDF con la factura:', factura);
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
@@ -440,7 +308,7 @@ export default function EditarFactura() {
                     <div className="flex justify-end w-full space-x-2 mt-10">
                         <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
                         <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
-                        <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
+                        <button type="submit" className="btn btn-primary bg-primary-dark-total">Actualizar Factura</button>
                     </div>
                 </Resumen>
                 <pre>
@@ -463,7 +331,7 @@ export default function EditarFactura() {
                 onClose={() => setOpenSnackbar(false)}
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             >
-                <Alert onClose={() => setOpenSnackbar(false)} severity="error" variant="filled">
+                <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
                     {snackbarMessage}
                 </Alert>
             </Snackbar>

@@ -139,7 +139,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         {...register("Nombre", { required: true })}
                         onChange={(e) => setValue("Nombre", e.target.value)}
                         value={watch("Nombre", issuerName)}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
                         label="R.F.C."
@@ -152,7 +152,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         {...register("Rfc", { required: "El RFC es obligatorio" })} // Añadir validación requerida
                         onChange={(e) => setValue("Rfc", e.target.value)}
                         value={watch("Rfc", issuerRfc)}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <Select
                         nombre="RegimenFiscal"
@@ -176,7 +176,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.LugarExpedicion}
                         helperText={errors.LugarExpedicion ? "Este campo es obligatorio" : ""}
                         {...register("LugarExpedicion", { required: true })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                 </Box>
                 <Box
@@ -194,7 +194,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Calle}
                         helperText={errors.Calle ? "Este campo es obligatorio" : ""}
                         {...register("Calle", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', margin: '0px' }}
                     />
                     <TextField
                         label="Número exterior"
@@ -204,7 +204,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.NumeroExterior}
                         helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
                         {...register("NumeroExterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
                         label="Número interior"
@@ -214,7 +214,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.NumeroInterior}
                         helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
                         {...register("NumeroInterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
                         label="Colonia"
@@ -224,7 +224,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Colonia}
                         helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
                         {...register("Colonia", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
                         label="Municipio"
@@ -234,7 +234,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Municipio}
                         helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
                         {...register("Municipio", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                      <TextField
                         label="Estado"
@@ -244,7 +244,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
                         {...register("Estado", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                 </Box>
 
@@ -284,7 +284,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     <Button
                         variant="contained"
                         color="primary"
-                        sx={{ width: '250px', backgroundColor:'#04b2ca' }}
+                        sx={{ width: '250px', backgroundColor:'#04b2ca', '&:hover': {
+                            backgroundColor: '#038a9e',
+                        }, }}
                         type="button"
                         onClick={validateAndSubmit}
                         disabled={loading}
@@ -307,8 +309,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     sx={{
                         width: '100%',
                         fontSize: '1rem',
+                        padding: '12px'
                     }}
-                    style={{ padding: '12px' }}
+            
                 >
                     {snackbarMessage}
                 </Alert>

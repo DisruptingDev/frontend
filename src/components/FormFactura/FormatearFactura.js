@@ -1,0 +1,153 @@
+export default function FormatearFactura(emisor, receptor, conceptos, id, modo) {
+    const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
+    const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
+    const now = new Date();
+    const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
+    const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
+console.log("ENTRE____________" ,conceptos);
+    let factura
+    if (modo == "Factura") {
+        factura = {
+            ...(id && { ID: parseInt(id, 10) }),
+            Version: "4.0",
+            Fecha: fechaFormateada,
+
+            FormaPago: receptor.FormaPago,
+            Serie: emisor.Serie,
+            SubTotal: subtotal,
+            Descripcion: "",
+            Moneda: emisor.Divisa || "MXN",
+            TipoCambio: "1",
+            Total: total,
+            TipoDeComprobante: "I",
+            Exportacion: "01",
+            MetodoPago: receptor.MetodoPago,
+
+            LugarExpedicion: emisor.LugarExpedicion,
+            Confirmacion: "",
+            InformacionGlobal: {
+                Periodicidad: "01",
+                Meses: "01",
+                Año: "2024"
+            },
+            EmisorID: emisor.Emisor,
+            ReceptorID: receptor.Receptor,
+            Conceptos: {
+                ListaConceptos: conceptos.map(concepto => ({
+                    ClaveProdServ: String(concepto.ClaveProdServ),
+                    NoIdentificacion: concepto.NoIdentificacion || "",
+                    Cantidad: parseInt(concepto.Cantidad, 10),
+                    ClaveUnidad: String(concepto.ClaveUnidad),
+                    Unidad: concepto.Unidad || "",
+                    Descripcion: concepto.Descripcion,
+                    ValorUnitario: concepto.ValorUnitario,
+                    Importe: concepto.Subtotal,
+                    Descuento: concepto.Descuento,
+                    ObjetoImp: concepto.ObjetoImpuesto,
+                    Impuestos: {
+                        Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                            Base: retencion.BaseImpuesto,
+                            ImpuestoCatalogoID: retencion.Impuesto,
+                            ImpuestoClave: String(retencion.ImpuestoClave),
+                            TipoFactor: "Tasa",
+                            TasaOCuota: retencion.TasaOCuota,
+                            Importe: retencion.Monto
+                        })) : [],
+                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                            Base: traslado.BaseImpuesto,
+                            ImpuestoCatalogoID: traslado.Impuesto,
+                            ImpuestoClave: String(traslado.ImpuestoClave),
+                            TipoFactor: "Tasa",
+                            TasaOCuota: traslado.TasaOCuota,
+                            Importe: traslado.Monto
+                        })) : []
+                    }
+                })),
+                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+
+            }
+        };
+    }
+    else if (modo == "VistaPrevia") {
+        factura = {
+            UUID: "",
+            Version: "4.0",
+            Serie: emisor.Serie,
+            Folio: "2080427804",
+            Fecha: fechaFormateada,
+            Sello: "",
+            FormaPago: receptor.FormaPago,
+            FormaPagoDescripcion: receptor.FormaPagoDescripcion,
+            NoCertificado: "",
+            Certificado: "",
+            CondicionesDePago: "Condiciones de Pago",
+            SubTotal: subtotal,
+            Moneda: emisor.Divisa || "MXN",
+            TipoCambio: "1",
+            Total: total,
+            TipoDeComprobante: "I",
+            Exportacion: "01",
+            MetodoPago: receptor.MetodoPago,
+            MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
+            LugarExpedicion: emisor.LugarExpedicion,
+            Confirmacion: "",
+            InformacionGlobal: {
+                Periodicidad: "01",
+                Meses: "01",
+                Año: "2024"
+            },
+            EmisorID: emisor.Emisor,
+            EmisorNombre: emisor.NombreEmisor,
+            EmisorRFC: emisor.RFCEmisor,
+            EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
+            EmisorRegimenFiscal: emisor.RegimenFiscal,
+            EmisorLogo: emisor.LogoEmisor,
+
+            ReceptorID: receptor.Receptor,
+            ReceptorNombre: receptor.NombreReceptor,
+            ReceptorRFC: receptor.RFCReceptor,
+            ReceptorRegimenFiscal: receptor.RegimenFiscal,
+            ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            ReceptorUsoCFDI: receptor.UsoCFDI,
+            ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+            Conceptos: {
+                ListaConceptos: conceptos.map(concepto => ({
+                    ClaveProdServ: String(concepto.ClaveProdServ),
+                    NoIdentificacion: concepto.NoIdentificacion || "",
+                    Cantidad: parseInt(concepto.Cantidad, 10),
+                    ClaveUnidad: String(concepto.ClaveUnidad),
+                    Unidad: concepto.Unidad || "",
+                    Descripcion: concepto.Descripcion,
+                    ValorUnitario: concepto.ValorUnitario,
+                    Importe: concepto.Subtotal,
+                    Descuento: concepto.Descuento,
+                    ObjetoImp: concepto.ObjetoImp || "",
+                    Impuestos: {
+                        Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                            NombreImpuesto: retencion.NombreImpuesto,
+                            Base: retencion.BaseImpuesto,
+                            ImpuestoClave: String(retencion.Impuesto),
+                            TipoFactor: retencion.Tipo,
+                            TasaOCuota: retencion.Tasa,
+                            Importe: retencion.Monto
+                        })) : [],
+                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                            NombreImpuesto: traslado.NombreImpuesto,
+                            Base: traslado.BaseImpuesto,
+                            ImpuestoClave: String(traslado.Impuesto),
+                            TipoFactor: traslado.Tipo,
+                            TasaOCuota: traslado.Tasa,
+                            Importe: traslado.Monto
+                        })) : []
+                    }
+                })),
+                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+                GrupoID: 1
+            }
+        };
+    }
+    console.log("Resultado de la factura", factura);
+    return factura;
+}

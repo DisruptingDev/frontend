@@ -102,9 +102,9 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
             <Typography variant="h6" mb={2}>Alta de Empresa</Typography>
             <Box
                 display="grid"
-                gridTemplateColumns="3fr 3fr 2fr 1fr 0.5fr"
+                gridTemplateColumns="3fr 3fr 1.5fr 1.5fr 0.5fr"
                 gap={3}
-                alignItems="center"
+                alignItems="start"
             >
                 <FileInput
                     name="Certificado CSD"
@@ -122,7 +122,8 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     label="Contraseña"
                     type="password"
                     fullWidth
-                    margin="normal"
+                    
+                   
                     required
                     value={password}
                     onChange={(event) => {
@@ -131,7 +132,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     }}
                     error={passwordError} // Resalta el campo si hay un error
                     helperText={passwordError && "Por favor, ingrese la contraseña."}
-                    sx={{ alignSelf: 'end', 'margin-bottom': '0px' }}
+                    sx={{  marginTop:'36px' }}
                 />
 
                 <Button
@@ -139,7 +140,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     color="primary"
                     fullWidth
                     sx={{
-                        alignSelf: 'center', height: '58%', fontSize: '12px', backgroundColor: '#04b2ca',
+                        height: '56px', fontSize: '14px', backgroundColor: '#04b2ca', marginTop:'36px',
                         '&:hover': {
                             backgroundColor: '#038a9e',
                         },
@@ -163,8 +164,9 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     sx={{
                         width: '100%',
                         fontSize: '1rem',
+                        padding: '12px'
                     }}
-                    style={{ padding: '12px' }}
+                   
                 >
                     {snackbarMessage}
                 </Alert>

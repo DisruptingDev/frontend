@@ -172,8 +172,8 @@ input[type="file"]::file-selector-button {
   background-color: #04b2ca; /* Cambia este valor al color deseado */
   color: white; /* Color del texto */
   border: none; /* Quita el borde si lo deseas */
-  padding: 8px 16px; /* Ajusta el padding si lo necesitas */
-  border-radius: 4px; /* Bordes redondeados */
+  padding: 8px 8px; /* Ajusta el padding si lo necesitas */
+  border-radius: 2px !important; /* Bordes redondeados */
   cursor: pointer; /* Cambia el cursor al pasar por encima */
 }
 

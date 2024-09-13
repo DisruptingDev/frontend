@@ -55,7 +55,7 @@ export default function SearchFilter({ register }) {
                 <Select
                     register={register}
                     nombre="Usuario"
-                    url="http://31.220.31.152:8081/Catalogos/Usuario"
+                    url=""
                     clave="nombre"
                     descripcion="Nombre"
                     sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
