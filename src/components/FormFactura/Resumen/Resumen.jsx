@@ -14,17 +14,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                 <table className="table table-md">
                     <thead className="bg-primary-dark-total text-white h-12">
                         <tr>
-                            <th>#</th>
-                            <th>Clave Prod.</th>
-                            <th>Clave Unidad.</th>
-                            <th>Concepto</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario</th>
-                            <th>Descuento</th>
-                            <th>Traslados</th>
-                            <th>Retenciones</th>
-                            <th>Monto</th>
-                            <th>Acciones</th> {/* Columna para acciones */}
+                            <th>#</th><th>Clave Prod.</th><th>Clave Unidad.</th><th>Concepto</th><th>Cantidad</th><th>Precio Unitario</th><th>Descuento</th><th>Traslados</th><th>Retenciones</th><th>Monto</th><th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>

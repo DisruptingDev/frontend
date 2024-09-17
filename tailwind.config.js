@@ -14,7 +14,8 @@ module.exports = {
       extend: {
         colors: {
             'primary-dark-total': '#1D394D',
-            'selected-color':'#04B2CA',
+            // 'selected-color': 'rgb(4, 178, 202)',
+            'selected-color':  '#04B2CA'
         },
       },
   },
