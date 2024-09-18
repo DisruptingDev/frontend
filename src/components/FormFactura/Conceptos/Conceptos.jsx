@@ -321,7 +321,20 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 // Agregar nuevo concepto
                 setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
             }
-            reset();
+            //reset();
+            const resetForm = () => {
+                reset({
+                    Descripcion: '',
+                   
+                    Unidad: '',
+                    Cantidad: '',
+                    ValorUnitario: '',
+                    Descuento: '',
+                    impuestos: [{ Impuesto: '', Tasa: '' }]
+                });
+            };
+            resetForm()
+            
             setObjetoImpuesto("02");
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);

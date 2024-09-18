@@ -1,5 +1,5 @@
 "use client";
-import html2pdf from 'html2pdf.js';
+// import html2pdf from 'html2pdf.js';
 
 function numeroALetras(num, moneda) {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
@@ -170,7 +170,7 @@ const generarVistaPrevia = async (factura) => {
         }
         const filledTemplate = fillTemplate(template, factura);
         //Generar pdf
-        const pdfDoc = await html2pdf().from(filledTemplate).save();
+        // const pdfDoc = await html2pdf().from(filledTemplate).save();
         // Mostrar pdf en el navegador
         // const fileURL = URL.createObjectURL(pdfDoc);
         // window.open(fileURL);

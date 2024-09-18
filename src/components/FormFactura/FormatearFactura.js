@@ -4,7 +4,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     const now = new Date();
     const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
     const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-    console.log("ENTRE____________", conceptos);
+    console.log("ENTRE____________", receptor);
     let factura
     if (modo == "Factura") {
         factura = {
@@ -34,6 +34,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             },
             EmisorID: emisor.Emisor,
             ReceptorID: receptor.Receptor,
+            UsoCFDI: receptor.UsoCFDI,
             Conceptos: {
                 ListaConceptos: conceptos.map(concepto => ({
                     ClaveProdServ: String(concepto.ClaveProdServ),
