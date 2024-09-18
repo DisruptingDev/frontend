@@ -202,7 +202,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                     }}
                     error={!!errors.Fecha}
                     helperText={errors.Fecha && errors.Fecha.message}
-                    value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
+                    value={getValues("Fecha") || null}  // Usa getValues para manejar el valor
                     onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
                 />
 

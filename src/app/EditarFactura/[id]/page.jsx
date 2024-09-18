@@ -315,9 +315,9 @@ export default function EditarFactura() {
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Actualizar Factura</button>
                     </div>
                 </Resumen>
-                <pre>
+                {/* <pre>
                     {JSON.stringify(watch(),null,2)}
-                </pre>
+                </pre> */}
             </form>
             <Modal
                 open={openModal}

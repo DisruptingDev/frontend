@@ -15,6 +15,9 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Button,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation'; // Importa correctamente desde next/navigation
@@ -40,6 +43,74 @@ export default function DataTable() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuRow, setMenuRow] = useState(null);
   const router = useRouter(); // Hook de Next.js para manejar la navegación
+  const [selectedRows, setSelectedRows] = useState([]);
+
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState('');
+  const [severity, setSeverity] = useState('info'); // info, success, warning, error
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  // Función para manejar la selección de filas
+  const handleSelectRow = (row) => {
+    setSelectedRows((prev) => {
+      if (prev.includes(row.ID)) {
+        return prev.filter((id) => id !== row.ID);
+      } else {
+        return [...prev, row.ID];
+      }
+    });
+  };
+
+  // Función para timbrar múltiples facturas
+  const handleTimbrar = async (ids) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://31.220.31.152:8088/TimbradoCorporativo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ Facturas_ID: ids }),
+      });
+
+      if (response.ok) {
+        const data = await response.json(); // Obtén la respuesta JSON
+
+        // Dependiendo del status en la respuesta, muestra diferentes notificaciones
+        if (data.Facturas) {
+          const factura = data.Facturas[0]; // Tomar la primera factura para este ejemplo
+          if (factura.status === 'success') {
+            setMessage('Facturas timbradas exitosamente');
+            setSeverity('success');
+          } else if (factura.status === 'error') {
+            setMessage('Error al timbrar facturas');
+            setSeverity('error');
+          }
+        } else {
+          setMessage('Respuesta inesperada del servidor');
+          setSeverity('warning');
+        }
+
+        // Mostrar el Snackbar con el resultado
+        setOpen(true);
+
+        // Si es necesario, puedes refrescar los datos aquí
+      } else {
+        setMessage('Error al conectar con el servidor');
+        setSeverity('error');
+        setOpen(true);
+      }
+    } catch (error) {
+      console.error('Error al timbrar:', error);
+      setMessage('Error en la conexión o en el timbrado');
+      setSeverity('error');
+      setOpen(true);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,6 +181,17 @@ export default function DataTable() {
 
   return (
     <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
+       <Box display="flex" justifyContent="flex-end" mb={2}>
+    <Button
+      variant="contained"
+      color="primary"
+      disabled={selectedRows.length === 0}
+      onClick={() => handleTimbrar(selectedRows)}
+    >
+      Timbrar Seleccionadas
+    </Button>
+  </Box>
+      
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <TableContainer align='center'>
           <Table sx={{ minWidth: 650 }} aria-label="customized table">
@@ -131,20 +213,24 @@ export default function DataTable() {
             </TableHead>
             <TableBody>
               {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-                <TableRow 
-                  key={row.ID} 
-                  onClick={() => handleRowClick(row)} 
+                <TableRow
+                  key={row.ID}
+                  onClick={() => handleRowClick(row)}
                   style={{ cursor: 'pointer' }}
                 >
                   <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
-                    <Checkbox color="primary" />
+                    <Checkbox
+                      color="primary"
+                      checked={selectedRows.includes(row.ID)}
+                      onChange={() => handleSelectRow(row)}
+                    />
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Folio}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "No timbrada" :"Timbrada"}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
@@ -159,7 +245,10 @@ export default function DataTable() {
                       onClose={handleMenuClose}
                     >
                       {menuRow && menuRow.uuid === '' && (
-                        <MenuItem onClick={handleEdit}>Editar</MenuItem>
+                        <>
+                          <MenuItem onClick={handleEdit}>Editar</MenuItem>
+                          <MenuItem onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>
+                        </>
                       )}
                       <MenuItem onClick={handleClone}>Clonar</MenuItem>
                     </Menu>
@@ -181,12 +270,18 @@ export default function DataTable() {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
         />
       </Paper>
-      {selectedRow && (
+      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
+          {message}
+        </Alert>
+      </Snackbar>
+      {/* {selectedRow && (
         <Box mt={2}>
           <h3>Información Completa de la Fila Seleccionada:</h3>
           <pre>{JSON.stringify(selectedRow, null, 2)}</pre>
         </Box>
-      )}
+      )} */}
     </Box>
   );
 }

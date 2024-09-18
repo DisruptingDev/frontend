@@ -4,7 +4,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     const now = new Date();
     const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
     const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-console.log("ENTRE____________" ,conceptos);
+    console.log("ENTRE____________", conceptos);
     let factura
     if (modo == "Factura") {
         factura = {
@@ -15,6 +15,8 @@ console.log("ENTRE____________" ,conceptos);
             FormaPago: receptor.FormaPago,
             Serie: emisor.Serie,
             SubTotal: subtotal,
+            CondicionesDePago: "Condiciones De Pago",
+            TipoDeComprobante: "I",
             Descripcion: "",
             Moneda: emisor.Divisa || "MXN",
             TipoCambio: "1",
