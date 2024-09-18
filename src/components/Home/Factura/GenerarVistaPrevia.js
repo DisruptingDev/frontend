@@ -1,4 +1,5 @@
 "use client";
+import html2pdf from 'html2pdf.js';
 
 function numeroALetras(num, moneda) {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
@@ -168,9 +169,17 @@ const generarVistaPrevia = async (factura) => {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
         }
         const filledTemplate = fillTemplate(template, factura);
-        return filledTemplate;
-        // setPreviewContent(filledTemplate);
-        // setOpenModal(true);
+        //Generar pdf
+        const pdfDoc = await html2pdf().from(filledTemplate).save();
+        // Mostrar pdf en el navegador
+        // const fileURL = URL.createObjectURL(pdfDoc);
+        // window.open(fileURL);
+
+        //Descargar en zip
+        // const zip = new JSZip();
+        // zip.file("factura.pdf", pdfDoc);
+        // const content = await zip.generateAsync({type:"blob"});
+        // saveAs(content, "factura.zip");
     } catch (error) {
         console.error("Error al mostrar la vista previa: ", error);
     }

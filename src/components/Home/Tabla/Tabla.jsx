@@ -144,7 +144,7 @@ export default function DataTable() {
                   <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Estatus || 'Timbrada'}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "No timbrada" :"Timbrada"}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
@@ -158,7 +158,7 @@ export default function DataTable() {
                       open={Boolean(anchorEl)}
                       onClose={handleMenuClose}
                     >
-                      {menuRow && menuRow.Estatus !== 'Timbrada' && (
+                      {menuRow && menuRow.uuid === '' && (
                         <MenuItem onClick={handleEdit}>Editar</MenuItem>
                       )}
                       <MenuItem onClick={handleClone}>Clonar</MenuItem>
