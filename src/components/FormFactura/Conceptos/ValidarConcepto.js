@@ -10,7 +10,7 @@ export default function validarConcepto(concepto) {
     //     return { isValid: false, message: 'Invalid JSON in ClaveProdServ or ClaveUnidad' };
     // }
 
-    const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal'];
+    const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal','ObjetoImpuesto'];
     for (let field of requiredFields) {
         if (field === 'Descuento') {
             // Permitir que Descuento sea 0
@@ -26,7 +26,7 @@ export default function validarConcepto(concepto) {
     }
 
     // Validar estructura de impuestos
-    const impuestosFields = ['Tasa', 'BaseImpuesto', 'Monto', 'ObjetoImpuesto', 'Impuesto'];
+    const impuestosFields = ['Tasa', 'BaseImpuesto', 'Monto', 'Impuesto'];
     for (let i = 0; i < concepto.Impuestos.length; i++) {
         const impuestos = concepto.Impuestos[i];
         for (let field of impuestosFields) {

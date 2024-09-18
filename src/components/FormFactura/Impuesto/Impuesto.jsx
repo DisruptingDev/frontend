@@ -30,7 +30,7 @@ export default function Impuesto({
     useEffect(() => {
         if (impuestoEditor) {
             console.log("Impues a editar", impuestoEditor)
-            setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
+            // setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
@@ -113,7 +113,7 @@ export default function Impuesto({
             setMonto(0);
             setValue(`impuestos[${index}].Monto`, 0);
         }
-    }, [tasa, baseImpuesto, setValue, index, getValues,impuestoEditor]);
+    }, [tasa, baseImpuesto, setValue, index, getValues,impuestoEditor, watch(`impuestos[${index}].TasaOCuota`)]);
 
     // Manejar cambios en ObjetoImpuesto
     const handleObjetoImpuestoChange = (e) => {
@@ -144,7 +144,7 @@ export default function Impuesto({
     return (
         <Box>
             <Box display="flex" flexDirection="row" alignItems="start" gap={2}>
-                <Box flex={2}>
+                {/* <Box flex={2}>
                     <Select
                         register={register}
                         clave='Clave'
@@ -157,7 +157,7 @@ export default function Impuesto({
                         helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
                         value={getValues(`impuestos[${index}].ObjetoImpuesto`) || ''}
                     />
-                </Box>
+                </Box> */}
 
                 <Box flex={1}>
                     <Select

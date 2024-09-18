@@ -12,6 +12,7 @@ export default function CrearConcepto(getValues, impuestos) {
         ValorUnitario: parseFloat(getValues("ValorUnitario")),
         Descuento: parseFloat(getValues("Descuento")) || 0,
         Subtotal: getValues("Subtotal"),
+        ObjetoImpuesto: getValues("ObjetoImpuesto"),
         Impuestos: impuestos,
 
         Retenciones: [],

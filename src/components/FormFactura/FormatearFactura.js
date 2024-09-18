@@ -51,6 +51,7 @@ console.log("ENTRE____________" ,conceptos);
                             ImpuestoClave: String(retencion.ImpuestoClave),
                             TipoFactor: "Tasa",
                             TasaOCuota: retencion.TasaOCuota,
+                            TasaCatalogoID: retencion.Tasa,
                             Importe: retencion.Monto
                         })) : [],
                         Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
@@ -59,6 +60,7 @@ console.log("ENTRE____________" ,conceptos);
                             ImpuestoClave: String(traslado.ImpuestoClave),
                             TipoFactor: "Tasa",
                             TasaOCuota: traslado.TasaOCuota,
+                            TasaCatalogoID: traslado.Tasa,
                             Importe: traslado.Monto
                         })) : []
                     }

@@ -180,6 +180,7 @@ const generarVistaPrevia = async (factura) => {
         // zip.file("factura.pdf", pdfDoc);
         // const content = await zip.generateAsync({type:"blob"});
         // saveAs(content, "factura.zip");
+        return filledTemplate;
     } catch (error) {
         console.error("Error al mostrar la vista previa: ", error);
     }

@@ -162,31 +162,35 @@ export default function EditarFactura() {
                     Unidad: concepto.Unidad,
                     Descripcion: concepto.Descripcion,
                     Descuento: concepto.Descuento,
+                    ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                     Impuestos: Impuestos.map(impuesto => ({
-                        ObjetoImpuesto: impuesto.ObjetoImpuesto || concepto.ObjetoImp,
+                    
                         Impuesto: impuesto.ImpuestoCatalogoID,
                         ImpuestoClave: impuesto.ImpuestoClave,
+                        Tasa:impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || Subtotal,
                         Monto: impuesto.Importe,
-                        TipoFactor: impuesto.TipoFactor
+                        // TipoFactor: impuesto.TipoFactor
                     })),
                     Retenciones: Retenciones.map(retencion => ({
                         BaseImpuesto: retencion.Base,
                         Impuesto:retencion.ImpuestoCatalogoID,
                         ImpuestoClave: retencion.ImpuestoClave,
+                        Tasa:retencion.TasaCatalogoID,
                         TasaOCuota: retencion.TasaOCuota,
                         Monto: retencion.Importe,
-                        Tipo : retencion.TipoFactor
+                        // Tipo : retencion.TipoFactor
                     })),
                     // Retenciones: concepto.Impuestos?.Retenciones || [],
                     Traslados: Traslados.map(traslado => ({
                         BaseImpuesto: traslado.Base,
                         Impuesto: traslado.ImpuestoCatalogoID,
                         ImpuestoClave: traslado.ImpuestoClave,
+                        Tasa:traslado.TasaCatalogoID,
                         TasaOCuota: traslado.TasaOCuota,
                         Monto: traslado.Importe,
-                        Tipo : traslado.TipoFactor
+                        // Tipo : traslado.TipoFactor
                     })),
                     // Traslados: concepto.Impuestos?.Traslados || [],
                     Subtotal: Subtotal,

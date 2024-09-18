@@ -5,6 +5,8 @@ import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
 import { useForm, useFieldArray } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import Select from '@/components/Select/Select.jsx';
+import { BoxZoomHandler } from 'mapbox-gl';
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex }) {
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
@@ -14,6 +16,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [selectedClaveProdServ, setSelectedClaveProdServ] = useState(null);
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
     const [token, setToken] = useState(null);
+    const [objetoImpuesto, setObjetoImpuesto] = useState("02");
 
     // Acceder a localStorage solo en el cliente
     useEffect(() => {
@@ -46,7 +49,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             ValorUnitario: 0,
             Descuento: 0,
             Subtotal: 0,
-            impuestos: [{ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '', Tipo:''}]
+            ObjetoImpuesto: "02",
+            impuestos: [{  Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '', Tipo: '' }]
         },
     });
 
@@ -78,14 +82,14 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     };
 
     useEffect(() => {
-        if(selectedClaveUnidad){
+        if (selectedClaveUnidad) {
             console.log("Seleccion", selectedClaveUnidad.Descripcion);
-            
+
             setValue("Unidad", selectedClaveUnidad.Descripcion);
 
         }
 
-    },[selectedClaveUnidad, setValue])
+    }, [selectedClaveUnidad, setValue])
 
     useEffect(() => {
         fetchOptions();
@@ -124,30 +128,72 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("ValorUnitario", concepto.ValorUnitario || 0);
             setValue("Descuento", concepto.Descuento || 0);
             setValue("Subtotal", concepto.Subtotal || 0);
+            setValue("ObjetoImpuesto", concepto.ObjetoImpuesto || "02");
+            setObjetoImpuesto(concepto.ObjetoImpuesto || "02");
             console.log('Impuestos:', getValues(`impuestos`));
             console.log("IMPUESTOS ACT", concepto.Impuestos);
-       
-            
-          
+
+
+
 
             console.log('Concepto editado:', getValues(`impuestos`));
             concepto.Impuestos.forEach((impuesto, index) => {
-                setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
+                // setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
                 setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
                 setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
                 setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
                 setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
-                setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto ||'');
+                setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto || '');
                 setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');
                 console.log("MONT", impuesto.Monto)
                 setValue(`impuestos.${index}.Monto`, impuesto.Monto || 0);
-                setValue(`impuestos.${index}.TasaUrl`,`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`)
+
+
+                const token = localStorage.getItem('authToken');
+                fetch(`http://31.220.31.152:8081/Catalogos/ImpuestoClave`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    // console.log("TIPO", impuestoEditor.TipoFactor);
+                    
+                  const opcionSeleccionada = data.find(opt => opt.ID == impuesto.Impuesto );
+                  if (opcionSeleccionada) {
+                    // const data = JSON.parse(opcionSeleccionada)
+                    // setValue(`impuestos[${index}].Nom`, opcionSeleccionada.Clave);
+                    // console.log("opcionSeleccionada",opcionSeleccionada["Impuesto"]);  
+                    setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
+                    setValue(`impuestos.${index}.TasaOCuota`,impuesto.TasaCatalogoID);
+                    setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
+                    setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
+                }
+                    
+                  
+
+                  // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
+                })
+
+
+
+                // setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`)
 
                 console.log('Concepto editado:', getValues(`impuestos.${index}`));
                 // console.log('Concepto editado:', getValues(`impuestos.${index}`);
             });
             setValue("impuestos", concepto.Impuestos)
-             trigger('impuestos'); 
+            trigger('impuestos');
+
+            
+            
+                  
+                
+
+
 
             console.log('Concepto editado:', getValues(`impuestos`));
 
@@ -243,11 +289,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         // Validaciones para los campos de Impuesto
         const impuestos = getValues("impuestos");
         impuestos.forEach((impuesto) => {
-            if (!impuesto.ObjetoImpuesto) {
-                setObjetoImpuestoError(true);
-                hasError = true;
-            }
-
+           
             if (!impuesto.Impuesto) {
                 setImpuestoError(true);
                 hasError = true;
@@ -261,13 +303,13 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             return;
         }
 
-        const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
-        if (!objetoImpuesto || objetoImpuesto === "Default") {
-            console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
-            return;
-        }
+        // const objetoImpuesto = getValues("impuestos")[0]?.ObjetoImpuesto;
+        // if (!objetoImpuesto || objetoImpuesto === "Default") {
+        //     console.error("El campo ObjetoImpuesto es obligatorio y no puede estar vacío.");
+        //     return;
+        // }
 
-        console.log('ImpuestosENVIANDOS',getValues("impuestos"));
+        console.log('ImpuestosENVIANDOS', getValues("impuestos"));
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
 
         if (nuevoConcepto !== "Error") {
@@ -280,6 +322,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 setConceptos(prevConceptos => [...prevConceptos, nuevoConcepto]);
             }
             reset();
+            setObjetoImpuesto("02");
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
         } else {
@@ -291,6 +334,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
+    const handleObjetoImpuestoChange =(e)=>{
+        const value = e.target.value;
+        const data = JSON.parse(e.target.value);
+        setObjetoImpuesto(data.Clave);
+    };
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
@@ -347,7 +395,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         setSelectedClaveUnidad(value);
                         setValue('ClaveUnidad', value?.Clave || '');
                         setClaveUnidadError(false);
-                        setValue('Unidad',value?.Descripcion || '');
+                        setValue('Unidad', value?.Descripcion || '');
                     }}
                     renderInput={(params) => (
                         <TextField
@@ -400,8 +448,27 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     disabled
                 />
             </Box>
+            <Box>
+                <Typography variant="h6" mt={4} mb={2}>Impuestos</Typography>
+                <Select
+                    register={register}
+                    clave='Clave'
+            
+                    nombre='ObjetoImpuesto'
+                    label='Objeto Impuesto'
+                    descripcion='Descripcion'
+                    url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
+                    value={getValues("ObjetoImpuesto") || "02"}
+                    onChange={handleObjetoImpuestoChange}
+                    sx={{ width: 'auto' }}
+                    
+                />
+            </Box>
 
-            <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
+            {objetoImpuesto!=="01"  &&(
+                console.log("NO ES 01", objetoImpuesto),
+              <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
+               
                 {fields.map((field, index) => {
                     // const impuestoEditor = getValues(`impuestos.${index}`);
                     // console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
@@ -425,19 +492,22 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         </Box>
                     );
                 })}
-                <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="center">
+                <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="start">
                     <Button
                         variant="contained"
                         sx={{
                             backgroundColor: 'rgba(29, 57, 77, 1)',
                             '&:hover': { backgroundColor: 'rgba(19, 47, 67, 1)' }
                         }}
-                        onClick={() => append({ ObjetoImpuesto: '', Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
+                        onClick={() => append({ Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
                     >
                         <AddCircleIcon sx={{ fontSize: '30px' }} />
                     </Button>
                 </Box>
-            </Box>
+            </Box>  
+            )}
+            
+            
 
             <Box textAlign="end" mt={3}>
                 <Button
