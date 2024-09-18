@@ -330,12 +330,13 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Cantidad: '',
                     ValorUnitario: '',
                     Descuento: '',
+                    ObjetoImpuesto: "02",
                     impuestos: [{ Impuesto: '', Tasa: '' }]
                 });
             };
             resetForm()
             
-            setObjetoImpuesto("02");
+            // setObjetoImpuesto("02");
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
         } else {

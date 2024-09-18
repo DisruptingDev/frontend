@@ -67,6 +67,7 @@ export default function DataTable() {
   // Función para timbrar múltiples facturas
   const handleTimbrar = async (ids) => {
     try {
+      console.log('Timbrando facturas:', ids);
       const token = localStorage.getItem('authToken');
       const response = await fetch('http://31.220.31.152:8088/TimbradoCorporativo', {
         method: 'POST',
@@ -79,7 +80,7 @@ export default function DataTable() {
 
       if (response.ok) {
         const data = await response.json(); // Obtén la respuesta JSON
-
+        console.log('Data received from API:', data);
         // Dependiendo del status en la respuesta, muestra diferentes notificaciones
         if (data.Facturas) {
           const factura = data.Facturas[0]; // Tomar la primera factura para este ejemplo
