@@ -90,7 +90,7 @@ export default function AltaCliente({ onClose }) {
                     register={register} // Pasa register como prop
                     nombre="RegimenFiscal"
                     url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                    clave="Descripcion"
+                    clave="Clave"
                     descripcion="Descripcion"
                     onChange={(e) => setValue('RegimenFiscal', e.target.value)}
                     error={!!errors.RegimenFiscal}
