@@ -104,7 +104,7 @@ export default function EditarFactura() {
         Rfc: FacturaEdit.Receptor.Rfc,
         DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscalReceptor,
         Nombre: FacturaEdit.Receptor.Nombre,
-        UsoCFDI: FacturaEdit.Receptor.UsoCFDI,
+        UsoCFDI: FacturaEdit.UsoCFDI,
         RegimenFiscal: FacturaEdit.Receptor.RegimenFiscalReceptor,
         LugarExpedicion: FacturaEdit.Receptor.LugarExpedicion,
         Calle: FacturaEdit.Receptor.Calle,
