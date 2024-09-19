@@ -158,6 +158,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     />
                     <Select
                         nombre="RegimenFiscal"
+                        label={"Régimen Fiscal*"}
                         url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
                         clave="Clave"
                         descripcion="Descripcion"
@@ -172,7 +173,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     <TextField
                         label="Lugar Expedición"
                         fullWidth
-                        placeholder="Ej: CDMX"
+                        placeholder="Ej: 72000"
                         margin="normal"
                         required
                         error={!!errors.LugarExpedicion}
