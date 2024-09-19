@@ -78,8 +78,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 LugarExpedicion: data.LugarExpedicion,
                 LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
                 Calle:data.Calle || "",
-                NumeroExterior: parseInt(data.NumeroExterior) || "",
-                NumeroInterior: parseInt(data.NumeroInterior) || "",
+                NumeroExterior: data.NumeroExterior || "",
+                NumeroInterior: data.NumeroInterior || "",
                 Colonia: data.Colonia || "",
                 Municipio: data.Municipio || "",
                 Estado: data.Estado || "",
@@ -98,8 +98,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 },
                 body: JSON.stringify(empresaData),
             });
-
+            const data = await response.json(); // Obtén la respuesta JSON
+            console.log('Data received from API:', data);
             if (!response.ok) {
+
                 setSnackbarMessage('Error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);

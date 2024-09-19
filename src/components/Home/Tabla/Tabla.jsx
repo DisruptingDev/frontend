@@ -86,9 +86,11 @@ export default function DataTable() {
           const factura = data.Facturas[0]; // Tomar la primera factura para este ejemplo
           if (factura.status === 'success') {
             setMessage('Facturas timbradas exitosamente');
-            setSeverity('success');
+            setSeverity('success')
+
           } else if (factura.status === 'error') {
-            setMessage('Error al timbrar facturas');
+            const error = factura.message
+            setMessage('Error al timbrar facturas:'+error);
             setSeverity('error');
           }
         } else {
@@ -273,7 +275,11 @@ export default function DataTable() {
       </Paper>
       <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert onClose={handleClose} severity={severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleClose} severity={severity} variant="filled" sx={{
+                        width: '100%',
+                        fontSize: '1rem',
+                        padding: '12px'
+                    }}>
           {message}
         </Alert>
       </Snackbar>
