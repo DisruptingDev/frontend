@@ -40,7 +40,7 @@ export default function Header({ name }) {
           Facturación +
         </Link>
         <Link
-          href="#"
+          href="/AltaCliente"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/Clientes") ? "text-selected-color underline" : "text-muted-foreground"
           }`}

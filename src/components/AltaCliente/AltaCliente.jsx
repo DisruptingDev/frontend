@@ -1,12 +1,17 @@
 "use client"
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
 export default function AltaCliente({ onClose }) {
     const { register, handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+
+    const handleClose = () => {
+        setToast({ ...toast, open: false });
+    };
 
     const onSubmit = async (data) => {
         // Construir el objeto de datos como lo espera la API
@@ -34,21 +39,22 @@ export default function AltaCliente({ onClose }) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 
                 },
-                body: JSON.stringify(clienteData), // Enviar el objeto correctamente estructurado
+                body: JSON.stringify(clienteData),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Error al guardar:', errorData);
-                alert('Error al guardar los datos');
+                setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
             } else {
                 const result = await response.json();
                 console.log('Guardado exitoso:', result);
+                setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                 if (onClose) onClose(); 
             }
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            alert('Ocurrió un error al guardar los datos');
+            setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
         } finally {
             setLoading(false);
         }
@@ -88,6 +94,7 @@ export default function AltaCliente({ onClose }) {
                     />
                    <Select
                     register={register} // Pasa register como prop
+                    label={"Regimen Fiscal*"}
                     nombre="RegimenFiscal"
                     url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
                     clave="Clave"
@@ -100,7 +107,7 @@ export default function AltaCliente({ onClose }) {
                     <TextField
                         label="Domicilio Fiscal"
                         fullWidth
-                        placeholder="Ej: CDMX"
+                        placeholder="Ej: 72000"
                         margin="normal"
                         required
                         error={!!errors.DomicilioFiscal}
@@ -188,17 +195,11 @@ export default function AltaCliente({ onClose }) {
                         onChange={(e) => setValue('Estado', e.target.value)}
                     /> */}
                 </Box>
-                <Box
-                    my={4}
-                    mx={20}
-                    display="flex"
-                    justifyContent="flex-end"
-                    gap={3}
-                >
+                <Box my={4} display="flex" justifyContent="flex-end" gap={3}>
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px' }}
+                        sx={{ width: '150px', backgroundColor: '#da0404'}}
                         type="button"
                         onClick={onClose}
                     >
@@ -208,15 +209,29 @@ export default function AltaCliente({ onClose }) {
                     <Button
                         variant="contained"
                         color="primary"
-                        sx={{ width: '250px' }}
+                        sx={{
+                            width: '250px', 
+                            backgroundColor: '#04b2ca',
+                            '&:hover': { backgroundColor: '#038a9e' },
+                        }}
                         type="button"
-                        onClick={handleSubmit(onSubmit)} // Llama manualmente a handleSubmit
+                        onClick={handleSubmit(onSubmit)}
                         disabled={loading}
                     >
                         {loading ? "Guardando..." : "Guardar Cliente"}
                     </Button>
                 </Box>
             </form>
+            <Snackbar
+                open={toast.open}
+                autoHideDuration={6000}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert onClose={handleClose} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
+                    {toast.message}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
