@@ -12,9 +12,9 @@ export default function RegistroSeries() {
     return (
         <div>
         <Header />
-        <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-           
-        </Box>
+        
+            <AltaSerie/>
+       
     </div>
     );
 }

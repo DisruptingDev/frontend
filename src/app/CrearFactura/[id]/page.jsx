@@ -96,7 +96,8 @@ export default function CrearFactura() {
         RegimenFiscal: FacturaEdit.Emisor.RegimenFiscal,
         LugarExpedicion: FacturaEdit.Emisor.LugarExpedicion,
         Serie: FacturaEdit.Serie,
-        Fecha: FacturaEdit.Fecha
+        Fecha: FacturaEdit.Fecha,
+        TipoComprobante: FacturaEdit.TipoDeComprobante
     });
     const getDatosReceptor = (FacturaEdit) => ({
         ID: FacturaEdit.ReceptorID,

@@ -46,6 +46,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             setValue("RegimenFiscalEmisor", emisorData.RegimenFiscal);
             setValue("LogoEmisor", emisorData.LogoPath);
             setValue("Serie", emisorData.Serie);
+            setValue("TipoComprobante", emisorData.TipoComprobante);
 
             // Solo establece la fecha si no está definida
             if (!getValues("Fecha")) {
@@ -102,6 +103,15 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
+    const handleSerieChange = (e) => {
+        try {
+            const data = JSON.parse(e.target.value);
+            console.log("SERie",data);
+           setValue("TipoComprobante", data.TipoComprobante);
+        } catch (error) {
+            console.error("El valor de emisor no es un JSON válido:", e.target.value);
+        }
+    }
 
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
@@ -175,6 +185,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
                     value={getValues("Serie") || ""}
+                    onChange={handleSerieChange}
                 />
 
                 <TextField
