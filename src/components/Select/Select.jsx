@@ -31,7 +31,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false }) {
+export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false, reset =false }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(value || '');
 
@@ -39,6 +39,17 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
         if(url)
         obtener_opciones(url).then(data => setOpciones(data));
     }, [url]);
+
+    useEffect(() => {
+
+        if (reset) {
+            if(url){
+                obtener_opciones(url).then(data => setOpciones(data));
+            }
+            
+
+        }
+    }, [reset, url]);
 
     useEffect(() => {
         // Update the selected value when `value` prop changes

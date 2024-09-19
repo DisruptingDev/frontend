@@ -15,6 +15,15 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
     const [regimenFiscal, setRegimenFiscal] = useState("");
     const [openModal, setOpenModal] = useState(false);
+    const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
+
+    // Reiniciar o recargar los datos del select cuando el modal se cierra
+    useEffect(() => {
+        if (isModalClosed) {
+            setIsModalClosed(false);  // Resetea el estado
+            // Aquí puedes agregar cualquier lógica adicional si necesitas resetear más cosas
+        }
+    }, [isModalClosed]);
 
     useEffect(() => {
         if (receptorData) {
@@ -119,6 +128,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     const handleCloseModal = () => {
         setOpenModal(false);
+        setIsModalClosed(true);
+        
     };
 
     return (
@@ -145,6 +156,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     error={!!errors.Emisor}
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("ReceptorID") || ""}
+                    reset={isModalClosed}  // Pasa el estado al componente Select
                 />
 
                 <TextField
@@ -208,6 +220,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setMetodoPago(e.target.value)}
                     value={getValues("MetodoPago") || ""}
+                    
 
                 />
 
