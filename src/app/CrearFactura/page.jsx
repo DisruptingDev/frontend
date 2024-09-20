@@ -82,6 +82,27 @@ export default function CrearFactura() {
             }
         );
     };
+
+    const generatePDF = async (htmlContent) => {
+        const response = await fetch('/api/generate-pdf', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ htmlContent }),
+          });
+        
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+        
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'generated.pdf';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        };
+
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
@@ -91,6 +112,9 @@ export default function CrearFactura() {
         }
         const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
+        console.log('Vista previa generada:', vistaPrevia);
+        const html = '<h1>Mi contenido dinámico</h1>'
+        await generatePDF(vistaPrevia);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
     });
