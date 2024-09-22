@@ -1,3 +1,5 @@
+import Receptor from "./Receptor/Receptor";
+
 export default function FormatearFactura(emisor, receptor, conceptos, id, modo) {
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
     const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
@@ -103,19 +105,43 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 Año: "2024"
             },
             EmisorID: emisor.Emisor,
-            EmisorNombre: emisor.NombreEmisor,
-            EmisorRFC: emisor.RFCEmisor,
-            EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
-            EmisorRegimenFiscal: emisor.RegimenFiscal,
-            EmisorLogo: emisor.LogoEmisor,
-
-            ReceptorID: receptor.Receptor,
-            ReceptorNombre: receptor.NombreReceptor,
-            ReceptorRFC: receptor.RFCReceptor,
-            ReceptorRegimenFiscal: receptor.RegimenFiscal,
-            ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
-            ReceptorUsoCFDI: receptor.UsoCFDI,
-            ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+            Emisor:{
+                Rfc: emisor.RFCEmisor,
+                Nombre: emisor.NombreEmisor,
+                RegimenFiscal: emisor.RegimenFiscal,
+                LugarExpedicion:emisor.LugarExpedicion,
+                LogoPath: emisor.LogoEmisor,
+                Calle: emisor.Calle,
+                NumeroExterior: emisor.NoExterior,
+                Colonia: emisor.ColoniaEmisor,
+                Municipio: emisor.MunicipioEmisor,
+                Estado: emisor.EstadoEmisor,
+            },
+            // EmisorNombre: emisor.NombreEmisor,
+            // EmisorRFC: emisor.RFCEmisor,
+            // EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
+            // EmisorRegimenFiscal: emisor.RegimenFiscal,
+            // EmisorLogo: emisor.LogoEmisor,
+            Receptor:{
+                Rfc: receptor.RFCReceptor,
+                Nombre: receptor.NombreReceptor,
+                RegimenFiscal: receptor.RegimenFiscal,
+                UsoCFDI: receptor.UsoCFDI,
+                UsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+                Calle: receptor.Calle,
+                NumeroExterior: receptor.NoExterior,
+                Colonia: receptor.Colonia,
+                Municipio: receptor.Municipio,
+                Estado: receptor.Estado,
+                // Direccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            },
+            // ReceptorID: receptor.Receptor,
+            // ReceptorNombre: receptor.NombreReceptor,
+            // ReceptorRFC: receptor.RFCReceptor,
+            // ReceptorRegimenFiscal: receptor.RegimenFiscal,
+            // ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            // ReceptorUsoCFDI: receptor.UsoCFDI,
+            // ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
             Conceptos: {
                 ListaConceptos: conceptos.map(concepto => ({
                     ClaveProdServ: String(concepto.ClaveProdServ),

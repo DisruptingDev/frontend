@@ -128,15 +128,15 @@ const impuestos = retencionesHTML + trasladosHTML;
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
 
-    .replace('{{logo}}',factura.EmisorLogo)
-    .replace('{{nombreEmisor}}',factura.EmisorNombre)
-    .replace('{{rfcEmisor}}',factura.EmisorRFC)
+    .replace('{{logo}}',factura.Emisor.LogoPath)
+    .replace('{{nombreEmisor}}',factura.Emisor.Nombre)
+    .replace('{{rfcEmisor}}',factura.Emisor.Rfc)
     .replace('{{direccionEmisor}}',factura.EmisorDireccion)
-    .replace('{{regimenFiscalEmisor}}',factura.EmisorRegimenFiscal)
-    .replace('{{nombreReceptor}}',factura.ReceptorNombre)
-    .replace('{{rfcReceptor}}',factura.ReceptorRFC)
+    .replace('{{regimenFiscalEmisor}}',factura.Emisor.RegimenFiscal)
+    .replace('{{nombreReceptor}}',factura.Receptor.Nombre)
+    .replace('{{rfcReceptor}}',factura.Receptor.Rfc)
     .replace('{{direccionReceptor}}',factura.ReceptorDireccion)
-    .replace('{{usoCFDI}}',factura.ReceptorUsoCFDI+' ' + factura.ReceptorUsoCFDIDescripcion)
+    .replace('{{usoCFDI}}',factura.Receptor.UsoCFDI+' ' + factura.Receptor.UsoCFDIDescripcion)
 
 
    .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
@@ -155,7 +155,7 @@ const impuestos = retencionesHTML + trasladosHTML;
     .replace('{{conceptos}}', conceptosHTML)
 
     .replace('{{formaPago}}', factura.FormaPago+' '+ factura.FormaPagoDescripcion)
-    .replace('{{regimenFiscal}}', factura.ReceptorRegimenFiscal)
+    .replace('{{regimenFiscal}}', factura.Receptor.RegimenFiscal)
     .replace('{{divisa}}',factura.Moneda)
     .replace('{{metodoPago}}', factura.MetodoPago + ' ' + factura.MetodoPagoDescripcion)
 };

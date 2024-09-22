@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cfdi:Comprobante 
+    xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" 
+    Version="4.0" 
+    Serie="F" 
+    Folio="33" 
+    Fecha="2024-09-19T17:04:09" 
+    Sello="Ma9X3dcgycibMlXimFmBkBKlkDVSOToZxabioXCgo0VGMJqbtT4J9BT8PDwLVLzHt/L5iaH19FuyR5GoZU+vmLSmwENw71C8u3uedxIJ9Bpts3S18qrBJUtNzhR/swe10uj/9xxVHQLd287mXiIGiYnoAo8RlnCFb7GdVEoxUS8mtvRrzo0coB9+doRBkkkXmnqNwE7W7MfPOQV+4MxuLm1arMxL2ZBAdW8xCW8j9r1Gam1nXZYW+tAfojolFCBMYT25MyNthPFzN25rTpbXFPUMI51hYgZEk35XRyyyzZ3lwMTzNE2QtrYqn7aBH+e9UhRpOvh6+kEsR/Pp6Q9wrw==" 
+    FormaPago="99" 
+    NoCertificado="30001000000500003358" 
+    Certificado="MIIFgDCCA2igAwIBAgIUMzAwMDEwMDAwMDA1MDAwMDMzNTgwDQYJKoZIhvcNAQELBQAwggErMQ8wDQYDVQQDDAZBQyBVQVQxLjAsBgNVBAoMJVNFUlZJQ0lPIERFIEFETUlOSVNUUkFDSU9OIFRSSUJVVEFSSUExGjAYBgNVBAsMEVNBVC1JRVMgQXV0aG9yaXR5MSgwJgYJKoZIhvcNAQkBFhlvc2Nhci5tYXJ0aW5lekBzYXQuZ29iLm14MR0wGwYDVQQJDBQzcmEgY2VycmFkYSBkZSBjYWxpejEOMAwGA1UEEQwFMDYzNzAxCzAJBgNVBAYTAk1YMRkwFwYDVQQIDBBDSVVEQUQgREUgTUVYSUNPMREwDwYDVQQHDAhDT1lPQUNBTjERMA8GA1UELRMIMi41LjQuNDUxJTAjBgkqhkiG9w0BCQITFnJlc3BvbnNhYmxlOiBBQ0RNQS1TQVQwHhcNMjMwNTE1MTY1MjI1WhcNMjcwNTE1MTY1MjI1WjCBpzEdMBsGA1UEAxMUUk9EUklHTyBLSVRJQSBDQVNUUk8xHTAbBgNVBCkTFFJPRFJJR08gS0lUSUEgQ0FTVFJPMR0wGwYDVQQKExRST0RSSUdPIEtJVElBIENBU1RSTzEWMBQGA1UELRMNS0lDUjYzMDEyME5YMzEbMBkGA1UEBRMSS0lDUjYzMDEyMEhHVFRTRDA1MRMwEQYDVQQLEwpTdWN1cnNhbCAxMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkL70ydCMwzQihoHtVOwMcs2cGBbuspuuDHSK1YK8RYSyUSQ3pwLdaPkl4EeZShfUlryzeXRdYbj//b9+lcaU71d6oqv+bYUClPdo0AUpLEa051m5UIxoDHZZjL5KlIQtY7a8qOdhOOw11/6PeE1CLss/wWC2wddo9gH9+DPI5A6RxFoD6Lrd6+TaNBcnB0mgXMzlZ/uJoQ15kKYbWCK0v+pqc/CXZCDKdhJF/lYppChzC+obpcI1XNjTylaj1zB4e+teW5AIfNghaBIY7dlzBSMnt6HOpn7JP21qFaFQSgdQk3ljYl3+/SdA8hBxIwy1xFFSgFVyLaJVSPGbDNxoxQIDAQABox0wGzAMBgNVHRMBAf8EAjAAMAsGA1UdDwQEAwIGwDANBgkqhkiG9w0BAQsFAAOCAgEAKESgZ5HBRsytsQEXUnCWqwxc+3GrvXERSItzctJPl3IpmoIDk6dnZNt52TToS6FsZLp2PXRwTNWVLejLgp1UZmcpqir8m5UHqGu1KGm4ycqty2XWWJzIu5neJuTbEQ3DkQZ/7TJP8+1B6+Iqut6P9ZiiK2ovGNTF6nooJOc7OQDBF4x5SLV3FSGasKMLTn8LcCnUWQxvLBq9MhLr/YqEQxP2QEi4cLvhLrQXsK2rnejh2gOQNvW+dPG6boxJcfu97HIa84c9k5CHwiJrCJNN9P8OHbJi1LtOh4LitaqPpVwhq1fO1paczv25cBPPQBm9zVPudWz8De1T8Uo/xyDEZl0zK2EfJKVrbyZh9UQkkpsIrFwmztCBm578m/B1s4IZJD1HQG+jDNs/GLRi7AGyoMJobGygjJlDOKvSzBBswuXsXxYa/SNtnseq9Nv2mLyTG/p9PCSWki2/+uYeM/Oz7an4QbKEKYFlU8TjPW32uG/RVixv2crzDAHlrp+DU0TFp3YH71jHY4rQaAtuRo5NegVp5EwldfMs25No6RWHLgMnDccgShi7FL7YcSw0sOyS9Kvy0KXpHl0xtj3sA9MwHYoGmOPncRvdIdFFAcoaXMPhYCWtGCFf9MKNx0eEpZP+/m/B3TpWpSHczvxtbbBcwq3xgFUQmySFxryTo+b4uOQ=" 
+    CondicionesDePago="Condiciones De Pago" 
+    SubTotal="10" 
+    Moneda="MXN" 
+    TipoCambio="1" 
+    Total="11.6" 
+    TipoDeComprobante="I" 
+    Exportacion="01" 
+    MetodoPago="PUE" 
+    LugarExpedicion="72580" 
+    xmlns:cfdi="http://www.sat.gob.mx/cfd/4" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  
+    <cfdi:InformacionGlobal 
+        Periodicidad="01" 
+        Meses="01" 
+        Año="2024" />
+  
+    <cfdi:Emisor 
+        Rfc="KICR630120NX3" 
+        Nombre="RODRIGO KITIA CASTRO" 
+        RegimenFiscal="626" />
+  
+    <cfdi:Receptor 
+        Rfc="FUNK671228PH6" 
+        Nombre="KARLA FUENTE NOLASCO" 
+        DomicilioFiscalReceptor="01160" 
+        RegimenFiscalReceptor="605" 
+        UsoCFDI="S01" />
+  
+    <cfdi:Conceptos>
+        
+        <cfdi:Concepto 
+            ClaveProdServ="10122000" 
+            Cantidad="1" 
+            ClaveUnidad="26" 
+            Unidad="Tonelada real" 
+            Descripcion="Cheetos" 
+            ValorUnitario="10" 
+            Importe="10" 
+            ObjetoImp="02">
+          
+            <cfdi:Impuestos>
+
+                
+
+                
+                <cfdi:Traslados>
+                    
+                    <cfdi:Traslado 
+                        Base="10" 
+                        Impuesto="002" 
+                        TipoFactor="Tasa" 
+                        TasaOCuota="0.160000" 
+                        Importe="1.6" />
+                    
+                </cfdi:Traslados>
+                
+
+            </cfdi:Impuestos>
+        </cfdi:Concepto>
+        
+    </cfdi:Conceptos>
+
+    <cfdi:Impuestos 
+        
+         
+            TotalImpuestosTrasladados="1.6"
+         
+    >
+        
+            
+        
+
+        
+            
+            <cfdi:Traslados>      
+                
+                <cfdi:Traslado 
+                    Base="10" 
+                    Impuesto="002" 
+                    TipoFactor="Tasa" 
+                    TasaOCuota="0.160000" 
+                    Importe="1.6" />
+                
+            </cfdi:Traslados>
+            
+        
+
+    </cfdi:Impuestos>
+
+</cfdi:Comprobante>
+
