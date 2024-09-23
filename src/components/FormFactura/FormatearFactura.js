@@ -29,11 +29,13 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
 
             LugarExpedicion: emisor.LugarExpedicion,
             Confirmacion: "",
-            InformacionGlobal: {
-                Periodicidad: "01",
-                Meses: "01",
-                Año: "2024"
-            },
+           //Checar
+           InformacionGlobal:{
+            Año: receptor.Año || "",
+            Meses:receptor.Meses || "",
+            Periodicidad: receptor.Periodicidad || "",
+
+        },
             EmisorID: emisor.Emisor,
             ReceptorID: receptor.Receptor,
             UsoCFDI: receptor.UsoCFDI,
@@ -71,13 +73,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                     }
                 })),
 
-                //Checar
-                InformacionGlobal:{
-                    Año: receptor.Año || "",
-                    Meses:receptor.Meses || "",
-                    Periodicidad: receptor.Periodicidad || "",
-        
-                },
+                
                 TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
                 //Aqui restar
                 TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
