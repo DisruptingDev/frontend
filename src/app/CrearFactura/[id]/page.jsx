@@ -114,7 +114,15 @@ export default function CrearFactura() {
         Municipio: FacturaEdit.Receptor.Municipio,
         Estado: FacturaEdit.Receptor.Estado,
         MetodoPago: FacturaEdit.MetodoPago,
-        FormaPago: FacturaEdit.FormaPago
+        FormaPago: FacturaEdit.FormaPago,
+        
+        //informacion Global
+        InformacionGlobal:{
+            Año: FacturaEdit.InformacionGlobal.Año,
+            Meses: FacturaEdit.InformacionGlobal.Meses,
+            Periodicidad: FacturaEdit.InformacionGlobal.Periodicidad
+
+        }
 
     });
 

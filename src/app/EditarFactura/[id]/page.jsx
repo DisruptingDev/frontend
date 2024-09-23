@@ -115,7 +115,15 @@ export default function EditarFactura() {
         Municipio: FacturaEdit.Receptor.Municipio,
         Estado: FacturaEdit.Receptor.Estado,
         MetodoPago: FacturaEdit.MetodoPago,
-        FormaPago: FacturaEdit.FormaPago
+        FormaPago: FacturaEdit.FormaPago,
+
+        //informacion Global
+        InformacionGlobal:{
+            Año: FacturaEdit.InformacionGlobal.Año,
+            Meses: FacturaEdit.InformacionGlobal.Meses,
+            Periodicidad: FacturaEdit.InformacionGlobal.Periodicidad
+
+        }
 
     });
 
@@ -316,9 +324,9 @@ export default function EditarFactura() {
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Actualizar Factura</button>
                     </div>
                 </Resumen>
-                {/* <pre>
+                <pre>
                     {JSON.stringify(watch(),null,2)}
-                </pre> */}
+                </pre>
             </form>
             <Modal
                 open={openModal}

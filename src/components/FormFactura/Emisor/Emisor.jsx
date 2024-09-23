@@ -103,6 +103,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             const data = JSON.parse(e.target.value);
             setEmisor(data);
             console.log(data);
+            //Checar, si es correcto
+            setValue("Serie", "");
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }

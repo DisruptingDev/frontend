@@ -54,11 +54,15 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
             
             if (receptorData.Rfc === "XAXX010101000") {
+                setValue("Año", receptorData.InformacionGlobal.Año);
+                setValue("Meses", receptorData.InformacionGlobal.Meses);
+                setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
+
                 setHiddeInfoGlobal(true);
                 setDomicilioFiscal(lugarExpedicion);
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
-                setRegimenFiscal("601");
-                setValue("RegimenFiscal", 601);
+                setRegimenFiscal("616");
+                setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
               
             } else {
@@ -82,8 +86,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setDomicilioFiscal(lugarExpedicion);
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
-                setRegimenFiscal("601");
-                setValue("RegimenFiscal", 601);
+                setRegimenFiscal("616");
+                setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
             }
             setRFC(data["Rfc"]);
@@ -96,6 +100,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("Municipio", data["Municipio"]);
             setValue("Estado", data["Estado"]);
 
+
+            
 
 
             console.log("RFCReceptor", data["Rfc"]);
@@ -315,6 +321,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         url="http://31.220.31.152:8081/Catalogos/Periodicidad"
                         clave="Clave"
                         descripcion="Descripcion"
+                        error={!!errors.Periodicidad}
+                        helperText={errors.Periodicidad ? "Este campo es obligatorio" : ""}
+                        value={getValues("Periodicidad") || ""}
                     />
 
                     <Select
@@ -323,8 +332,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         url="http://31.220.31.152:8081/Catalogos/PeriodicidadMeses"
                         clave="Clave"
                         descripcion="Descripcion"
+                        error={!!errors.Meses}
+                        helperText={errors.Meses ? "Este campo es obligatorio" : ""}
+                        value={getValues("Meses") || ""}
                     />
                     <TextField
+                        
                         label="Año"
                         type="number"
                         {...register("Año")}
