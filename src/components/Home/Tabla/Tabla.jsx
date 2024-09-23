@@ -368,13 +368,20 @@ return (
                     onClose={handleMenuClose}
                   >
                     {menuRow && menuRow.uuid === '' && [
-                      <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                       <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                       <MenuItem key="vistaPrevia" onClick={() => handleVistaPrevia([menuRow.ID])}>Vista Previa</MenuItem>,
+                      <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>, 
                       // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
-                      <MenuItem key="vistaPrevia" onClick={() => handleVistaPrevia([menuRow.ID])}>Vista Previa</MenuItem>
+                     
                     ]}
-                    <MenuItem onClick={handleClone}>Clonar</MenuItem>
-                    <MenuItem key="descargar" onClick={() => handleDownload([menuRow.ID])}>Descargar</MenuItem>
+                    {
+                      menuRow && menuRow.uuid !== '' && [
+                        <MenuItem key="descargar" onClick={() => handleDownload([menuRow.ID])}>Descargar</MenuItem>,
+                        <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
+                      ]
+                    }
+                  
+                    
                   </Menu>
                 </TableCell>
               </TableRow>

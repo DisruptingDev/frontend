@@ -4,7 +4,7 @@ import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 
-export default function Emisor({ register, setValue, getValues, trigger, errors, emisorData }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -48,6 +48,8 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             setValue("Serie", emisorData.Serie);
             setValue("TipoComprobante", emisorData.TipoComprobante);
 
+            setLugarExpedicion(emisorData.LugarExpedicion);
+
             // Solo establece la fecha si no está definida
             if (!getValues("Fecha")) {
                 const formattedDate = emisorData.Fecha 
@@ -82,13 +84,15 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
 
             setSerieUrl(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${emisor.ID}`);
 
+            setLugarExpedicion(emisor.LugarExpedicion);
+
             // Dispara la validación de estos campos
             trigger("RFCEmisor");
             trigger("LugarExpedicion");
 
      
         }
-    }, [emisor, setValue,  trigger]);
+    }, [emisor, setLugarExpedicion, setValue, trigger]);
     useEffect(() => {
         // Establece el valor por defecto para 'Divisa'
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
@@ -103,6 +107,9 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
+    // const handleLugarExpedicionChange = (e) => {
+    //     setLugarExpedicion(e.target.value);
+    // };
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
@@ -181,7 +188,7 @@ export default function Emisor({ register, setValue, getValues, trigger, errors,
                     nombre="Serie"
                     url={serieUrl} 
                     id="Clave"
-                    descripcion="Descripcion"
+                    descripcion="Clave"
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
                     value={getValues("Serie") || ""}

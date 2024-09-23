@@ -9,8 +9,8 @@ export default function validarConcepto(concepto) {
     // } catch (e) {
     //     return { isValid: false, message: 'Invalid JSON in ClaveProdServ or ClaveUnidad' };
     // }
-
-    const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal','ObjetoImpuesto'];
+    console.log("Concepto validar", concepto.ObjetoImpuesto);
+    const requiredFields = ['Descripcion', 'Cantidad', 'ValorUnitario', 'Descuento', 'Subtotal', 'ObjetoImpuesto'];
     for (let field of requiredFields) {
         if (field === 'Descuento') {
             // Permitir que Descuento sea 0
@@ -26,15 +26,18 @@ export default function validarConcepto(concepto) {
     }
 
     // Validar estructura de impuestos
-    const impuestosFields = ['Tasa', 'BaseImpuesto', 'Monto', 'Impuesto'];
-    for (let i = 0; i < concepto.Impuestos.length; i++) {
-        const impuestos = concepto.Impuestos[i];
-        for (let field of impuestosFields) {
-            if (impuestos[field] === undefined || impuestos[field] === '' || impuestos[field] === 'Default') {
-                return { isValid: false, message: `Impuestos field ${field} in item ${i} is required and cannot be empty, undefined or Default` };
+    if (concepto.ObjetoImpuesto !== "01") {
+        const impuestosFields = ['Tasa', 'BaseImpuesto', 'Monto', 'Impuesto'];
+        for (let i = 0; i < concepto.Impuestos.length; i++) {
+            const impuestos = concepto.Impuestos[i];
+            for (let field of impuestosFields) {
+                if (impuestos[field] === undefined || impuestos[field] === '' || impuestos[field] === 'Default') {
+                    return { isValid: false, message: `Impuestos field ${field} in item ${i} is required and cannot be empty, undefined or Default` };
+                }
             }
         }
     }
+
 
     return { isValid: true, message: 'Concepto is valid' };
 }

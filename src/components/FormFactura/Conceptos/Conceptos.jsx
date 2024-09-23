@@ -285,8 +285,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValorUnitarioError(true);
             hasError = true;
         }
-
-        // Validaciones para los campos de Impuesto
+        if(objetoImpuesto!=="01"){
+             // Validaciones para los campos de Impuesto
         const impuestos = getValues("impuestos");
         impuestos.forEach((impuesto) => {
            
@@ -296,6 +296,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             }
         });
 
+        }
+       
         if (hasError) {
             // setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
             // setSnackbarSeverity('warning');

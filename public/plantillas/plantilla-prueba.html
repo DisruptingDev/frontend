@@ -228,6 +228,7 @@
 
         .certificado {
             margin-top: 5px;
+            overflow-wrap: break-word;
         }
 
         .certificado p strong {
@@ -263,7 +264,7 @@
             </div>
             <div class="datos2">
                 <p><strong>FACTURA:</strong></p>
-                <!-- <span class="folio">{{folioFactura}}</span> -->
+                <span class="folio">{{folioFactura}}</span>
                 <p><strong>Folio Fiscal:</strong></p>
                 <!-- <span class="folio-fiscal">{{folioFiscal}}</span> -->
                 <p><strong>No de Serie del Certificado del CSD:</strong></p>
@@ -325,9 +326,8 @@
     </div>
     <div class="certificado">
         <p><strong>Sello Digital del CFDI:</strong></p>
-        <br>
-        <br>
-        <!-- <p>{{selloCFDI}}</p> -->
+
+        <p>{{selloCFDI}}</p>
         <p><strong>Sello del SAT:</strong></p>
         <br>
         <br>
@@ -337,6 +337,7 @@
         <br>
         <!-- <p>{{cadenaSAT}}</p> -->
         <span><strong>No de Serie del Certificado del SAT:</strong></span> 
+        &nbsp;&nbsp;&nbsp;
         <!-- <span>{{serieCertificadoSAT}}</span> -->
         <span><strong>Fecha y hora de certificación:</strong></span>
          <!-- <span>{{fechaCertificacion}}</span> -->

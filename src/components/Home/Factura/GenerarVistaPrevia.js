@@ -123,7 +123,21 @@ const fillTemplate = (template, factura) => {
 const impuestos = retencionesHTML + trasladosHTML;
    
 
-    
+const direccionEmisor = 
+(factura.Emisor.Calle || "") + ', ' + 
+(factura.Emisor.NumeroExterior || "") + ', ' + 
+(factura.Emisor.NumeroInterior || "") + ',  ' + 
+(factura.Emisor.Colonia || "") + ', ' + 
+(factura.Emisor.Municipio || "") + ', ' + 
+(factura.Emisor.Estado || "");
+
+const direccionReceptor =
+(factura.Receptor.Calle || "") + ', ' +
+(factura.Receptor.NumeroExterior || "") + ', ' +
+(factura.Receptor.NumeroInterior || "") + ', ' +
+(factura.Receptor.Colonia || "") + ', ' +
+(factura.Receptor.Municipio || "") + ', ' +
+(factura.Receptor.Estado || "");
 
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
@@ -131,12 +145,18 @@ const impuestos = retencionesHTML + trasladosHTML;
     .replace('{{logo}}',factura.Emisor.LogoPath)
     .replace('{{nombreEmisor}}',factura.Emisor.Nombre)
     .replace('{{rfcEmisor}}',factura.Emisor.Rfc)
-    .replace('{{direccionEmisor}}',factura.EmisorDireccion)
+    .replace('{{direccionEmisor}}',factura.EmisorDireccion || direccionEmisor)
     .replace('{{regimenFiscalEmisor}}',factura.Emisor.RegimenFiscal)
+
+    .replace('{{folioFactura}}',factura.Folio || "")
+
     .replace('{{nombreReceptor}}',factura.Receptor.Nombre)
     .replace('{{rfcReceptor}}',factura.Receptor.Rfc)
-    .replace('{{direccionReceptor}}',factura.ReceptorDireccion)
-    .replace('{{usoCFDI}}',factura.Receptor.UsoCFDI+' ' + factura.Receptor.UsoCFDIDescripcion)
+    .replace('{{direccionReceptor}}',factura.ReceptorDireccion || direccionReceptor)
+    // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
+    .replace('{{usoCFDI}}', (factura.Receptor?.UsoCFDI && factura.Receptor?.UsoCFDIDescripcion) 
+    ? factura.Receptor.UsoCFDI + ' ' + factura.Receptor.UsoCFDIDescripcion 
+    : factura.UsoCFDI || "")
 
 
    .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
@@ -154,10 +174,17 @@ const impuestos = retencionesHTML + trasladosHTML;
     .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
     .replace('{{conceptos}}', conceptosHTML)
 
-    .replace('{{formaPago}}', factura.FormaPago+' '+ factura.FormaPagoDescripcion)
-    .replace('{{regimenFiscal}}', factura.Receptor.RegimenFiscal)
+    // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
+    .replace('{{formaPago}}', (factura.FormaPago && factura.FormaPagoDescripcion) 
+    ? factura.FormaPago + ' ' + factura.FormaPagoDescripcion 
+    : factura.FormaPago || "")
+
+    .replace('{{regimenFiscal}}', factura.Receptor.RegimenFiscal || factura.Receptor.RegimenFiscalReceptor) 
     .replace('{{divisa}}',factura.Moneda)
-    .replace('{{metodoPago}}', factura.MetodoPago + ' ' + factura.MetodoPagoDescripcion)
+    .replace('{{metodoPago}}', (factura.MetodoPago && factura.MetodoPagoDescripcion)? factura.MetodoPago + ' ' + factura.MetodoPagoDescripcion : factura.MetodoPago || "")
+
+
+    .replace('{{selloCFDI}}', factura.Sello || "<br><br>")
 };
 
 // Función para generar el PDF usando html2pdf

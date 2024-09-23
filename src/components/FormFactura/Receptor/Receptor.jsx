@@ -4,6 +4,7 @@ import { Box, TextField, Button, Typography, Dialog, DialogTitle, DialogContent,
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
+import { set } from 'date-fns';
 
 export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData }) {
     const [receptor, setReceptor] = useState();
@@ -54,6 +55,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             
             if (receptorData.Rfc === "XAXX010101000") {
                 setHiddeInfoGlobal(true);
+                setDomicilioFiscal(lugarExpedicion);
+                setValue("DomicilioFiscalReceptor", lugarExpedicion);
+                setRegimenFiscal("601");
+                setValue("RegimenFiscal", 601);
+                setHiddeInfoGlobal(true);
               
             } else {
                 setHiddeInfoGlobal(false);
@@ -75,6 +81,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setValue("RegimenFiscal", data["RegimenFiscalReceptor"]);
             } else {
                 setDomicilioFiscal(lugarExpedicion);
+                setValue("DomicilioFiscalReceptor", lugarExpedicion);
+                setRegimenFiscal("601");
+                setValue("RegimenFiscal", 601);
                 setHiddeInfoGlobal(true);
             }
             setRFC(data["Rfc"]);
