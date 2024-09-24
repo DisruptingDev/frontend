@@ -168,6 +168,131 @@ export default function DataTable() {
     }
   };
 
+  const handleDownloadSelecteds = async (ids) => {
+    console.log('Descargando facturas:', ids);
+    try {
+      for (const id of ids) {
+        const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+        // const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json(); // Aquí se asigna correctamente a htmlContent
+          const htmlContent = await generarVistaPrevia(data);
+          const name = data.Emisor.Nombre + '_' + data.Folio;
+          if (data.uuid === '') {
+
+            const name = data.Emisor.Nombre + '_' + data.Folio;
+            console.log('Nombre:', name);
+
+            const responsePDF = await fetch('/api/generate-pdf', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                htmlContent: htmlContent,
+                fileName: name
+              }),
+            });
+
+            if (!responsePDF.ok) {
+              console.error('Error al generar PDF:', responsePDF.statusText);
+              return;
+            }
+
+
+            const blob = await responsePDF.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
+          else {
+            const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+            const responseXML = await fetch(`http://31.220.31.152:8090/DescargaXML/${id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (responseXML.ok) {
+              console.log('Data received from API (xml):', responseXML);
+              const xmlContent = await responseXML.text(); // Aquí se asigna correctamente a xmlContent
+
+              if (xmlContent && htmlContent) {
+                // const name = `Factura_${id}`;
+                try {
+                  const response = await fetch('/api/generate-zip', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      htmlContent: htmlContent,
+                      xmlContent: xmlContent,
+                      fileName: name,
+                    }),
+                  });
+        
+                  if (!response.ok) {
+                    throw new Error('Error al generar el ZIP');
+                  }
+                  console.log('Data received from API (zip):', response);
+        
+                  // Leer el archivo ZIP como blob
+                  const zipBlob = await response.blob();
+        
+                  // Crear un enlace para descargar el archivo ZIP
+                  const downloadUrl = window.URL.createObjectURL(zipBlob);
+                  const link = document.createElement('a');
+                  link.href = downloadUrl;
+                  link.download = `${name}.zip`;
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+        
+                  setLoading(false);
+                  setConfirmationMessage(`Su archivo ${link.download} se ha descargado. <br/>
+                  Revise su carpeta de descargas.`);
+                
+        
+                  // setShowConfirmation(true);
+                } catch (error) {
+                  console.error('Error:', error);
+                }
+              }
+            } else {
+              console.log('Error al descargar el XML:', responseXML);
+              console.error('Error al descargar el XML:', responseXML.statusText);
+            }
+
+
+
+          }
+        } else {
+          console.log('Error al descargar la factura:', response);
+          console.error('Error al descargar la factura:', response.statusText);
+        }
+
+        // await handleDownload(id);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+
+    }
+
+  }
+
   const handleDownload = async (id) => {
     // Mostrar el modal de espera
     setOpenModal(true);
@@ -324,7 +449,7 @@ export default function DataTable() {
           if (factura.status === 'success') {
 
             setConfirmationMessage('Facturas timbradas exitosamente.');
-          setOpenModalSuccess(true); // Show success modal
+            setOpenModalSuccess(true); // Show success modal
 
           } else if (factura.status === 'error') {
             const error = factura.message
@@ -335,8 +460,8 @@ export default function DataTable() {
         } else {
 
           setConfirmationMessage('Error en la conexión con el servidor.');
-        setOpenModalError(true); // Show error modal
-      
+          setOpenModalError(true); // Show error modal
+
         }
 
       } else {
@@ -349,7 +474,7 @@ export default function DataTable() {
       console.error('Error:', error);
       setConfirmationMessage('Error en la conexión o en el timbrado.');
       setOpenModalError(true); // Show error modal
-    }finally{
+    } finally {
       setLoading(false);
       setOpenModal(false); // Hide loading modal
     }
@@ -424,7 +549,7 @@ export default function DataTable() {
 
   return (
     <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
-      <Box display="flex" justifyContent="flex-end" mb={2}>
+      <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
         <Button
           variant="contained"
           color="primary"
@@ -432,6 +557,15 @@ export default function DataTable() {
           onClick={() => handleTimbrar(selectedRows)}
         >
           Timbrar Seleccionadas
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+
+          disabled={selectedRows.length === 0}
+          onClick={() => handleDownloadSelecteds(selectedRows)}
+        >
+          Descargar Seleccionadas
         </Button>
       </Box>
 
@@ -521,62 +655,66 @@ export default function DataTable() {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
         />
       </Paper>
-{/* Loading Modal */}
-<Modal open={openModal} onClose={handleCloseModal}>
+      {/* Loading Modal */}
+      <Modal open={openModal} onClose={handleCloseModal}>
         <Box sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'auto',
-            minWidth: '300px',
-            minHeight: '175px',
-            
-            bgcolor: 'white',
-            boxShadow: 24,
-            p: 2,
-            borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-          {loading && 
-          <Box sx={{ display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',}}> 
-            <Typography variant="h6" sx={{ mb: 2 }}>{loadingMessage}</Typography>
-            <CircularProgress />
-          </Box>}
-          
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'auto',
+          minWidth: '300px',
+          minHeight: '175px',
+
+          bgcolor: 'white',
+          boxShadow: 24,
+          p: 2,
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          {loading &&
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>{loadingMessage}</Typography>
+              <CircularProgress />
+            </Box>}
+
         </Box>
       </Modal>
 
       {/* Success Modal */}
       <Modal open={openModalSuccess} onClose={handleCloseModal}>
         <Box sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'auto',
-            minWidth: '400px',
-           
-            bgcolor: 'white',
-            boxShadow: 24,
-            p: 2,
-            borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'auto',
+          minWidth: '400px',
+
+          bgcolor: 'white',
+          boxShadow: 24,
+          p: 2,
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
+          <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb: 2 }} />
+          <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
+          <Button onClick={handleCloseModal} variant="contained" sx={{
+            mt: 2, background: 'green',
+            '&:hover': {
+              background: 'darkgreen', // Color al pasar el mouse
+            },
           }}>
-          <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb:2 }} />
-          <Typography sx={{ mb: 2, textAlign: 'center',fontSize:'1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
-          <Button onClick={handleCloseModal} variant="contained"  sx={{ mt: 2, background: 'green',
-                  '&:hover': {
-                    background: 'darkgreen', // Color al pasar el mouse
-                  }, }}>
             Cerrar
           </Button>
         </Box>
@@ -585,26 +723,28 @@ export default function DataTable() {
       {/* Error Modal */}
       <Modal open={openModalError} onClose={handleCloseModal}>
         <Box sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'auto',
-            minWidth: '400px',
-            maxWidth: '40%',
-            bgcolor: 'white',
-            boxShadow: 24,
-            p: 2,
-            borderRadius: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'auto',
+          minWidth: '400px',
+          maxWidth: '40%',
+          bgcolor: 'white',
+          boxShadow: 24,
+          p: 2,
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}>
           <ErrorOutline sx={{ fontSize: 80, color: 'red' }} />
-          <Typography sx={{ mb: 2, textAlign: 'center', fontSize:'1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
-          <Button onClick={handleCloseModal} variant="contained"  sx={{ mt: 2, backgroundColor:'red','&:hover': {
-                    background: 'darkred', // Color al pasar el mouse
-                  }, }}>
+          <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
+          <Button onClick={handleCloseModal} variant="contained" sx={{
+            mt: 2, backgroundColor: 'red', '&:hover': {
+              background: 'darkred', // Color al pasar el mouse
+            },
+          }}>
             OK
           </Button>
         </Box>
@@ -672,8 +812,8 @@ export default function DataTable() {
           ) : null}
         </Box>
       </Modal> */}
-    
-      
+
+
       {/* <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert onClose={handleClose} severity={severity} variant="filled" sx={{
