@@ -86,7 +86,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setDomicilioFiscal(lugarExpedicion);
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
-                setRegimenFiscal("616");
+                setRegimenFiscal("616 - Sin obligaciones fiscales");
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
             }
@@ -157,7 +157,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1fr 0.6fr 0.5fr 0.5fr 1.2fr 0.2fr 0.2fr' //4.5
+                    lg: '1fr 0.6fr 0.3fr 0.8fr 1.1fr 0.2fr 0.1fr' //4.5
                 }}
                 gap={3}
             >

@@ -1,14 +1,18 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Box, Button, TextField } from '@mui/material';
-import Select from "@/components/Select/Select.jsx";
+import { Box, Button, TextField, FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText} from '@mui/material';
+import  Select  from "@/components/Select/Select.jsx";
 import PickersMinMax from "@/components/PickersMinMax/PickersMinMax.jsx";
 import 'react-datepicker/dist/react-datepicker.css';
 
 export default function SearchFilter({ register }) {
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
+    const [selectedValue, setSelectedValue] = useState('');
+    const handleChange = (event) => {
+        setSelectedValue(event.target.value);
+    };
 
     return (
         <Box
@@ -18,16 +22,16 @@ export default function SearchFilter({ register }) {
                 borderRadius: '8px',
                 boxShadow: 1,
                 margin: 1,
-                mt:6
+                mt: 6
             }}
         >
-            <Box 
+            <Box
                 sx={{
-                    display: 'grid', 
+                    display: 'grid',
                     gridTemplateColumns: 'repeat(4, 1fr) auto', // 4 columnas para los inputs y 1 auto para el botón
-                    gap: 4, 
+                    gap: 4,
                     alignItems: 'center'
-                    
+
                 }}
             >
                 <Box sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}>
@@ -38,8 +42,8 @@ export default function SearchFilter({ register }) {
                     register={register}
                     nombre="Emisor"
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
-                    clave="Nombre"
-                    descripcion="NombreCompleto"
+                    clave="Rfc"
+                    descripcion="Nombre"
                     sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
                     variant="filled"
                 />
@@ -52,7 +56,28 @@ export default function SearchFilter({ register }) {
                     sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
                     variant="filled"
                 />
-                <Select
+                <FormControl fullWidth>
+                    <InputLabel id="demo-simple-select-label">Estatus</InputLabel>
+                    <MuiSelect
+                        {...register("Estatus", {
+                            required: "Este campo es obligatorio",
+                        })}
+                        labelId="demo-simple-select-label"
+                        id="demo-simple-select"
+                        value={selectedValue} // Asegúrate de que este valor esté correctamente gestionado por el estado
+                        label="Estatus"
+                        onChange={(event) => {
+                            setSelectedValue(event.target.value); // Actualiza el valor seleccionado en el estado local
+                            handleChange(event); // Llama a tu función personalizada si es necesario
+                        }}
+                        sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
+                    >
+                        <MenuItem value={"timbrada"}>Timbrada</MenuItem>
+                        <MenuItem value={"notimbrada"}>No timbrada</MenuItem>
+                    </MuiSelect>
+                </FormControl>
+
+                {/* <Select
                     register={register}
                     nombre="Usuario"
                     url=""
@@ -60,7 +85,7 @@ export default function SearchFilter({ register }) {
                     descripcion="Nombre"
                     sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
                     variant="filled"
-                />
+                /> */}
                 <Button
                     variant="contained"
                     color="primary"
