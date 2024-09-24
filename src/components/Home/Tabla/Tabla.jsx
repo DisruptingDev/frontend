@@ -25,7 +25,8 @@ import {
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation'; // Importa correctamente desde next/navigation
 import generarVistaPrevia from '../Factura/GenerarVistaPrevia';
-import { CheckCircleOutline } from '@mui/icons-material';
+import { CheckCircleOutline, ErrorOutline } from '@mui/icons-material';
+import { set } from 'date-fns';
 
 
 function createData(item) {
@@ -58,22 +59,35 @@ export default function DataTable() {
   // const [openModal, setOpenModal] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
 
-  const [openModal, setOpenModal] = useState(false); // Para controlar el modal de espera
+  // const [openModal, setOpenModal] = useState(false); // Para controlar el modal de espera
 
-  const [openModalError, setOpenModalError] = useState(false); // Para controlar el modal de espera
+  // const [openModalError, setOpenModalError] = useState(false); // Para controlar el modal de espera
 
-  const [loading, setLoading] = useState(false); // Estado para mostrar el spinner dentro del modal
+  // const [loading, setLoading] = useState(false); // Estado para mostrar el spinner dentro del modal
 
   const [showConfirmation, setShowConfirmation] = useState(false); // Nuevo estado para mostrar confirmación
-  const [confirmationMessage, setConfirmationMessage] = useState(''); // Mensaje de confirmación
+  // const [confirmationMessage, setConfirmationMessage] = useState(''); // Mensaje de confirmación
+
+
+
+  const [openModal, setOpenModal] = useState(false); // Loading modal
+  const [openModalSuccess, setOpenModalSuccess] = useState(false); // Success modal
+  const [openModalError, setOpenModalError] = useState(false); // Error modal
+
+  const [loading, setLoading] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState(''); // For success/error messages
+
+  const loadingMessage = 'Espere un momento...'; // Mensaje de espera
 
   const handleClose = () => {
     setOpen(false);
   };
 
+
   const handleCloseModal = () => {
-    setShowConfirmation(false); // Cierra el modal de confirmación
     setOpenModal(false);
+    setOpenModalSuccess(false);
+    setOpenModalError(false);
   };
 
 
@@ -136,21 +150,21 @@ export default function DataTable() {
         a.click();
         a.remove();
         setLoading(false);
-        setConfirmationMessage(`Su archivo ${a.download} se ha descargado. <br/>
-          Revise su carpeta de descargas.`);
 
-        setShowConfirmation(true);
+        setConfirmationMessage(`Su archivo ${a.download} se ha descargado. <br/>Revise su carpeta de descargas.`);
+        setOpenModalSuccess(true);
 
       }
 
     } catch (error) {
       console.error('Error:', error);
       setOpenModal(false);
+      setConfirmationMessage('Error al descargar la prefactura.');
+      setOpenModalError(true);
 
     } finally {
-      // Ocultar el modal de espera
-      // setLoading(false);
-      // setOpenModal(false);
+      setLoading(false);
+      setOpenModal(false); // Ocultar el modal de espera
     }
   };
 
@@ -238,8 +252,9 @@ export default function DataTable() {
           setLoading(false);
           setConfirmationMessage(`Su archivo ${link.download} se ha descargado. <br/>
           Revise su carpeta de descargas.`);
+          setOpenModalSuccess(true);
 
-          setShowConfirmation(true);
+          // setShowConfirmation(true);
         } catch (error) {
           console.error('Error:', error);
         }
@@ -248,11 +263,11 @@ export default function DataTable() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setOpenModal(false);
+      setConfirmationMessage('Error al descargar la factura.');
+      setOpenModalError(true);
     } finally {
-      // // Ocultar el modal de espera
-      // setLoading(false);
-      // setOpenModal(false);
+      setLoading(false);
+      setOpenModal(false); // Ocultar el modal de espera
     }
   };
 
@@ -285,6 +300,9 @@ export default function DataTable() {
 
   // Función para timbrar múltiples facturas
   const handleTimbrar = async (ids) => {
+    setOpenModal(true);
+    setLoading(true);
+
     try {
       console.log('Timbrando facturas:', ids);
       const token = localStorage.getItem('authToken');
@@ -304,33 +322,36 @@ export default function DataTable() {
         if (data.Facturas) {
           const factura = data.Facturas[0]; // Tomar la primera factura para este ejemplo
           if (factura.status === 'success') {
-            setMessage('Facturas timbradas exitosamente');
-            setSeverity('success')
+
+            setConfirmationMessage('Facturas timbradas exitosamente.');
+          setOpenModalSuccess(true); // Show success modal
 
           } else if (factura.status === 'error') {
             const error = factura.message
-            setMessage('Error al timbrar facturas:' + error);
-            setSeverity('error');
+
+            setConfirmationMessage('Error al timbrar facturas:  <br/> ' + error);
+            setOpenModalError(true); // Show error modal
           }
         } else {
-          setMessage('Respuesta inesperada del servidor');
-          setSeverity('warning');
+
+          setConfirmationMessage('Error en la conexión con el servidor.');
+        setOpenModalError(true); // Show error modal
+      
         }
 
-        // Mostrar el Snackbar con el resultado
-        setOpen(true);
-
-        // Si es necesario, puedes refrescar los datos aquí
       } else {
-        setMessage('Error al conectar con el servidor');
-        setSeverity('error');
-        setOpen(true);
+
+        setConfirmationMessage('Error en la conexión con el servidor.');
+        setOpenModalError(true); // Show error modal
       }
     } catch (error) {
-      console.error('Error al timbrar:', error);
-      setMessage('Error en la conexión o en el timbrado');
-      setSeverity('error');
-      setOpen(true);
+
+      console.error('Error:', error);
+      setConfirmationMessage('Error en la conexión o en el timbrado.');
+      setOpenModalError(true); // Show error modal
+    }finally{
+      setLoading(false);
+      setOpenModal(false); // Hide loading modal
     }
   };
 
@@ -500,7 +521,97 @@ export default function DataTable() {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
         />
       </Paper>
-      <Modal open={openModal} onClose={() => setOpenModal(false)}>
+{/* Loading Modal */}
+<Modal open={openModal} onClose={handleCloseModal}>
+        <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'auto',
+            minWidth: '300px',
+            minHeight: '175px',
+            
+            bgcolor: 'white',
+            boxShadow: 24,
+            p: 2,
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          {loading && 
+          <Box sx={{ display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',}}> 
+            <Typography variant="h6" sx={{ mb: 2 }}>{loadingMessage}</Typography>
+            <CircularProgress />
+          </Box>}
+          
+        </Box>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal open={openModalSuccess} onClose={handleCloseModal}>
+        <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'auto',
+            minWidth: '400px',
+           
+            bgcolor: 'white',
+            boxShadow: 24,
+            p: 2,
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}>
+          <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb:2 }} />
+          <Typography sx={{ mb: 2, textAlign: 'center',fontSize:'1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
+          <Button onClick={handleCloseModal} variant="contained"  sx={{ mt: 2, background: 'green',
+                  '&:hover': {
+                    background: 'darkgreen', // Color al pasar el mouse
+                  }, }}>
+            Cerrar
+          </Button>
+        </Box>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal open={openModalError} onClose={handleCloseModal}>
+        <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'auto',
+            minWidth: '400px',
+            maxWidth: '40%',
+            bgcolor: 'white',
+            boxShadow: 24,
+            p: 2,
+            borderRadius: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}>
+          <ErrorOutline sx={{ fontSize: 80, color: 'red' }} />
+          <Typography sx={{ mb: 2, textAlign: 'center', fontSize:'1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
+          <Button onClick={handleCloseModal} variant="contained"  sx={{ mt: 2, backgroundColor:'red','&:hover': {
+                    background: 'darkred', // Color al pasar el mouse
+                  }, }}>
+            OK
+          </Button>
+        </Box>
+      </Modal>
+
+
+      {/* <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Box
           sx={{
             position: 'absolute',
@@ -560,10 +671,10 @@ export default function DataTable() {
             </Box>
           ) : null}
         </Box>
-      </Modal>
+      </Modal> */}
     
       
-      <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}
+      {/* <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <Alert onClose={handleClose} severity={severity} variant="filled" sx={{
           width: '100%',
@@ -572,7 +683,7 @@ export default function DataTable() {
         }}>
           {message}
         </Alert>
-      </Snackbar>
+      </Snackbar> */}
       {/* {selectedRow && (
         <Box mt={2}>
           <h3>Información Completa de la Fila Seleccionada:</h3>
