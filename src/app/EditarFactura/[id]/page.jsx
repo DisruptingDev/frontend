@@ -173,14 +173,14 @@ export default function EditarFactura() {
                     Descuento: concepto.Descuento,
                     ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                     Impuestos: Impuestos.map(impuesto => ({
-                    
+                        
                         Impuesto: impuesto.ImpuestoCatalogoID,
                         ImpuestoClave: impuesto.ImpuestoClave,
                         Tasa:impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || Subtotal,
                         Monto: impuesto.Importe,
-                        // TipoFactor: impuesto.TipoFactor
+                        Tipo: impuesto.TipoFactor
                     })),
                     Retenciones: Retenciones.map(retencion => ({
                         BaseImpuesto: retencion.Base,
@@ -189,7 +189,7 @@ export default function EditarFactura() {
                         Tasa:retencion.TasaCatalogoID,
                         TasaOCuota: retencion.TasaOCuota,
                         Monto: retencion.Importe,
-                        // Tipo : retencion.TipoFactor
+                        Tipo : retencion.TipoFactor
                     })),
                     // Retenciones: concepto.Impuestos?.Retenciones || [],
                     Traslados: Traslados.map(traslado => ({
@@ -199,7 +199,7 @@ export default function EditarFactura() {
                         Tasa:traslado.TasaCatalogoID,
                         TasaOCuota: traslado.TasaOCuota,
                         Monto: traslado.Importe,
-                        // Tipo : traslado.TipoFactor
+                        Tipo : traslado.Tipo
                     })),
                     // Traslados: concepto.Impuestos?.Traslados || [],
                     Subtotal: Subtotal,

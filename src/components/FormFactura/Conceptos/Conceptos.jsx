@@ -168,7 +168,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     // setValue(`impuestos[${index}].Nom`, opcionSeleccionada.Clave);
                     // console.log("opcionSeleccionada",opcionSeleccionada["Impuesto"]);  
                     setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
-                    setValue(`impuestos.${index}.TasaOCuota`,impuesto.TasaCatalogoID);
+                    // setValue(`impuestos.${index}.Tasa`,impuesto.TasaCatalogoID);
                     setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
                     setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
                 }

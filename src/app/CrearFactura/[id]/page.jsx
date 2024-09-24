@@ -166,10 +166,12 @@ export default function CrearFactura() {
                     Unidad: concepto.Unidad,
                     Descripcion: concepto.Descripcion,
                     Descuento: concepto.Descuento,
+                    ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                     Impuestos: Impuestos.map(impuesto => ({
-                        ObjetoImpuesto: impuesto.ObjetoImpuesto || concepto.ObjetoImp,
+                       
                         Impuesto: impuesto.ImpuestoCatalogoID,
                         ImpuestoClave: impuesto.ImpuestoClave,
+                        Tasa:impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || Subtotal,
                         Monto: impuesto.Importe,
