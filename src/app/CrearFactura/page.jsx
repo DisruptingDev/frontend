@@ -114,7 +114,7 @@ export default function CrearFactura() {
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
-        await generatePDF(vistaPrevia);
+        // await generatePDF(vistaPrevia);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
     });

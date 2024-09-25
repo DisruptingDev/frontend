@@ -202,6 +202,9 @@
 
         .pago .informacion {
             width: calc(100% - 140px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .pago .informacion p {
@@ -315,7 +318,8 @@
         </div>
     </div>
     <div class="pago">
-        <img src="{{qr}}" alt="">
+        <!-- <img id="qr-image" alt="Código QR"> -->
+        {{qrCode}} 
         <div class="informacion">
             <p><span>FORMA DE PAGO:</span><span>{{formaPago}}</span></p>
             <!-- <P><span>CTA. BANCARIA:</span><span>{{ctaBancaria}}</span> </P> -->

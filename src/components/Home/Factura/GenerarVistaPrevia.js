@@ -1,5 +1,6 @@
 "use client";
 // import html2pdf from 'html2pdf.js';
+import QRCode from 'qrcode';
 
 function numeroALetras(num, moneda) {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
@@ -72,7 +73,7 @@ const loadTemplate = async (path) => {
 };
 
 // Función para reemplazar los placeholders en la plantilla con los datos de factura
-const fillTemplate = (template, factura) => {
+const fillTemplate = async (template, factura) => {
     // Generar HTML para conceptos
     const conceptosHTML = factura.Conceptos.ListaConceptos.map(concepto => {
         // Generar HTML para impuestos retenidos
@@ -139,8 +140,19 @@ const direccionReceptor =
 (factura.Receptor.Municipio || "") + ', ' +
 (factura.Receptor.Estado || "");
 
+// Generar código QR dinámico desde la cadena
+let qrImageBase64 = '';
+
+    try {
+        qrImageBase64 = await QRCode.toDataURL('factura.qrCode', { errorCorrectionLevel: 'H' });
+    } catch (error) {
+        console.error('Error al generar el código QR:', error);
+    }
+
+
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
+    .replace('{{qrCode}}', qrImageBase64 ? `<img src="${qrImageBase64}" alt="Código QR">` : '') // Insertar el QR
 
     .replace('{{logo}}',factura.Emisor.LogoPath)
     .replace('{{nombreEmisor}}',factura.Emisor.Nombre)
