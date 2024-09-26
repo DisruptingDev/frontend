@@ -53,7 +53,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("UsoCFDI", receptorData.UsoCFDI);
 
             
-            if (receptorData.Rfc === "XAXX010101000") {
+            if (rfc === "XAXX010101000") {
+                
                 setValue("Año", receptorData.InformacionGlobal.Año);
                 setValue("Meses", receptorData.InformacionGlobal.Meses);
                 setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
@@ -72,7 +73,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             trigger("DomicilioFiscalReceptor");
             trigger("RegimenFiscal");
         }
-    }, [receptorData, setValue, trigger, getValues]);
+    }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion]);
 
     useEffect(() => {
         if (receptor !== undefined) {
@@ -86,7 +87,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setDomicilioFiscal(lugarExpedicion);
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
-                setRegimenFiscal("616 - Sin obligaciones fiscales");
+                setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
             }
@@ -135,7 +136,36 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     }, [usoCFDI, setValue])
 
 
+    useEffect(() => {
+        async function fetchData() {
+            if (regimenFiscal) {
+                const token = localStorage.getItem('authToken');
+                fetch(`http://31.220.31.152:8081/Catalogos/RegimenFiscal`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    // console.log("TIPO", impuestoEditor.TipoFactor);
+                    
+                  const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
+                  if (opcionSeleccionada) {
+                   setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                }
+                    
+                  
 
+                  // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
+                })
+
+            }
+        }
+        fetchData();
+    }, [regimenFiscal]);
 
     const handleOpenModal = () => {
         setOpenModal(true);

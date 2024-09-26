@@ -42,7 +42,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 setValue("Fecha", formatDate(today));
             }
     
-    },[setValue]);
+    },[emisorData, setValue]);
 
     // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
