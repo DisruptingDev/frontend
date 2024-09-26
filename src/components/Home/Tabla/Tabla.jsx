@@ -19,7 +19,7 @@ import {
   Snackbar,
   Alert,
   Modal,
-  CircularProgress, Typography, List, ListItem, ListItemText, ListItemIcon, Tooltip
+  CircularProgress, Typography, List, ListItem, ListItemText, ListItemIcon, Tooltip, LinearProgress
 
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -79,9 +79,13 @@ export default function DataTable() {
 
   const [facturasStatus, setFacturasStatus] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [facturaActual, setFacturaActual] = useState('');
+
 
   const [facturasTimbradas, setFacturasTimbradas] = useState([]);
   const [openModalTimbrar, setOpenModalTimbrar] = useState(false)
+
+  const [progress, setProgress] = useState(0);
 
   const handleCloseModal = () => {
     setOpenModal(false);
@@ -237,24 +241,24 @@ export default function DataTable() {
   const handleDownloadSelecteds = async (ids) => {
     console.log('Descargando facturas:', ids);
     setLoading(true);
-
+    setProgress(0);
+  
     // Inicializamos el arreglo de estatus
     const initialStatus = ids.map(id => ({
       id,
       name: 'Cargando nombre...', // Se muestra "Cargando nombre..." mientras se obtienen las facturas
       status: 'progress', // 'progress' indica que aún no ha sido descargada
     }));
-
+  
     setFacturasStatus(initialStatus);
     setIsModalOpen(true); // Abrimos el modal
-
+  
     try {
       // Primero obtenemos todas las facturas para mostrar sus nombres
       const facturas = await Promise.all(
         ids.map(async (id) => {
           const data = await obtenerFactura(id);
           if (data) {
-            // console.log('Factura obtenida:', data);
             const name = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
             return { id, factura: data.factura, name };
           } else {
@@ -263,7 +267,7 @@ export default function DataTable() {
           }
         })
       );
-
+  
       // Actualizar el nombre de las facturas en el estado
       setFacturasStatus(prevStatus =>
         prevStatus.map(f =>
@@ -272,16 +276,22 @@ export default function DataTable() {
             : f
         )
       );
-
+  
+      // Usa facturas.length en lugar de facturasStatus.length
+      const totalFacturas = facturas.length;
+      let downloadedFacturas = 0;
+  
       // Después generamos los archivos
       for (const { id, factura, name } of facturas) {
+        console.log('Progress:', progress);
         if (factura) {
+          setFacturaActual(name);
           const htmlContent = await generarVistaPrevia(factura);
-
+  
           if (factura.uuid === '') {
             // Generar PDF
             await generarPDF(htmlContent, `${name}.pdf`);
-
+  
             // Actualizar nombre con extensión PDF en el estado
             setFacturasStatus(prevStatus =>
               prevStatus.map(f =>
@@ -293,7 +303,7 @@ export default function DataTable() {
             const xmlContent = await generarXML(id);
             if (xmlContent) {
               await generarZIP(htmlContent, xmlContent, `${name}.zip`);
-
+  
               // Actualizar nombre con extensión ZIP en el estado
               setFacturasStatus(prevStatus =>
                 prevStatus.map(f =>
@@ -305,16 +315,24 @@ export default function DataTable() {
             }
           }
         }
+  
+        // Incrementa el contador de facturas descargadas
+        downloadedFacturas += 1;
+  
+        // Calcula el progreso y actualiza el estado
+        const newProgress = (downloadedFacturas / totalFacturas) * 100;
+        console.log('downloadedFacturas:', downloadedFacturas);
+        console.log('totalFacturas:', totalFacturas);
+        console.log('Progress:', newProgress);
+        setProgress(newProgress);
       }
     } catch (error) {
       console.error('Error:', error);
-    }
-    finally {
+    } finally {
       setLoading(false);
-
     }
   };
-
+  
 
   const handleDownload = async (id) => {
     // Mostrar el modal de espera
@@ -695,10 +713,7 @@ export default function DataTable() {
           <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb: 2 }} />
           <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
           <Button onClick={handleCloseModal} variant="contained" sx={{
-            mt: 2, background: 'green',
-            '&:hover': {
-              background: 'darkgreen', // Color al pasar el mouse
-            },
+            mt: 2, 
           }}>
             Cerrar
           </Button>
@@ -726,14 +741,15 @@ export default function DataTable() {
           <ErrorOutline sx={{ fontSize: 80, color: 'red' }} />
           <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
           <Button onClick={handleCloseModal} variant="contained" sx={{
-            mt: 2, backgroundColor: 'red', '&:hover': {
-              background: 'darkred', // Color al pasar el mouse
-            },
+            mt: 2,
           }}>
             OK
           </Button>
         </Box>
       </Modal>
+
+
+
       <Modal open={isModalOpen} onClose={handleCloseModal}>
         <Box sx={{
           position: 'absolute',
@@ -750,10 +766,36 @@ export default function DataTable() {
           textAlign: 'center',
         }}>
           <Typography variant="h6" gutterBottom>
-            {loading ? 'Descargando facturas...' : 'Facturas descargadas'}
-
+          {loading ? "Descargando Facturas" : 'Facturas Descargadas'}
           </Typography>
-          <List>
+          <Typography variant="h6" gutterBottom>
+            {loading ? facturaActual : ''}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{
+              height: 10, // Altura de la barra de progreso
+              borderRadius: 5, // Bordes redondeados
+              // bgcolor: '#e0e0e0', // Color de fondo
+              // '& .MuiLinearProgress-bar': {
+              //   backgroundColor: progress >= 100 ? '#4caf50' : '#1a90ff', // Cambia el color cuando llegue al 100%
+              // },
+            }}
+          />
+          
+          {!loading && (
+            // Si no está cargando, muestra el botón de OK
+            <>
+              <Typography>Revise su carpeta de descargas </Typography>
+              <Button onClick={handleCloseModal} variant="contained" sx={{
+                mt: 2, 
+              }}>
+                OK
+              </Button>
+            </>
+          )} 
+          {/* <List>
             {facturasStatus.map(factura => (
               <ListItem key={factura.id}>
                 <ListItemText sx={{ mx: 3 }}
@@ -768,7 +810,14 @@ export default function DataTable() {
                 </ListItemIcon>
               </ListItem>
             ))}
-          </List>
+          </List> */}
+
+
+
+          {/* {loading && (
+            
+          )}
+
           {!loading && (
             // Si no está cargando, muestra el botón de OK
             <>
@@ -781,7 +830,7 @@ export default function DataTable() {
                 OK
               </Button>
             </>
-          )}
+          )} */}
 
         </Box>
       </Modal>
@@ -852,11 +901,7 @@ export default function DataTable() {
             variant="contained"
             sx={{
               mt: 2,
-              backgroundColor: 'green',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'darkgreen',
-              },
+             
             }}
           >
             OK
