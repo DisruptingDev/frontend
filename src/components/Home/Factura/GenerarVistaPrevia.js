@@ -1,4 +1,5 @@
 "use client";
+import { PagesOutlined } from '@mui/icons-material';
 // import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
 
@@ -7,7 +8,7 @@ function numeroALetras(num, moneda) {
     const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
     const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
     const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
-    
+
     function convertirDecenas(num) {
         if (num < 10) return unidades[num];
         else if (num >= 10 && num < 20) return especiales[num - 10];
@@ -17,35 +18,35 @@ function numeroALetras(num, moneda) {
             return `${decenas[dec]}${unidad ? ' y ' + unidades[unidad] : ''}`;
         }
     }
-    
+
     function convertirCentenas(num) {
         const cen = Math.floor(num / 100);
         const dec = num % 100;
         if (cen === 1 && dec === 0) return 'cien';
         return `${centenas[cen]}${dec ? ' ' + convertirDecenas(dec) : ''}`;
     }
-    
+
     function convertirMiles(num) {
         const mil = Math.floor(num / 1000);
         const resto = num % 1000;
         if (mil === 1) return `mil ${convertirCentenas(resto)}`;
         return `${convertirCentenas(mil)} mil ${convertirCentenas(resto)}`;
     }
-    
+
     function convertirMillones(num) {
         const millon = Math.floor(num / 1000000);
         const resto = num % 1000000;
         if (millon === 1) return `un millón ${convertirMiles(resto)}`;
         return `${convertirCentenas(millon)} millones ${convertirMiles(resto)}`;
     }
-    
+
     function convertirNumero(num) {
         if (num < 100) return convertirDecenas(num);
         else if (num < 1000) return convertirCentenas(num);
         else if (num < 1000000) return convertirMiles(num);
         else return convertirMillones(num);
     }
-    
+
     // Dividir la parte entera y decimal
     const partes = num.toFixed(2).split('.');
     const parteEntera = parseInt(partes[0], 10);
@@ -73,7 +74,14 @@ const loadTemplate = async (path) => {
 };
 
 // Función para reemplazar los placeholders en la plantilla con los datos de factura
-const fillTemplate = async (template, factura) => {
+const fillTemplate = async (template, data) => {
+    let factura
+    if (data.factura) {
+        factura = data.factura;
+    }
+    else {
+        factura = data;
+    }
     // Generar HTML para conceptos
     const conceptosHTML = factura.Conceptos.ListaConceptos.map(concepto => {
         // Generar HTML para impuestos retenidos
@@ -82,14 +90,14 @@ const fillTemplate = async (template, factura) => {
             <small>IMPORTE: <span>$${retencion.Importe.toFixed(2)}</span></small>
             <br>
         `).join('');
-    
+
         // Generar HTML para impuestos trasladados
         const trasladosHTML = concepto.Impuestos.Traslados.map(traslado => `
             <small>IMPUESTO: <span>${traslado.ImpuestoClave} - Traslado</span></small>
             <small>IMPORTE: <span>$${traslado.Importe.toFixed(2)}</span></small>
             <br>
         `).join('');
-    
+
         return `
             <tr>
                 <td>${concepto.Cantidad}</td>
@@ -112,113 +120,177 @@ const fillTemplate = async (template, factura) => {
     // Generar HTML para impuestos adicionales
     // Generar HTML para impuestos retenidos
     const retencionesHTML = factura.Conceptos.ListaConceptos.flatMap(concepto => concepto.Impuestos.Retenciones).map(retencion => `
-        <p><span>${retencion.NombreImpuesto}</span> <span>$</span> <span>${retencion.Importe}</span></p>
+        <p><span>${retencion.NombreImpuesto || retencion.ImpuestoCatalogo?.Impuesto}</span> <span>$</span> <span>${retencion.Importe}</span></p>
        
     `).join('');
 
     // Generar HTML para impuestos trasladados
     const trasladosHTML = factura.Conceptos.ListaConceptos.flatMap(concepto => concepto.Impuestos.Traslados).map(traslado => `
-      <p><span>${traslado.NombreImpuesto}</span> <span>$</span> <span>${traslado.Importe}</span></p>
+      <p><span>${traslado.NombreImpuesto || traslado.ImpuestoCatalogo?.Impuesto}</span> <span>$</span> <span>${traslado.Importe}</span></p>
     `).join('');
 
-const impuestos = retencionesHTML + trasladosHTML;
-   
+    const impuestos = retencionesHTML + trasladosHTML;
 
-const direccionEmisor = 
-(factura.Emisor.Calle || "") + ', ' + 
-(factura.Emisor.NumeroExterior || "") + ', ' + 
-(factura.Emisor.NumeroInterior || "") + ',  ' + 
-(factura.Emisor.Colonia || "") + ', ' + 
-(factura.Emisor.Municipio || "") + ', ' + 
-(factura.Emisor.Estado || "");
 
-const direccionReceptor =
-(factura.Receptor.Calle || "") + ', ' +
-(factura.Receptor.NumeroExterior || "") + ', ' +
-(factura.Receptor.NumeroInterior || "") + ', ' +
-(factura.Receptor.Colonia || "") + ', ' +
-(factura.Receptor.Municipio || "") + ', ' +
-(factura.Receptor.Estado || "");
+    let direccionEmisor =
+        factura.Emisor.Calle ? factura.Emisor.Calle + ', ' : '' +
+            factura.Emisor.NumeroExterior ? factura.Emisor.NumeroExterior + ', ' : '';
+    factura.Emisor.NumeroInterior ? factura.Emisor.NumeroInterior + ', ' : '' +
+        factura.Emisor.Colonia ? factura.Emisor.Colonia + ', ' : '' +
+            factura.Emisor.Municipio ? factura.Emisor.Municipio + ', ' : '' +
+                factura.Emisor.Estado ? factura.Emisor.Estado + ', ' : '';
 
-// Generar código QR dinámico desde la cadena
-let qrImageBase64 = '';
 
-    try {
-        qrImageBase64 = await QRCode.toDataURL('factura.qrCode', { errorCorrectionLevel: 'H' });
-    } catch (error) {
-        console.error('Error al generar el código QR:', error);
+    let direccionReceptor =
+        factura.Receptor.Calle ? factura.Receptor.Calle + ', ' : '' +
+            factura.Receptor.NumeroExterior ? factura.Receptor.NumeroExterior + ', ' : '' +
+                factura.Receptor.NumeroInterior ? factura.Receptor.NumeroInterior + ', ' : '' +
+                    factura.Receptor.Colonia ? factura.Receptor.Colonia + ', ' : '' +
+                        factura.Receptor.Municipio ? factura.Receptor.Municipio + ', ' : '' +
+                            factura.Receptor.Estado ? factura.Receptor.Estado + ', ' : '';
+
+    if (direccionEmisor.includes('undefined')) {
+        direccionEmisor = '';
     }
+    if (direccionReceptor.includes('undefined')) {
+        direccionReceptor = '';
+    }
+
+
+    let qrImageBase64 = '';
+
+    let formaPago, metodoPago, RegimenFiscalReceptor, regimenFiscalEmisor, usoCFDI;
+
+    if (factura.uuid) {
+        const firma = factura.Certificado;
+        const ultimos8 = firma.slice(-8);
+        const cadenaQr = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?&id=${factura.uuid}&re=${factura.Emisor.Rfc}&rr=${factura.Receptor.Rfc}&tt=${factura.Total}&fe=${ultimos8}`;
+        // Generar código QR dinámico desde la cadena
+        try {
+            qrImageBase64 = await QRCode.toDataURL(cadenaQr, { errorCorrectionLevel: 'H' });
+        } catch (error) {
+            console.error('Error al generar el código QR:', error);
+        }
+
+
+    }
+    if (data.forma_pago) {
+        formaPago = data.forma_pago.Clave + ' ' + data.forma_pago.Descripcion;
+        metodoPago = data.metodo_pago.Clave + ' ' + data.metodo_pago.Descripcion;
+        regimenFiscalEmisor = data.regimen_fiscal_emisor.Clave + ' ' + data.regimen_fiscal_emisor.Descripcion;
+        RegimenFiscalReceptor = data.regimen_fiscal_receptor.Clave + ' ' + data.regimen_fiscal_receptor.Descripcion;
+        usoCFDI = data.uso_cfdi.Clave + ' ' + data.uso_cfdi.Descripcion;
+    }
+    else {
+        formaPago = factura.FormaPago + ' ' + factura.FormaPagoDescripcion;
+        metodoPago = factura.MetodoPago + ' ' + factura.MetodoPagoDescripcion;
+        regimenFiscalEmisor = factura.Emisor.RegimenFiscal;
+
+        RegimenFiscalReceptor = factura.Receptor.RegimenFiscal
+        usoCFDI = factura.Receptor.UsoCFDI + ' ' + factura.Receptor.UsoCFDIDescripcion;
+
+    }
+
+
+
 
 
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
-    .replace('{{qrCode}}', qrImageBase64 ? `<img src="${qrImageBase64}" alt="Código QR">` : '') // Insertar el QR
+        .replace('{{qrCode}}', qrImageBase64 ? `<img src="${qrImageBase64}" alt="Código QR">` : '<img src="" alt="Código QR">`') // Insertar el QR
 
-    .replace('{{logo}}',factura.Emisor.LogoPath)
-    .replace('{{nombreEmisor}}',factura.Emisor.Nombre)
-    .replace('{{rfcEmisor}}',factura.Emisor.Rfc)
-    .replace('{{direccionEmisor}}',factura.EmisorDireccion || direccionEmisor)
-    .replace('{{regimenFiscalEmisor}}',factura.Emisor.RegimenFiscal)
+        .replace('{{logo}}', factura.Emisor.LogoPath)
+        .replace('{{nombreEmisor}}', factura.Emisor.Nombre)
+        .replace('{{rfcEmisor}}', factura.Emisor.Rfc)
+        .replace('{{direccionEmisor}}', factura.EmisorDireccion || direccionEmisor || "")
+        .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor)
 
-    .replace('{{folioFactura}}',factura.Folio || "")
+        .replace('{{folioFactura}}', factura.Folio || "")
+        .replace('{{folioFiscal}}', factura.uuid || "")
+        .replace('{{serieCSD}}', factura.NoCertificado || "")
+        .replace('{{fechaEmision}}', factura.Fecha || "")
 
-    .replace('{{nombreReceptor}}',factura.Receptor.Nombre)
-    .replace('{{rfcReceptor}}',factura.Receptor.Rfc)
-    .replace('{{direccionReceptor}}',factura.ReceptorDireccion || direccionReceptor)
-    // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
-    .replace('{{usoCFDI}}', (factura.Receptor?.UsoCFDI && factura.Receptor?.UsoCFDIDescripcion) 
-    ? factura.Receptor.UsoCFDI + ' ' + factura.Receptor.UsoCFDIDescripcion 
-    : factura.UsoCFDI || "")
-
-
-   .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
-   .replace('{{impuestos}}', impuestos)
-   .replace('{{total}}', factura.Total.toFixed(2))
-   .replace('{{totalLetra}}',numeroALetras(factura.Total,'pesos'))
-
-    .replace('{{version}}', factura.Version)
-    .replace('{{serie}}', factura.Serie)
-    .replace('{{folio}}', factura.Folio)
-    .replace('{{fecha}}', new Date(factura.Fecha).toLocaleString())
-    
-    
-   
-    .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
-    .replace('{{conceptos}}', conceptosHTML)
-
-    // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
-    .replace('{{formaPago}}', (factura.FormaPago && factura.FormaPagoDescripcion) 
-    ? factura.FormaPago + ' ' + factura.FormaPagoDescripcion 
-    : factura.FormaPago || "")
-
-    .replace('{{regimenFiscal}}', factura.Receptor.RegimenFiscal || factura.Receptor.RegimenFiscalReceptor) 
-    .replace('{{divisa}}',factura.Moneda)
-    .replace('{{metodoPago}}', (factura.MetodoPago && factura.MetodoPagoDescripcion)? factura.MetodoPago + ' ' + factura.MetodoPagoDescripcion : factura.MetodoPago || "")
+        .replace('{{nombreReceptor}}', factura.Receptor.Nombre)
+        .replace('{{rfcReceptor}}', factura.Receptor.Rfc)
+        .replace('{{direccionReceptor}}', factura.ReceptorDireccion || direccionReceptor || "")
+        // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
 
 
-    .replace('{{selloCFDI}}', factura.Sello || "<br><br>")
+
+        .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
+        .replace('{{impuestos}}', impuestos)
+        .replace('{{total}}', factura.Total.toFixed(2))
+        .replace('{{totalLetra}}', numeroALetras(factura.Total, 'pesos'))
+
+        .replace('{{version}}', factura.Version)
+        .replace('{{serie}}', factura.Serie)
+        .replace('{{folio}}', factura.Folio)
+        .replace('{{fecha}}', new Date(factura.Fecha).toLocaleString())
+
+
+
+        .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
+        .replace('{{conceptos}}', conceptosHTML)
+
+        // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
+
+
+        .replace('{{divisa}}', factura.Moneda)
+
+
+
+        .replace('{{selloCFDI}}', factura.Sello || "<br><br>")
+        .replace('{{selloSAT}}', factura.selloSAT || "<br><br>")
+        .replace('{{cadenaSAT}}', factura.cadenaOriginalSAT || "<br><br>")
+        .replace('{{fechaCertificacion}}', factura.fechaTimbrado || "<br><br>")
+
+
+        .replace('{{formaPago}}', formaPago)
+
+        .replace('{{metodoPago}}', metodoPago)
+
+        .replace('{{regimenFiscal}}', RegimenFiscalReceptor)
+
+        .replace('{{usoCFDI}}', usoCFDI);
+
+
+
 };
 
+const fillDescription = async (template, formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI) => {
+    console.log('fillDescription', formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI);
+    return template
+        .replace('{{formaPago}}', formaPago.Clave + ' ' + formaPago.Descripcion)
+        .replace('{{metodoPago}}', metodoPago.Clave + ' ' + metodoPago.Descripcion)
+        // .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor.Clave + ' ' + regimenFiscalEmisor.Descripcion)
+        .replace('{{regimenFiscal}}', RegimenFiscalReceptor.Clave + ' ' + RegimenFiscalReceptor.Descripcion)
+        .replace('{{usoCFDI}}', usoCFDI.Clave + ' ' + usoCFDI.Descripcion)
+};
 // Función para generar el PDF usando html2pdf
 const generarVistaPrevia = async (factura) => {
     console.log('Ejecutando generatePDF con la factura:', factura);  // Agrega este log
     try {
+        let filledTemplate;
         const template = await loadTemplate('/plantillas/plantilla-prueba.html');
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
         }
-        const filledTemplate = fillTemplate(template, factura);
-        //Generar pdf
-        // const pdfDoc = await html2pdf().from(filledTemplate).save();
-        // Mostrar pdf en el navegador
-        // const fileURL = URL.createObjectURL(pdfDoc);
-        // window.open(fileURL);
+        // if (factura.factura) {
+        //     const data = factura.factura;
+        //     const templateFactura = String(await fillTemplate(template, data));
+        //     if (typeof templateFactura === 'string') {
+        //         console.log('templateFactura', templateFactura);
+        //            filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
+        //     }
 
-        //Descargar en zip
-        // const zip = new JSZip();
-        // zip.file("factura.pdf", pdfDoc);
-        // const content = await zip.generateAsync({type:"blob"});
-        // saveAs(content, "factura.zip");
+        // }
+        // else {
+
+        // }
+
+        filledTemplate = fillTemplate(template, factura);
+
+
         return filledTemplate;
     } catch (error) {
         console.error("Error al mostrar la vista previa: ", error);

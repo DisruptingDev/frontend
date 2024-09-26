@@ -78,7 +78,7 @@ export default function EditarFactura() {
                     },
                 });
                 const data = await response.json();
-                setFacturaEdit(data);
+                setFacturaEdit(data.factura);
                 console.log("Factura", data);
             } catch (error) {
                 console.error('Error fetching factura:', error);

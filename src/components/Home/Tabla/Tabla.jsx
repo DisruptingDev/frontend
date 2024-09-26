@@ -209,10 +209,10 @@ export default function DataTable() {
     setOpenModal(true);
     setLoading(true);
     try {
-      const factura = await obtenerFactura(id);
-      if (factura) {
-        const htmlContent = await generarVistaPrevia(factura);
-        const fileName = `${factura.Emisor.Nombre}_${factura.Folio}`;
+      const data = await obtenerFactura(id);
+      if (data) {
+        const htmlContent = await generarVistaPrevia(data);
+        const fileName = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
         await generarPDF(htmlContent, fileName);
         setLoading(false);
         setConfirmationMessage(`Su archivo ${fileName} se ha descargado. <br/>Revise su carpeta de descargas.`);
@@ -252,10 +252,11 @@ export default function DataTable() {
       // Primero obtenemos todas las facturas para mostrar sus nombres
       const facturas = await Promise.all(
         ids.map(async (id) => {
-          const factura = await obtenerFactura(id);
-          if (factura) {
-            const name = `${factura.Emisor.Nombre}_${factura.Folio}`;
-            return { id, factura, name };
+          const data = await obtenerFactura(id);
+          if (data) {
+            // console.log('Factura obtenida:', data);
+            const name = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
+            return { id, factura: data.factura, name };
           } else {
             console.error('Error al obtener la factura', id);
             return null;
@@ -323,11 +324,11 @@ export default function DataTable() {
 
     // Descargar el XML
     try {
-      const factura = await obtenerFactura(id);
-      if (factura) {
-        const htmlContent = await generarVistaPrevia(factura);
-        const name = `${factura.Emisor.Nombre}_${factura.Folio}`;
-        if (factura.uuid === '') {
+      const data = await obtenerFactura(id);
+      if (data) {
+        const htmlContent = await generarVistaPrevia(data);
+        const name = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
+        if (data.factura.uuid === '') {
           await generarPDF(htmlContent, name);
         }
         else {
