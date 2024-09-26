@@ -42,9 +42,7 @@ export default function Login() {
                     console.log('Login exitoso', result.token);
 
                     if (isMounted) { // Solo redirige si el componente está montado
-                      
                             router.push('/Home');
-                        
                     }
                 }
             } else {

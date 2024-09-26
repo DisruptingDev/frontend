@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
@@ -24,7 +24,25 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
         setMinDate(formatDate(threeDaysAgo));
         setMaxDate(formatDate(today));
+        // console.logh
+       
     }, []);
+    useEffect(() => {
+            const today = new Date();
+           
+    
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            if(!emisorData){
+                setValue("Fecha", formatDate(today));
+            }
+    
+    },[setValue]);
 
     // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
@@ -208,7 +226,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                                 const currentDate = new Date();
                                 const inputDate = new Date(value);
                                 const threeDaysAgo = new Date();
-                                threeDaysAgo.setDate(currentDate.getDate() - 3);
+                                threeDaysAgo.setDate(currentDate.getDate() - 4);
                                 return inputDate >= threeDaysAgo || "Fecha invalida";
                             }
                         }
