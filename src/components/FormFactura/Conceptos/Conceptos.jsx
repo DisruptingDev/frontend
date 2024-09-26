@@ -7,6 +7,7 @@ import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from '@/components/Select/Select.jsx';
 import { BoxZoomHandler } from 'mapbox-gl';
+import padding from 'tailwindcss-logical/plugins/padding.js';
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex }) {
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
@@ -358,7 +359,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
-            <Box display="grid" gridTemplateColumns="8fr 1fr" gap={3}>
+            <Box display="grid" gridTemplateColumns="8fr" gap={3}>
                 <TextField
                     label="Descripción"
                     {...register("Descripcion")}
@@ -374,7 +375,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.2fr 0.2fr'
+                    lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr  '
                 }}
                 gap={3}
                 mt={4}>
@@ -469,21 +470,22 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 <Select
                     register={register}
                     clave='Clave'
-            
+                
+                    
                     nombre='ObjetoImpuesto'
                     label='Objeto Impuesto'
                     descripcion='Descripcion'
                     url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
                     value={getValues("ObjetoImpuesto") || "02"}
                     onChange={handleObjetoImpuestoChange}
-                    sx={{ width: 'auto' }}
+                    sx={{ width: 'auto', minWidth: '23%' }}
                     
                 />
             </Box>
 
             {objetoImpuesto!=="01"  &&(
-                console.log("NO ES 01", objetoImpuesto),
-              <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={3} mt={4}>
+                // console.log("NO ES 01", objetoImpuesto),
+              <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
                
                 {fields.map((field, index) => {
                     // const impuestoEditor = getValues(`impuestos.${index}`);
