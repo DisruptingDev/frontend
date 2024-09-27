@@ -74,6 +74,10 @@ export default function CrearFactura() {
                 setSnackbarMessage(message);
                 setSnackbarSeverity('success'); // Configura el Snackbar como éxito
                 setOpenSnackbar(true);
+                // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
+             setTimeout(() => {
+                router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
+            }, 3000); // Espera 3 segundos antes de redirigir
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
