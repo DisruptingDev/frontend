@@ -1,16 +1,55 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
+import { set } from 'date-fns';
 
-export default function AltaCliente({ onClose }) {
-    const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+export default function AltaCliente({ onClose, cliente }) {
+    const { register, getValues, reset,handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
+
+    useEffect(() => {
+        console.log("cliente",cliente);
+        if(cliente){
+            console.log(cliente);
+            //Rellena los campos con los datos del cliente
+            setValue('Nombre', cliente.Nombre);
+            setValue('Rfc', cliente.Rfc);
+            setValue('RegimenFiscal', cliente.RegimenFiscalReceptor);
+            setValue('DomicilioFiscal', cliente.DomicilioFiscalReceptor);
+            setValue('Calle', cliente.Calle);
+            setValue('NumeroExterior', cliente.NumeroExterior);
+            setValue('NumeroInterior', cliente.NumeroInterior);
+            setValue('Colonia', cliente.Colonia);
+            setValue('Municipio', cliente.Municipio);
+            setValue('Estado', cliente.Estado);
+            
+        }
+        else{
+            setValue('Nombre', '');
+            setValue('Rfc', '');
+            setValue('RegimenFiscal', '');
+            setValue('DomicilioFiscal', '');
+            setValue('Calle', '');
+            setValue('NumeroExterior', '');
+            setValue('NumeroInterior', '');
+            setValue('Colonia', '');
+            setValue('Municipio', '');
+            setValue('Estado', '');
+
+        }
+    }, [cliente, reset, setValue]);
     const handleClose = () => {
         setToast({ ...toast, open: false });
+    };
+    const handleCancelar = () => {
+         //Resetea los campos del formulario
+        
+        onClose();
+       
     };
 
     const onSubmit = async (data) => {
@@ -29,6 +68,7 @@ export default function AltaCliente({ onClose }) {
                 Estado: data.Estado,
             }
         };
+   
 
         setLoading(true);
 
@@ -50,6 +90,7 @@ export default function AltaCliente({ onClose }) {
                 const result = await response.json();
                 console.log('Guardado exitoso:', result);
                 setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
+                reset(); // Resetea los campos del formulario
                 if (onClose) onClose(); 
             }
         } catch (error) {
@@ -79,7 +120,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
                         label="R.F.C."
@@ -90,7 +131,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
                         {...register("Rfc", { required: true })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                    <Select
                     register={register} // Pasa register como prop
@@ -103,6 +144,7 @@ export default function AltaCliente({ onClose }) {
                     error={!!errors.RegimenFiscal}
                     helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
                     sx={{ alignSelf: 'start' }}
+                    value={cliente? cliente.RegimenFiscalReceptor :""}
                 />
                     <TextField
                         label="Domicilio Fiscal"
@@ -113,7 +155,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.DomicilioFiscal}
                         helperText={errors.DomicilioFiscal ? "Este campo es obligatorio" : ""}
                         {...register("DomicilioFiscal", { required: true })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                 </Box>
                 <Box
@@ -131,7 +173,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Calle}
                         helperText={errors.Calle ? "Este campo es obligatorio" : ""}
                         {...register("Calle", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
                         label="Número exterior"
@@ -141,7 +183,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.NumeroExterior}
                         helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
                         {...register("NumeroExterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
                         label="Número interior"
@@ -151,7 +193,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.NumeroInterior}
                         helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
                         {...register("NumeroInterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
                         label="Colonia"
@@ -161,7 +203,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Colonia}
                         helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
                         {...register("Colonia", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
                         label="Municipio"
@@ -171,7 +213,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Municipio}
                         helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
                         {...register("Municipio", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                      <TextField
                         label="Estado"
@@ -181,7 +223,7 @@ export default function AltaCliente({ onClose }) {
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
                         {...register("Estado", { required: false })}
-                        sx={{ alignSelf: 'start', 'margin-top': '0px' }}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     {/* <Select
                         nombre="Estado"
@@ -201,7 +243,7 @@ export default function AltaCliente({ onClose }) {
                         color="error"
                         sx={{ width: '150px', backgroundColor: '#da0404'}}
                         type="button"
-                        onClick={onClose}
+                        onClick={handleCancelar}
                     >
                         Cancelar
                     </Button>
@@ -226,7 +268,7 @@ export default function AltaCliente({ onClose }) {
                 open={toast.open}
                 autoHideDuration={6000}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 <Alert onClose={handleClose} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
                     {toast.message}
