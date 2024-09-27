@@ -113,9 +113,6 @@ export default function RegistroClientes() {
                         }}
                         onClick={handleOpenModal}
                     >
-
-
-
                         Agregar Cliente
                     </Button>
                 </Box>

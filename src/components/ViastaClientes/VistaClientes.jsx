@@ -6,6 +6,10 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
+function createData(item) {
+    return { ...item };
+  }
+  
 const VistaClientes = ( {setClienteIdEditar}) => {
    
 
@@ -40,7 +44,16 @@ const VistaClientes = ( {setClienteIdEditar}) => {
                     },
                 });
                 const data = await response.json();
-                setReceptores(data);
+                console
+                if (Array.isArray(data)) {
+                    const transformedData = data.map((item) => createData(item));
+                    const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+                    // setRows(sortedData);
+                    setReceptores(sortedData);
+                  } else {
+                    console.error('Expected an array but received:', typeof data);
+                  }
+                // setReceptores(data);
             } catch (error) {
                 console.error('Error fetching receptores:', error);
             } finally {
@@ -93,19 +106,22 @@ const VistaClientes = ( {setClienteIdEditar}) => {
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.Municipio}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.Estado}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>
-                                <IconButton onClick={(event) => handleMenuClick(event, receptor)}>
-                                    <MoreVertIcon />
-                                </IconButton>
-                                <Menu
-                                    anchorEl={anchorEl}
-                                    open={Boolean(anchorEl)}
-                                    onClose={handleMenuClose}
-                                >
-                                    <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                    <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
-
-
-                                </Menu>
+                                {receptor.Rfc !== 'XAXX010101000' && (
+                                    <React.Fragment>
+                                        <IconButton onClick={(event) => handleMenuClick(event, receptor)}>
+                                            <MoreVertIcon />
+                                        </IconButton>
+                                        <Menu
+                                            anchorEl={anchorEl}
+                                            open={Boolean(anchorEl)}
+                                            onClose={handleMenuClose}
+                                        >
+                                            <MenuItem onClick={handleEditar}>Editar</MenuItem>
+                                            <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
+                                        </Menu>
+                                    </React.Fragment>
+                                )}
+                               
                             </TableCell>
                         </TableRow>
                     ))}

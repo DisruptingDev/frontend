@@ -1,19 +1,21 @@
 "use client"
-import React, { useState,useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { set } from 'date-fns';
 
 export default function AltaCliente({ onClose, cliente }) {
-    const { register, getValues, reset,handleSubmit, setValue, formState: { errors } } = useForm();
+    const { register, getValues, reset, handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+    const [editar, setEditar] = useState(false);
 
 
     useEffect(() => {
-        console.log("cliente",cliente);
-        if(cliente){
+        console.log("cliente", cliente);
+        if (cliente) {
+            setEditar(true);
             console.log(cliente);
             //Rellena los campos con los datos del cliente
             setValue('Nombre', cliente.Nombre);
@@ -26,79 +28,121 @@ export default function AltaCliente({ onClose, cliente }) {
             setValue('Colonia', cliente.Colonia);
             setValue('Municipio', cliente.Municipio);
             setValue('Estado', cliente.Estado);
-            
-        }
-        else{
-            setValue('Nombre', '');
-            setValue('Rfc', '');
-            setValue('RegimenFiscal', '');
-            setValue('DomicilioFiscal', '');
-            setValue('Calle', '');
-            setValue('NumeroExterior', '');
-            setValue('NumeroInterior', '');
-            setValue('Colonia', '');
-            setValue('Municipio', '');
-            setValue('Estado', '');
 
         }
+
     }, [cliente, reset, setValue]);
     const handleClose = () => {
         setToast({ ...toast, open: false });
     };
     const handleCancelar = () => {
-         //Resetea los campos del formulario
-        
+        //Resetea los campos del formulario
+
         onClose();
-       
+        reset();
+
     };
 
     const onSubmit = async (data) => {
-        // Construir el objeto de datos como lo espera la API
-        const clienteData = {
-            Receptor: {
-                Rfc: data.Rfc,
-                Nombre: data.Nombre,
-                RegimenFiscalReceptor: data.RegimenFiscal,
-                DomicilioFiscalReceptor: data.DomicilioFiscal,
-                Calle: data.Calle,
-                NumeroExterior: parseInt(data.NumeroExterior, 10), // Convertir a número si es necesario
-                NumeroInterior: parseInt(data.NumeroInterior, 10), // Convertir a número si es necesario
-                Colonia: data.Colonia,
-                Municipio: data.Municipio,
-                Estado: data.Estado,
+        if (!editar) {
+            // Construir el objeto de datos como lo espera la API
+            const clienteData = {
+                Receptor: {
+                    Rfc: data.Rfc,
+                    Nombre: data.Nombre,
+                    RegimenFiscalReceptor: data.RegimenFiscal,
+                    DomicilioFiscalReceptor: data.DomicilioFiscal,
+                    Calle: data.Calle,
+                    NumeroExterior: parseInt(data.NumeroExterior, 10), // Convertir a número si es necesario
+                    NumeroInterior: parseInt(data.NumeroInterior, 10), // Convertir a número si es necesario
+                    Colonia: data.Colonia,
+                    Municipio: data.Municipio,
+                    Estado: data.Estado,
+                }
+            };
+
+
+            setLoading(true);
+
+            try {
+                const response = await fetch('http://31.220.31.152:8086/RegistroReceptor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    },
+                    body: JSON.stringify(clienteData),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error al guardar:', errorData);
+                    setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
+                } else {
+                    const result = await response.json();
+                    console.log('Guardado exitoso:', result);
+                    setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
+                    reset(); // Resetea los campos del formulario
+                    if (onClose) onClose();
+                }
+            } catch (error) {
+                console.error('Error en la solicitud:', error);
+                setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
+            } finally {
+                setLoading(false);
             }
-        };
-   
-
-        setLoading(true);
-
-        try {
-            const response = await fetch('http://31.220.31.152:8086/RegistroReceptor', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 
-                },
-                body: JSON.stringify(clienteData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error al guardar:', errorData);
-                setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
-            } else {
-                const result = await response.json();
-                console.log('Guardado exitoso:', result);
-                setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
-                reset(); // Resetea los campos del formulario
-                if (onClose) onClose(); 
-            }
-        } catch (error) {
-            console.error('Error en la solicitud:', error);
-            setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
-        } finally {
-            setLoading(false);
         }
+        else {
+            // Construir el objeto de datos como lo espera la API
+            const clienteData = {
+                ID: cliente.ID,                            // Integer
+                Rfc: data.Rfc,              // String
+                Nombre: data.Nombre,    // String
+                RegimenFiscalReceptor: data.RegimenFiscal,      // String (es un código fiscal)
+                DomicilioFiscalReceptor: data.DomicilioFiscal,  // String (es un código postal)
+                ResidenciaFiscal: "",              // String (puede ser vacío si no aplica)
+                NumRegIdTrib: "",                  // String (puede ser vacío si no aplica)
+                UsoCFDI: "",                       // String (puede ser vacío si no aplica)
+                Calle: data.Calle,               // String
+                NumeroExterior: data.NumeroExterior,              // String (en algunos casos puede ser alfanumérico)
+                NumeroInterior: data.NumeroInterior,               // String (en algunos casos puede ser alfanumérico)
+                Colonia: data.Colonia,         // String
+                Municipio: data.Municipio,       // String
+                Estado: data.Estado         // String
+            };
+            try {
+                const response = await fetch('http://31.220.31.152:8086/EditarReceptor ', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    },
+                    body: JSON.stringify(clienteData),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error al guardar:', errorData);
+                    setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
+                } else {
+                    const result = await response.json();
+                    console.log('Guardado exitoso:', result);
+                    setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
+                   //Depues de un tiempo resetea los campos del formulario
+                    setTimeout(() => {
+                        reset();
+                        if (onClose) onClose();
+                    }, 2000);
+                 
+                }
+            } catch (error) {
+                console.error('Error en la solicitud:', error);
+                setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
+            } finally {
+                setLoading(false);
+            }
+        }
+
     };
 
     return (
@@ -133,19 +177,19 @@ export default function AltaCliente({ onClose, cliente }) {
                         {...register("Rfc", { required: true })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
-                   <Select
-                    register={register} // Pasa register como prop
-                    label={"Regimen Fiscal*"}
-                    nombre="RegimenFiscal"
-                    url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
-                    clave="Clave"
-                    descripcion="Descripcion"
-                    onChange={(e) => setValue('RegimenFiscal', e.target.value)}
-                    error={!!errors.RegimenFiscal}
-                    helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                    sx={{ alignSelf: 'start' }}
-                    value={cliente? cliente.RegimenFiscalReceptor :""}
-                />
+                    <Select
+                        register={register} // Pasa register como prop
+                        label={"Regimen Fiscal*"}
+                        nombre="RegimenFiscal"
+                        url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                        clave="Clave"
+                        descripcion="Descripcion"
+                        onChange={(e) => setValue('RegimenFiscal', e.target.value)}
+                        error={!!errors.RegimenFiscal}
+                        helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
+                        sx={{ alignSelf: 'start' }}
+                        value={cliente ? cliente.RegimenFiscalReceptor : ""}
+                    />
                     <TextField
                         label="Domicilio Fiscal"
                         fullWidth
@@ -215,7 +259,7 @@ export default function AltaCliente({ onClose, cliente }) {
                         {...register("Municipio", { required: false })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
-                     <TextField
+                    <TextField
                         label="Estado"
                         fullWidth
                         placeholder="Ej: Benito Juárez"
@@ -241,7 +285,7 @@ export default function AltaCliente({ onClose, cliente }) {
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404'}}
+                        sx={{ width: '150px', backgroundColor: '#da0404' }}
                         type="button"
                         onClick={handleCancelar}
                     >
@@ -252,7 +296,7 @@ export default function AltaCliente({ onClose, cliente }) {
                         variant="contained"
                         color="primary"
                         sx={{
-                            width: '250px', 
+                            width: '250px',
                             backgroundColor: '#04b2ca',
                             '&:hover': { backgroundColor: '#038a9e' },
                         }}
