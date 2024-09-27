@@ -1,20 +1,24 @@
 "use client";
 import React, { useState } from 'react';
-import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment } from '@mui/material';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation'; 
+import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment, Collapse, Alert } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 const AltaUsuarios = () => {
 
     const [showPassword, setShowPassword] = useState(false);
-const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
+    const router = useRouter();
 
-const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-};
+    const handleClickShowPassword = () => {
+        setShowPassword(!showPassword);
+    };
 
-const handleClickShowConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-};
+    const handleClickShowConfirmPassword = () => {
+        setShowConfirmPassword(!showConfirmPassword);
+    };
     const [formData, setFormData] = useState({
         nombre: '',
         correo: '',
@@ -22,12 +26,53 @@ const handleClickShowConfirmPassword = () => {
         confirmacionContraseña: ''
     });
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
         // Handle form submission logic here
         console.log(formData);
+        try {
+            const response = await fetch('http://31.220.31.152:8091/RegistroUsuario ', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Nombre: formData.nombre,
+                    Email: formData.correo,
+                    Password: formData.password,
+                }),
+            });
+
+            const text = await response.text();
+            console.log('Respuesta del servidor:', text);
+
+            if (response.ok) {
+                const result = JSON.parse(text);
+
+                if (result.status==='success') {
+                      setAlert({ open: true, message: 'Registro exitoso', severity: 'success' });
+                    console.log('Login exitoso', result.token)
+                    //Despues de un tiempo redirige a la pagina de inicio
+                    setTimeout(() => {
+                        router.push('/');
+                    }, 2000);
+
+                          
+                } else {
+                    setAlert({ open: true, message: result.error, severity: 'error' });
+                    
+                  
+             
+                }
+            } else {
+                setAlert({ open: true, message: 'Error en el registro', severity: 'error' });
+            }
+        } catch (error) {
+            console.error('Error en la solicitud:', error);
+            setAlert({ open: true, message: 'Error en la conexión al servidor', severity: 'error' });
+        }
     };
-    
+
     const handleChange = (event) => {
         const { name, value } = event.target;
         setFormData((prevFormData) => ({
@@ -35,14 +80,33 @@ const handleClickShowConfirmPassword = () => {
             [name]: value,
         }));
     };
-    
+
 
     return (
-        <Container maxWidth="sm">
-            <Box sx={{ mt: 5 }}>
-                <Typography variant="h4" component="h1" gutterBottom>
+        <Container maxWidth className="flex items-center justify-center h-screen bg-primary-dark-total">
+            <Box sx={{
+                width: 420,
+                backgroundColor: "white",
+                padding: 4,
+                borderRadius: 5,
+                boxShadow: 3,
+                textAlign: "center"
+            }}>
+                <Box
+                    mb={2}
+                    display="flex"
+                    justifyContent="center"
+                >
+                    <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
+                </Box>
+                <Collapse in={alert.open}>
+                    <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, open: false })}>
+                        {alert.message}
+                    </Alert>
+                </Collapse>
+                {/* <Typography variant="h4" component="h1" gutterBottom>
                     Registrar Usuario
-                </Typography>
+                </Typography> */}
                 <form onSubmit={handleSubmit}>
                     <TextField
                         label="Nombre"
@@ -65,9 +129,9 @@ const handleClickShowConfirmPassword = () => {
                     />
                     <TextField
                         label="Contraseña"
-                        name="contraseña"
+                        name="password"
                         type={showPassword ? 'text' : 'password'}
-                        value={formData.contraseña}
+                        value={formData.password}
                         onChange={handleChange}
                         fullWidth
                         margin="normal"
@@ -86,7 +150,7 @@ const handleClickShowConfirmPassword = () => {
                             ),
                         }}
                     />
-                    <TextField
+                    {/* <TextField
                         label="Confirmación de Contraseña"
                         name="confirmacionContraseña"
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -108,8 +172,10 @@ const handleClickShowConfirmPassword = () => {
                                 </InputAdornment>
                             ),
                         }}
-                    />
-                    <Button type="submit" variant="contained" color="primary" fullWidth>
+                    /> */}
+                    <Button sx={{
+                        backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
+                    }} variant="contained" fullWidth type="submit">
                         Registrar
                     </Button>
                 </form>
