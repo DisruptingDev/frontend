@@ -17,6 +17,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [regimenFiscal, setRegimenFiscal] = useState("");
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
+    const [exportacion, setExportacion] = useState("01");
 
     // Reiniciar o recargar los datos del select cuando el modal se cierra
     useEffect(() => {
@@ -325,9 +326,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                         // register={register}
                         nombre="Exportación"
-                        url=""
+                       url="http://31.220.31.152:8081/Catalogos/Exportaciones"
                         clave="Clave"
-                        descripcion="Exportación"
+                        value={exportacion}
+                        descripcion="Descripcion"
                     />
             </Box>
             {hiddeInfoGlobal && (
