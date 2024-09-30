@@ -95,7 +95,7 @@ export default function Login() {
                         fullWidth
                         margin="normal"
                     />
-                    <FormControlLabel
+                    {/* <FormControlLabel
                         control={<Checkbox {...register("remember")} />}
                         label="Recordar cuenta"
                         sx={{
@@ -109,7 +109,7 @@ export default function Login() {
                     />
                     <Link href="#" variant="body2" sx={{ display: 'block', marginBottom: 2, textAlign: 'initial' }}>
                         ¿Olvidaste tu contraseña?
-                    </Link>
+                    </Link> */}
                     <Button sx={{
                         backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
                     }} variant="contained" fullWidth type="submit">

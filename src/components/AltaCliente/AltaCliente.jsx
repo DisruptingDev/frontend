@@ -5,7 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { set } from 'date-fns';
 
-export default function AltaCliente({ onClose, cliente }) {
+export default function AltaCliente({ onClose, cliente, setActualizar }) {
     const { register, getValues, reset, handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
@@ -84,6 +84,7 @@ export default function AltaCliente({ onClose, cliente }) {
                     setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                     reset(); // Resetea los campos del formulario
                     if (onClose) onClose();
+                    setActualizar(true);
                 }
             } catch (error) {
                 console.error('Error en la solicitud:', error);
@@ -129,8 +130,10 @@ export default function AltaCliente({ onClose, cliente }) {
                     console.log('Guardado exitoso:', result);
                     setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                    //Depues de un tiempo resetea los campos del formulario
+                   setActualizar(true);
                     setTimeout(() => {
                         reset();
+                        
                         if (onClose) onClose();
                     }, 2000);
                  

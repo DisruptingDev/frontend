@@ -43,7 +43,7 @@ export default function HomePage() {
             </AppBar>
 
             {/* Contenido principal */}
-            <Container sx={{ mt: 5, maxWidth:"80%" }} backgroundColor="#1d394d">
+            <Container sx={{ mt: 5, maxWidth:"80%" }}>
                 <Grid container spacing={8} alignItems="center" backgroundColor="#1d394d">
                     {/* Texto */}
                     <Grid item xs={12} md={6}>

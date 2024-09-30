@@ -18,6 +18,8 @@ export default function RegistroClientes() {
 
     const [clienteIdEditar, setClienteIdEditar] = useState('');
 
+    const [actualizar, setActualizar] = useState(false);
+
     const router = useRouter(); // Inicializa el router
 
     useEffect(() => {
@@ -118,7 +120,7 @@ export default function RegistroClientes() {
                 </Box>
                 {/* <AltaCliente /> */}
 
-                <VistaClientes  setClienteIdEditar={setClienteIdEditar} />
+                <VistaClientes  setClienteIdEditar={setClienteIdEditar} actualizar={actualizar}/>
 
             </Box>
             <Dialog
@@ -135,7 +137,7 @@ export default function RegistroClientes() {
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente cliente={cliente} onClose={handleCloseModal} />
+                    <AltaCliente cliente={cliente} onClose={handleCloseModal} setActualizar={setActualizar}/>
                 </DialogContent>
             </Dialog>
         </div>

@@ -10,7 +10,7 @@ function createData(item) {
     return { ...item };
   }
   
-const VistaClientes = ( {setClienteIdEditar}) => {
+const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
    
 
     const [receptores, setReceptores] = useState([]);
@@ -34,35 +34,43 @@ const VistaClientes = ( {setClienteIdEditar}) => {
     handleMenuClose();
     
   };
+  const fetchReceptores = async () => {
+    try {
+        const response = await fetch('http://31.220.31.152:8081/Catalogos/Receptor', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            },
+        });
+        const data = await response.json();
+        console
+        if (Array.isArray(data)) {
+            const transformedData = data.map((item) => createData(item));
+            const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+            // setRows(sortedData);
+            setReceptores(sortedData);
+          } else {
+            console.error('Expected an array but received:', typeof data);
+          }
+        // setReceptores(data);
+    } catch (error) {
+        console.error('Error fetching receptores:', error);
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
-        const fetchReceptores = async () => {
-            try {
-                const response = await fetch('http://31.220.31.152:8081/Catalogos/Receptor', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                    },
-                });
-                const data = await response.json();
-                console
-                if (Array.isArray(data)) {
-                    const transformedData = data.map((item) => createData(item));
-                    const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-                    // setRows(sortedData);
-                    setReceptores(sortedData);
-                  } else {
-                    console.error('Expected an array but received:', typeof data);
-                  }
-                // setReceptores(data);
-            } catch (error) {
-                console.error('Error fetching receptores:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
 
         fetchReceptores();
     }, []);
+
+    useEffect(() => {
+        if (actualizar) {
+            console.log('Actualizando');
+            fetchReceptores();
+        }
+    }
+    , [actualizar]);
 
     if (loading) {
         return <CircularProgress />;
