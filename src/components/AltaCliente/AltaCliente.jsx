@@ -14,7 +14,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
 
     useEffect(() => {
         console.log("cliente", cliente);
-        if (cliente) {
+        if (cliente && Object.keys(cliente).length > 0) {
             setEditar(true);
             console.log(cliente);
             //Rellena los campos con los datos del cliente
