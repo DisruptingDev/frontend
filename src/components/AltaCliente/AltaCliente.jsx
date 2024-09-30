@@ -44,7 +44,10 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
     };
 
     const onSubmit = async (data) => {
+        console.log(editar);
         if (!editar) {
+            console.log("entro registro");
+
             // Construir el objeto de datos como lo espera la API
             const clienteData = {
                 Receptor: {
@@ -77,17 +80,19 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                 if (!response.ok) {
                     const errorData = await response.json();
                     console.error('Error al guardar:', errorData);
-                    setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
+                    const error = "Error al guardar los datos: "+ errorData.message;
+                    console.log(error);
+                    setToast({ open: true, message: error , severity: 'error' });
                 } else {
                     const result = await response.json();
                     console.log('Guardado exitoso:', result);
                     setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
-                    setActualizar(true);
+                    if(setActualizar)setActualizar(true);
                     setTimeout(() => {
                         reset();
                         
                         if (onClose) onClose();
-                        setActualizar(false);
+                        if(setActualizar)setActualizar(false);
                     }, 2000);
                 }
             } catch (error) {
