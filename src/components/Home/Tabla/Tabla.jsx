@@ -87,6 +87,8 @@ export default function DataTable() {
 
   const [progress, setProgress] = useState(0);
 
+  const [actualizar, setActualizar] = useState(false);
+
   const handleCloseModal = () => {
     setOpenModal(false);
     setOpenModalSuccess(false);
@@ -480,37 +482,48 @@ export default function DataTable() {
     } finally {
       setLoading(false);
       setOpenModal(false); // Hide loading modal
+      setActualizar(true);
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('authToken');
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
 
-        const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        const data = await response.json();
-        console.log('Data received from API:', data);
-
-        if (Array.isArray(data)) {
-          const transformedData = data.map((item) => createData(item));
-          const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-          setRows(sortedData);
-        } else {
-          console.error('Expected an array but received:', typeof data);
+      const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      });
+      const data = await response.json();
+      console.log('Data received from API:', data);
+
+      if (Array.isArray(data)) {
+        const transformedData = data.map((item) => createData(item));
+        const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+        setRows(sortedData);
+      } else {
+        console.error('Expected an array but received:', typeof data);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+  useEffect(() => {
+   
 
     fetchData();
   }, []);
+
+  useEffect(()=> {
+    if(actualizar) {
+      console.log('Actualizando');
+      fetchData();
+      setActualizar(false);
+    }
+      
+    }, [actualizar]);
 
   const handleRowClick = (row) => {
     setSelectedRow(row);

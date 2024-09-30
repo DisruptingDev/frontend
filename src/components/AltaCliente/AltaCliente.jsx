@@ -82,9 +82,13 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                     const result = await response.json();
                     console.log('Guardado exitoso:', result);
                     setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
-                    reset(); // Resetea los campos del formulario
-                    if (onClose) onClose();
                     setActualizar(true);
+                    setTimeout(() => {
+                        reset();
+                        
+                        if (onClose) onClose();
+                        setActualizar(false);
+                    }, 2000);
                 }
             } catch (error) {
                 console.error('Error en la solicitud:', error);
@@ -135,6 +139,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                         reset();
                         
                         if (onClose) onClose();
+                        setActualizar(false);
                     }, 2000);
                  
                 }
