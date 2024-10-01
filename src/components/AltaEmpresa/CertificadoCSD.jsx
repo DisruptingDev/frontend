@@ -72,28 +72,45 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                 },
                 body: formData,
             });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Error al subir los archivos: ${response.statusText} - ${errorText}`);
+
+            if (response.ok) {
+
+                const data = await response.json();
+                console.log(data);
+                if (data.status === 'success') {
+                    setSnackbarMessage(data.data);
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+
+                    const { issuer_rfc, issuer_business_name } = data.CSD;
+                    onUpdateEmpresa(issuer_business_name, issuer_rfc);
+                }
+
+                else if (data.status === 'error') {
+
+                    const error = "Error al subir los archivos: " + data.error;
+                    console.error('Error al subir los archivos:', error);
+
+                    setSnackbarMessage(error);
+                    setSnackbarSeverity('error');
+                    setOpenSnackbar(true);
+                }
             }
-
-            const data = await response.json();
-            console.log(data);
-
-            if (data.status === 'success') {
-                setSnackbarMessage(data.data);
-                setSnackbarSeverity('success');
+            else{
+                
+                console.error("Error al subir los archivos");
+                setSnackbarMessage('Error al subir los archivos');
+                setSnackbarSeverity('error');
                 setOpenSnackbar(true);
-
-                const { issuer_rfc, issuer_business_name } = data.CSD;
-                onUpdateEmpresa(issuer_business_name, issuer_rfc);
             }
+
+
 
         } catch (error) {
             console.error('Error al subir los archivos:', error);
-            // setSnackbarMessage('Error al subir los archivos');
-            // setSnackbarSeverity('error');
-            // setOpenSnackbar(true);
+            setSnackbarMessage('Error al subir los archivos: ' + error);
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
         }
     };
 
@@ -122,8 +139,8 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     label="Contraseña"
                     type="password"
                     fullWidth
-                    
-                   
+
+
                     required
                     value={password}
                     onChange={(event) => {
@@ -132,7 +149,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     }}
                     error={passwordError} // Resalta el campo si hay un error
                     helperText={passwordError && "Por favor, ingrese la contraseña."}
-                    sx={{  marginTop:'36px' }}
+                    sx={{ marginTop: '36px' }}
                 />
 
                 <Button
@@ -140,7 +157,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                     color="primary"
                     fullWidth
                     sx={{
-                        height: '56px', fontSize: '14px', backgroundColor: '#04b2ca', marginTop:'36px',
+                        height: '56px', fontSize: '14px', backgroundColor: '#04b2ca', marginTop: '36px',
                         '&:hover': {
                             backgroundColor: '#038a9e',
                         },
@@ -155,7 +172,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                 open={openSnackbar}
                 autoHideDuration={3000}
                 onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 <Alert
                     onClose={() => setOpenSnackbar(false)}
@@ -166,7 +183,7 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
                         fontSize: '1rem',
                         padding: '12px'
                     }}
-                   
+
                 >
                     {snackbarMessage}
                 </Alert>

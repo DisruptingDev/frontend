@@ -89,12 +89,12 @@ const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Regimen Fiscal</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Domicilio Fiscal</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Uso CFDI</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Calle</TableCell>
+                        {/* <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Calle</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Número Exterior</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Número Interior</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Colonia</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Municipio</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estado</TableCell>
+                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estado</TableCell> */}
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
                     </TableRow>
                 </TableHead>
@@ -107,12 +107,12 @@ const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.RegimenFiscalReceptor}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.DomicilioFiscalReceptor}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.UsoCFDI}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Calle}</TableCell>
+                            {/* <TableCell sx={{ textAlign: 'center' }}>{receptor.Calle}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.NumeroExterior}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.NumeroInterior}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.Colonia}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.Municipio}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Estado}</TableCell>
+                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Estado}</TableCell> */}
                             <TableCell sx={{ textAlign: 'center' }}>
                                 {receptor.Rfc !== 'XAXX010101000' && (
                                     <React.Fragment>

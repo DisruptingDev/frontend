@@ -113,7 +113,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             trigger("RegimenFiscal");
 
         }
-    }, [receptor, lugarExpedicion, trigger, setValue]);
+    }, [receptor, lugarExpedicion, trigger, setValue, rfc]);
 
     useEffect(() => {
         if (metodoPago !== undefined) {

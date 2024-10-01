@@ -1,12 +1,12 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { get, useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
-    const { register, handleSubmit, setValue, formState: { errors }, watch } = useForm();
+    const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -16,6 +16,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     const [imagePath, setImagePath] = useState('');
 
     const rfcValue = watch("Rfc"); // Observar el valor del RFC
+
+    const [regimenFiscal, setRegimenFiscal] = useState('');
 
     useEffect(() => {
         setValue("Nombre", issuerName);
@@ -30,6 +32,27 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
             return;
         }
         handleSubmit(onSubmit)(data);
+    };
+    //Fuccion para reiniciar y cerrar si existe el onclose
+    const handleReset = () => {
+
+        console.log('Resetting form...', getValues("RegimenFiscal"));
+        setValue("Nombre", "");
+        setValue("Rfc", "");
+        setValue("RegimenFiscal", "");
+        setRegimenFiscal("");
+        setValue("LugarExpedicion", "");
+        setValue("Calle", "");
+        setValue("NumeroExterior", "");
+        setValue("NumeroInterior", "");
+        setValue("Colonia", "");
+        setValue("Municipio", "");
+        setValue("Estado", "");
+        setImage(null);
+        setImagePreview('');
+        setImagePath('');
+        console.log('Resetting form...', getValues("RegimenFiscal"));
+        if (onClose) onClose();
     };
 
     const handleImageChange = async (e) => {
@@ -67,6 +90,16 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 setOpenSnackbar(true);
             }
         }
+    };
+
+    const handleRegimenFiscalChange = async (e) => {
+     try {
+        const data = JSON.parse(e.target.value);
+        setValue("RegimenFiscal", data.Clave);
+        setRegimenFiscal(data.Clave);
+     } catch (error) {
+        
+     }
     };
     
     const onSubmit = async (data) => {
@@ -164,10 +197,11 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         descripcion="Descripcion"
                         fullWidth
                         required
+                        value={regimenFiscal}
                         error={!!errors.RegimenFiscal}
                         helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
                         register={register} // Pasa register como prop
-                        onChange={(e) => setValue('RegimenFiscal', e.target.value)}
+                        onChange={handleRegimenFiscalChange}
                         sx={{ alignSelf: 'start' }}
                     />
                     <TextField
@@ -279,7 +313,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         color="error"
                         sx={{ width: '150px', backgroundColor: '#da0404'}}
                         type="button"
-                        onClick={onClose}
+                        onClick={handleReset}
                     >
                         Cancelar
                     </Button>
