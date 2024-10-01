@@ -49,6 +49,15 @@ export default function Header({ name }) {
           Clientes +
         </Link>
         <Link
+          href="/Empresas"
+          className={`text-white text-lg hover:underline underline-offset-4 ${
+            isActive("/Empresas") ? "text-selected-color underline" : "text-muted-foreground"
+          }`}
+          prefetch={false}
+        >
+          Empresas +
+        </Link>
+        <Link
           href="/AltaSerie"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/AltaSerie") ? "text-selected-color underline" : "text-muted-foreground"

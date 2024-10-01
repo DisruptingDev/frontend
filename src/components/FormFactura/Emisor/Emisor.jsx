@@ -208,7 +208,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     nombre="Serie"
                     url={serieUrl} 
                     id="Clave"
-                    descripcion="Clave"
+                    clave='Clave'
+                    descripcion="TimbresDisponibles"
                     error={!!errors.Serie}
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
                     value={getValues("Serie") || ""}
