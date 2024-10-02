@@ -84,7 +84,7 @@ export default function Header({ name }) {
         >
           Estatus +
         </Link>
-        <Link
+        {/* <Link
           href="/AltaEmpresa"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/AltaEmpresa") ? "text-selected-color underline" : "text-muted-foreground"
@@ -92,7 +92,7 @@ export default function Header({ name }) {
           prefetch={false}
         >
           Alta de Empresa +
-        </Link>
+        </Link> */}
       </nav>
     </header>
   );

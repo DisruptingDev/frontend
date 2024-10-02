@@ -125,7 +125,7 @@ const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
                                             onClose={handleMenuClose}
                                         >
                                             <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                            <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
+                                            {/* <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem> */}
                                         </Menu>
                                     </React.Fragment>
                                 )}

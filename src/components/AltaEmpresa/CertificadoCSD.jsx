@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Snackbar, Alert } from '@mui/material';
 import FileInput from "@/components/FileInput/FileInput";
 
-export default function CertificadoCSD({ onUpdateEmpresa }) {
+export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEditar }) {
     const [csdFile, setCsdFile] = useState(null);
     const [keyFile, setKeyFile] = useState(null);
     const [password, setPassword] = useState('');
@@ -61,62 +61,125 @@ export default function CertificadoCSD({ onUpdateEmpresa }) {
         formData.append('CSD', csdFile);
         formData.append('KEY', keyFile);
         formData.append('PASS', password);
+        
+        console.log('Editar1',formData);
+        if (editar) {
+            formData.append('EmisorID', empresaIdEditar);
+            console.log('Editar',formData);
+            try {
+                const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
 
-        try {
-            const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
+                const response = await fetch('http://31.220.31.152:8083/EditarCertificado', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                    },
+                    body: formData,
+                });
 
-            const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
-                },
-                body: formData,
-            });
+                if (response.ok) {
 
-            if (response.ok) {
+                    const data = await response.json();
+                    console.log(data);
+                    // if (data.status === 'success') {
+                        setSnackbarMessage("Certificado actualizado correctamente");
+                        setSnackbarSeverity('success');
+                        setOpenSnackbar(true);
 
-                const data = await response.json();
-                console.log(data);
-                if (data.status === 'success') {
-                    setSnackbarMessage(data.data);
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
+                        // const { issuer_rfc, issuer_business_name } = data.CSD;
+                        // onUpdateEmpresa(issuer_business_name, issuer_rfc);
+                    // }
 
-                    const { issuer_rfc, issuer_business_name } = data.CSD;
-                    onUpdateEmpresa(issuer_business_name, issuer_rfc);
+                    // else if (data.status === 'error') {
+
+                    //     const error = "Error al subir los archivos: " + data.error;
+                    //     console.error('Error al subir los archivos:', error);
+
+                    //     setSnackbarMessage(error);
+                    //     setSnackbarSeverity('error');
+                    //     setOpenSnackbar(true);
+                    // }
                 }
+                else {
+                    const data = await response.json();
+                    console.log(data);
 
-                else if (data.status === 'error') {
-
-                    const error = "Error al subir los archivos: " + data.error;
-                    console.error('Error al subir los archivos:', error);
-
-                    setSnackbarMessage(error);
+                    console.error("Error al subir los archivos", data.error);
+                    setSnackbarMessage('Error al subir los archivos: ' + data.error);
                     setSnackbarSeverity('error');
                     setOpenSnackbar(true);
                 }
-            }
-            else{
-                
-                console.error("Error al subir los archivos");
-                setSnackbarMessage('Error al subir los archivos');
+
+
+
+            } catch (error) {
+                console.error('Error al subir los archivos:', error);
+                setSnackbarMessage('Error al subir los archivos: ' + error);
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
             }
-
-
-
-        } catch (error) {
-            console.error('Error al subir los archivos:', error);
-            setSnackbarMessage('Error al subir los archivos: ' + error);
-            setSnackbarSeverity('error');
-            setOpenSnackbar(true);
         }
+        else{
+            try {
+                const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
+
+                const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                    },
+                    body: formData,
+                });
+
+                if (response.ok) {
+
+                    const data = await response.json();
+                    console.log(data);
+                    if (data.status === 'success') {
+                        setSnackbarMessage(data.data);
+                        setSnackbarSeverity('success');
+                        setOpenSnackbar(true);
+
+                        const { issuer_rfc, issuer_business_name } = data.CSD;
+                        onUpdateEmpresa(issuer_business_name, issuer_rfc);
+                    }
+
+                    else if (data.status === 'error') {
+
+                        const error = "Error al subir los archivos: " + data.error;
+                        console.error('Error al subir los archivos:', error);
+
+                        setSnackbarMessage(error);
+                        setSnackbarSeverity('error');
+                        setOpenSnackbar(true);
+                    }
+                }
+                else {
+                    const data = await response.json();
+                    console.log(data);
+
+                    console.error("Error al subir los archivos", data.error);
+                    setSnackbarMessage('Error al subir los archivos: ' + data.error);
+                    setSnackbarSeverity('error');
+                    setOpenSnackbar(true);
+                }
+
+
+
+            } catch (error) {
+                console.error('Error al subir los archivos:', error);
+                setSnackbarMessage('Error al subir los archivos: ' + error);
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+            }
+        }
+
     };
 
     return (
         <Box>
-            <Typography variant="h6" mb={2}>Alta de Empresa</Typography>
+            {editar ? <Typography variant="h8">Actualizar Certificado</Typography> : ''}
+            
             <Box
                 display="grid"
                 gridTemplateColumns="3fr 3fr 1.5fr 1.5fr 0.5fr"

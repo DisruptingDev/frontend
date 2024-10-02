@@ -5,7 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/materi
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar }) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -20,12 +20,41 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     const [regimenFiscal, setRegimenFiscal] = useState('');
 
     useEffect(() => {
-        setValue("Nombre", issuerName);
-        setValue("Rfc", issuerRfc);
+        console.log("cliente", empresa);
+        if (empresa && Object.keys(empresa).length > 0) {
+            // setEditar(true);
+            console.log(empresa);
+            //Rellena los campos con los datos del cliente
+            setValue('Nombre', empresa.Nombre);
+            setValue('Rfc', empresa.Rfc);
+            setValue('RegimenFiscal', empresa.RegimenFiscal);
+            setRegimenFiscal(empresa.RegimenFiscal);
+            setValue('LugarExpedicion', empresa.LugarExpedicion);
+            setValue('Calle', empresa.Calle);
+            setValue('NumeroExterior', empresa.NumeroExterior);
+            setValue('NumeroInterior', empresa.NumeroInterior);
+            setValue('Colonia', empresa.Colonia);
+            setValue('Municipio', empresa.Municipio);
+            setValue('Estado', empresa.Estado);
+            setImagePreview(empresa.LogoPath);
+
+        }
+
+    }, [empresa, setValue]);
+
+    useEffect(() => {
+        if (issuerName && issuerRfc) {
+            setValue("Nombre", issuerName);
+            setValue("Rfc", issuerRfc);
+        }
+
     }, [issuerName, issuerRfc, setValue]);
 
     const validateAndSubmit = (data) => {
-        if (!issuerName || !issuerRfc) {
+        // if (!issuerName || !issuerRfc) {
+        console.log("Nombre", getValues("Nombre"));
+        if (!getValues("Nombre") || !getValues("Rfc")) {
+            console.log("Nombre", getValues("Nombre"));
             setSnackbarMessage('Se requiere subir el certificado CSD.');
             setSnackbarSeverity('error');
             setOpenSnackbar(true);
@@ -61,22 +90,22 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
             // Crear vista previa de la imagen seleccionada
             setImage(file);
             setImagePreview(URL.createObjectURL(file));
-    
+
             // Subir imagen al servidor para obtener la ruta
             const formData = new FormData();
-            formData.append('file', file); 
+            formData.append('file', file);
             formData.append('rfc', rfcValue); // Añadir RFC al FormData
-    
+
             try {
                 const response = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
                 });
-    
+
                 if (!response.ok) {
                     throw new Error('Error al subir la imagen');
                 }
-    
+
                 const result = await response.json();
                 console.log('Ruta del archivo:', result.filePath);
                 setImagePath(result.filePath); // Guardar la ruta de la imagen
@@ -93,64 +122,130 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
     };
 
     const handleRegimenFiscalChange = async (e) => {
-     try {
-        const data = JSON.parse(e.target.value);
-        setValue("RegimenFiscal", data.Clave);
-        setRegimenFiscal(data.Clave);
-     } catch (error) {
-        
-     }
+        try {
+            const data = JSON.parse(e.target.value);
+            setValue("RegimenFiscal", data.Clave);
+            setRegimenFiscal(data.Clave);
+        } catch (error) {
+
+        }
     };
-    
+
     const onSubmit = async (data) => {
-        const empresaData = {
-            Emisor: {
-                Rfc: data.Rfc,
-                Nombre: data.Nombre,
+        if (editar) {
+            const empresaData = {
+
+                // Rfc: data.Rfc,
+                // Nombre: data.Nombre,
+                ID: empresa.ID,
                 RegimenFiscal: data.RegimenFiscal,
                 LugarExpedicion: data.LugarExpedicion,
                 LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
-                Calle:data.Calle || "",
+                Calle: data.Calle || "",
                 NumeroExterior: data.NumeroExterior || "",
                 NumeroInterior: data.NumeroInterior || "",
                 Colonia: data.Colonia || "",
                 Municipio: data.Municipio || "",
                 Estado: data.Estado || "",
-            }
-        };
-        console.log('EmpresaData:', JSON.stringify(empresaData));
 
-        setLoading(true);
+            };
+            console.log('EmpresaData:', JSON.stringify(empresaData));
+            setLoading(true);
 
-        try {
-            const response = await fetch('http://31.220.31.152:8086/RegistroEmisor', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`, 
-                },
-                body: JSON.stringify(empresaData),
-            });
-            const data = await response.json(); // Obtén la respuesta JSON
-            console.log('Data received from API:', data);
-            if (!response.ok) {
+            try {
+                const response = await fetch('http://31.220.31.152:8086/EditarEmisor ', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    },
+                    body: JSON.stringify(empresaData),
+                });
+                const data = await response.json(); // Obtén la respuesta JSON
+                console.log('Data received from API:', data);
+                if (!response.ok) {
 
-                setSnackbarMessage('Error al guardar los datos.');
+                    setSnackbarMessage('Error al guardar los datos.');
+                    setSnackbarSeverity('error');
+                    setOpenSnackbar(true);
+                } else {
+                    setSnackbarMessage('Empresa guardada correctamente.');
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+                    setTimeout(() => {
+
+
+                        if (onClose) onClose();
+
+                    }, 2000);
+                }
+            } catch (error) {
+                setSnackbarMessage('Ocurrió un error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
-            } else {
-                setSnackbarMessage('Empresa guardada correctamente.');
-                setSnackbarSeverity('success');
-                setOpenSnackbar(true);
-                if (onClose) onClose();
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            setSnackbarMessage('Ocurrió un error al guardar los datos.');
-            setSnackbarSeverity('error');
-            setOpenSnackbar(true);
-        } finally {
-            setLoading(false);
+
+
         }
+        else {
+            const empresaData = {
+                Emisor: {
+                    Rfc: data.Rfc,
+                    Nombre: data.Nombre,
+                    RegimenFiscal: data.RegimenFiscal,
+                    LugarExpedicion: data.LugarExpedicion,
+                    LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
+                    Calle: data.Calle || "",
+                    NumeroExterior: data.NumeroExterior || "",
+                    NumeroInterior: data.NumeroInterior || "",
+                    Colonia: data.Colonia || "",
+                    Municipio: data.Municipio || "",
+                    Estado: data.Estado || "",
+                }
+            };
+            console.log('EmpresaData:', JSON.stringify(empresaData));
+
+            setLoading(true);
+
+            try {
+                const response = await fetch('http://31.220.31.152:8086/RegistroEmisor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    },
+                    body: JSON.stringify(empresaData),
+                });
+                const data = await response.json(); // Obtén la respuesta JSON
+                console.log('Data received from API:', data);
+                if (!response.ok) {
+
+                    setSnackbarMessage('Error al guardar los datos.');
+                    setSnackbarSeverity('error');
+                    setOpenSnackbar(true);
+                } else {
+                    setSnackbarMessage('Empresa guardada correctamente.');
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+                    setTimeout(() => {
+
+
+                        if (onClose) onClose();
+
+                    }, 2000);
+
+                }
+            } catch (error) {
+                setSnackbarMessage('Ocurrió un error al guardar los datos.');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+            } finally {
+                setLoading(false);
+            }
+        }
+
     };
 
     return (
@@ -172,10 +267,21 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
-                        onChange={(e) => setValue("Nombre", e.target.value)}
-                        value={watch("Nombre", issuerName)}
+                        // onChange={(e) => setValue("Nombre", e.target.value)}
+                        // value={watch("Nombre", issuerName)}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
+                    {/* <TextField
+                        label="Nombre del Cliente"
+                        fullWidth
+                        placeholder=""
+                        margin="normal"
+                        required
+                        error={!!errors.Nombre}
+                        helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
+                        {...register("Nombre", { required: true })}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                    /> */}
                     <TextField
                         label="R.F.C."
                         fullWidth
@@ -185,8 +291,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
                         {...register("Rfc", { required: "El RFC es obligatorio" })} // Añadir validación requerida
-                        onChange={(e) => setValue("Rfc", e.target.value)}
-                        value={watch("Rfc", issuerRfc)}
+                        // onChange={(e) => setValue("Rfc", e.target.value)}
+                        // value={watch("Rfc", issuerRfc)}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <Select
@@ -214,6 +320,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         helperText={errors.LugarExpedicion ? "Este campo es obligatorio" : ""}
                         {...register("LugarExpedicion", { required: true })}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                        onInput={(e) => {
+                            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                        }} // Elimina caracteres no numéricos
                     />
                 </Box>
                 <Box
@@ -273,7 +383,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         {...register("Municipio", { required: false })}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
-                     <TextField
+                    <TextField
                         label="Estado"
                         fullWidth
                         placeholder="Ej: Benito Juárez"
@@ -295,7 +405,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         />
                         {imagePreview && (
                             <Box mt={2}>
-                                <Image src={imagePreview} alt="Vista previa" width={200} height={150} />
+                                <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
                             </Box>
                         )}
                     </Box>
@@ -311,7 +421,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404'}}
+                        sx={{ width: '150px', backgroundColor: '#da0404' }}
                         type="button"
                         onClick={handleReset}
                     >
@@ -321,9 +431,11 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                     <Button
                         variant="contained"
                         color="primary"
-                        sx={{ width: '250px', backgroundColor:'#04b2ca', '&:hover': {
-                            backgroundColor: '#038a9e',
-                        }, }}
+                        sx={{
+                            width: '250px', backgroundColor: '#04b2ca', '&:hover': {
+                                backgroundColor: '#038a9e',
+                            },
+                        }}
                         type="button"
                         onClick={validateAndSubmit}
                         disabled={loading}
@@ -337,7 +449,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                 open={openSnackbar}
                 autoHideDuration={3000}
                 onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 <Alert
                     onClose={() => setOpenSnackbar(false)}
@@ -348,7 +460,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc }) {
                         fontSize: '1rem',
                         padding: '12px'
                     }}
-            
+
                 >
                     {snackbarMessage}
                 </Alert>

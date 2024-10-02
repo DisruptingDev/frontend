@@ -10,7 +10,7 @@ function createData(item) {
     return { ...item };
   }
   
-const VistaEmpresas = ( {setClienteIdEditar, actualizar}) => {
+const VistaEmpresas = ( {setEmpresaIdEditar, actualizar}) => {
    
 
     const [emisores, setEmisores] = useState([]);
@@ -30,7 +30,7 @@ const VistaEmpresas = ( {setClienteIdEditar, actualizar}) => {
     setMenuRow(null);
   };
   const handleEditar = () => {
-    setClienteIdEditar(menuRow.ID);
+    setEmpresaIdEditar(menuRow.ID);
     handleMenuClose();
     
   };
@@ -108,13 +108,15 @@ const VistaEmpresas = ( {setClienteIdEditar, actualizar}) => {
                                         <IconButton onClick={(event) => handleMenuClick(event, emisor)}>
                                             <MoreVertIcon />
                                         </IconButton>
+                                        
                                         <Menu
                                             anchorEl={anchorEl}
                                             open={Boolean(anchorEl)}
                                             onClose={handleMenuClose}
+                                            
                                         >
                                             <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                            <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
+                                            {/* <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem> */}
                                         </Menu>
                                   
                                

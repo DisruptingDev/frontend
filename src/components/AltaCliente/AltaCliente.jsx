@@ -213,6 +213,10 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                         helperText={errors.DomicilioFiscal ? "Este campo es obligatorio" : ""}
                         {...register("DomicilioFiscal", { required: true })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                        onInput={(e) => {
+                            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                        }} // Elimina caracteres no numéricos
                     />
                 </Box>
                 <Box
