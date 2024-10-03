@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Grid, TextField, Button, Typography, Box } from '@mui/material';
-import Select from '../Select/Select';
 import { useForm } from 'react-hook-form';
 
 export default function AdministrarTimbres() {
-    const { register, setValue } = useForm();
+    const { register } = useForm();
     const [empresas, setEmpresas] = useState([]);
-    const [seriesSeleccionadas, setSeriesSeleccionadas] = useState({});
-    const [timbres, setTimbres] = useState({});
+    const [empresasConSeries, setEmpresasConSeries] = useState([]); // Nueva lista de empresas con series
     const [timbresAsignar, setTimbresAsignar] = useState({});
-    const [timbresRecuperar, setTimbresRecuperar] = useState({}); // nuevo estado
+    const [timbresRecuperar, setTimbresRecuperar] = useState({});
     const [totalTimbres, setTotalTimbres] = useState({});
     const [timbresDisponibles, setTimbresDisponibles] = useState(0);
 
@@ -23,12 +21,31 @@ export default function AdministrarTimbres() {
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    setEmpresas(data);
+                    const empresasConSeries = [];
+
+                    // Obtener las series para cada empresa y aplanar la estructura
+                    for (let empresa of data) {
+                        const seriesResponse = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`, {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                            },
+                        });
+                        const seriesData = await seriesResponse.json();
+
+                        for (let serie of seriesData) {
+                            empresasConSeries.push({
+                                ...empresa,
+                                SerieClave: serie.Clave,
+                                TimbresDisponibles: serie.TimbresDisponibles || 0,
+                            });
+                        }
+                    }
+                    setEmpresasConSeries(empresasConSeries);
                 } else {
-                    console.log("Error al cargar los clientes");
+                    console.log("Error al cargar las empresas");
                 }
             } catch (error) {
-                console.log("Error al cargar los clientes: " + error);
+                console.log("Error al cargar las empresas: " + error);
             }
         }
 
@@ -41,13 +58,12 @@ export default function AdministrarTimbres() {
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(data.TimbresDisponibles);
                     setTimbresDisponibles(data.TimbresDisponibles);
                 } else {
-                    console.log("Error al cargar los clientes");
+                    console.log("Error al cargar los timbres disponibles");
                 }
             } catch (error) {
-                console.log("Error al cargar los clientes: " + error);
+                console.log("Error al cargar los timbres disponibles: " + error);
             }
         }
 
@@ -55,97 +71,38 @@ export default function AdministrarTimbres() {
         fetchData();
     }, []);
 
-    const obtenerTimbres = async (empresaID, serieClave) => {
-        try {
-            const response = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresaID}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const opcionSeleccionada = data.find((opcion) => opcion.Clave === serieClave);
-                return opcionSeleccionada?.TimbresDisponibles || 0;
-            } else {
-                console.log("Error al cargar los timbres");
-            }
-        } catch (error) {
-            console.log("Error al cargar los timbres: " + error);
-        }
-    };
-
-    const handleSerieChange = async (empresaID, event) => {
-        const nuevaSerie = event.target.value;
-        const serie = JSON.parse(nuevaSerie);
-
-        setSeriesSeleccionadas((prev) => ({
-            ...prev,
-            [empresaID]: serie.Clave,
-        }));
-
-        const timbresDisponibles = await obtenerTimbres(empresaID, serie.Clave);
-
-        setTimbres((prevTimbres) => ({
-            ...prevTimbres,
-            [empresaID]: timbresDisponibles,
-        }));
-
-        setTotalTimbres((prevTotal) => ({
-            ...prevTotal,
-            [empresaID]: timbresDisponibles,
-        }));
-    };
-
-    const handleTimbresAsignarChange = (empresaID, event) => {
+    const handleTimbresAsignarChange = (empresaID, serieClave, event) => {
         const timbresAAsignar = parseInt(event.target.value) || 0;
-
         setTimbresAsignar((prevAsignar) => ({
             ...prevAsignar,
-            [empresaID]: timbresAAsignar,
+            [`${empresaID}-${serieClave}`]: timbresAAsignar,
         }));
-
-        setTotalTimbres((prevTotal) => ({
-            ...prevTotal,
-            [empresaID]: (timbres[empresaID] || 0) - (timbresRecuperar[empresaID] || 0) + timbresAAsignar,
-        }));
-        // Actualiza el total de timbres disponibles restando los asignados
-        setTimbresDisponibles((prevDisponibles) => prevDisponibles - timbresAAsignar + (timbresRecuperar[empresaID] || 0));
     };
 
-    const handleTimbresRecuperarChange = (empresaID, event) => {
+    const handleTimbresRecuperarChange = (empresaID, serieClave, event) => {
         const timbresARecuperar = parseInt(event.target.value) || 0;
-
         setTimbresRecuperar((prevRecuperar) => ({
             ...prevRecuperar,
-            [empresaID]: timbresARecuperar,
+            [`${empresaID}-${serieClave}`]: timbresARecuperar,
         }));
-
-        setTotalTimbres((prevTotal) => ({
-            ...prevTotal,
-            [empresaID]: (timbres[empresaID] || 0) - timbresARecuperar + (timbresAsignar[empresaID] || 0),
-        }));
-
-        setTimbresDisponibles((prevDisponibles) => prevDisponibles + timbresARecuperar - (timbresAsignar[empresaID] || 0));
     };
 
     const compilarDatos = () => {
-        const datosCompletos = empresas.map((empresa) => ({
+        const datosCompletos = empresasConSeries.map((empresa) => ({
             empresaID: empresa.ID,
             nombre: empresa.Nombre,
-            serieSeleccionada: seriesSeleccionadas[empresa.ID] || null,
-            timbresAsignados: timbresAsignar[empresa.ID] || 0,
-            timbresRecuperados: timbresRecuperar[empresa.ID] || 0,
-            nuevoTotal: totalTimbres[empresa.ID] || timbres[empresa.ID] || 0,
+            serieSeleccionada: empresa.SerieClave,
+            timbresAsignados: timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0,
+            timbresRecuperados: timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0,
+            nuevoTotal: totalTimbres[`${empresa.ID}-${empresa.SerieClave}`] || empresa.TimbresDisponibles,
         }));
         console.log(datosCompletos);
     };
 
-    const timbresData = empresas.map((empresa) => (
+    const timbresData = empresasConSeries.map((empresa) => (
         <Box
             fullWidth
-            key={empresa.ID}
+            key={`${empresa.ID}-${empresa.SerieClave}`}
             display="grid"
             gap={3}
             my={2}
@@ -165,18 +122,15 @@ export default function AdministrarTimbres() {
                 disabled
                 value={empresa.Nombre}
             />
-            <Select
-                register={register}
-                nombre="Serie"
-                url={`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`}
-                id="Clave"
-                descripcion="Clave"
-                value={seriesSeleccionadas[empresa.ID] || "F"}
-                onChange={(event) => handleSerieChange(empresa.ID, event)}
+            <TextField
+                label="Serie"
+                fullWidth
+                disabled
+                value={empresa.SerieClave}
             />
             <TextField
                 fullWidth
-                value={timbres[empresa.ID] || 0}
+                value={empresa.TimbresDisponibles || 0}
                 label="Timbres disponibles"
                 disabled
             />
@@ -186,7 +140,7 @@ export default function AdministrarTimbres() {
                 placeholder="0"
                 defaultValue={0}
                 type="number"
-                onChange={(event) => handleTimbresAsignarChange(empresa.ID, event)}
+                onChange={(event) => handleTimbresAsignarChange(empresa.ID, empresa.SerieClave, event)}
             />
             <TextField
                 fullWidth
@@ -194,13 +148,16 @@ export default function AdministrarTimbres() {
                 placeholder="0"
                 defaultValue={0}
                 type="number"
-                onChange={(event) => handleTimbresRecuperarChange(empresa.ID, event)}
+                onChange={(event) => handleTimbresRecuperarChange(empresa.ID, empresa.SerieClave, event)}
             />
             <TextField
                 fullWidth
                 label="Nuevo total de timbres"
-                value={totalTimbres[empresa.ID] || 0}
-                type="number"
+                value={
+                    (empresa.TimbresDisponibles || 0)
+                    - (timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0)
+                    + (timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0)
+                }
                 disabled
             />
         </Box>
@@ -210,9 +167,24 @@ export default function AdministrarTimbres() {
         <Box >
             <Typography variant="h6">Administrar de timbres.</Typography>
             <Grid container spacing={3} marginTop={2}>
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={12}>
                     <Typography variant="subtitle1" sx={{ color: "#00ACC1" }}>
-                        Timbres Disponibles: <strong>{timbresDisponibles}</strong> Timbres Distribuidos: <strong>{Object.values(timbresAsignar).reduce((a, b) => a + b, 0)}</strong> Timbres Restantes: <strong>{timbresDisponibles - Object.values(timbresAsignar).reduce((a, b) => a + b, 0)}</strong>
+                        <Box component="span" sx={{ marginRight: 2 }}>
+                            Timbres Disponibles: <strong>{timbresDisponibles}</strong>
+                        </Box>
+                        <Box component="span" sx={{ marginRight: 2 }}>
+                            Timbres Distribuidos: <strong>{Object.values(timbresAsignar).reduce((a, b) => a + b, 0)}</strong>
+                        </Box>
+                        <Box component="span" sx={{ marginRight: 2 }}>
+                            Timbres Recuperados: <strong>{Object.values(timbresRecuperar).reduce((a, b) => a + b, 0)}</strong>
+                        </Box>
+                        <Box component="span" sx={{ marginRight: 2 }}>
+                            Timbres Restantes: <strong>
+                                {timbresDisponibles
+                                    - Object.values(timbresAsignar).reduce((a, b) => a + b, 0)
+                                    + Object.values(timbresRecuperar).reduce((a, b) => a + b, 0)}
+                            </strong>
+                        </Box>
                     </Typography>
                 </Grid>
                 {timbresData}
