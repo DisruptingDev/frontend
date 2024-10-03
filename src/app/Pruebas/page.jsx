@@ -5,6 +5,7 @@ import { Button,Snackbar, Alert,Modal, Box } from '@mui/material';
 import { useState } from "react";
 import AltaSerie from '@/components/AltaSerie/AltaSerie';
 import Select from '@/components/Select/Select';
+import AdministrarTimbres from '@/components/AdministraTimbres/AdministrarTimbres';
 
 
 export default function Pruebas() {
@@ -60,11 +61,11 @@ const Prueba = {
 
 }
     return (
-        <form action="">
-            <Select>
-                
-            </Select>
-        </form>
+
+        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+            <AdministrarTimbres />
+        </Box>
+    
         
     );
 }
