@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, TextField, Button, Typography, Box } from '@mui/material';
+import { Grid, TextField, Button, Typography, Box, Snackbar, Alert } from '@mui/material';
 import { useForm } from 'react-hook-form';
 
 export default function AdministrarTimbres() {
     const { register } = useForm();
     const [empresas, setEmpresas] = useState([]);
-    const [empresasConSeries, setEmpresasConSeries] = useState([]); // Nueva lista de empresas con series
+    const [empresasConSeries, setEmpresasConSeries] = useState([]);
     const [timbresAsignar, setTimbresAsignar] = useState({});
     const [timbresRecuperar, setTimbresRecuperar] = useState({});
-    const [totalTimbres, setTotalTimbres] = useState({});
     const [timbresDisponibles, setTimbresDisponibles] = useState(0);
+    const [timbresRestantes, setTimbresRestantes] = useState(0);
+    const [errorMessages, setErrorMessages] = useState({});
+
+    const [openSnackbar, setOpenSnackbar] = useState(false);
+const [snackbarMessage, setSnackbarMessage] = useState('');
+const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' | 'error'
 
     useEffect(() => {
         async function fetchData() {
@@ -23,7 +28,6 @@ export default function AdministrarTimbres() {
                     const data = await response.json();
                     const empresasConSeries = [];
 
-                    // Obtener las series para cada empresa y aplanar la estructura
                     for (let empresa of data) {
                         const seriesResponse = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`, {
                             headers: {
@@ -59,6 +63,7 @@ export default function AdministrarTimbres() {
                 if (response.ok) {
                     const data = await response.json();
                     setTimbresDisponibles(data.TimbresDisponibles);
+                    setTimbresRestantes(data.TimbresDisponibles);
                 } else {
                     console.log("Error al cargar los timbres disponibles");
                 }
@@ -70,6 +75,10 @@ export default function AdministrarTimbres() {
         fetchTimbresDisponibles();
         fetchData();
     }, []);
+
+    useEffect(() => {
+        calcularTimbresRestantes();
+    }, [timbresAsignar, timbresRecuperar, timbresDisponibles]);
 
     const handleTimbresAsignarChange = (empresaID, serieClave, event) => {
         const timbresAAsignar = parseInt(event.target.value) || 0;
@@ -87,84 +96,149 @@ export default function AdministrarTimbres() {
         }));
     };
 
-    const compilarDatos = () => {
-        const datosCompletos = empresasConSeries.map((empresa) => ({
-            empresaID: empresa.ID,
-            nombre: empresa.Nombre,
-            serieSeleccionada: empresa.SerieClave,
-            timbresAsignados: timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0,
-            timbresRecuperados: timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0,
-            nuevoTotal: totalTimbres[`${empresa.ID}-${empresa.SerieClave}`] || empresa.TimbresDisponibles,
-        }));
-        console.log(datosCompletos);
+    const calcularTimbresRestantes = () => {
+        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
+        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
+        const nuevoTotalRestantes = timbresDisponibles + totalRecuperados - totalAsignados;
+
+        setTimbresRestantes(nuevoTotalRestantes);
     };
 
-    const timbresData = empresasConSeries.map((empresa) => (
-        <Box
-            fullWidth
-            key={`${empresa.ID}-${empresa.SerieClave}`}
-            display="grid"
-            gap={3}
-            my={2}
-            mx={2}
-            sx={{
-                gridTemplateColumns: {
-                    xs: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                    sm: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                    md: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr ',
-                    lg: '1.5fr 0.5fr 0.8fr 0.8fr 0.8fr 0.8fr '
-                }
-            }}
-        >
-            <TextField
-                label="Nombre"
+    const validarDatos = () => {
+        const nuevosErrores = {};
+        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
+        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
+
+        empresasConSeries.forEach((empresa) => {
+            const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+            const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+
+            if (timbresRecuperados > empresa.TimbresDisponibles) {
+                nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres disponibles para recuperar.";
+            }
+            // if (timbresAsignados > timbresRestantes) {
+            //     nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
+            // }
+            if(timbresRestantes<0){
+                nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
+            }
+        });
+
+        if (Object.keys(nuevosErrores).length > 0) {
+            setErrorMessages(nuevosErrores);
+            return false; // Si hay errores, retornar falso
+        }
+
+        setErrorMessages({});
+        return true; // Si no hay errores, retornar verdadero
+    };
+
+    const compilarDatos = () => {
+        if (!validarDatos()) {
+            setSnackbarMessage('Por favor, corrige los errores antes de aplicar.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+            return; // Si hay errores, no continuar
+        }
+    
+        const datosCompletos = empresasConSeries.map((empresa) => {
+            const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+            const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+    
+            // Calcular timbres restantes
+            const totalTimbresRestantes = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
+    
+            return {
+                empresaID: empresa.ID,
+                nombre: empresa.Nombre,
+                serieSeleccionada: empresa.SerieClave,
+                timbresAsignados,
+                timbresRecuperados,
+                nuevoTotal: totalTimbresRestantes,
+            };
+        });
+    
+        console.log(datosCompletos);
+        // Mostrar mensaje de éxito
+        setSnackbarMessage('Los cambios se han aplicado correctamente.');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+    };
+    const timbresData = empresasConSeries.map((empresa) => {
+        const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+        const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+
+        const totalTimbresRestantes = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
+
+        return (
+            <Box
                 fullWidth
-                disabled
-                value={empresa.Nombre}
-            />
-            <TextField
-                label="Serie"
-                fullWidth
-                disabled
-                value={empresa.SerieClave}
-            />
-            <TextField
-                fullWidth
-                value={empresa.TimbresDisponibles || 0}
-                label="Timbres disponibles"
-                disabled
-            />
-            <TextField
-                fullWidth
-                label="Timbres a asignar"
-                placeholder="0"
-                defaultValue={0}
-                type="number"
-                onChange={(event) => handleTimbresAsignarChange(empresa.ID, empresa.SerieClave, event)}
-            />
-            <TextField
-                fullWidth
-                label="Timbres a recuperar"
-                placeholder="0"
-                defaultValue={0}
-                type="number"
-                onChange={(event) => handleTimbresRecuperarChange(empresa.ID, empresa.SerieClave, event)}
-            />
-            <TextField
-                fullWidth
-                label="Nuevo total de timbres"
-                value={
-                    (empresa.TimbresDisponibles || 0)
-                    - (timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0)
-                    + (timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0)
-                }
-                disabled
-            />
-        </Box>
-    ));
+                key={`${empresa.ID}-${empresa.SerieClave}`}
+                display="grid"
+                gap={3}
+                my={2}
+                mx={2}
+                sx={{
+                    gridTemplateColumns: {
+                        xs: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
+                        sm: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
+                        md: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr ',
+                        lg: '1.5fr 0.5fr 0.8fr 0.8fr 0.8fr 0.8fr '
+                    }
+                }}
+            >
+                <TextField
+                    label="Nombre"
+                    fullWidth
+                    disabled
+                    value={empresa.Nombre}
+                />
+                <TextField
+                    label="Serie"
+                    fullWidth
+                    disabled
+                    value={empresa.SerieClave}
+                />
+                <TextField
+                    fullWidth
+                    value={empresa.TimbresDisponibles || 0}
+                    label="Timbres disponibles"
+                    disabled
+                />
+                <TextField
+                
+                    fullWidth
+                    label="Timbres a asignar"
+                    placeholder="0"
+                    type="number"
+                    value={timbresAsignados}
+                    onChange={(event) => handleTimbresAsignarChange(empresa.ID, empresa.SerieClave, event)}
+                    error={ timbresRestantes < 0}
+                    helperText={ timbresRestantes < 0 ? "Timbres insuficientes" : ""}
+                />
+                <TextField
+                    fullWidth
+                    label="Timbres a recuperar"
+                    placeholder="0"
+                    type="number"
+                    value={timbresRecuperados}
+                    onChange={(event) => handleTimbresRecuperarChange(empresa.ID, empresa.SerieClave, event)}
+                    error={ timbresRecuperados > empresa.TimbresDisponibles}
+                    helperText={timbresRecuperados > empresa.TimbresDisponibles ? "Timbres insuficientes": ""}
+                />
+                <TextField
+                    fullWidth
+                    label="Nuevo total de timbres"
+                    value={totalTimbresRestantes}
+                    disabled
+                />
+            </Box>
+        );
+    });
+
 
     return (
-        <Box >
+        <Box>
             <Typography variant="h6">Administrar de timbres.</Typography>
             <Grid container spacing={3} marginTop={2}>
                 <Grid item xs={12} sm={12}>
@@ -179,16 +253,13 @@ export default function AdministrarTimbres() {
                             Timbres Recuperados: <strong>{Object.values(timbresRecuperar).reduce((a, b) => a + b, 0)}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Restantes: <strong>
-                                {timbresDisponibles
-                                    - Object.values(timbresAsignar).reduce((a, b) => a + b, 0)
-                                    + Object.values(timbresRecuperar).reduce((a, b) => a + b, 0)}
-                            </strong>
+                            Timbres Restantes: <strong>{timbresRestantes}</strong>
                         </Box>
                     </Typography>
                 </Grid>
                 {timbresData}
-                <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
+            </Grid>
+            <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
                     <Grid item>
                         <Button variant="contained" style={{ backgroundColor: '#da0404', color: 'white' }}>
                             Cancelar
@@ -204,7 +275,26 @@ export default function AdministrarTimbres() {
                         </Button>
                     </Grid>
                 </Grid>
-            </Grid>
+                <Snackbar
+                open={openSnackbar}
+                autoHideDuration={3000}
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert
+                    onClose={() => setOpenSnackbar(false)}
+                    severity={snackbarSeverity}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        fontSize: '1rem',
+                        padding: '12px'
+                    }}
+
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }
