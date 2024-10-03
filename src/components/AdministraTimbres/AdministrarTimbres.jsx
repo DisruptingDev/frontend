@@ -9,6 +9,7 @@ export default function AdministrarTimbres() {
     const [seriesSeleccionadas, setSeriesSeleccionadas] = useState({});
     const [timbres, setTimbres] = useState({});
     const [timbresAsignar, setTimbresAsignar] = useState({});
+    const [timbresRecuperar, setTimbresRecuperar] = useState({}); // nuevo estado
     const [totalTimbres, setTotalTimbres] = useState({});
     const [timbresDisponibles, setTimbresDisponibles] = useState(0);
 
@@ -91,7 +92,6 @@ export default function AdministrarTimbres() {
             [empresaID]: timbresDisponibles,
         }));
 
-        // Re-inicializa el total de timbres al cambiar la serie
         setTotalTimbres((prevTotal) => ({
             ...prevTotal,
             [empresaID]: timbresDisponibles,
@@ -106,11 +106,28 @@ export default function AdministrarTimbres() {
             [empresaID]: timbresAAsignar,
         }));
 
-        // Actualiza el total de timbres solamente sumando timbres disponibles y asignados
         setTotalTimbres((prevTotal) => ({
             ...prevTotal,
-            [empresaID]: (timbres[empresaID] || 0) + timbresAAsignar,
+            [empresaID]: (timbres[empresaID] || 0) - (timbresRecuperar[empresaID] || 0) + timbresAAsignar,
         }));
+        // Actualiza el total de timbres disponibles restando los asignados
+        setTimbresDisponibles((prevDisponibles) => prevDisponibles - timbresAAsignar + (timbresRecuperar[empresaID] || 0));
+    };
+
+    const handleTimbresRecuperarChange = (empresaID, event) => {
+        const timbresARecuperar = parseInt(event.target.value) || 0;
+
+        setTimbresRecuperar((prevRecuperar) => ({
+            ...prevRecuperar,
+            [empresaID]: timbresARecuperar,
+        }));
+
+        setTotalTimbres((prevTotal) => ({
+            ...prevTotal,
+            [empresaID]: (timbres[empresaID] || 0) - timbresARecuperar + (timbresAsignar[empresaID] || 0),
+        }));
+
+        setTimbresDisponibles((prevDisponibles) => prevDisponibles + timbresARecuperar - (timbresAsignar[empresaID] || 0));
     };
 
     const compilarDatos = () => {
@@ -119,6 +136,7 @@ export default function AdministrarTimbres() {
             nombre: empresa.Nombre,
             serieSeleccionada: seriesSeleccionadas[empresa.ID] || null,
             timbresAsignados: timbresAsignar[empresa.ID] || 0,
+            timbresRecuperados: timbresRecuperar[empresa.ID] || 0,
             nuevoTotal: totalTimbres[empresa.ID] || timbres[empresa.ID] || 0,
         }));
         console.log(datosCompletos);
@@ -126,6 +144,7 @@ export default function AdministrarTimbres() {
 
     const timbresData = empresas.map((empresa) => (
         <Box
+            fullWidth
             key={empresa.ID}
             display="grid"
             gap={3}
@@ -133,17 +152,16 @@ export default function AdministrarTimbres() {
             mx={2}
             sx={{
                 gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: 'repeat(2, 1fr)',
-                    md: 'repeat(3, 1fr)',
-                    lg: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+                    xs: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
+                    sm: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
+                    md: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr ',
+                    lg: '1.5fr 0.5fr 0.8fr 0.8fr 0.8fr 0.8fr '
                 }
             }}
         >
             <TextField
                 label="Nombre"
                 fullWidth
-                placeholder="F"
                 disabled
                 value={empresa.Nombre}
             />
@@ -172,6 +190,14 @@ export default function AdministrarTimbres() {
             />
             <TextField
                 fullWidth
+                label="Timbres a recuperar"
+                placeholder="0"
+                defaultValue={0}
+                type="number"
+                onChange={(event) => handleTimbresRecuperarChange(empresa.ID, event)}
+            />
+            <TextField
+                fullWidth
                 label="Nuevo total de timbres"
                 value={totalTimbres[empresa.ID] || 0}
                 type="number"
@@ -181,7 +207,7 @@ export default function AdministrarTimbres() {
     ));
 
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box >
             <Typography variant="h6">Administrar de timbres.</Typography>
             <Grid container spacing={3} marginTop={2}>
                 <Grid item xs={12}>

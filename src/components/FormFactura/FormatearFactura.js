@@ -2,11 +2,16 @@ import Receptor from "./Receptor/Receptor";
 
 export default function FormatearFactura(emisor, receptor, conceptos, id, modo) {
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
-    const total = subtotal + conceptos.reduce((acc, c) => (c.TotalTraslados || 0) + (c.TotalRetenciones || 0), 0);
+    const TotalTraslados = conceptos.reduce((acc, c) => acc + c.TotalTraslados, 0);
+    const TotalRetenciones = conceptos.reduce((acc, c) => acc + c.TotalRetenciones, 0);
+    console.log("TotalTraslados", TotalTraslados);
+    console.log("TotalRetenciones", TotalRetenciones);
+    const total = subtotal + TotalTraslados - TotalRetenciones;
+    console.log("Total", total);
     const now = new Date();
     const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
     const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-    console.log("ENTRE____________", receptor);
+    console.log("ENTRE____________", conceptos);
     let factura
     if (modo == "Factura") {
         factura = {
@@ -74,9 +79,9 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 })),
 
                 
-                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
+                TotalImpuestosTrasladados: TotalTraslados,
                 //Aqui restar
-                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+                TotalImpuestosRetenidos: TotalRetenciones
 
             }
         };
@@ -178,8 +183,9 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                         })) : []
                     }
                 })),
-                TotalImpuestosTrasladados: conceptos.reduce((acc, c) => acc + (c.TotalTraslados || 0), 0),
-                TotalImpuestosRetenidos: conceptos.reduce((acc, c) => acc + (c.TotalRetenciones || 0), 0),
+                TotalImpuestosTrasladados: TotalTraslados,
+                //Aqui restar
+                TotalImpuestosRetenidos: TotalRetenciones,
                 GrupoID: 1
             }
         };

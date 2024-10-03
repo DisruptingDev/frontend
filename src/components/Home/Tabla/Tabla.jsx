@@ -456,7 +456,7 @@ export default function DataTable() {
 
           } else if (factura.status === 'error') {
             console.error('Error al timbrar factura:', factura);
-            const error = factura.message
+            const error = factura.error
 
             setConfirmationMessage('Error al timbrar facturas:  <br/> ' + error);
             setOpenModalError(true); // Show error modal
