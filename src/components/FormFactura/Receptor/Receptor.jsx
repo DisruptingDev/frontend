@@ -15,6 +15,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
     const [regimenFiscal, setRegimenFiscal] = useState("");
+    const [usoCFDIURL, setUsoCFDIURL] = useState("");
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
     const [exportacion, setExportacion] = useState("01");
@@ -70,6 +71,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setHiddeInfoGlobal(false);
             }
+            setUsoCFDIURL(`http://31.220.31.152:8081/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+
             trigger("RFCReceptor");
             trigger("DomicilioFiscalReceptor");
             trigger("RegimenFiscal");
@@ -92,6 +95,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
             }
+
+            setUsoCFDIURL(`http://31.220.31.152:8081/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+
             setRFC(data["Rfc"]);
             setValue("RFCReceptor", data["Rfc"]);
             setValue("NombreReceptor", data["Nombre"]);
@@ -315,7 +321,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="UsoCFDI"
-                    url="http://31.220.31.152:8081/Catalogos/UsoCFDI"
+                    // url="http://31.220.31.152:8081/Catalogos/UsoCFDI"
+                    url={usoCFDIURL}
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.UsoCFDI}

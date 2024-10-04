@@ -178,7 +178,7 @@ export default function CrearFactura() {
                     handleDeleteConcepto={handleDeleteConcepto}
                 >
                     <div className="flex justify-end w-full space-x-2 mt-10">
-                        <button className="btn btn-secondary bg-red-700" type="button">Cancelar</button>
+                        <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button>
                         <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
                     </div>

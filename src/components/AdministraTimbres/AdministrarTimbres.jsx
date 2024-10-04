@@ -1,8 +1,11 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { Grid, TextField, Button, Typography, Box, Snackbar, Alert } from '@mui/material';
 import { useForm } from 'react-hook-form';
+import { useRouter } from "next/navigation";
 
 export default function AdministrarTimbres() {
+    const router = useRouter(); // Inicializa el router
     const { register } = useForm();
     const [empresas, setEmpresas] = useState([]);
     const [empresasConSeries, setEmpresasConSeries] = useState([]);
@@ -239,7 +242,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
 
     return (
         <Box>
-            <Typography variant="h6">Administrar de timbres.</Typography>
+            {/* <Typography variant="h6">Administrar de timbres.</Typography> */}
             <Grid container spacing={3} marginTop={2}>
                 <Grid item xs={12} sm={12}>
                     <Typography variant="subtitle1" sx={{ color: "#00ACC1" }}>
@@ -261,7 +264,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
             </Grid>
             <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
                     <Grid item>
-                        <Button variant="contained" style={{ backgroundColor: '#da0404', color: 'white' }}>
+                        <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
                             Cancelar
                         </Button>
                     </Grid>
