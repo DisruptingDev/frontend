@@ -15,13 +15,13 @@ export default function Home() {
     const { register } = useForm();
     const router = useRouter(); // Inicializa el router
 
-    useEffect(() => {
-        // Verifica la autenticación al montar el componente
-        if (!isAuthenticated()) {
-            // console.log("SEsion",!isAuthenticated());
-            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
-        }
-    }, [router]);
+    // useEffect(() => {
+    //     // Verifica la autenticación al montar el componente
+    //     if (!isAuthenticated()) {
+    //         // console.log("SEsion",!isAuthenticated());
+    //         router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+    //     }
+    // }, [router]);
     
     return (
         <div>
