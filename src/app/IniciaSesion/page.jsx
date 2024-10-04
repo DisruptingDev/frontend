@@ -33,19 +33,22 @@ export default function Login() {
 
             if (response.ok) {
                 const result = JSON.parse(text);
-
+            
                 if (result.error) {
                     setAlert({ open: true, message: result.error, severity: 'error' });
                 } else {
+                    const currentDate = new Date().toISOString(); // Obtiene la fecha actual en formato ISO
                     localStorage.setItem('authToken', result.token);
+                    localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
                     setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
-                    console.log('Login exitoso', result.token);
-
+                    console.log('Login exitoso', result.token, currentDate);
+            
                     if (isMounted) { // Solo redirige si el componente está montado
-                            router.push('/Home');
+                        router.push('/Home');
                     }
                 }
-            } else {
+            }
+             else {
                 setAlert({ open: true, message: 'Error en la autenticación', severity: 'error' });
             }
         } catch (error) {
