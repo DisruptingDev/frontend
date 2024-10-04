@@ -29,7 +29,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                 <td>{concepto.Descuento}</td>
                                 <td>{concepto.TotalTraslados}</td>
                                 <td>{concepto.TotalRetenciones}</td>
-                                <td>{concepto.Subtotal + concepto.TotalTraslados + concepto.TotalRetenciones}</td>
+                                <td>{concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones}</td>
                                 <td>
                                     <button
                                         type="button"

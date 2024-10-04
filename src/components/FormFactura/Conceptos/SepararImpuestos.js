@@ -15,7 +15,7 @@ export default function SepararImpuestos(concepto) {
             totalTraslados += parseFloat(impuesto.Monto);
         } else {
             retenciones.push(impuesto);
-            totalRetenciones -= parseFloat(impuesto.Monto);
+            totalRetenciones += parseFloat(impuesto.Monto);
         }
     }
 

@@ -11,7 +11,7 @@ export function CalculosFinales(conceptos) {
         descuentofinal += concepto.Descuento
         retencionesfinal += concepto.TotalRetenciones
         trasladosfinal += concepto.TotalTraslados
-        totalfinal += concepto.Subtotal + concepto.TotalRetenciones + concepto.TotalTraslados
+        totalfinal += concepto.Subtotal - concepto.TotalRetenciones + concepto.TotalTraslados
     } 
 
     return {
