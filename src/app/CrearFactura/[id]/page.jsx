@@ -14,32 +14,9 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 
-async function EnviarAEmisionTimbrado(factura, onSuccess, onError) {
-    try {
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(factura)
-            });
+import GuardarFactura from "@/components/FormFactura/Timbrar";
 
-            if (!response.ok) {
-                throw new Error('Error al guardar la factura');
-            }
-
-            const result = await response.json();
-            console.log('Factura creada con éxito:', result);
-            onSuccess('Factura creada con éxito'); // Llama al callback de éxito
-        }
-    } catch (error) {
-        console.error('Error al enviar la factura:', error);
-        onError('Error al enviar la factura'); // Llama al callback de error
-    }
-}
+// 
 
 export default function CrearFactura() {
     const { id } = useParams(); // Captura la ID de la URL
@@ -56,38 +33,47 @@ export default function CrearFactura() {
     const [previewContent, setPreviewContent] = useState('');
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
     const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState("");
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente
-        if (!isAuthenticated()) {
+        const token = isAuthenticated();
+        if (!token) {
             // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else {
+            setToken(token);
+            console.log("Token", token);
         }
     }, [router]);
 
 
     useEffect(() => {
         const fetchFactura = async () => {
-            try {
-                const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-                const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-                const data = await response.json();
-                setFacturaEdit(data.factura);
-                console.log("Factura", data);
-            } catch (error) {
-                console.error('Error fetching factura:', error);
+            if (token) {
+                try {
+                    // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+                    const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    const data = await response.json();
+                    setFacturaEdit(data.factura);
+                    console.log("Factura", data);
+                } catch (error) {
+                    console.error('Error fetching factura:', error);
+                }
             }
+
         };
 
         if (id) {
             fetchFactura(); // Solo llama a la API si hay una ID
         }
-    }, [id]);
+    }, [id, token]);
 
     const getDatosEmisor = (FacturaEdit) => ({
         ID: FacturaEdit.EmisorID,
@@ -115,9 +101,9 @@ export default function CrearFactura() {
         Estado: FacturaEdit.Receptor.Estado,
         MetodoPago: FacturaEdit.MetodoPago,
         FormaPago: FacturaEdit.FormaPago,
-        
+
         //informacion Global
-        InformacionGlobal:{
+        InformacionGlobal: {
             Año: FacturaEdit.InformacionGlobal.Año,
             Meses: FacturaEdit.InformacionGlobal.Meses,
             Periodicidad: FacturaEdit.InformacionGlobal.Periodicidad
@@ -137,12 +123,12 @@ export default function CrearFactura() {
 
     useEffect(() => {
         if (facturaEdit && facturaEdit.Conceptos && facturaEdit.Conceptos.ListaConceptos) {
-             // Mapea los conceptos a la estructura deseada
-             const ListaConceptos = facturaEdit.Conceptos.ListaConceptos.map((concepto) => {
-                
+            // Mapea los conceptos a la estructura deseada
+            const ListaConceptos = facturaEdit.Conceptos.ListaConceptos.map((concepto) => {
+
                 // Calcula el subtotal como ValorUnitario * Cantidad
                 const Subtotal = concepto.ValorUnitario * concepto.Cantidad;
-            
+
                 // Mapea los impuestos para la estructura deseada
                 const Impuestos = [
                     ...(concepto.Impuestos?.Retenciones || []), // Incluye las retenciones si existen
@@ -154,11 +140,11 @@ export default function CrearFactura() {
                 const Traslados = [
                     ...(concepto.Impuestos?.Traslados || [])
                 ]
-            
+
                 // Calcula los totales de retenciones y traslados
                 const TotalRetenciones = concepto.Impuestos?.Retenciones.reduce((acc, ret) => acc + ret.Importe, 0) || 0;
                 const TotalTraslados = concepto.Impuestos?.Traslados.reduce((acc, tras) => acc + tras.Importe, 0) || 0;
-            
+
                 return {
                     Cantidad: concepto.Cantidad,
                     ClaveProdServ: concepto.ClaveProdServ,
@@ -168,10 +154,10 @@ export default function CrearFactura() {
                     Descuento: concepto.Descuento,
                     ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                     Impuestos: Impuestos.map(impuesto => ({
-                       
+
                         Impuesto: impuesto.ImpuestoCatalogoID,
                         ImpuestoClave: impuesto.ImpuestoClave,
-                        Tasa:impuesto.TasaCatalogoID,
+                        Tasa: impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || Subtotal,
                         Monto: impuesto.Importe,
@@ -179,11 +165,11 @@ export default function CrearFactura() {
                     })),
                     Retenciones: Retenciones.map(retencion => ({
                         BaseImpuesto: retencion.Base,
-                        Impuesto:retencion.ImpuestoCatalogoID,
+                        Impuesto: retencion.ImpuestoCatalogoID,
                         ImpuestoClave: retencion.ImpuestoClave,
                         TasaOCuota: retencion.TasaOCuota,
                         Monto: retencion.Importe,
-                        Tipo : retencion.TipoFactor
+                        Tipo: retencion.TipoFactor
                     })),
                     // Retenciones: concepto.Impuestos?.Retenciones || [],
                     Traslados: Traslados.map(traslado => ({
@@ -192,7 +178,7 @@ export default function CrearFactura() {
                         ImpuestoClave: traslado.ImpuestoClave,
                         TasaOCuota: traslado.TasaOCuota,
                         Monto: traslado.Importe,
-                        Tipo : traslado.TipoFactor
+                        Tipo: traslado.TipoFactor
                     })),
                     // Traslados: concepto.Impuestos?.Traslados || [],
                     Subtotal: Subtotal,
@@ -206,7 +192,7 @@ export default function CrearFactura() {
             setemisorData(getDatosEmisor(facturaEdit));
             setReceptorData(getDatosReceptor(facturaEdit));
         }
-        
+
     }, [facturaEdit]);
 
 
@@ -220,26 +206,27 @@ export default function CrearFactura() {
         console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Factura");
         console.log('Factura creada:', factura);
-        EnviarAEmisionTimbrado(
+        GuardarFactura(
             factura,
             (message) => { // Callback de éxito
                 setSnackbarMessage(message);
                 setSnackbarSeverity('success'); // Configura el Snackbar como éxito
                 setOpenSnackbar(true);
-             // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
-             setTimeout(() => {
-                router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-            }, 1000); // Espera 3 segundos antes de redirigir
-        },
+                // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
+                setTimeout(() => {
+                    router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
+                }, 1000); // Espera 3 segundos antes de redirigir
+            },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
-            }
+            },
+            {token}
         );
     };
 
-    
+
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
@@ -291,6 +278,7 @@ export default function CrearFactura() {
                     getValues={getValues}
                     trigger={trigger}
                     receptorData={receptorData}
+                    token={token}
                 />
 
                 <Conceptos
@@ -303,6 +291,7 @@ export default function CrearFactura() {
                     conceptos={conceptos}
                     editIndex={editIndex}
                     setEditIndex={setEditIndex}
+                    token={token}
                 />
                 <Resumen
                     conceptos={conceptos}
@@ -311,7 +300,7 @@ export default function CrearFactura() {
                     handleDeleteConcepto={handleDeleteConcepto}
                 >
                     <div className="flex justify-end w-full space-x-2 mt-10">
-                        <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button>
+                        <button className="btn btn-secondary bg-red-700" type="button" onClick={() => router.push("/Home")}>Cancelar</button>
                         <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
                         <button type="submit" className="btn btn-primary bg-primary-dark-total">Crear Factura</button>
                     </div>

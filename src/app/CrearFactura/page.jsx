@@ -12,39 +12,9 @@ import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
+import GuardarFactura from "@/components/FormFactura/Timbrar";
 
-async function EnviarAEmisionTimbrado(factura, onSuccess, onError) {
-    try {
-        if (typeof window !== 'undefined') {
-            let token;
-            if(localStorage.getItem('authToken')) {
-             token = localStorage.getItem('authToken');
-            }
-            else{
-                token = sessionStorage.getItem('authToken');
-            }
-            const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(factura)
-            });
 
-            if (!response.ok) {
-                throw new Error('Error al guardar la factura');
-            }
-
-            const result = await response.json();
-            console.log('Factura creada con éxito:', result);
-            onSuccess('Factura creada con éxito'); // Llama al callback de éxito
-        }
-    } catch (error) {
-        console.error('Error al enviar la factura:', error);
-        onError('Error al enviar la factura'); // Llama al callback de error
-    }
-}
 
 export default function CrearFactura() {
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
@@ -79,7 +49,7 @@ export default function CrearFactura() {
         console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Factura");
         console.log('Factura creada:', factura);
-        EnviarAEmisionTimbrado(
+        GuardarFactura(
             factura,
             (message) => { // Callback de éxito
                 setSnackbarMessage(message);
@@ -94,7 +64,8 @@ export default function CrearFactura() {
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
-            }
+            },
+            {token}
         );
     };
 
@@ -170,6 +141,7 @@ export default function CrearFactura() {
                     setValue={setValue}
                     getValues={getValues}
                     trigger={trigger}
+                    token={token}
                 />
                 <Conceptos
                     trigger={trigger}
@@ -181,6 +153,7 @@ export default function CrearFactura() {
                     conceptos={conceptos}
                     editIndex={editIndex}
                     setEditIndex={setEditIndex}
+                    token={token}
                 />
                 <Resumen
                     conceptos={conceptos}

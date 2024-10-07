@@ -6,7 +6,7 @@ import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 import { set } from 'date-fns';
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -146,9 +146,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     useEffect(() => {
         async function fetchData() {
             if (regimenFiscal) {
-                const token = localStorage.getItem('authToken');
+                console.log("REGIMEN", token);
+                // const token = localStorage.getItem('authToken');
                 fetch(`http://31.220.31.152:8081/Catalogos/RegimenFiscal`, {
-                    method: 'GET',
+                    // method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'

@@ -9,22 +9,16 @@ import Select from '@/components/Select/Select.jsx';
 import { BoxZoomHandler } from 'mapbox-gl';
 import padding from 'tailwindcss-logical/plugins/padding.js';
 
-export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex }) {
+export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token }) {
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
     const [queryProdServ, setQueryProdServ] = useState('');
     const [queryUnidad, setQueryUnidad] = useState('');
     const [selectedClaveProdServ, setSelectedClaveProdServ] = useState(null);
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
-    const [token, setToken] = useState(null);
+    // const [token, setToken] = useState(null);
     const [objetoImpuesto, setObjetoImpuesto] = useState("02");
 
-    // Acceder a localStorage solo en el cliente
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setToken(localStorage.getItem('authToken'));
-        }
-    }, []);
 
     // Resto del código para los estados de error y el manejo del formulario
     const [descripcionError, setDescripcionError] = useState(false);
@@ -150,7 +144,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 setValue(`impuestos.${index}.Monto`, impuesto.Monto || 0);
 
 
-                const token = localStorage.getItem('authToken');
+                // const token = localStorage.getItem('authToken');
                 fetch(`http://31.220.31.152:8081/Catalogos/ImpuestoClave`, {
                     method: 'GET',
                     headers: {

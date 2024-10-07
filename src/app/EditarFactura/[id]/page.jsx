@@ -14,34 +14,8 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 
+import GuardarFactura from "@/components/FormFactura/EditarFactura";
 
-
-async function EnviarAEmisionTimbrado(factura, onSuccess, onError) {
-    try {
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('authToken');
-            // Continúa con el uso de token 
-            const response = await fetch('http://31.220.31.152:8087/EditarFactura', {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(factura)
-            });
-            if (!response.ok) {
-                throw new Error('Error al guardar la factura');
-            }
-
-            const result = await response.json();
-            console.log('Factura actualizada con éxito:', result);
-            onSuccess('Factura actualizada con éxito'); // Llama al callback de éxito
-        }
-    } catch (error) {
-        console.error('Error al enviar la factura:', error);
-        onError('Error al actualizar la factura'); // Llama al callback de error
-    }
-}
 
 
 export default function EditarFactura() {
@@ -59,18 +33,23 @@ export default function EditarFactura() {
     const [previewContent, setPreviewContent] = useState('');
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
     const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState(""); // Estado para almacenar el token
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente
-        if (!isAuthenticated()) {
+        const token = isAuthenticated();
+        if (!token) {
             // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else{
+            setToken(token);
         }
     }, [router]);
     useEffect(() => {
         const fetchFactura = async () => {
             try {
-                const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
                 const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -88,7 +67,7 @@ export default function EditarFactura() {
         if (id) {
             fetchFactura(); // Solo llama a la API si hay una ID
         }
-    }, [id]);
+    }, [id, token]);
 
     const getDatosEmisor = (FacturaEdit) => ({
         ID: FacturaEdit.EmisorID,
@@ -230,7 +209,7 @@ export default function EditarFactura() {
         console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, id, "Factura");
         console.log('Factura creada:', factura);
-        EnviarAEmisionTimbrado(
+        GuardarFactura(
             factura,
             (message) => { // Callback de éxito
                 setSnackbarMessage(message);
@@ -245,7 +224,8 @@ export default function EditarFactura() {
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
-            }
+            },
+            {token}
         );
     };
 
@@ -299,6 +279,7 @@ export default function EditarFactura() {
                     getValues={getValues}
                     trigger={trigger}
                     receptorData={receptorData}
+                    token={token}
                 />
 
                 <Conceptos
@@ -311,6 +292,7 @@ export default function EditarFactura() {
                     conceptos={conceptos}
                     editIndex={editIndex}
                     setEditIndex={setEditIndex}
+                    token={token}
                 />
                 <Resumen
                     conceptos={conceptos}
