@@ -5,7 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/materi
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar }) {
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token}) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -157,7 +157,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify(empresaData),
                 });
@@ -214,7 +214,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify(empresaData),
                 });

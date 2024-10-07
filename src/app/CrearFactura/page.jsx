@@ -16,7 +16,13 @@ import { isAuthenticated } from "@/utils/authRedirect";
 async function EnviarAEmisionTimbrado(factura, onSuccess, onError) {
     try {
         if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('authToken');
+            let token;
+            if(localStorage.getItem('authToken')) {
+             token = localStorage.getItem('authToken');
+            }
+            else{
+                token = sessionStorage.getItem('authToken');
+            }
             const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
                 method: 'POST',
                 headers: {
@@ -51,10 +57,15 @@ export default function CrearFactura() {
     const [openModal, setOpenModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
     const router = useRouter();
+    const [token, setToken] = useState("");
 
     useEffect(() => {
-        if (!isAuthenticated()) {
+        const token = isAuthenticated();
+        if (!token) {
             router.push("/IniciaSesion");
+        }
+        else {
+            setToken(token);
         }
     }, [router]);
 

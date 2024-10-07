@@ -38,8 +38,20 @@ export default function Login() {
                     setAlert({ open: true, message: result.error, severity: 'error' });
                 } else {
                     const currentDate = new Date().toISOString(); // Obtiene la fecha actual en formato ISO
-                    localStorage.setItem('authToken', result.token);
-                    localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
+                    // localStorage.setItem('authToken', result.token);
+                    // localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
+                    // Almacena el token dependiendo de "Recuérdame"
+                    if (data.remember) {
+                        console.log('Recuérdame activado');
+                        sessionStorage.removeItem("authToken");
+                        localStorage.setItem('authToken', result.token); // Guarda en Local Storage
+                        localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
+                    } else {
+                        console.log('Recuérdame desactivado');
+                         localStorage.removeItem("authToken");
+                        localStorage.removeItem("loginDate");
+                        sessionStorage.setItem('authToken', result.token); // Guarda en Session Storage
+                    }
                     setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
                     console.log('Login exitoso', result.token, currentDate);
             
@@ -98,7 +110,7 @@ export default function Login() {
                         fullWidth
                         margin="normal"
                     />
-                    {/* <FormControlLabel
+                    <FormControlLabel
                         control={<Checkbox {...register("remember")} />}
                         label="Recordar cuenta"
                         sx={{
@@ -110,6 +122,7 @@ export default function Login() {
                             },
                         }}
                     />
+                     {/*
                     <Link href="#" variant="body2" sx={{ display: 'block', marginBottom: 2, textAlign: 'initial' }}>
                         ¿Olvidaste tu contraseña?
                     </Link> */}

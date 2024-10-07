@@ -5,7 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { set } from 'date-fns';
 
-export default function AltaCliente({ onClose, cliente, setActualizar }) {
+export default function AltaCliente({ onClose, cliente, setActualizar, token }) {
     const { register, getValues, reset, handleSubmit, setValue, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
@@ -72,7 +72,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify(clienteData),
                 });
@@ -125,7 +125,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar }) {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: JSON.stringify(clienteData),
                 });

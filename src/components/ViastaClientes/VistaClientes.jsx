@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography, IconButton,
     Menu,
@@ -8,61 +8,65 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 function createData(item) {
     return { ...item };
-  }
-  
-const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
-   
+}
+
+const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
+
 
     const [receptores, setReceptores] = useState([]);
     const [loading, setLoading] = useState(true);
 
     //Para el menu
     const [anchorEl, setAnchorEl] = useState(null);
-  const [menuRow, setMenuRow] = useState(null);
+    const [menuRow, setMenuRow] = useState(null);
 
-  const handleMenuClick = (event, row) => {
-    setAnchorEl(event.currentTarget);
-    setMenuRow(row);
-  };
+    const handleMenuClick = (event, row) => {
+        setAnchorEl(event.currentTarget);
+        setMenuRow(row);
+    };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setMenuRow(null);
-  };
-  const handleEditar = () => {
-    setClienteIdEditar(menuRow.ID);
-    handleMenuClose();
-    
-  };
-  const fetchReceptores = async () => {
-    try {
-        const response = await fetch('http://31.220.31.152:8081/Catalogos/Receptor', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            },
-        });
-        const data = await response.json();
-        console
-        if (Array.isArray(data)) {
-            const transformedData = data.map((item) => createData(item));
-            const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-            // setRows(sortedData);
-            setReceptores(sortedData);
-          } else {
-            console.error('Expected an array but received:', typeof data);
-          }
-        // setReceptores(data);
-    } catch (error) {
-        console.error('Error fetching receptores:', error);
-    } finally {
-        setLoading(false);
-    }
-};
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setMenuRow(null);
+    };
+    const handleEditar = () => {
+        setClienteIdEditar(menuRow.ID);
+        handleMenuClose();
+
+    };
+    const fetchReceptores = useCallback(async () => {
+        // console.log('Fetching receptores 2',token);
+        if (token) {
+            try {
+                const response = await fetch('http://31.220.31.152:8081/Catalogos/Receptor', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const data = await response.json();
+                console
+                if (Array.isArray(data)) {
+                    const transformedData = data.map((item) => createData(item));
+                    const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+                    // setRows(sortedData);
+                    setReceptores(sortedData);
+                } else {
+                    console.error('Expected an array but received:', typeof data);
+                }
+                // setReceptores(data);
+            } catch (error) {
+                console.error('Error fetching receptores:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+    }, [token]);
 
     useEffect(() => {
-
+        // console.log('Fetching receptores',token);
         fetchReceptores();
-    }, []);
+    }, [fetchReceptores, token]);
 
     useEffect(() => {
         if (actualizar) {
@@ -70,7 +74,7 @@ const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
             fetchReceptores();
         }
     }
-    , [actualizar]);
+        , [actualizar, fetchReceptores]);
 
     if (loading) {
         return <CircularProgress />;
@@ -129,7 +133,7 @@ const VistaClientes = ( {setClienteIdEditar, actualizar}) => {
                                         </Menu>
                                     </React.Fragment>
                                 )}
-                               
+
                             </TableCell>
                         </TableRow>
                     ))}

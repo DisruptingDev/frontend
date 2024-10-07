@@ -7,11 +7,11 @@ import { isAuthenticated } from "@/utils/authRedirect"
 import { useRouter } from "next/navigation";
   export default function RootLayout({ children }) {
     
-    const router = useRouter()
-    if(!isAuthenticated()){
-      router.push("/IniciaSesion"); // Redirige al login si no está autenticado
-      return;
-    }
+    // const router = useRouter()
+    // if(!isAuthenticated()){
+    //   router.push("/IniciaSesion"); // Redirige al login si no está autenticado
+    //   return;
+    // }
     return (
       <html lang="en">
         <body>{children}</body>

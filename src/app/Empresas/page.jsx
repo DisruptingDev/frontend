@@ -20,6 +20,21 @@ export default function AdministraEmpresas() {
 
     const [openModal, setOpenModal] = useState(false);
 
+    const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState("");
+
+    useEffect(() => {
+        // Verifica la autenticación al montar el componente
+        const token = isAuthenticated();
+        if (!token) {
+            // console.log("SEsion",!isAuthenticated());
+            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else{
+            setToken(token);
+        }
+    }, [router]);
+
     const handleOpenModal = () => {
         setOpenModal(true);
     };
@@ -39,7 +54,7 @@ export default function AdministraEmpresas() {
             try {
                 const response = await fetch(`http://31.220.31.152:8081/Catalogos/Emisor/${empresaIdEditar}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
                 console.log(response);
@@ -59,7 +74,7 @@ export default function AdministraEmpresas() {
         fetchData();
         }
         
-    }, [empresaIdEditar]);
+    }, [empresaIdEditar, token]);
 
 
 const handleUpdateEmpresa = (name, rfc) => {
@@ -89,7 +104,7 @@ const handleUpdateEmpresa = (name, rfc) => {
                     </Button>
                 </Box>
 
-                <VistaEmpresas setEmpresaIdEditar={setEmpresaIdEditar}  />
+                <VistaEmpresas setEmpresaIdEditar={setEmpresaIdEditar} token={token} />
                 <Dialog
                     open={openModal}
                     onClose={handleCloseModal}
@@ -105,9 +120,9 @@ const handleUpdateEmpresa = (name, rfc) => {
                     {/* <DialogTitle>Alta de Cliente</DialogTitle> */}
                     <DialogContent>
                         {/* {editar ? <Typography variant="h5" mb={2}>Editar Empresa</Typography> : ''} */}
-                        <CertificadoCSD  onUpdateEmpresa={handleUpdateEmpresa} editar={editar} empresaIdEditar={empresaIdEditar}/>
+                        <CertificadoCSD  onUpdateEmpresa={handleUpdateEmpresa} editar={editar} empresaIdEditar={empresaIdEditar} token={token}/>
                         <Divider  sx={{marginY:2}} />
-                        <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc}/>
+                        <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc} token={token}/>
                     </DialogContent>
                 </Dialog>
 

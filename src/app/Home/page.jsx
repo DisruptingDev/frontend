@@ -14,20 +14,25 @@ import { isAuthenticated } from "@/utils/authRedirect";
 export default function Home() {
     const { register } = useForm();
     const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState("");
 
-    // useEffect(() => {
-    //     // Verifica la autenticación al montar el componente
-    //     if (!isAuthenticated()) {
-    //         // console.log("SEsion",!isAuthenticated());
-    //         router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
-    //     }
-    // }, [router]);
+    useEffect(() => {
+        // Verifica la autenticación al montar el componente
+        const token = isAuthenticated();
+        if (!token) {
+            // console.log("SEsion",!isAuthenticated());
+            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else{
+            setToken(token);
+        }
+    }, [router]);
     
     return (
         <div>
             <Header />  
             <SearchFilter register = {register}/>
-            <Tabla />
+            <Tabla token = {token} />
         </div>
     );
 }

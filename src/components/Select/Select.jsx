@@ -5,8 +5,13 @@ import { FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText 
 
 async function obtener_opciones(url) {
     try {
-        const token = localStorage.getItem('authToken');
-
+        let token;
+        if(localStorage.getItem('authToken')) {
+         token = localStorage.getItem('authToken');
+        }
+        else{
+            token = sessionStorage.getItem('authToken');
+        }
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,

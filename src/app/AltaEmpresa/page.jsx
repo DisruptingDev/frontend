@@ -12,12 +12,17 @@ export default function RegistroEmisores() {
     const [issuerRfc, setIssuerRfc] = useState('');
     
     const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState("");
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente
-        if (!isAuthenticated()) {
+        const token = isAuthenticated();
+        if (!token) {
             // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else{
+            setToken(token);
         }
     }, [router]);
 
@@ -31,8 +36,8 @@ export default function RegistroEmisores() {
         <div>
             <Header />
             <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                <CertificadoCSD onUpdateEmpresa={handleUpdateEmpresa} />
-                <AltaEmpresa my={4}issuerName={issuerName} issuerRfc={issuerRfc} />
+                <CertificadoCSD onUpdateEmpresa={handleUpdateEmpresa} token={token} />
+                <AltaEmpresa my={4}issuerName={issuerName} issuerRfc={issuerRfc} token={token} />
             </Box>
         </div>
     );

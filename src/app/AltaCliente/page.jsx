@@ -21,12 +21,18 @@ export default function RegistroClientes() {
     const [actualizar, setActualizar] = useState(false);
 
     const router = useRouter(); // Inicializa el router
+    const [token, setToken] = useState("");
 
     useEffect(() => {
-        // Verifica la autenticación al montar el componente
-        if (!isAuthenticated()) {
+        
+        const token = isAuthenticated();
+        if (!token) {
             // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
+        }
+        else
+        {
+            setToken(token);
         }
     }, [router]);
 
@@ -36,7 +42,7 @@ export default function RegistroClientes() {
             try {
                 const response = await fetch(`http://31.220.31.152:8081/Catalogos/Receptor/${clienteIdEditar}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
                 console.log(response);
@@ -55,7 +61,7 @@ export default function RegistroClientes() {
         fetchData();
         }
         
-    }, [clienteIdEditar]);
+    }, [clienteIdEditar, token]);
 
     // useEffect(() => {
     //     try {
@@ -120,7 +126,7 @@ export default function RegistroClientes() {
                 </Box>
                 {/* <AltaCliente /> */}
 
-                <VistaClientes  setClienteIdEditar={setClienteIdEditar} actualizar={actualizar}/>
+                <VistaClientes  setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token}/>
 
             </Box>
             <Dialog
@@ -137,7 +143,7 @@ export default function RegistroClientes() {
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente cliente={cliente} onClose={handleCloseModal} setActualizar={setActualizar}/>
+                    <AltaCliente cliente={cliente} onClose={handleCloseModal} setActualizar={setActualizar} token={token}/>
                 </DialogContent>
             </Dialog>
         </div>

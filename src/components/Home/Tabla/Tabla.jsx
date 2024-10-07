@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback} from 'react';
 import {
   Table,
   TableBody,
@@ -43,7 +43,7 @@ const formatCurrency = (value) => {
   }).format(value);
 }
 
-export default function DataTable() {
+export default function DataTable( {token} ) {
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -111,7 +111,7 @@ export default function DataTable() {
 
   const obtenerFactura = async (id) => {
     try {
-      const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+      // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
       const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -162,7 +162,7 @@ export default function DataTable() {
 
   const generarXML = async (id) => {
     try {
-      const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+      // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
       const responseXML = await fetch(`http://31.220.31.152:8090/DescargaXML/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -384,7 +384,7 @@ export default function DataTable() {
   const handleVistaPrevia = async (id) => {
     console.log('ID:', id);
     try {
-      const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+      // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
       const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -415,7 +415,7 @@ export default function DataTable() {
 
     try {
       console.log('Timbrando facturas:', ids);
-      const token = localStorage.getItem('authToken');
+      // const token = localStorage.getItem('authToken');
       const response = await fetch('http://31.220.31.152:8088/TimbradoCorporativo', {
         method: 'POST',
         headers: {
@@ -486,9 +486,10 @@ export default function DataTable() {
     }
   };
 
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
+  const fetchData = useCallback(async () => {
+    if(token){
+       try {
+      // const token = localStorage.getItem('authToken');
 
       const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
         headers: {
@@ -509,12 +510,14 @@ export default function DataTable() {
     } catch (error) {
       console.error('Error fetching data:', error);
     }
-  };
+    }
+   
+  }, [token]);
   useEffect(() => {
    
 
     fetchData();
-  }, []);
+  }, [fetchData, token]);
 
   useEffect(()=> {
     if(actualizar) {
@@ -523,7 +526,7 @@ export default function DataTable() {
       setActualizar(false);
     }
       
-    }, [actualizar]);
+    }, [actualizar, fetchData]);
 
   const handleRowClick = (row) => {
     setSelectedRow(row);

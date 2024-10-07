@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Snackbar, Alert } from '@mui/material';
 import FileInput from "@/components/FileInput/FileInput";
 
-export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEditar }) {
+export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEditar, token }) {
     const [csdFile, setCsdFile] = useState(null);
     const [keyFile, setKeyFile] = useState(null);
     const [password, setPassword] = useState('');
@@ -67,7 +67,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
             formData.append('EmisorID', empresaIdEditar);
             console.log('Editar',formData);
             try {
-                const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
+               
 
                 const response = await fetch('http://31.220.31.152:8083/EditarCertificado', {
                     method: 'PUT',
@@ -121,8 +121,6 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
         }
         else{
             try {
-                const token = localStorage.getItem('authToken'); // Asumiendo que tu token está almacenado en localStorage
-
                 const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
                     method: 'POST',
                     headers: {

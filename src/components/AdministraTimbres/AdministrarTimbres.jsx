@@ -1,10 +1,10 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Grid, TextField, Button, Typography, Box, Snackbar, Alert } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { useRouter } from "next/navigation";
 
-export default function AdministrarTimbres() {
+export default function AdministrarTimbres({ token }) {
     const router = useRouter(); // Inicializa el router
     const { register } = useForm();
     const [empresas, setEmpresas] = useState([]);
@@ -16,15 +16,16 @@ export default function AdministrarTimbres() {
     const [errorMessages, setErrorMessages] = useState({});
 
     const [openSnackbar, setOpenSnackbar] = useState(false);
-const [snackbarMessage, setSnackbarMessage] = useState('');
-const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' | 'error'
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' | 'error'
 
-    useEffect(() => {
-        async function fetchData() {
+    const fetchData = useCallback(async () => {
+        if (token) {
             try {
                 const response = await fetch(`http://31.220.31.152:8081/Catalogos/Emisor`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                       
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
                 if (response.ok) {
@@ -34,7 +35,8 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
                     for (let empresa of data) {
                         const seriesResponse = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`, {
                             headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        
+                                'Authorization': `Bearer ${token}`,
                             },
                         });
                         const seriesData = await seriesResponse.json();
@@ -56,11 +58,14 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
             }
         }
 
-        async function fetchTimbresDisponibles() {
+    }, [token]);
+
+    const fetchTimbresDisponibles = useCallback(async () => {
+        if (token) {
             try {
                 const response = await fetch(`http://31.220.31.152:8085/TimbresDisponibles`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Authorization': `Bearer ${token}`,
                     },
                 });
                 if (response.ok) {
@@ -75,13 +80,30 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
             }
         }
 
-        fetchTimbresDisponibles();
-        fetchData();
-    }, []);
+    }, [token]);
+
 
     useEffect(() => {
+
+
+        if (token) {
+            console.log("Token", token);
+            fetchTimbresDisponibles();
+            fetchData();
+        }
+
+    }, [fetchData, fetchTimbresDisponibles, token]);
+
+    const calcularTimbresRestantes = useCallback(() => {
+        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
+        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
+        const nuevoTotalRestantes = timbresDisponibles + totalRecuperados - totalAsignados;
+
+        setTimbresRestantes(nuevoTotalRestantes);
+    }, [timbresRecuperar, timbresAsignar, timbresDisponibles]);
+    useEffect(() => {
         calcularTimbresRestantes();
-    }, [timbresAsignar, timbresRecuperar, timbresDisponibles]);
+    }, [timbresAsignar, timbresRecuperar, timbresDisponibles, calcularTimbresRestantes]);
 
     const handleTimbresAsignarChange = (empresaID, serieClave, event) => {
         const timbresAAsignar = parseInt(event.target.value) || 0;
@@ -99,13 +121,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
         }));
     };
 
-    const calcularTimbresRestantes = () => {
-        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
-        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
-        const nuevoTotalRestantes = timbresDisponibles + totalRecuperados - totalAsignados;
 
-        setTimbresRestantes(nuevoTotalRestantes);
-    };
 
     const validarDatos = () => {
         const nuevosErrores = {};
@@ -122,7 +138,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
             // if (timbresAsignados > timbresRestantes) {
             //     nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
             // }
-            if(timbresRestantes<0){
+            if (timbresRestantes < 0) {
                 nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
             }
         });
@@ -143,14 +159,14 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
             setOpenSnackbar(true);
             return; // Si hay errores, no continuar
         }
-    
+
         const datosCompletos = empresasConSeries.map((empresa) => {
             const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
             const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-    
+
             // Calcular timbres restantes
             const totalTimbresRestantes = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
-    
+
             return {
                 empresaID: empresa.ID,
                 nombre: empresa.Nombre,
@@ -160,7 +176,7 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
                 nuevoTotal: totalTimbresRestantes,
             };
         });
-    
+
         console.log(datosCompletos);
         // Mostrar mensaje de éxito
         setSnackbarMessage('Los cambios se han aplicado correctamente.');
@@ -209,15 +225,15 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
                     disabled
                 />
                 <TextField
-                
+
                     fullWidth
                     label="Timbres a asignar"
                     placeholder="0"
                     type="number"
                     value={timbresAsignados}
                     onChange={(event) => handleTimbresAsignarChange(empresa.ID, empresa.SerieClave, event)}
-                    error={ timbresRestantes < 0}
-                    helperText={ timbresRestantes < 0 ? "Timbres insuficientes" : ""}
+                    error={timbresRestantes < 0}
+                    helperText={timbresRestantes < 0 ? "Timbres insuficientes" : ""}
                 />
                 <TextField
                     fullWidth
@@ -226,8 +242,8 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
                     type="number"
                     value={timbresRecuperados}
                     onChange={(event) => handleTimbresRecuperarChange(empresa.ID, empresa.SerieClave, event)}
-                    error={ timbresRecuperados > empresa.TimbresDisponibles}
-                    helperText={timbresRecuperados > empresa.TimbresDisponibles ? "Timbres insuficientes": ""}
+                    error={timbresRecuperados > empresa.TimbresDisponibles}
+                    helperText={timbresRecuperados > empresa.TimbresDisponibles ? "Timbres insuficientes" : ""}
                 />
                 <TextField
                     fullWidth
@@ -263,22 +279,22 @@ const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success
                 {timbresData}
             </Grid>
             <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
-                    <Grid item>
-                        <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
-                            Cancelar
-                        </Button>
-                    </Grid>
-                    <Grid item>
-                        <Button
-                            variant="contained"
-                            style={{ backgroundColor: '#04b2ca', color: 'white' }}
-                            onClick={compilarDatos}
-                        >
-                            Aplicar
-                        </Button>
-                    </Grid>
+                <Grid item>
+                    <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
+                        Cancelar
+                    </Button>
                 </Grid>
-                <Snackbar
+                <Grid item>
+                    <Button
+                        variant="contained"
+                        style={{ backgroundColor: '#04b2ca', color: 'white' }}
+                        onClick={compilarDatos}
+                    >
+                        Aplicar
+                    </Button>
+                </Grid>
+            </Grid>
+            <Snackbar
                 open={openSnackbar}
                 autoHideDuration={3000}
                 onClose={() => setOpenSnackbar(false)}
