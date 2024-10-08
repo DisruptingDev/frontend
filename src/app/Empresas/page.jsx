@@ -17,7 +17,7 @@ export default function AdministraEmpresas() {
     const [issuerName, setIssuerName] = useState('');
     const [issuerRfc, setIssuerRfc] = useState('');
 
-
+    const [actualizar, setActualizar] = useState(false);
     const [openModal, setOpenModal] = useState(false);
 
     const router = useRouter(); // Inicializa el router
@@ -104,7 +104,7 @@ const handleUpdateEmpresa = (name, rfc) => {
                     </Button>
                 </Box>
 
-                <VistaEmpresas setEmpresaIdEditar={setEmpresaIdEditar} token={token} />
+                <VistaEmpresas setEmpresaIdEditar={setEmpresaIdEditar} token={token} actualizar={actualizar} />
                 <Dialog
                     open={openModal}
                     onClose={handleCloseModal}
@@ -122,7 +122,7 @@ const handleUpdateEmpresa = (name, rfc) => {
                         {/* {editar ? <Typography variant="h5" mb={2}>Editar Empresa</Typography> : ''} */}
                         <CertificadoCSD  onUpdateEmpresa={handleUpdateEmpresa} editar={editar} empresaIdEditar={empresaIdEditar} token={token}/>
                         <Divider  sx={{marginY:2}} />
-                        <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc} token={token}/>
+                        <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc} token={token} setActualizar={setActualizar}/>
                     </DialogContent>
                 </Dialog>
 

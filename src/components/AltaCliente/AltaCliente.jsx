@@ -139,12 +139,12 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                     console.log('Guardado exitoso:', result);
                     setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                    //Depues de un tiempo resetea los campos del formulario
-                   setActualizar(true);
+                   if(setActualizar)setActualizar(true);
                     setTimeout(() => {
                         reset();
                         
                         if (onClose) onClose();
-                        setActualizar(false);
+                        if(setActualizar)setActualizar(false);
                     }, 2000);
                  
                 }

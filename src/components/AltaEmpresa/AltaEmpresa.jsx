@@ -5,7 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/materi
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token}) {
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar }) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -172,11 +172,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     setSnackbarMessage('Empresa guardada correctamente.');
                     setSnackbarSeverity('success');
                     setOpenSnackbar(true);
+                    if(setActualizar)setActualizar(true);
                     setTimeout(() => {
 
 
                         if (onClose) onClose();
-
+                        if(setActualizar)setActualizar(false);
                     }, 2000);
                 }
             } catch (error) {
@@ -220,6 +221,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 });
                 const data = await response.json(); // Obtén la respuesta JSON
                 console.log('Data received from API:', data);
+
                 if (!response.ok) {
 
                     setSnackbarMessage('Error al guardar los datos.');
@@ -229,11 +231,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     setSnackbarMessage('Empresa guardada correctamente.');
                     setSnackbarSeverity('success');
                     setOpenSnackbar(true);
+                    if(setActualizar)setActualizar(true);
                     setTimeout(() => {
 
 
                         if (onClose) onClose();
-
+                        if(setActualizar)setActualizar(false);
                     }, 2000);
 
                 }
