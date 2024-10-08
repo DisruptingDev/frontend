@@ -13,7 +13,7 @@ import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
-
+import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
 
 // 
@@ -75,122 +75,20 @@ export default function CrearFactura() {
         }
     }, [id, token]);
 
-    const getDatosEmisor = (FacturaEdit) => ({
-        ID: FacturaEdit.EmisorID,
-        Rfc: FacturaEdit.Emisor.Rfc,
-        Nombre: FacturaEdit.Emisor.Nombre,
-        RegimenFiscal: FacturaEdit.Emisor.RegimenFiscal,
-        LugarExpedicion: FacturaEdit.Emisor.LugarExpedicion,
-        Serie: FacturaEdit.Serie,
-        Fecha: FacturaEdit.Fecha,
-        TipoComprobante: FacturaEdit.TipoDeComprobante
-    });
-    const getDatosReceptor = (FacturaEdit) => ({
-        ID: FacturaEdit.ReceptorID,
-        Rfc: FacturaEdit.Receptor.Rfc,
-        DomicilioFiscalReceptor: FacturaEdit.Receptor.DomicilioFiscalReceptor,
-        Nombre: FacturaEdit.Receptor.Nombre,
-        UsoCFDI: FacturaEdit.UsoCFDI,
-        RegimenFiscal: FacturaEdit.Receptor.RegimenFiscalReceptor,
-        LugarExpedicion: FacturaEdit.Receptor.LugarExpedicion,
-        Calle: FacturaEdit.Receptor.Calle,
-        NoExterior: FacturaEdit.Receptor.NoExterior,
-        NoInterior: FacturaEdit.Receptor.NoInterior,
-        Colonia: FacturaEdit.Receptor.Colonia,
-        Municipio: FacturaEdit.Receptor.Municipio,
-        Estado: FacturaEdit.Receptor.Estado,
-        MetodoPago: FacturaEdit.MetodoPago,
-        FormaPago: FacturaEdit.FormaPago,
 
-        //informacion Global
-        InformacionGlobal: {
-            Año: FacturaEdit.InformacionGlobal.Año,
-            Meses: FacturaEdit.InformacionGlobal.Meses,
-            Periodicidad: FacturaEdit.InformacionGlobal.Periodicidad
 
+
+    useEffect(() => {
+        const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
+
+        if (Conceptos) {
+            setConceptos(Conceptos);
         }
-
-    });
-
-
-
-    useEffect(() => {
-        // Este bloque solo se ejecuta en el cliente
-        const factura = JSON.parse(localStorage.getItem('EditFactura'));
-        setFacturaEdit(factura);
-    }, []);
-
-
-    useEffect(() => {
-        if (facturaEdit && facturaEdit.Conceptos && facturaEdit.Conceptos.ListaConceptos) {
-            // Mapea los conceptos a la estructura deseada
-            const ListaConceptos = facturaEdit.Conceptos.ListaConceptos.map((concepto) => {
-
-                // Calcula el subtotal como ValorUnitario * Cantidad
-                const Subtotal = concepto.ValorUnitario * concepto.Cantidad;
-
-                // Mapea los impuestos para la estructura deseada
-                const Impuestos = [
-                    ...(concepto.Impuestos?.Retenciones || []), // Incluye las retenciones si existen
-                    ...(concepto.Impuestos?.Traslados || [])   // Incluye los traslados si existen
-                ];
-                const Retenciones = [
-                    ...(concepto.Impuestos?.Retenciones || [])
-                ]
-                const Traslados = [
-                    ...(concepto.Impuestos?.Traslados || [])
-                ]
-
-                // Calcula los totales de retenciones y traslados
-                const TotalRetenciones = concepto.Impuestos?.Retenciones.reduce((acc, ret) => acc + ret.Importe, 0) || 0;
-                const TotalTraslados = concepto.Impuestos?.Traslados.reduce((acc, tras) => acc + tras.Importe, 0) || 0;
-
-                return {
-                    Cantidad: concepto.Cantidad,
-                    ClaveProdServ: concepto.ClaveProdServ,
-                    ClaveUnidad: concepto.ClaveUnidad,
-                    Unidad: concepto.Unidad,
-                    Descripcion: concepto.Descripcion,
-                    Descuento: concepto.Descuento,
-                    ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
-                    Impuestos: Impuestos.map(impuesto => ({
-
-                        Impuesto: impuesto.ImpuestoCatalogoID,
-                        ImpuestoClave: impuesto.ImpuestoClave,
-                        Tasa: impuesto.TasaCatalogoID,
-                        TasaOCuota: impuesto.TasaOCuota,
-                        BaseImpuesto: impuesto.Base || Subtotal,
-                        Monto: impuesto.Importe,
-                        TipoFactor: impuesto.TipoFactor
-                    })),
-                    Retenciones: Retenciones.map(retencion => ({
-                        BaseImpuesto: retencion.Base,
-                        Impuesto: retencion.ImpuestoCatalogoID,
-                        ImpuestoClave: retencion.ImpuestoClave,
-                        TasaOCuota: retencion.TasaOCuota,
-                        Monto: retencion.Importe,
-                        Tipo: retencion.TipoFactor
-                    })),
-                    // Retenciones: concepto.Impuestos?.Retenciones || [],
-                    Traslados: Traslados.map(traslado => ({
-                        BaseImpuesto: traslado.Base,
-                        Impuesto: traslado.ImpuestoCatalogoID,
-                        ImpuestoClave: traslado.ImpuestoClave,
-                        TasaOCuota: traslado.TasaOCuota,
-                        Monto: traslado.Importe,
-                        Tipo: traslado.TipoFactor
-                    })),
-                    // Traslados: concepto.Impuestos?.Traslados || [],
-                    Subtotal: Subtotal,
-                    TotalRetenciones: TotalRetenciones,
-                    TotalTraslados: TotalTraslados,
-                    ValorUnitario: concepto.ValorUnitario,
-                };
-            });
-            console.log("Lista Concepto", ListaConceptos);
-            setConceptos(ListaConceptos);
-            setemisorData(getDatosEmisor(facturaEdit));
-            setReceptorData(getDatosReceptor(facturaEdit));
+        if (Emisor) {
+            setemisorData(Emisor);
+        }
+        if (Receptor) {
+            setReceptorData(Receptor);
         }
 
     }, [facturaEdit]);
