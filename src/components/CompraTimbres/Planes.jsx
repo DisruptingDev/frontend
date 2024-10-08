@@ -1,0 +1,80 @@
+import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material';
+import DoneIcon from '@mui/icons-material/Done';
+
+export default function Planes() {
+    const planes = [
+        {
+            titulo: "Plan Básico",
+            timbres: "50 timbres mensuales",
+            precio: "$249.00",
+            beneficios: ["50 timbres mensuales", "Reinicio mensual a 50 timbres", "Pago Anual"],
+        },
+        {
+            titulo: "Plan Estándar",
+            timbres: "100 timbres mensuales",
+            precio: "$399.00",
+            beneficios: ["100 timbres mensuales", "Reinicio mensual a 100 timbres", "Pago Anual"],
+        },
+        {
+            titulo: "Plan Premium",
+            timbres: "250 timbres mensuales",
+            precio: "$899.00",
+            beneficios: ["250 timbres mensuales", "Reinicio mensual a 250 timbres", "Pago Anual"],
+        }
+    ];
+
+    return (
+        <Box my={4} >
+            {/* Títulos centrados */}
+            <Typography variant="h4" textAlign="center" gutterBottom sx={{ fontWeight: '600' }}>
+                Planes de Suscripción
+            </Typography>
+            <Typography variant="subtitle1" textAlign="center" gutterBottom sx={{ marginBottom: 4 }}>
+                Los planes se renuevan mensualmente y tus timbres se reinician cada mes.
+            </Typography>
+
+            <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px', mx: 'auto' }}>
+                {planes.map((plan, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                        <Card sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3, borderRadius: 2 }}>
+                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                {/* Contenido del plan */}
+                                <Box>
+                                    <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
+                                        {plan.titulo}
+                                    </Typography>
+                                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                                        {plan.timbres}
+                                    </Typography>
+                                    <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
+                                        {plan.precio} <Typography variant="subtitle1" component="span">MXN / mes</Typography>
+                                    </Typography>
+                                </Box>
+
+                                {/* Beneficios */}
+                                <Box flexGrow={1} mb={2}>
+                                    {plan.beneficios.map((beneficio, i) => (
+                                        <Box key={i} display="flex" alignItems="center" mb={1}>
+                                            <DoneIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">{beneficio}</Typography>
+                                        </Box>
+                                    ))}
+                                </Box>
+
+                                {/* Botón y leyenda */}
+                                <Box mt="auto">
+                                    <Button variant="contained" color="primary" fullWidth>
+                                        Comprar Ahora
+                                    </Button>
+                                    <Typography variant="caption" display="block" align="center" mt={2}>
+                                    Sin expiración
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
+    );
+}

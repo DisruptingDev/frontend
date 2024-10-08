@@ -6,7 +6,7 @@ import Planes from '@/components/CompraTimbres/Planes';
 import Paquetes from '@/components/CompraTimbres/Paquetes';
 import Header from '@/components/Header/Header';
 
-export default function Pruebas() {
+export default function CompraTimbres() {
     // Estado para controlar el componente que se mostrará
     const [valorTab, setValorTab] = useState(0);
 

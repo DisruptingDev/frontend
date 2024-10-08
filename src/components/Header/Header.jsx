@@ -76,6 +76,15 @@ export default function Header({ name }) {
           Timbres +
         </Link>
         <Link
+          href="/CompraTimbres"
+          className={`text-white text-lg hover:underline underline-offset-4 ${
+            isActive("/CompraTimbres") ? "text-selected-color underline" : "text-muted-foreground"
+          }`}
+          prefetch={false}
+        >
+          Comprar +
+        </Link>
+        <Link
           href="#"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/Conceptos") ? "text-selected-color underline" : "text-muted-foreground"
