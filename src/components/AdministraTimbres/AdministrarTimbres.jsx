@@ -44,6 +44,7 @@ export default function AdministrarTimbres({ token }) {
                         for (let serie of seriesData) {
                             empresasConSeries.push({
                                 ...empresa,
+                                SerieID:serie.ID,
                                 SerieClave: serie.Clave,
                                 TimbresDisponibles: serie.TimbresDisponibles || 0,
                             });
@@ -152,7 +153,7 @@ export default function AdministrarTimbres({ token }) {
         return true; // Si no hay errores, retornar verdadero
     };
 
-    const compilarDatos = () => {
+    const compilarDatos = async () => {
         if (!validarDatos()) {
             setSnackbarMessage('Por favor, corrige los errores antes de aplicar.');
             setSnackbarSeverity('error');
@@ -160,28 +161,67 @@ export default function AdministrarTimbres({ token }) {
             return; // Si hay errores, no continuar
         }
 
-        const datosCompletos = empresasConSeries.map((empresa) => {
+        const series = empresasConSeries.map((empresa) => {
             const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
             const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-
+        
             // Calcular timbres restantes
-            const totalTimbresRestantes = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
-
+            const nuevoTotal = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
+        
             return {
-                empresaID: empresa.ID,
-                nombre: empresa.Nombre,
-                serieSeleccionada: empresa.SerieClave,
-                timbresAsignados,
-                timbresRecuperados,
-                nuevoTotal: totalTimbresRestantes,
+                ID: empresa.SerieID, // O el ID que corresponda a la Serie
+                TimbresDisponibles: nuevoTotal,
+                EmisorID: empresa.ID, // ID del emisor
+                //---------
+          
+                    // empresaID: empresa.ID,
+                    // nombre: empresa.Nombre,
+                    // serieID: empresa.SerieID,
+                    // serieSeleccionada: empresa.SerieClave,
+                    // timbresAsignados,
+                    // timbresRecuperados,
+             
             };
         });
+        
+        // Crear el objeto final con la clave "Series"
+        const datosCompletos = {
+            Series: series
+        };
+        
+        // console.log(datosCompletos);
+        try {
+            const response = await fetch('http://31.220.31.152:8085/ActualizarTimbres', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(datosCompletos),
+            });
+            if(response.ok){
+                console.log("Datos actualizados correctamente");
+                setSnackbarMessage('Los cambios se han aplicado correctamente.');
+                setSnackbarSeverity('success');
+                setOpenSnackbar(true);
 
-        console.log(datosCompletos);
+            }
+            else{
+                console.log("Error al actualizar los datos");
+                setSnackbarMessage('Error al aplicar los cambios.');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+            }
+        } catch (error) {
+            console.error('Error al actualizar los datos:', error);
+            setSnackbarMessage('Error al aplicar los cambios.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+            
+        }
+        // console.log(datosCompletos);
         // Mostrar mensaje de éxito
-        setSnackbarMessage('Los cambios se han aplicado correctamente.');
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true);
+       
     };
     const timbresData = empresasConSeries.map((empresa) => {
         const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
