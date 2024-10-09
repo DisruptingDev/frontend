@@ -113,6 +113,7 @@ export default function AdministrarTimbres({ token }) {
         });
 
         const datosCompletos = { Series: series };
+        console.log('Datos a enviar:', datosCompletos);
 
         try {
             const response = await fetch('http://31.220.31.152:8085/ActualizarTimbres', {
@@ -166,6 +167,32 @@ export default function AdministrarTimbres({ token }) {
                 <TextField label="Serie" fullWidth disabled value={empresa.SerieClave} />
                 <TextField label="Timbres disponibles" fullWidth disabled value={empresa.TimbresDisponibles || 0} />
                 <TextField
+                    label="Timbres a recuperar"
+                    fullWidth
+                    type="number"
+                    required
+                    placeholder="0"
+                    {...register(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, {
+                        valueAsNumber: true,
+                        validate: value => {
+                            if (value < 0) return "No se permiten valores negativos";
+                            if (totalTimbresRestantes < 0) return "No se pueden recuperar más del nuevo total de timbres";
+                            return true;
+                        }
+                    })}
+                    onChange={async (e) => {
+                        setValue(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, e.target.value);
+
+                        await trigger(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`);
+                    }}
+                    error={!!errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]}
+                    helperText={errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]?.message}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                    onInput={(e) => {
+                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    }} // Elimina caracteres no numéricos
+                />
+                <TextField
                     label="Timbres a asignar"
                     fullWidth
                     type="number"
@@ -192,31 +219,7 @@ export default function AdministrarTimbres({ token }) {
                         e.target.value = e.target.value.replace(/[^0-9]/g, '');
                     }} // Elimina caracteres no numéricos
                 />
-                <TextField
-                    label="Timbres a recuperar"
-                    fullWidth
-                    type="number"
-                    placeholder="0"
-                    {...register(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, {
-                        valueAsNumber: true,
-                        validate: value => {
-                            if (value < 0) return "No se permiten valores negativos";
-                            if (totalTimbresRestantes < 0) return "No se pueden recuperar más del nuevo total de timbres";
-                            return true;
-                        }
-                    })}
-                    onChange={async (e) => {
-                        setValue(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, e.target.value);
-
-                        await trigger(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`);
-                    }}
-                    error={!!errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]}
-                    helperText={errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]?.message}
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
-                    onInput={(e) => {
-                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                    }} // Elimina caracteres no numéricos
-                />
+                
                 <TextField label="Nuevo total de timbres" fullWidth disabled value={totalTimbresRestantes} />
             </Box>
         );
