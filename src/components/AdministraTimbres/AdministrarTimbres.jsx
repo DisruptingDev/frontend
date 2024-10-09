@@ -5,191 +5,115 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from "next/navigation";
 
 export default function AdministrarTimbres({ token }) {
-    const router = useRouter(); // Inicializa el router
-    const { register } = useForm();
-    const [empresas, setEmpresas] = useState([]);
+    const router = useRouter();
+    const { register, handleSubmit, watch, trigger, setValue, formState: { errors } } = useForm({
+        defaultValues: {
+            timbresAsignar: {},
+            timbresRecuperar: {},
+        }
+    });
+
     const [empresasConSeries, setEmpresasConSeries] = useState([]);
-    const [timbresAsignar, setTimbresAsignar] = useState({});
-    const [timbresRecuperar, setTimbresRecuperar] = useState({});
     const [timbresDisponibles, setTimbresDisponibles] = useState(0);
     const [timbresRestantes, setTimbresRestantes] = useState(0);
-    const [errorMessages, setErrorMessages] = useState({});
 
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' | 'error'
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
     const fetchData = useCallback(async () => {
         if (token) {
             try {
                 const response = await fetch(`http://31.220.31.152:8081/Catalogos/Emisor`, {
-                    headers: {
-                       
-                        'Authorization': `Bearer ${token}`,
-                    },
+                    headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
                     const data = await response.json();
                     const empresasConSeries = [];
-
                     for (let empresa of data) {
                         const seriesResponse = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`, {
-                            headers: {
-                        
-                                'Authorization': `Bearer ${token}`,
-                            },
+                            headers: { 'Authorization': `Bearer ${token}` },
                         });
                         const seriesData = await seriesResponse.json();
-
                         for (let serie of seriesData) {
                             empresasConSeries.push({
                                 ...empresa,
-                                SerieID:serie.ID,
+                                SerieID: serie.ID,
                                 SerieClave: serie.Clave,
                                 TimbresDisponibles: serie.TimbresDisponibles || 0,
                             });
+                            // Set default values for form inputs to 0
+                            setValue(`timbresAsignar.${empresa.ID}-${serie.Clave}`, 0);
+                            setValue(`timbresRecuperar.${empresa.ID}-${serie.Clave}`, 0);
                         }
                     }
                     setEmpresasConSeries(empresasConSeries);
-                } else {
-                    console.log("Error al cargar las empresas");
                 }
             } catch (error) {
                 console.log("Error al cargar las empresas: " + error);
             }
         }
-
-    }, [token]);
+    }, [token, setValue]);
 
     const fetchTimbresDisponibles = useCallback(async () => {
         if (token) {
             try {
                 const response = await fetch(`http://31.220.31.152:8085/TimbresDisponibles`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
+                    headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
                     const data = await response.json();
                     setTimbresDisponibles(data.TimbresDisponibles);
                     setTimbresRestantes(data.TimbresDisponibles);
-                } else {
-                    console.log("Error al cargar los timbres disponibles");
                 }
             } catch (error) {
                 console.log("Error al cargar los timbres disponibles: " + error);
             }
         }
-
     }, [token]);
 
-
     useEffect(() => {
-
-
         if (token) {
-            console.log("Token", token);
             fetchTimbresDisponibles();
             fetchData();
         }
-
     }, [fetchData, fetchTimbresDisponibles, token]);
 
     const calcularTimbresRestantes = useCallback(() => {
+        const timbresAsignar = watch('timbresAsignar');
+        const timbresRecuperar = watch('timbresRecuperar');
         const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
         const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
         const nuevoTotalRestantes = timbresDisponibles + totalRecuperados - totalAsignados;
-
         setTimbresRestantes(nuevoTotalRestantes);
-    }, [timbresRecuperar, timbresAsignar, timbresDisponibles]);
+    }, [timbresDisponibles, watch]);
+
+    // Este efecto se ejecuta cada vez que cambia un campo de asignar o recuperar
     useEffect(() => {
-        calcularTimbresRestantes();
-    }, [timbresAsignar, timbresRecuperar, timbresDisponibles, calcularTimbresRestantes]);
-
-    const handleTimbresAsignarChange = (empresaID, serieClave, event) => {
-        const timbresAAsignar = parseInt(event.target.value) || 0;
-        setTimbresAsignar((prevAsignar) => ({
-            ...prevAsignar,
-            [`${empresaID}-${serieClave}`]: timbresAAsignar,
-        }));
-    };
-
-    const handleTimbresRecuperarChange = (empresaID, serieClave, event) => {
-        const timbresARecuperar = parseInt(event.target.value) || 0;
-        setTimbresRecuperar((prevRecuperar) => ({
-            ...prevRecuperar,
-            [`${empresaID}-${serieClave}`]: timbresARecuperar,
-        }));
-    };
-
-
-
-    const validarDatos = () => {
-        const nuevosErrores = {};
-        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
-        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
-
-        empresasConSeries.forEach((empresa) => {
-            const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-            const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-
-            if (timbresRecuperados > empresa.TimbresDisponibles) {
-                nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres disponibles para recuperar.";
-            }
-            // if (timbresAsignados > timbresRestantes) {
-            //     nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
-            // }
-            if (timbresRestantes < 0) {
-                nuevosErrores[`${empresa.ID}-${empresa.SerieClave}`] = "No hay suficientes timbres restantes.";
-            }
+        const subscription = watch(() => {
+            calcularTimbresRestantes();
         });
+        return () => subscription.unsubscribe(); // Limpiar la suscripción al desmontar
+    }, [calcularTimbresRestantes, watch]);
 
-        if (Object.keys(nuevosErrores).length > 0) {
-            setErrorMessages(nuevosErrores);
-            return false; // Si hay errores, retornar falso
-        }
-
-        setErrorMessages({});
-        return true; // Si no hay errores, retornar verdadero
+    const handleChange = (fieldName) => async () => {
+        // Trigger validation when the field changes
+        await trigger(fieldName);
     };
-
-    const compilarDatos = async () => {
-        if (!validarDatos()) {
-            setSnackbarMessage('Por favor, corrige los errores antes de aplicar.');
-            setSnackbarSeverity('error');
-            setOpenSnackbar(true);
-            return; // Si hay errores, no continuar
-        }
-
+    const onSubmit = async (data) => {
         const series = empresasConSeries.map((empresa) => {
-            const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-            const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-        
-            // Calcular timbres restantes
+            const timbresAsignados = data.timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+            const timbresRecuperados = data.timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
             const nuevoTotal = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
-        
             return {
-                ID: empresa.SerieID, // O el ID que corresponda a la Serie
+                ID: empresa.SerieID,
                 TimbresDisponibles: nuevoTotal,
-                EmisorID: empresa.ID, // ID del emisor
-                //---------
-          
-                    // empresaID: empresa.ID,
-                    // nombre: empresa.Nombre,
-                    // serieID: empresa.SerieID,
-                    // serieSeleccionada: empresa.SerieClave,
-                    // timbresAsignados,
-                    // timbresRecuperados,
-             
+                EmisorID: empresa.ID,
             };
         });
-        
-        // Crear el objeto final con la clave "Series"
-        const datosCompletos = {
-            Series: series
-        };
-        
-        // console.log(datosCompletos);
+
+        const datosCompletos = { Series: series };
+
         try {
             const response = await fetch('http://31.220.31.152:8085/ActualizarTimbres', {
                 method: 'PUT',
@@ -199,39 +123,31 @@ export default function AdministrarTimbres({ token }) {
                 },
                 body: JSON.stringify(datosCompletos),
             });
-            if(response.ok){
-                console.log("Datos actualizados correctamente");
+            if (response.ok) {
                 setSnackbarMessage('Los cambios se han aplicado correctamente.');
                 setSnackbarSeverity('success');
-                setOpenSnackbar(true);
-
-            }
-            else{
-                console.log("Error al actualizar los datos");
+                setTimeout(() => {
+                    router.push("/Home");
+                }, 1500);
+            } else {
                 setSnackbarMessage('Error al aplicar los cambios.');
                 setSnackbarSeverity('error');
-                setOpenSnackbar(true);
             }
         } catch (error) {
             console.error('Error al actualizar los datos:', error);
             setSnackbarMessage('Error al aplicar los cambios.');
             setSnackbarSeverity('error');
-            setOpenSnackbar(true);
-            
         }
-        // console.log(datosCompletos);
-        // Mostrar mensaje de éxito
-       
+        setOpenSnackbar(true);
     };
-    const timbresData = empresasConSeries.map((empresa) => {
-        const timbresAsignados = timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-        const timbresRecuperados = timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
 
+    const timbresData = empresasConSeries.map((empresa) => {
+        const timbresAsignados = watch(`timbresAsignar.${empresa.ID}-${empresa.SerieClave}`) || 0;
+        const timbresRecuperados = watch(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`) || 0;
         const totalTimbresRestantes = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
 
         return (
             <Box
-                fullWidth
                 key={`${empresa.ID}-${empresa.SerieClave}`}
                 display="grid"
                 gap={3}
@@ -241,98 +157,110 @@ export default function AdministrarTimbres({ token }) {
                     gridTemplateColumns: {
                         xs: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
                         sm: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                        md: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr ',
-                        lg: '1.5fr 0.5fr 0.8fr 0.8fr 0.8fr 0.8fr '
+                        md: '1.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
+                        lg: '1.5fr 0.5fr 0.8fr 0.8fr 0.8fr 0.8fr'
                     }
                 }}
             >
+                <TextField label="Nombre" fullWidth disabled value={empresa.Nombre} />
+                <TextField label="Serie" fullWidth disabled value={empresa.SerieClave} />
+                <TextField label="Timbres disponibles" fullWidth disabled value={empresa.TimbresDisponibles || 0} />
                 <TextField
-                    label="Nombre"
-                    fullWidth
-                    disabled
-                    value={empresa.Nombre}
-                />
-                <TextField
-                    label="Serie"
-                    fullWidth
-                    disabled
-                    value={empresa.SerieClave}
-                />
-                <TextField
-                    fullWidth
-                    value={empresa.TimbresDisponibles || 0}
-                    label="Timbres disponibles"
-                    disabled
-                />
-                <TextField
-
-                    fullWidth
                     label="Timbres a asignar"
-                    placeholder="0"
+                    fullWidth
                     type="number"
-                    value={timbresAsignados}
-                    onChange={(event) => handleTimbresAsignarChange(empresa.ID, empresa.SerieClave, event)}
-                    error={timbresRestantes < 0}
-                    helperText={timbresRestantes < 0 ? "Timbres insuficientes" : ""}
+                    placeholder="0"
+                    required
+                    {...register(`timbresAsignar.${empresa.ID}-${empresa.SerieClave}`, {
+                        valueAsNumber: true,
+                        validate: value => {
+                            if (value < 0) return "No se permiten valores negativos";
+                            if (value > timbresRestantes) return "No se pueden asignar más timbres de los restantes";
+                            return true;
+                        }
+                    })}
+                    error={!!errors.timbresAsignar?.[`${empresa.ID}-${empresa.SerieClave}`]}
+                    helperText={errors.timbresAsignar?.[`${empresa.ID}-${empresa.SerieClave}`]?.message}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                    // onChange={handleChange(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`)}
+                    onChange={async (e) => {
+                        setValue(`timbresAsignar.${empresa.ID}-${empresa.SerieClave}`, e.target.value);
+
+                        await trigger(`timbresAsignar.${empresa.ID}-${empresa.SerieClave}`);
+                    }}
+                    onInput={(e) => {
+                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    }} // Elimina caracteres no numéricos
                 />
                 <TextField
-                    fullWidth
                     label="Timbres a recuperar"
-                    placeholder="0"
-                    type="number"
-                    value={timbresRecuperados}
-                    onChange={(event) => handleTimbresRecuperarChange(empresa.ID, empresa.SerieClave, event)}
-                    error={timbresRecuperados > empresa.TimbresDisponibles}
-                    helperText={timbresRecuperados > empresa.TimbresDisponibles ? "Timbres insuficientes" : ""}
-                />
-                <TextField
                     fullWidth
-                    label="Nuevo total de timbres"
-                    value={totalTimbresRestantes}
-                    disabled
+                    type="number"
+                    placeholder="0"
+                    {...register(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, {
+                        valueAsNumber: true,
+                        validate: value => {
+                            if (value < 0) return "No se permiten valores negativos";
+                            if (totalTimbresRestantes < 0) return "No se pueden recuperar más del nuevo total de timbres";
+                            return true;
+                        }
+                    })}
+                    onChange={async (e) => {
+                        setValue(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`, e.target.value);
+
+                        await trigger(`timbresRecuperar.${empresa.ID}-${empresa.SerieClave}`);
+                    }}
+                    error={!!errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]}
+                    helperText={errors.timbresRecuperar?.[`${empresa.ID}-${empresa.SerieClave}`]?.message}
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                    onInput={(e) => {
+                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    }} // Elimina caracteres no numéricos
                 />
+                <TextField label="Nuevo total de timbres" fullWidth disabled value={totalTimbresRestantes} />
             </Box>
         );
     });
 
-
     return (
-        <Box>
-            {/* <Typography variant="h6">Administrar de timbres.</Typography> */}
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
             <Grid container spacing={3} marginTop={2}>
-                <Grid item xs={12} sm={12}>
+                <Grid item xs={12}>
                     <Typography variant="subtitle1" sx={{ color: "#00ACC1" }}>
                         <Box component="span" sx={{ marginRight: 2 }}>
                             Timbres Disponibles: <strong>{timbresDisponibles}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Distribuidos: <strong>{Object.values(timbresAsignar).reduce((a, b) => a + b, 0)}</strong>
+                            Timbres Distribuidos: <strong>{Object.values(watch('timbresAsignar')).reduce((a, b) => a + b, 0)}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Recuperados: <strong>{Object.values(timbresRecuperar).reduce((a, b) => a + b, 0)}</strong>
+                            Timbres Recuperados: <strong>{Object.values(watch('timbresRecuperar')).reduce((a, b) => a + b, 0)}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
                             Timbres Restantes: <strong>{timbresRestantes}</strong>
                         </Box>
                     </Typography>
                 </Grid>
-                {timbresData}
-            </Grid>
-            <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
-                <Grid item>
-                    <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
-                        Cancelar
-                    </Button>
+                <Grid item xs={12}>
+                    {timbresData}
                 </Grid>
-                <Grid item>
-                    <Button
-                        variant="contained"
-                        style={{ backgroundColor: '#04b2ca', color: 'white' }}
-                        onClick={compilarDatos}
-                    >
-                        Aplicar
-                    </Button>
+                <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
+                    <Grid item>
+                        <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
+                            Cancelar
+                        </Button>
+                    </Grid>
+                    <Grid item>
+                        <Button
+                            variant="contained"
+                            style={{ backgroundColor: '#04b2ca', color: 'white' }}
+                            type="submit"
+                        >
+                            Aplicar
+                        </Button>
+                    </Grid>
                 </Grid>
+
             </Grid>
             <Snackbar
                 open={openSnackbar}
