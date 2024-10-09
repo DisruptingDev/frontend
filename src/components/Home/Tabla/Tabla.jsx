@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -19,13 +19,13 @@ import {
   Snackbar,
   Alert,
   Modal,
-  CircularProgress, Typography, List, ListItem, ListItemText, ListItemIcon, Tooltip, LinearProgress
+  CircularProgress, Typography, List, ListItem, ListItemText, ListItemIcon, Tooltip, LinearProgress, Collapse
 
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation'; // Importa correctamente desde next/navigation
 import generarVistaPrevia from '../Factura/GenerarVistaPrevia';
-import { CheckCircleOutline, ErrorOutline, CheckCircle as CheckCircleIcon, HourglassEmpty as HourglassEmptyIcon, Info as InfoIcon } from '@mui/icons-material';
+import { CheckCircleOutline, ErrorOutline, CheckCircle as CheckCircleIcon, HourglassEmpty as HourglassEmptyIcon, Info as InfoIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { set } from 'date-fns';
 import typography from '@/@core/theme/typography';
 
@@ -43,7 +43,7 @@ const formatCurrency = (value) => {
   }).format(value);
 }
 
-export default function DataTable( {token} ) {
+export default function DataTable({ token }) {
   const [rows, setRows] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -67,7 +67,15 @@ export default function DataTable( {token} ) {
   // const [confirmationMessage, setConfirmationMessage] = useState(''); // Mensaje de confirmación
 
 
+  const [expandedIndexes, setExpandedIndexes] = useState({});
 
+  // Función para alternar la expansión de una factura específica
+  const handleToggleExpand = (index) => {
+    setExpandedIndexes((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
   const [openModal, setOpenModal] = useState(false); // Loading modal
   const [openModalSuccess, setOpenModalSuccess] = useState(false); // Success modal
   const [openModalError, setOpenModalError] = useState(false); // Error modal
@@ -244,17 +252,17 @@ export default function DataTable( {token} ) {
     console.log('Descargando facturas:', ids);
     setLoading(true);
     setProgress(0);
-  
+
     // Inicializamos el arreglo de estatus
     const initialStatus = ids.map(id => ({
       id,
       name: 'Cargando nombre...', // Se muestra "Cargando nombre..." mientras se obtienen las facturas
       status: 'progress', // 'progress' indica que aún no ha sido descargada
     }));
-  
+
     setFacturasStatus(initialStatus);
     setIsModalOpen(true); // Abrimos el modal
-  
+
     try {
       // Primero obtenemos todas las facturas para mostrar sus nombres
       const facturas = await Promise.all(
@@ -269,7 +277,7 @@ export default function DataTable( {token} ) {
           }
         })
       );
-  
+
       // Actualizar el nombre de las facturas en el estado
       setFacturasStatus(prevStatus =>
         prevStatus.map(f =>
@@ -278,22 +286,22 @@ export default function DataTable( {token} ) {
             : f
         )
       );
-  
+
       // Usa facturas.length en lugar de facturasStatus.length
       const totalFacturas = facturas.length;
       let downloadedFacturas = 0;
-  
+
       // Después generamos los archivos
       for (const { id, factura, name } of facturas) {
         console.log('Progress:', progress);
         if (factura) {
           setFacturaActual(name);
           const htmlContent = await generarVistaPrevia(factura);
-  
+
           if (factura.uuid === '') {
             // Generar PDF
             await generarPDF(htmlContent, `${name}.pdf`);
-  
+
             // Actualizar nombre con extensión PDF en el estado
             setFacturasStatus(prevStatus =>
               prevStatus.map(f =>
@@ -305,7 +313,7 @@ export default function DataTable( {token} ) {
             const xmlContent = await generarXML(id);
             if (xmlContent) {
               await generarZIP(htmlContent, xmlContent, `${name}.zip`);
-  
+
               // Actualizar nombre con extensión ZIP en el estado
               setFacturasStatus(prevStatus =>
                 prevStatus.map(f =>
@@ -317,10 +325,10 @@ export default function DataTable( {token} ) {
             }
           }
         }
-  
+
         // Incrementa el contador de facturas descargadas
         downloadedFacturas += 1;
-  
+
         // Calcula el progreso y actualiza el estado
         const newProgress = (downloadedFacturas / totalFacturas) * 100;
         console.log('downloadedFacturas:', downloadedFacturas);
@@ -334,7 +342,7 @@ export default function DataTable( {token} ) {
       setLoading(false);
     }
   };
-  
+
 
   const handleDownload = async (id) => {
     // Mostrar el modal de espera
@@ -436,8 +444,9 @@ export default function DataTable( {token} ) {
           const statusList = data.Facturas.map(factura => ({
             id: factura.facturaID, // Suponiendo que cada factura tiene un ID
             status: factura.status,
-            error: factura.message || null,
+            error: factura.error || null,
           }));
+          console.log('Status list:', statusList);
           setFacturasTimbradas(statusList); // Guarda el estado de las facturas
           // for (const factura of data.Facturas) {
           //   if (factura.status === 'success') {
@@ -487,46 +496,46 @@ export default function DataTable( {token} ) {
   };
 
   const fetchData = useCallback(async () => {
-    if(token){
-       try {
-      // const token = localStorage.getItem('authToken');
+    if (token) {
+      try {
+        // const token = localStorage.getItem('authToken');
 
-      const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+        const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        const data = await response.json();
+        console.log('Data received from API:', data);
+
+        if (Array.isArray(data)) {
+          const transformedData = data.map((item) => createData(item));
+          const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+          setRows(sortedData);
+        } else {
+          console.error('Expected an array but received:', typeof data);
         }
-      });
-      const data = await response.json();
-      console.log('Data received from API:', data);
-
-      if (Array.isArray(data)) {
-        const transformedData = data.map((item) => createData(item));
-        const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-        setRows(sortedData);
-      } else {
-        console.error('Expected an array but received:', typeof data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
       }
-    } catch (error) {
-      console.error('Error fetching data:', error);
     }
-    }
-   
+
   }, [token]);
   useEffect(() => {
-   
+
 
     fetchData();
   }, [fetchData, token]);
 
-  useEffect(()=> {
-    if(actualizar) {
+  useEffect(() => {
+    if (actualizar) {
       console.log('Actualizando');
       fetchData();
       setActualizar(false);
     }
-      
-    }, [actualizar, fetchData]);
+
+  }, [actualizar, fetchData]);
 
   const handleRowClick = (row) => {
     setSelectedRow(row);
@@ -644,6 +653,7 @@ export default function DataTable( {token} ) {
                         <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                         <MenuItem key="prefactura" onClick={() => handlePrefactura([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                         <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
+                        <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
                         // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
 
                       ]}
@@ -729,7 +739,7 @@ export default function DataTable( {token} ) {
           <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb: 2 }} />
           <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
           <Button onClick={handleCloseModal} variant="contained" sx={{
-            mt: 2, 
+            mt: 2,
           }}>
             Cerrar
           </Button>
@@ -782,7 +792,7 @@ export default function DataTable( {token} ) {
           textAlign: 'center',
         }}>
           <Typography variant="h6" gutterBottom>
-          {loading ? "Descargando Facturas" : 'Facturas Descargadas'}
+            {loading ? "Descargando Facturas" : 'Facturas Descargadas'}
           </Typography>
           <Typography variant="h6" gutterBottom>
             {loading ? facturaActual : ''}
@@ -799,18 +809,18 @@ export default function DataTable( {token} ) {
               // },
             }}
           />
-          
+
           {!loading && (
             // Si no está cargando, muestra el botón de OK
             <>
               <Typography>Revise su carpeta de descargas </Typography>
               <Button onClick={handleCloseModal} variant="contained" sx={{
-                mt: 2, 
+                mt: 2,
               }}>
                 OK
               </Button>
             </>
-          )} 
+          )}
           {/* <List>
             {facturasStatus.map(factura => (
               <ListItem key={factura.id}>
@@ -852,79 +862,78 @@ export default function DataTable( {token} ) {
       </Modal>
 
 
+
       <Modal open={openModalTimbrar} onClose={handleCloseModal}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '60%',
+          // minWidth: '400px',
+          // maxWidth: '80%',
+          maxHeight: '80vh', // Limita la altura máxima del modal
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          borderRadius: '16px',
+          textAlign: 'center',
+        }}
+      >
+        <Typography variant="h6" gutterBottom>
+          Resultados de Timbrado de Facturas
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom>
+          Total: {facturasTimbradas.length} | Exitosas: {facturasTimbradas.filter(f => f.status === 'success').length} | Con Error: {facturasTimbradas.filter(f => f.status === 'error').length}
+        </Typography>
+
         <Box
           sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'auto',
-            minWidth: '400px',
-            maxWidth: '60%',
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 4,
-            borderRadius: '16px',
-            textAlign: 'center',
+            width: '100%',
+            maxHeight: '60vh', // Limita la altura para hacer scroll si es necesario
+            overflowY: 'auto',
+             overflowX: 'hidden',
           }}
         >
-          <Typography variant="h6" gutterBottom>
-            Estado de Timbrado
-          </Typography>
           <List>
             {facturasTimbradas.map((factura, index) => (
               <ListItem key={index}>
-                <ListItemText primary={`ID: ${factura.id}`} />
-                <ListItemText primary={`Estatus: ${factura.status}`} />
-                {factura.error ? (
-                  <Tooltip
-                    title={
-                      <Typography variant="body1" sx={{ color: 'white' }}>
+                {/* <ListItemText primary={`Factura ${factura.id}`} /> */}
+                {factura.status === 'error' ? (
+                  <Box sx={{ width: '100%' }}>
+                    <Alert severity="error" sx={{ mb: 2, width:'100%', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal' }}>
+                      <Typography variant="body2" sx={{fontWeight:'bold'}} noWrap={!expandedIndexes[index]}>
+                       Error en la Factura con ID: {factura.id}
+                      </Typography>
+                      <Typography variant="body2" noWrap={!expandedIndexes[index]}>
                         {factura.error}
                       </Typography>
-                    }
-                    arrow
-                  //  sx={{
-                  //    bgcolor: 'error.main', // Color de fondo
-                  //    '& .MuiTooltip-arrow': {
-                  //      color: 'error.main', // Color de la flecha
-                  //    },
-                  //  }}
-                  >
-                    <ListItemIcon sx={{
-                      display: 'flex',
-                      justifyContent: 'center', // Centra el contenido en el eje horizontal
-                      alignItems: 'center', // Centra el contenido en el eje vertical
-                    }}>
-                      <InfoIcon sx={{ color: 'red' }} />
-                    </ListItemIcon>
-                  </Tooltip>
+                      <IconButton size="small" onClick={() => handleToggleExpand(index)}>
+                        {expandedIndexes[index] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      </IconButton>
+                    </Alert>
+               
+                  </Box>
                 ) : (
-                  <ListItemIcon sx={{
-                    display: 'flex',
-                    justifyContent: 'center', // Centra el contenido en el eje horizontal
-                    alignItems: 'center', // Centra el contenido en el eje vertical
-                  }}>
+                  <ListItemIcon>
                     <CheckCircleIcon color="success" />
                   </ListItemIcon>
                 )}
               </ListItem>
             ))}
           </List>
-          <Button
-            onClick={handleCloseModal}
-            variant="contained"
-            sx={{
-              mt: 2,
-             
-            }}
-          >
-            OK
-          </Button>
         </Box>
-      </Modal>
 
+        <Button
+          onClick={handleCloseModal}
+          variant="contained"
+          sx={{ mt: 2 }}
+        >
+          OK
+        </Button>
+      </Box>
+    </Modal>
 
 
 
