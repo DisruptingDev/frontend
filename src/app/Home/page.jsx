@@ -16,6 +16,7 @@ export default function Home() {
     const { register } = useForm();
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState("");
+    const [filtro, setFiltro] = useState(null);
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente
@@ -32,8 +33,8 @@ export default function Home() {
     return (
         <Box>
             <Header />  
-            <SearchFilter register = {register}/>
-            <Tabla token = {token} />
+            <SearchFilter register = {register} setFiltro={setFiltro} />
+            <Tabla token = {token} filtro={filtro} />
         </Box>
     );
 }

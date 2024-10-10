@@ -49,8 +49,9 @@ const formatCurrency = (value) => {
   }).format(value);
 }
 
-export default function DataTable({ token }) {
+export default function DataTable({ token, filtro}) {
   const [rows, setRows] = useState([]);
+  const [registros, setRegistros] = useState([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -519,6 +520,7 @@ export default function DataTable({ token }) {
           const transformedData = data.map((item) => createData(item));
           const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
           setRows(sortedData);
+          setRegistros(sortedData);
         } else {
           console.error('Expected an array but received:', typeof data);
         }
@@ -542,6 +544,58 @@ export default function DataTable({ token }) {
     }
 
   }, [actualizar, fetchData]);
+
+
+  useEffect(() => {
+    if (filtro) {
+      console.log('Filtrando:', filtro);
+  
+      // Asegúrate de que filtro.Emisor y filtro.Receptor estén definidos
+      const emisorFilter = filtro.Emisor ? filtro.Emisor : '';
+      const receptorFilter = filtro.Receptor ? filtro.Receptor : '';
+      const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
+      const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
+  
+      console.log('Emisor:', emisorFilter);
+      console.log('Receptor:', receptorFilter);
+      console.log('Estatus:', filtro.Estatus);
+  
+      // Filtrando los registros basado en Emisor y Receptor
+      let newFilteredRows = registros.filter(registro =>
+        registro.Emisor.Rfc.includes(emisorFilter) && 
+        registro.Receptor.Rfc.includes(receptorFilter)
+      );
+  
+      console.log('Filtered rows after Emisor and Receptor:', newFilteredRows);
+  
+      // Filtrando por Estatus
+      if (filtro.Estatus === 'timbrada') {
+        console.log('Filtrando timbradas');
+        newFilteredRows = newFilteredRows.filter(registro => registro.uuid !== '');
+        console.log('Filtered rows after Estatus:', newFilteredRows);
+      } else if (filtro.Estatus === 'notimbrada') {
+        console.log('Filtrando no timbradas');
+        newFilteredRows = newFilteredRows.filter(registro => registro.uuid === '');
+        console.log('Filtered rows after Estatus:', newFilteredRows);
+      }
+      // Filtrando por fecha
+    if (fechaInicio && fechaFin) {
+      newFilteredRows = newFilteredRows.filter(registro => {
+        const fechaRegistro = new Date(registro.Fecha);
+        return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
+      });
+    }
+    console.log('Filtered rows after Fecha:', newFilteredRows);
+  
+      setRows(newFilteredRows);
+   
+    } else {
+      console.log('No hay filtro');
+    }
+  }, [filtro]);
+  
+  // Usa filteredRows para renderizar la tabla
+  
 
   const handleRowClick = (row) => {
     setSelectedRow(row);

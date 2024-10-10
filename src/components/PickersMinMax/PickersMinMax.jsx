@@ -1,7 +1,7 @@
 'use client';
 
 // React Imports
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect } from 'react';
 
 // MUI Imports
 import TextField from '@mui/material/TextField';
@@ -83,7 +83,9 @@ const CustomInput = forwardRef(({ value, onClick }, ref) => (
 
 CustomInput.displayName = 'CustomInput';
 
-const DateRangePickerComponent = () => {
+
+
+const DateRangePickerComponent = ({register, setValue, resetCalendario, setResetCalendario}) => {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState((new Date()));
 
@@ -91,7 +93,26 @@ const DateRangePickerComponent = () => {
     const [start, end] = dates;
     setStartDate(start);
     setEndDate(end);
+    setValue("FechaInicio", start);
+    setValue("FechaFin", end);
+    // register("FechaInicio").onChange(start);
+    // register("FechaFin").onChange(end);
+    console.log("Fechas",start, end);
   };
+  useEffect(() => {
+    setValue("FechaInicio", startDate);
+    setValue("FechaFin", endDate);
+  }, [endDate, setValue, startDate]);
+
+  useEffect(() => {
+    if (resetCalendario) {
+      setStartDate(new Date());
+      setEndDate(new Date());
+      setValue("FechaInicio", new Date());
+      setValue("FechaFin", new Date());
+      setResetCalendario(false);
+    }
+  }, [resetCalendario, setResetCalendario, setValue]);
 
   return (
     <StyledReactDatePicker>
