@@ -143,6 +143,10 @@ export default function AltaSerie({ token }) {
                             }
                         })}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                        onInput={(e) => {
+                            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                        }} // Elimina caracteres no numéricos
                     />
                 </Box>
 
@@ -159,7 +163,7 @@ export default function AltaSerie({ token }) {
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404' }}
+                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
                         type="button"
                         onClick={() => router.push("/Home")}
                     >

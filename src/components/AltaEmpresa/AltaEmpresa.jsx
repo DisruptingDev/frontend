@@ -424,7 +424,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404' }}
+                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
                         type="button"
                         onClick={handleReset}
                     >

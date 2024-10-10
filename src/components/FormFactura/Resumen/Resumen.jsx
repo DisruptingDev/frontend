@@ -2,6 +2,7 @@
 import Input from "@/components/Input/Input.jsx";
 import { Select, SelectNoLabel } from "@/components/Select/Select.jsx";
 import { CalculosFinales } from "./Calculos/Calculo.js";
+import textAlign from "tailwindcss-logical/plugins/textAlign.js";
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
     let finales = CalculosFinales(conceptos);
@@ -13,8 +14,8 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
             <div className="grid grid-cols-1 gap-6">
                 <table className="table table-md">
                     <thead className="bg-primary-dark-total text-white h-12">
-                        <tr>
-                            <th>#</th><th>Clave Prod.</th><th>Clave Unidad.</th><th>Concepto</th><th>Cantidad</th><th>Precio Unitario</th><th>Descuento</th><th>Traslados</th><th>Retenciones</th><th>Monto</th><th>Acciones</th>
+                        <tr sx={{textAlign:'center'}}>
+                            <th>#</th><th>Clave Prod.</th><th>Clave Unidad.</th><th>Concepto</th><th>Cantidad</th><th>Precio Unitario</th><th>Descuento</th><th>Traslados</th><th>Retenciones</th><th>Monto</th><th sx={{textAlign: 'center'}}>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -30,7 +31,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                 <td>{concepto.TotalTraslados}</td>
                                 <td>{concepto.TotalRetenciones}</td>
                                 <td>{concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones}</td>
-                                <td>
+                                <td sx={{textAlign:'center'}}>
                                     <button
                                         type="button"
                                         onClick={() => handleEditConcepto(index)}

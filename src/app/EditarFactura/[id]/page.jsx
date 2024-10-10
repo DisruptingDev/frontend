@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { get, useForm } from 'react-hook-form';
-import { Snackbar, Alert, Modal, Box } from '@mui/material';
+import { Snackbar, Alert, Modal, Box, Button } from '@mui/material';
 import { useParams } from 'next/navigation';
 
 import Header from "@/components/Header/Header.jsx";
@@ -199,10 +199,13 @@ export default function EditarFactura() {
                     handleEditConcepto={handleEditConcepto}
                     handleDeleteConcepto={handleDeleteConcepto}
                 >
-                    <div className="flex justify-end w-full space-x-2 mt-10">
-                        <button className="btn btn-secondary bg-red-700" type="button" onClick={() => router.push("/Home")}>Cancelar</button>
-                        <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button>
-                        <button type="submit" className="btn btn-primary bg-primary-dark-total">Actualizar Factura</button>
+                     <div className="flex justify-end w-full space-x-2 mt-10">
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}} onClick={() => router.push("/Home")}>Cancelar</Button>
+                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}} onClick={handlePreview}>Vista previa</Button>
+                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
+                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
                     </div>
                 </Resumen>
                 {/* <pre>

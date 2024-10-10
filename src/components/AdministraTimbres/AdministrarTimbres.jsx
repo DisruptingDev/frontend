@@ -249,14 +249,14 @@ export default function AdministrarTimbres({ token }) {
                 </Grid>
                 <Grid container justifyContent="flex-end" spacing={2} marginTop={3}>
                     <Grid item>
-                        <Button variant="contained" onClick={() => router.push("/Home")} style={{ backgroundColor: '#da0404', color: 'white' }}>
+                        <Button variant="contained" type="button" onClick={() => router.push("/Home")} sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}}>
                             Cancelar
                         </Button>
                     </Grid>
                     <Grid item>
                         <Button
                             variant="contained"
-                            style={{ backgroundColor: '#04b2ca', color: 'white' }}
+                            sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}}
                             type="submit"
                         >
                             Aplicar

@@ -586,18 +586,19 @@ export default function DataTable({ token }) {
       <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
         <Button
           variant="contained"
-          color="primary"
+
           disabled={selectedRows.length === 0}
           onClick={() => handleTimbrar(selectedRows)}
+          sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }}
         >
           Timbrar Seleccionadas
         </Button>
         <Button
           variant="contained"
-          color="primary"
 
           disabled={selectedRows.length === 0}
           onClick={() => handleDownloadSelecteds(selectedRows)}
+          sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f',} }}
         >
           Descargar Seleccionadas
         </Button>
@@ -629,11 +630,17 @@ export default function DataTable({ token }) {
                   onClick={() => handleRowClick(row)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
+                  <TableCell padding="checkbox" sx={{ textAlign: 'center'  }}>
                     <Checkbox
                       color="primary"
                       checked={selectedRows.includes(row.ID)}
                       onChange={() => handleSelectRow(row)}
+                      sx={{
+                        color: '#04b2ca', // Color del checkbox cuando no está seleccionado
+                        '&.Mui-checked': {
+                          color: '#028596', // Color del checkbox cuando está seleccionado
+                        },
+                      }}
                     />
                   </TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
@@ -654,6 +661,9 @@ export default function DataTable({ token }) {
                       anchorEl={anchorEl}
                       open={Boolean(anchorEl)}
                       onClose={handleMenuClose}
+                      sx={{
+                        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // Reduce la sombra
+                      }}
                     >
                       {menuRow && menuRow.uuid === '' && [
                         <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,

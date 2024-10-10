@@ -525,7 +525,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 <Button
                     startIcon={<AddCircleIcon />}
                     variant="contained"
-                    sx={{ backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))' }}
+                    sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }}
                     onClick={handleAgregarConcepto}
                 >
                     {editIndex !== null ? "Guardar Cambios" : "Agregar Concepto"}

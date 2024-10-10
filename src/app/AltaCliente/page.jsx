@@ -111,13 +111,11 @@ export default function RegistroClientes() {
                     <Button
                         variant="contained"
                         sx={{
-                            backgroundColor: 'rgba(29, 57, 77, 1)',
+                            backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'},
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            '&:hover': {
-                                backgroundColor: 'rgba(19, 47, 67, 1)',
-                            }
+                           
                         }}
                         onClick={handleOpenModal}
                     >
