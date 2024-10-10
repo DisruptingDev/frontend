@@ -9,6 +9,7 @@ import Tabla from "@/components/Home/Tabla/Tabla.jsx"
 import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa.jsx"
 import AltaCliente from "@/components/AltaCliente/AltaCliente.jsx"
 import { isAuthenticated } from "@/utils/authRedirect"; 
+import { Box } from "@mui/material"; // Add this line to import Box
 
 
 export default function Home() {
@@ -29,11 +30,11 @@ export default function Home() {
     }, [router]);
     
     return (
-        <div>
+        <Box>
             <Header />  
             <SearchFilter register = {register}/>
             <Tabla token = {token} />
-        </div>
+        </Box>
     );
 }
 

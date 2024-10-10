@@ -22,7 +22,7 @@ export default function SearchFilter({ register }) {
                 borderRadius: '8px',
                 boxShadow: 1,
                 margin: 1,
-                mt: 6
+                mt: 1
             }}
         >
             <Box
@@ -34,7 +34,7 @@ export default function SearchFilter({ register }) {
 
                 }}
             >
-                <Box sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}>
+                <Box sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}>
                     <PickersMinMax />
                 </Box>
 
@@ -44,7 +44,7 @@ export default function SearchFilter({ register }) {
                     url="http://31.220.31.152:8081/Catalogos/Emisor"
                     clave="Rfc"
                     descripcion="Nombre"
-                    sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
+                    sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}
                     variant="filled"
                 />
                 <Select
@@ -53,11 +53,12 @@ export default function SearchFilter({ register }) {
                     url="http://31.220.31.152:8081/Catalogos/Receptor"
                     clave="Rfc"
                     descripcion="Nombre"
-                    sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
+                    sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}
                     variant="filled"
                 />
-                <FormControl fullWidth>
-                    <InputLabel id="demo-simple-select-label">Estatus</InputLabel>
+                <FormControl fullWidth variant='filled'
+                 sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}>
+                    <InputLabel id="demo-simple-select-label" >Estatus</InputLabel>
                     <MuiSelect
                         {...register("Estatus", {
                             required: "Este campo es obligatorio",
@@ -70,26 +71,17 @@ export default function SearchFilter({ register }) {
                             setSelectedValue(event.target.value); // Actualiza el valor seleccionado en el estado local
                             handleChange(event); // Llama a tu función personalizada si es necesario
                         }}
-                        sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
+                       
                     >
                         <MenuItem value={"timbrada"}>Timbrada</MenuItem>
                         <MenuItem value={"notimbrada"}>No timbrada</MenuItem>
                     </MuiSelect>
                 </FormControl>
 
-                {/* <Select
-                    register={register}
-                    nombre="Usuario"
-                    url=""
-                    clave="nombre"
-                    descripcion="Nombre"
-                    sx={{ background: "white", borderRadius: "5px", color: "black", minWidth: '200px' }}
-                    variant="filled"
-                /> */}
                 <Button
                     variant="contained"
                     color="primary"
-                    sx={{ height: '90%', background: "white", color: "black" }} // Ocupa toda la altura de la fila
+                    sx={{ height: '90%', background: "#e8e8e8", color: "black" }} // Ocupa toda la altura de la fila
                 >
                     Buscar
                 </Button>

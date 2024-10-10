@@ -36,7 +36,7 @@ const StyledReactDatePicker = styled('div')(({ theme }) => ({
       fontWeight: theme.typography.fontWeightMedium,
     },
     '& .react-datepicker__day--selected, & .react-datepicker__day--in-range': {
-      backgroundColor: theme.palette.primary.main,
+      backgroundColor: theme.palette.primary.light,
       color: theme.palette.common.white,
     },
     '& .react-datepicker__day:hover': {
@@ -44,11 +44,11 @@ const StyledReactDatePicker = styled('div')(({ theme }) => ({
       color: theme.palette.common.white,
     },
     '& .react-datepicker__day--keyboard-selected': {
-      backgroundColor: theme.palette.primary.dark,
+      backgroundColor: theme.palette.primary.light,
     },
     '& .react-datepicker__day--today': {
       fontWeight: 'bold',
-      color: theme.palette.primary.main,
+      color: 'white',
     },
   },
 }));
