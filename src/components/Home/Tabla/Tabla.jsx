@@ -29,6 +29,12 @@ import { CheckCircleOutline, ErrorOutline, CheckCircle as CheckCircleIcon, Hourg
 import { set } from 'date-fns';
 import typography from '@/@core/theme/typography';
 
+import ModalLoading from '@/components/Home/Modales/modalLoading';
+import ModalExito from '@/components/Home/Modales/modalExito';
+import ModalError from '@/components/Home/Modales/modalError';
+import ModalDescarga from '@/components/Home/Modales/modalDescarga';
+import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
+
 
 function createData(item) {
   return { ...item };
@@ -684,257 +690,21 @@ export default function DataTable({ token }) {
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`}
         />
       </Paper>
+
       {/* Loading Modal */}
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'auto',
-          minWidth: '300px',
-          minHeight: '175px',
-
-          bgcolor: 'white',
-          boxShadow: 24,
-          p: 2,
-          borderRadius: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-          {loading &&
-            <Box sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>{loadingMessage}</Typography>
-              <CircularProgress />
-            </Box>}
-
-        </Box>
-      </Modal>
+      <ModalLoading openModal={openModal} handleCloseModal={handleCloseModal} loading={loading} loadingMessage={loadingMessage} />
 
       {/* Success Modal */}
-      <Modal open={openModalSuccess} onClose={handleCloseModal}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'auto',
-          minWidth: '400px',
-
-          bgcolor: 'white',
-          boxShadow: 24,
-          p: 2,
-          borderRadius: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}>
-          <CheckCircleOutline sx={{ fontSize: 80, color: 'green', mb: 2 }} />
-          <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
-          <Button onClick={handleCloseModal} variant="contained" sx={{
-            mt: 2,
-          }}>
-            Cerrar
-          </Button>
-        </Box>
-      </Modal>
+     <ModalExito openModalSuccess={openModalSuccess} handleCloseModal={handleCloseModal} confirmationMessage={confirmationMessage} />
 
       {/* Error Modal */}
-      <Modal open={openModalError} onClose={handleCloseModal}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'auto',
-          minWidth: '400px',
-          maxWidth: '40%',
-          bgcolor: 'white',
-          boxShadow: 24,
-          p: 2,
-          borderRadius: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}>
-          <ErrorOutline sx={{ fontSize: 80, color: 'red' }} />
-          <Typography sx={{ mb: 2, textAlign: 'center', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: confirmationMessage }} />
-          <Button onClick={handleCloseModal} variant="contained" sx={{
-            mt: 2,
-          }}>
-            OK
-          </Button>
-        </Box>
-      </Modal>
+      <ModalError openModalError={openModalError} handleCloseModal={handleCloseModal} confirmationMessage={confirmationMessage} />
 
+      {/* Descarga Modal */}
+      <ModalDescarga isModalOpen={isModalOpen} handleCloseModal={handleCloseModal} loading={loading} facturaActual={facturaActual} progress={progress} />
 
-
-      <Modal open={isModalOpen} onClose={handleCloseModal}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'auto',
-          minWidth: '400px',
-          maxWidth: '40%',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: '8px',
-          textAlign: 'center',
-        }}>
-          <Typography variant="h6" gutterBottom>
-            {loading ? "Descargando Facturas" : 'Facturas Descargadas'}
-          </Typography>
-          <Typography variant="h6" gutterBottom>
-            {loading ? facturaActual : ''}
-          </Typography>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{
-              height: 10, // Altura de la barra de progreso
-              borderRadius: 5, // Bordes redondeados
-              // bgcolor: '#e0e0e0', // Color de fondo
-              // '& .MuiLinearProgress-bar': {
-              //   backgroundColor: progress >= 100 ? '#4caf50' : '#1a90ff', // Cambia el color cuando llegue al 100%
-              // },
-            }}
-          />
-
-          {!loading && (
-            // Si no está cargando, muestra el botón de OK
-            <>
-              <Typography>Revise su carpeta de descargas </Typography>
-              <Button onClick={handleCloseModal} variant="contained" sx={{
-                mt: 2,
-              }}>
-                OK
-              </Button>
-            </>
-          )}
-          {/* <List>
-            {facturasStatus.map(factura => (
-              <ListItem key={factura.id}>
-                <ListItemText sx={{ mx: 3 }}
-                  primary={factura.name || 'Descargando...'}
-                />
-                <ListItemIcon>
-                  {factura.status === 'downloaded' ? (
-                    <CheckCircleIcon color="success" />
-                  ) : (
-                    <CircularProgress size={24} />
-                  )}
-                </ListItemIcon>
-              </ListItem>
-            ))}
-          </List> */}
-
-
-
-          {/* {loading && (
-            
-          )}
-
-          {!loading && (
-            // Si no está cargando, muestra el botón de OK
-            <>
-              <Typography>Revise su carpeta de descargas </Typography>
-              <Button onClick={handleCloseModal} variant="contained" sx={{
-                mt: 2, backgroundColor: 'green', '&:hover': {
-                  background: 'darkgreen', // Color al pasar el mouse
-                },
-              }}>
-                OK
-              </Button>
-            </>
-          )} */}
-
-        </Box>
-      </Modal>
-
-
-
-      <Modal open={openModalTimbrar} onClose={handleCloseModal}>
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '60%',
-          // minWidth: '400px',
-          // maxWidth: '80%',
-          maxHeight: '80vh', // Limita la altura máxima del modal
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: '16px',
-          textAlign: 'center',
-        }}
-      >
-        <Typography variant="h6" gutterBottom>
-          Resultados de Timbrado de Facturas
-        </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Total: {facturasTimbradas.length} | Exitosas: {facturasTimbradas.filter(f => f.status === 'success').length} | Con Error: {facturasTimbradas.filter(f => f.status === 'error').length}
-        </Typography>
-
-        <Box
-          sx={{
-            width: '100%',
-            maxHeight: '60vh', // Limita la altura para hacer scroll si es necesario
-            overflowY: 'auto',
-             overflowX: 'hidden',
-          }}
-        >
-          <List>
-            {facturasTimbradas.map((factura, index) => (
-              <ListItem key={index}>
-                {/* <ListItemText primary={`Factura ${factura.id}`} /> */}
-                {factura.status === 'error' ? (
-                  <Box sx={{ width: '100%' }}>
-                    <Alert severity="error" sx={{ mb: 2, width:'100%', overflowWrap: 'break-word', wordBreak: 'break-word', whiteSpace: 'normal' }}>
-                      <Typography variant="body2" sx={{fontWeight:'bold'}} noWrap={!expandedIndexes[index]}>
-                       Error en la Factura con ID: {factura.id}
-                      </Typography>
-                      <Typography variant="body2" noWrap={!expandedIndexes[index]}>
-                        {factura.error}
-                      </Typography>
-                      <IconButton size="small" onClick={() => handleToggleExpand(index)}>
-                        {expandedIndexes[index] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                      </IconButton>
-                    </Alert>
-               
-                  </Box>
-                ) : (
-                  <ListItemIcon>
-                    <CheckCircleIcon color="success" />
-                  </ListItemIcon>
-                )}
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-
-        <Button
-          onClick={handleCloseModal}
-          variant="contained"
-          sx={{ mt: 2 }}
-        >
-          OK
-        </Button>
-      </Box>
-    </Modal>
-
+      {/* Timbrado Modal */}
+      <ModalTimbrar openModalTimbrar={openModalTimbrar} handleCloseModal={handleCloseModal} facturasTimbradas={facturasTimbradas} expandedIndexes={expandedIndexes} handleToggleExpand={handleToggleExpand} />
 
 
     </Box>
