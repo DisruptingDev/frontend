@@ -9,9 +9,9 @@ export const isAuthenticated = () => {
 
     const currentDate = new Date();
     const savedLoginDate = new Date(loginDate);
-    console.log("authTokenSession", authTokenSession);
+    // console.log("authTokenSession", authTokenSession);
     if (authTokenSession) {
-        console.log("authTokenSession", authTokenSession);
+        // console.log("authTokenSession", authTokenSession);
       
         return authTokenSession
     }

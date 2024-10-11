@@ -3,6 +3,7 @@ import separarImpuestos from "./SepararImpuestos.js"
 
 export default function CrearConcepto(getValues, impuestos) {
 
+    console.log("Creando concepto objeto impuesto", getValues("ObjetoImpuesto"));
     let concepto = {
         ClaveProdServ: getValues("ClaveProdServ"),
         ClaveUnidad: getValues("ClaveUnidad"),
@@ -13,7 +14,7 @@ export default function CrearConcepto(getValues, impuestos) {
         Descuento: parseFloat(getValues("Descuento")) || 0,
         Subtotal: getValues("Subtotal"),
         ObjetoImpuesto: getValues("ObjetoImpuesto"),
-        Impuestos: impuestos,
+        Impuestos: getValues("ObjetoImpuesto") === "01" ? [] : impuestos,
 
         Retenciones: [],
         Traslados: [],
@@ -26,7 +27,11 @@ export default function CrearConcepto(getValues, impuestos) {
 
     if (resultado.isValid) {
         console.log('Concepto is valid:', concepto);
-        concepto = separarImpuestos(concepto)
+        if(concepto.ObjetoImpuesto !== "01"){
+            console.log("Separando impuestos");
+            concepto = separarImpuestos(concepto)
+        }
+        
     } else {
         console.log('Validation failed:', resultado.message);
         return "Error"
