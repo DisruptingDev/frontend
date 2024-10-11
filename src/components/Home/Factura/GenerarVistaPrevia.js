@@ -275,18 +275,18 @@ const generarVistaPrevia = async (factura) => {
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
         }
-        // if (factura.factura) {
-        //     const data = factura.factura;
-        //     const templateFactura = String(await fillTemplate(template, data));
-        //     if (typeof templateFactura === 'string') {
-        //         console.log('templateFactura', templateFactura);
-        //            filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
-        //     }
+        if (factura.factura) {
+            const data = factura.factura;
+            const templateFactura = String(await fillTemplate(template, data));
+            if (typeof templateFactura === 'string') {
+                console.log('templateFactura', templateFactura);
+                   filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
+            }
 
-        // }
-        // else {
+        }
+        else {
 
-        // }
+        }
 
         filledTemplate = fillTemplate(template, factura);
 

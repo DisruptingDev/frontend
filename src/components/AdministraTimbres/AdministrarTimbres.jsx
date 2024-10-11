@@ -202,7 +202,7 @@ export default function AdministrarTimbres({ token }) {
                         valueAsNumber: true,
                         validate: value => {
                             if (value < 0) return "No se permiten valores negativos";
-                            if (value > timbresRestantes) return "No se pueden asignar más timbres de los restantes";
+                            if ( timbresRestantes<0) return "No se pueden asignar más timbres de los restantes";
                             return true;
                         }
                     })}

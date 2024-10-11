@@ -91,7 +91,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             UUID: "",
             Version: "4.0",
             Serie: emisor.Serie,
-            Folio: "2080427804",
+            Folio: "",
             Fecha: fechaFormateada,
             Sello: "",
             FormaPago: receptor.FormaPago,
