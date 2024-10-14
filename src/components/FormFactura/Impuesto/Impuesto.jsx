@@ -104,15 +104,29 @@ export default function Impuesto({
     useEffect(() => {
         console.log("ENTRRE A CALCULAR");
         const tasaCuota = getValues(`impuestos[${index}].TasaOCuota`);
+        // if (tasaCuota) {
+        //     console.log("ENTRRE A CALCULAR2", tasaCuota);
+        //     const resultado = parseFloat(tasaCuota) * baseImpuesto;
+        //     setMonto(resultado);
+        //     setValue(`impuestos[${index}].Monto`, resultado);
+        // } else {
+        //     setMonto(0);
+        //     setValue(`impuestos[${index}].Monto`, 0);
+        // }
         if (tasaCuota) {
-            console.log("ENTRRE A CALCULAR2", tasaCuota);
+            console.log("ENTRE A CALCULAR", tasaCuota);
             const resultado = parseFloat(tasaCuota) * baseImpuesto;
-            setMonto(resultado);
-            setValue(`impuestos[${index}].Monto`, resultado);
+        
+            // Solución para redondear correctamente cuando hay errores de precisión periódica
+            const montoRedondeado = Math.round((resultado + Number.EPSILON) * 100) / 100;
+        
+            setMonto(montoRedondeado);
+            setValue(`impuestos[${index}].Monto`, montoRedondeado);
         } else {
             setMonto(0);
             setValue(`impuestos[${index}].Monto`, 0);
         }
+        
     }, [tasa, baseImpuesto, setValue, index, getValues,impuestoEditor, watch(`impuestos[${index}].TasaOCuota`)]);
 
     // Manejar cambios en ObjetoImpuesto

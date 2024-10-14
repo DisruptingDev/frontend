@@ -28,6 +28,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [cantidadError, setCantidadError] = useState(false);
     const [valorUnitarioError, setValorUnitarioError] = useState(false);
     const [objetoImpuestoError, setObjetoImpuestoError] = useState(false);
+    const [descuentoError, setDescuentoError] = useState(false);
+    const [descuentoErrorMesage, setDescuentoErrorMesage] = useState('');
     const [impuestoError, setImpuestoError] = useState(false);
 
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -45,7 +47,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             Descuento: 0,
             Subtotal: 0,
             ObjetoImpuesto: "02",
-            impuestos: [{  Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '', Tipo: '' }]
+            impuestos: [{ Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '', Tipo: '' }]
         },
     });
 
@@ -152,26 +154,26 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    // console.log("TIPO", impuestoEditor.TipoFactor);
-                    
-                  const opcionSeleccionada = data.find(opt => opt.ID == impuesto.Impuesto );
-                  if (opcionSeleccionada) {
-                    // const data = JSON.parse(opcionSeleccionada)
-                    // setValue(`impuestos[${index}].Nom`, opcionSeleccionada.Clave);
-                    // console.log("opcionSeleccionada",opcionSeleccionada["Impuesto"]);  
-                    setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
-                    // setValue(`impuestos.${index}.Tasa`,impuesto.TasaCatalogoID);
-                    setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
-                    setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
-                }
-                    
-                  
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                        // console.log("TIPO", impuestoEditor.TipoFactor);
 
-                  // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
-                })
+                        const opcionSeleccionada = data.find(opt => opt.ID == impuesto.Impuesto);
+                        if (opcionSeleccionada) {
+                            // const data = JSON.parse(opcionSeleccionada)
+                            // setValue(`impuestos[${index}].Nom`, opcionSeleccionada.Clave);
+                            // console.log("opcionSeleccionada",opcionSeleccionada["Impuesto"]);  
+                            setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
+                            // setValue(`impuestos.${index}.Tasa`,impuesto.TasaCatalogoID);
+                            setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
+                            setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
+                        }
+
+
+
+                        // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
+                    })
 
 
 
@@ -183,10 +185,10 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("impuestos", concepto.Impuestos)
             trigger('impuestos');
 
-            
-            
-                  
-                
+
+
+
+
 
 
 
@@ -250,6 +252,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         setClaveUnidadError(false);
         setCantidadError(false);
         setValorUnitarioError(false);
+        setDescuentoError(false);
         setObjetoImpuestoError(false);
         setImpuestoError(false);
 
@@ -280,19 +283,35 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValorUnitarioError(true);
             hasError = true;
         }
-        if(objetoImpuesto!=="01"){
-             // Validaciones para los campos de Impuesto
-        const impuestos = getValues("impuestos");
-        impuestos.forEach((impuesto) => {
-           
-            if (!impuesto.Impuesto) {
-                setImpuestoError(true);
-                hasError = true;
+        console.log("VALOR", getValues('Descuento'));
+        if (!getValues('Descuento') || getValues('Descuento') > ((getValues('Cantidad') * getValues('ValorUnitario')) / 2)) {
+            if (!getValues('Descuento')) {
+                setDescuentoErrorMesage('Campo obligatorio.');
             }
-        });
+            else {
+                setDescuentoErrorMesage('El descuento no puede ser mayor al 50% del total.');
+            }
+            setDescuentoError(true);
+            hasError = true;
 
         }
-       
+        if (getValues('Descuento') === 0) {
+            setDescuentoError(false);
+            hasError = false;
+        }
+        if (objetoImpuesto !== "01") {
+            // Validaciones para los campos de Impuesto
+            const impuestos = getValues("impuestos");
+            impuestos.forEach((impuesto) => {
+
+                if (!impuesto.Impuesto) {
+                    setImpuestoError(true);
+                    hasError = true;
+                }
+            });
+
+        }
+
         if (hasError) {
             // setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
             // setSnackbarSeverity('warning');
@@ -322,7 +341,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             const resetForm = () => {
                 reset({
                     Descripcion: '',
-                   
+
                     Unidad: '',
                     Cantidad: '',
                     ValorUnitario: '',
@@ -332,7 +351,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 });
             };
             resetForm()
-            
+
             // setObjetoImpuesto("02");
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
@@ -345,7 +364,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
-    const handleObjetoImpuestoChange =(e)=>{
+    const handleObjetoImpuestoChange = (e) => {
         const value = e.target.value;
         const data = JSON.parse(e.target.value);
         setObjetoImpuesto(data.Clave);
@@ -430,26 +449,79 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     error={cantidadError}
                     helperText={cantidadError && "Campo obligatorio."}
                     fullWidth
+                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                    onInput={(e) => {
+                        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                    }} // Elimina caracteres no numéricos
                 />
                 <TextField
-                    label="Precio Unitario"
-                    type="number"
-                    value={getValues("ValorUnitario")}
-                    onChange={(e) => {
-                        setValue('ValorUnitario', e.target.value);
-                        setValorUnitarioError(false);
-                    }}
-                    error={valorUnitarioError}
-                    helperText={valorUnitarioError && "Campo obligatorio."}
-                    fullWidth
-                />
+    label="Precio Unitario"
+    type="number"
+    value={getValues("ValorUnitario")}
+    onChange={(e) => {
+        // Captura el valor introducido
+        let inputValue = e.target.value;
+
+        // Permitir solo números y un solo punto decimal
+        inputValue = inputValue.replace(/[^0-9.]/g, '');
+
+        // Asegurar que solo haya un punto decimal
+        if ((inputValue.match(/\./g) || []).length > 1) {
+            inputValue = inputValue.replace(/\.+$/, '');
+        }
+
+        // Establecer el valor solo si es válido
+        setValue('ValorUnitario', inputValue);
+        setValorUnitarioError(false);
+    }}
+    error={valorUnitarioError}
+    helperText={valorUnitarioError && "Campo obligatorio."}
+    fullWidth
+    inputProps={{
+        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
+        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+    }}
+/>
+{/* 
                 <TextField
                     label="Descuento"
                     type="number"
                     value={getValues("Descuento")}
                     onChange={(e) => setValue('Descuento', e.target.value)}
+                    error={descuentoError}
+                    helperText={descuentoError && descuentoErrorMesage}
                     fullWidth
+
                 />
+                 */}
+                 <TextField
+    label="Descuento"
+    type="number"
+    value={getValues("Descuento")}
+    onChange={(e) => {
+        // Captura el valor introducido
+        let inputValue = e.target.value;
+
+        // Permitir solo números y un solo punto decimal
+        inputValue = inputValue.replace(/[^0-9.]/g, '');
+
+        // Asegurar que solo haya un punto decimal
+        if ((inputValue.match(/\./g) || []).length > 1) {
+            inputValue = inputValue.replace(/\.+$/, '');
+        }
+
+        // Establecer el valor solo si es válido
+        setValue('Descuento', inputValue);
+    }}
+    error={descuentoError}
+    helperText={descuentoError && descuentoErrorMesage}
+    fullWidth
+    inputProps={{
+        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
+        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+    }}
+/>
+
                 <TextField
                     label="Subtotal"
                     type="number"
@@ -464,8 +536,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 <Select
                     register={register}
                     clave='Clave'
-                
-                    
+
+
                     nombre='ObjetoImpuesto'
                     label='Objeto Impuesto'
                     descripcion='Descripcion'
@@ -473,59 +545,84 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     value={getValues("ObjetoImpuesto") || "02"}
                     onChange={handleObjetoImpuestoChange}
                     sx={{ width: 'auto', minWidth: '23%' }}
-                    
+
                 />
             </Box>
 
-            {objetoImpuesto!=="01"  &&(
-                // console.log("NO ES 01", objetoImpuesto),
-              <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
-               
-                {fields.map((field, index) => {
-                    // const impuestoEditor = getValues(`impuestos.${index}`);
-                    // console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
-                    return (
-                        <Box key={field.id || index} gridColumn="span 6">
-                            <Impuesto
-                                watch={watch}
-                                register={register}
-                                setValue={setValue}
-                                getValues={getValues}
-                                index={index}
-                                baseImpuesto={watch('Subtotal') || 0}
-                                remove={remove}
-                                fieldsLength={fields.length}
-                                objetoImpuestoError={objetoImpuestoError}
-                                impuestoError={impuestoError}
-                                setObjetoImpuestoError={setObjetoImpuestoError}
-                                setImpuestoError={setImpuestoError}
-                                impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
-                            />
-                        </Box>
-                    );
-                })}
-                <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="start">
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: 'rgba(29, 57, 77, 1)',
-                            '&:hover': { backgroundColor: 'rgba(19, 47, 67, 1)' }
-                        }}
-                        onClick={() => append({ Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
-                    >
-                        <AddCircleIcon sx={{ fontSize: '30px' }} />
-                    </Button>
+            {objetoImpuesto !== "01" && (
+                console.log("NO ES 01", objetoImpuesto),
+                <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
+                  {/* <Typography variant="h6" mt={4} mb={2}>CAmpos:{fields}</Typography> */}
+                    {/* {fields.map((field, index) => {
+                        const impuestoEditor = getValues(`impuestos.${index}`);
+                        console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
+                        return (
+                            <Box key={field.id || index} gridColumn="span 6">
+                                <Impuesto
+                                    watch={watch}
+                                    register={register}
+                                    setValue={setValue}
+                                    getValues={getValues}
+                                    index={index}
+                                    baseImpuesto={watch('Subtotal') || 0}
+                                    remove={remove}
+                                    fieldsLength={fields.length}
+                                    objetoImpuestoError={objetoImpuestoError}
+                                    impuestoError={impuestoError}
+                                    setObjetoImpuestoError={setObjetoImpuestoError}
+                                    setImpuestoError={setImpuestoError}
+                                    impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
+                                />
+                            </Box>
+                        );
+                    })} */}
+                    {(fields.length > 0 ? fields : [{}]).map((field, index) => {
+    const impuestoEditor = getValues(`impuestos.${index}`);
+    console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
+
+    return (
+        <Box key={field.id || index} gridColumn="span 6">
+            <Impuesto
+                watch={watch}
+                register={register}
+                setValue={setValue}
+                getValues={getValues}
+                index={index}
+                baseImpuesto={watch('Subtotal') || 0}
+                remove={remove}
+                fieldsLength={fields.length}
+                objetoImpuestoError={objetoImpuestoError}
+                impuestoError={impuestoError}
+                setObjetoImpuestoError={setObjetoImpuestoError}
+                setImpuestoError={setImpuestoError}
+                impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
+            />
+        </Box>
+    );
+})}
+
+                    <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="start">
+                        <Button
+                            variant="contained"
+                            sx={{
+                                backgroundColor: 'rgba(29, 57, 77, 1)',
+                                '&:hover': { backgroundColor: 'rgba(19, 47, 67, 1)' }
+                            }}
+                            onClick={() => append({ Impuesto: '', Tasa: '', BaseImpuesto: '', Monto: '' })}
+                        >
+                            <AddCircleIcon sx={{ fontSize: '30px' }} />
+                        </Button>
+                    </Box>
                 </Box>
-            </Box>  
             )}
-            
-            
+
+
 
             <Box textAlign="end" mt={3}>
                 <Button
                     startIcon={<AddCircleIcon />}
                     variant="contained"
-                    sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }}
+                    sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
                     onClick={handleAgregarConcepto}
                 >
                     {editIndex !== null ? "Guardar Cambios" : "Agregar Concepto"}
