@@ -8,7 +8,8 @@ import PickersMinMax from "@/components/PickersMinMax/PickersMinMax.jsx";
 import 'react-datepicker/dist/react-datepicker.css';
 import { set } from 'date-fns';
 
-
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
 export default function SearchFilter({setFiltro}) {
     const { register, handleSubmit, reset, setValue, getValues, formState: { errors } } = useForm({
@@ -199,9 +200,10 @@ export default function SearchFilter({setFiltro}) {
                         type="button"
                         variant="contained"
                         color="primary"
-                        sx={{ height: '90%', background: "#e8e8e8",  '&:hover': { backgroundColor: '#10232f', color:'#ffffff' },color: "black", marginRight: '10px' }}
+                        sx={{ height: '90%', fontWeight:'500', background: "#04b2ca", color:'white',  '&:hover': { backgroundColor: '#ffffff', color:'#04b2ca' }, marginRight: '10px' }}
                         onClick={onSubmit}  // Asegúrate de que esté configurado así
                     >
+                        <SearchIcon />
                         Buscar
                     </Button>
 
@@ -209,9 +211,10 @@ export default function SearchFilter({setFiltro}) {
                        type="button"
                        variant="contained"
                        color="primary"
-                       sx={{ height: '90%', background: "#e8e8e8",  '&:hover': { backgroundColor: '#10232f', color:'#ffffff'},color: "black", marginRight: '10px' }}
+                       sx={{ height: '90%', fontWeight:'500', background: "#ffffff", borderBlockColor:'#04b2ca',  '&:hover': { backgroundColor: '#10232f', color:'#ffffff'},color:'#10232f', marginRight: '10px' }}
                         onClick={Limpiar}
                     >
+                        <ClearIcon />
                         Limpiar
                     </Button>
                     </Box>
