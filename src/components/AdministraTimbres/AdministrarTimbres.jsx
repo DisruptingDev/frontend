@@ -82,8 +82,8 @@ export default function AdministrarTimbres({ token }) {
     const calcularTimbresRestantes = useCallback(() => {
         const timbresAsignar = watch('timbresAsignar');
         const timbresRecuperar = watch('timbresRecuperar');
-        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + b, 0);
-        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + b, 0);
+        const totalRecuperados = Object.values(timbresRecuperar).reduce((a, b) => a + (b || 0), 0);
+        const totalAsignados = Object.values(timbresAsignar).reduce((a, b) => a + (b || 0), 0);
         const nuevoTotalRestantes = timbresDisponibles + totalRecuperados - totalAsignados;
         setTimbresRestantes(nuevoTotalRestantes);
     }, [timbresDisponibles, watch]);
@@ -234,10 +234,11 @@ export default function AdministrarTimbres({ token }) {
                             Timbres Disponibles: <strong>{timbresDisponibles}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Distribuidos: <strong>{Object.values(watch('timbresAsignar')).reduce((a, b) => a + b, 0)}</strong>
+                            Timbres Distribuidos: <strong>{Object.values(watch('timbresAsignar')).reduce((a, b) => a + (b || 0), 0)}</strong>
+
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Recuperados: <strong>{Object.values(watch('timbresRecuperar')).reduce((a, b) => a + b, 0)}</strong>
+                            Timbres Recuperados: <strong>{Object.values(watch('timbresRecuperar')).reduce((a, b) => a + (b || 0), 0)}</strong>
                         </Box>
                         <Box component="span" sx={{ marginRight: 2 }}>
                             Timbres Restantes: <strong>{timbresRestantes}</strong>
