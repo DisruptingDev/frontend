@@ -48,7 +48,7 @@ const StyledReactDatePicker = styled('div')(({ theme }) => ({
     },
     '& .react-datepicker__day--today': {
       fontWeight: 'bold',
-      color: 'white',
+      color: 'black',
     },
   },
 }));
@@ -86,19 +86,39 @@ CustomInput.displayName = 'CustomInput';
 
 
 const DateRangePickerComponent = ({register, setValue, resetCalendario, setResetCalendario}) => {
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState((new Date()));
+  // Definir el día actual y 5 días atrás
+  const today = new Date();
+  const fiveDaysAgo = new Date();
+  fiveDaysAgo.setDate(today.getDate() - 5);
+
+  const [startDate, setStartDate] = useState(fiveDaysAgo); // Fecha de inicio: 5 días atrás
+  const [endDate, setEndDate] = useState(today); // Fecha de fin: hoy
 
   const handleOnChange = (dates) => {
     const [start, end] = dates;
+    if (start && end) {
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Convertir a días
+      
+      if (diffDays > 5) {
+        const newEndDate = new Date(start);
+        newEndDate.setDate(start.getDate() + 5); // Ajustar la fecha de fin a máximo 5 días después
+        setEndDate(newEndDate);
+        setValue("FechaFin", newEndDate);
+      } else {
+        setEndDate(end);
+        setValue("FechaFin", end);
+      }
+    } else {
+      setEndDate(end);
+      setValue("FechaFin", end);
+    }
+
     setStartDate(start);
-    setEndDate(end);
     setValue("FechaInicio", start);
-    setValue("FechaFin", end);
-    // register("FechaInicio").onChange(start);
-    // register("FechaFin").onChange(end);
-    console.log("Fechas",start, end);
+    console.log("Fechas", start, end);
   };
+
   useEffect(() => {
     setValue("FechaInicio", startDate);
     setValue("FechaFin", endDate);
@@ -106,13 +126,13 @@ const DateRangePickerComponent = ({register, setValue, resetCalendario, setReset
 
   useEffect(() => {
     if (resetCalendario) {
-      setStartDate(new Date());
-      setEndDate(new Date());
-      setValue("FechaInicio", new Date());
-      setValue("FechaFin", new Date());
+      setStartDate(fiveDaysAgo);
+      setEndDate(today);
+      setValue("FechaInicio", fiveDaysAgo);
+      setValue("FechaFin", today);
       setResetCalendario(false);
     }
-  }, [resetCalendario, setResetCalendario, setValue]);
+  }, [resetCalendario, setResetCalendario, setValue, fiveDaysAgo, today]);
 
   return (
     <StyledReactDatePicker>
@@ -127,5 +147,6 @@ const DateRangePickerComponent = ({register, setValue, resetCalendario, setReset
     </StyledReactDatePicker>
   );
 };
+
 
 export default DateRangePickerComponent;

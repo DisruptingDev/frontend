@@ -36,7 +36,7 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false, reset =false }) {
+export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false, reset =false, opcion=false, opcionText="Todos" }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(value || '');
 
@@ -86,7 +86,9 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
                 onChange={handleChange}
                 disabled={disabled}
             >
-                <MenuItem value="" disabled>Selecciona una opción</MenuItem>
+                {opcion && <MenuItem value="">{opcionText}</MenuItem>}
+                {!opcion &&<MenuItem value="" disabled>Selecciona una opción</MenuItem>}
+                
                 {Array.isArray(opciones) && opciones.length > 0 ? (
                     opciones.map((opcion, index) => (
                         <MenuItem key={index} value={opcion[id]}>

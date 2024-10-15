@@ -37,10 +37,10 @@ export default function SearchFilter({setFiltro}) {
 
         console.log(fechaInicio, fechaFin, emisor, receptor, estatus);
 
-        if (fechaInicio === '' || fechaFin === '' || emisor === '' || receptor === '' || estatus === '') {
-            setSnackbarOpen(true);
-            return;
-        } else {
+        // if (fechaInicio === '' || fechaFin === '' || emisor === '' || receptor === '' || estatus === '') {
+        //     setSnackbarOpen(true);
+        //     return;
+        // } else {
             // Formatear fechas a "YYYY-MM-DDTHH:mm:ss"
             const formatDate = (date) => {
                 console.log("Fecha", date);
@@ -71,7 +71,7 @@ export default function SearchFilter({setFiltro}) {
             
             console.log(data);
             setFiltro(data);
-        }
+        // }
     };
     const Limpiar = () => {
         console.log("Limpiar");
@@ -156,6 +156,8 @@ export default function SearchFilter({setFiltro}) {
                         url="http://31.220.31.152:8081/Catalogos/Emisor"
                         clave="Rfc"
                         descripcion="Nombre"
+                        opcion={true}
+                        opcionText="Quitar Filtro"
                         sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}
                         variant="filled"
                         value={emisor||""}
@@ -168,6 +170,8 @@ export default function SearchFilter({setFiltro}) {
                         url="http://31.220.31.152:8081/Catalogos/Receptor"
                         clave="Rfc"
                         descripcion="Nombre"
+                        opcion={true}
+                        opcionText="Quitar Filtro"
                         sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: '200px' }}
                         variant="filled"
                         value={receptor || ""}
@@ -185,7 +189,7 @@ export default function SearchFilter({setFiltro}) {
                             onChange={handleEstatusChange}
                            
                         >
-                            <MenuItem value="">Seleccione un estatus</MenuItem>
+                            <MenuItem value="">Quitar Filtro</MenuItem>
                             <MenuItem value="timbrada">Timbrada</MenuItem>
                             <MenuItem value="notimbrada">No timbrada</MenuItem>
                         </MuiSelect>

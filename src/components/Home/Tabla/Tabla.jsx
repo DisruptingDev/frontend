@@ -550,23 +550,43 @@ export default function DataTable({ token, filtro}) {
     if (filtro) {
       console.log('Filtrando:', filtro);
   
-      // Asegúrate de que filtro.Emisor y filtro.Receptor estén definidos
-      const emisorFilter = filtro.Emisor ? filtro.Emisor : '';
-      const receptorFilter = filtro.Receptor ? filtro.Receptor : '';
+      // // Asegúrate de que filtro.Emisor y filtro.Receptor estén definidos
+      // const emisorFilter = filtro.Emisor ? filtro.Emisor : '';
+      // const receptorFilter = filtro.Receptor ? filtro.Receptor : '';
+      // const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
+      // const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
+  
+      // console.log('Emisor:', emisorFilter);
+      // console.log('Receptor:', receptorFilter);
+      // console.log('Estatus:', filtro.Estatus);
+  
+      // // Filtrando los registros basado en Emisor y Receptor
+      // let newFilteredRows = registros.filter(registro =>
+      //   registro.Emisor.Rfc.includes(emisorFilter) && 
+      //   registro.Receptor.Rfc.includes(receptorFilter)
+      // );
+
       const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
       const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
-  
-      console.log('Emisor:', emisorFilter);
-      console.log('Receptor:', receptorFilter);
-      console.log('Estatus:', filtro.Estatus);
-  
-      // Filtrando los registros basado en Emisor y Receptor
-      let newFilteredRows = registros.filter(registro =>
-        registro.Emisor.Rfc.includes(emisorFilter) && 
-        registro.Receptor.Rfc.includes(receptorFilter)
-      );
+      let newFilteredRows = registros;
   
       console.log('Filtered rows after Emisor and Receptor:', newFilteredRows);
+      
+      if(filtro.Emisor !== ""){
+        newFilteredRows = registros.filter(registro =>
+          registro.Emisor.Rfc.includes(filtro.Emisor)
+        );
+      }
+      if(filtro.Receptor !== ""){
+        newFilteredRows = registros.filter(registro =>
+          registro.Receptor.Rfc.includes(filtro.Receptor)
+        );
+      }
+      if(filtro.Emisor !== "" && filtro.Receptor !== ""){
+        newFilteredRows = registros.filter(registro =>
+          registro.Emisor.Rfc.includes(filtro.Emisor) && registro.Receptor.Rfc.includes(filtro.Receptor)
+        );
+      }
   
       // Filtrando por Estatus
       if (filtro.Estatus === 'timbrada') {
