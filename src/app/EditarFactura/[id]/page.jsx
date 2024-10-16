@@ -48,6 +48,7 @@ export default function EditarFactura() {
         }
     }, [router]);
     useEffect(() => {
+       
         const fetchFactura = async () => {
             try {
                 // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
@@ -58,14 +59,14 @@ export default function EditarFactura() {
                     },
                 });
                 const data = await response.json();
-                setFacturaEdit(data.factura);
+                setFacturaEdit(data);
                 console.log("Factura", data);
             } catch (error) {
                 console.error('Error fetching factura:', error);
             }
         };
 
-        if (id) {
+        if (id && token) {
             fetchFactura(); // Solo llama a la API si hay una ID
         }
     }, [id, token]);
@@ -80,10 +81,12 @@ export default function EditarFactura() {
 
 
     useEffect(() => {
-
+        if(facturaEdit){
+            console.log("Factura editada", facturaEdit);
         const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
         if (Conceptos) {
+            console.log("Conceptos", Conceptos);    
             setConceptos(Conceptos);
         }
         if (Emisor) {
@@ -91,7 +94,9 @@ export default function EditarFactura() {
         }
         if (Receptor) {
             setReceptorData(Receptor);
+        } 
         }
+       
     }, [facturaEdit]);
 
     // Memoize emisorData para evitar renders innecesarios

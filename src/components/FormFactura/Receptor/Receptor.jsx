@@ -49,10 +49,13 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("RegimenFiscal", receptorData.RegimenFiscal);
             // setFormaPago(receptorData.FormaPago);
             setValue("FormaPago", receptorData.FormaPago);
+            setValue("FormaPagoDescripcion", receptorData.FormaPagoDescripcion);
             // setMetodoPago(receptorData.MetodoPago);
             setValue("MetodoPago", receptorData.MetodoPago);
+            setValue("MetodoPagoDescripcion", receptorData.MetodoPagoDescripcion);
             // setUsoCFDI(receptorData.UsoCFDI);
             setValue("UsoCFDI", receptorData.UsoCFDI);
+            setValue("UsoCFDIDescripcion", receptorData.UsoCFDIDescripcion);
 
             
             if (rfc === "XAXX010101000") {
@@ -93,9 +96,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
+                
                 setHiddeInfoGlobal(true);
             }
-
+            // setUsoCFDI("");
+            setValue("UsoCFDI", "");
+            setValue("UsoCFDIDescripcion", "");
             setUsoCFDIURL(`http://31.220.31.152:8081/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
             setRFC(data["Rfc"]);

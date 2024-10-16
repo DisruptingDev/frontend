@@ -49,7 +49,7 @@ const formatCurrency = (value) => {
   }).format(value);
 }
 
-export default function DataTable({ token, filtro}) {
+export default function DataTable({ token, filtro }) {
   const [rows, setRows] = useState([]);
   const [registros, setRegistros] = useState([]);
   const [page, setPage] = useState(0);
@@ -143,141 +143,28 @@ export default function DataTable({ token, filtro}) {
     }
   };
 
-  const generarPDF = async (htmlContent, fileName) => {
-    try {
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: htmlContent,
-          fileName: fileName,
-        }),
-      });
-
-      if (response.ok) {
-        console.log('Data received from API (pdf):', response);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } else {
-        console.error('Error al generar PDF:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const generarXML = async (id) => {
-    try {
-      // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-      const responseXML = await fetch(`http://31.220.31.152:8090/DescargaXML/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (responseXML.ok) {
-        const xmlContent = await responseXML.text();
-        return xmlContent;
-      }
-    } catch (error) {
-
-    }
-  };
-
-  const generarZIP = async (htmlContent, xmlContent, fileName) => {
-    try {
-      const response = await fetch('/api/generate-zip', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          htmlContent: htmlContent,
-          xmlContent: xmlContent,
-          fileName: fileName,
-        }),
-      });
-
-      if (response.ok) {
-        console.log('Data received from API (zip):', response);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } else {
-        console.error('Error al generar ZIP:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const handlePrefactura = async (id) => {
-    setOpenModal(true);
-    setLoading(true);
-    try {
-      const data = await obtenerFactura(id);
-      if (data) {
-        const htmlContent = await generarVistaPrevia(data);
-        const fileName = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
-        await generarPDF(htmlContent, fileName);
-        setLoading(false);
-        setConfirmationMessage(`Su archivo ${fileName} se ha descargado. <br/>Revise su carpeta de descargas.`);
-        setOpenModalSuccess(true);
-      }
-      else {
-        console.error('Error al obtener la factura:', id);
-      }
-
-    } catch (error) {
-      console.error('Error:', error);
-      setOpenModal(false);
-      setConfirmationMessage('Error al descargar la prefactura.');
-      setOpenModalError(true);
-
-    } finally {
-      setLoading(false);
-      setOpenModal(false); // Ocultar el modal de espera
-    }
-  };
 
   const handleDownloadSelecteds = async (ids) => {
     console.log('Descargando facturas:', ids);
     setLoading(true);
-    setProgress(0);
-
-    // Inicializamos el arreglo de estatus
-    const initialStatus = ids.map(id => ({
-      id,
-      name: 'Cargando nombre...', // Se muestra "Cargando nombre..." mientras se obtienen las facturas
-      status: 'progress', // 'progress' indica que aún no ha sido descargada
-    }));
-
-    setFacturasStatus(initialStatus);
-    setIsModalOpen(true); // Abrimos el modal
+    setOpenModal(true);
 
     try {
-      // Primero obtenemos todas las facturas para mostrar sus nombres
+      // Generamos las vistas previas y los datos para el POST
       const facturas = await Promise.all(
         ids.map(async (id) => {
-          const data = await obtenerFactura(id);
-          if (data) {
-            const name = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
-            return { id, factura: data.factura, name };
+          const factura = await obtenerFactura(id);
+          if (factura) {
+            const htmlContent = await generarVistaPrevia(factura);
+
+            // Verificamos si hay un solo ID para recuperar el nombre
+            const name = ids.length === 1 ? `${factura.factura.Emisor.Nombre}_${factura.factura.Folio}` : null;
+
+            return {
+              ID: id,
+              htmlString: htmlContent,
+              ...(name && { name }) // Agregamos el nombre solo si existe
+            };
           } else {
             console.error('Error al obtener la factura', id);
             return null;
@@ -285,108 +172,60 @@ export default function DataTable({ token, filtro}) {
         })
       );
 
-      // Actualizar el nombre de las facturas en el estado
-      setFacturasStatus(prevStatus =>
-        prevStatus.map(f =>
-          facturas.find(facturaObj => facturaObj && facturaObj.id === f.id)
-            ? { ...f, name: facturas.find(facturaObj => facturaObj && facturaObj.id === f.id).name }
-            : f
-        )
-      );
 
-      // Usa facturas.length en lugar de facturasStatus.length
-      const totalFacturas = facturas.length;
-      let downloadedFacturas = 0;
+      // Filtramos facturas válidas
+      const facturasValidas = facturas.filter(factura => factura !== null);
+      console.log('Facturas válidas:', facturasValidas);
 
-      // Después generamos los archivos
-      for (const { id, factura, name } of facturas) {
-        console.log('Progress:', progress);
-        if (factura) {
-          setFacturaActual(name);
-          const htmlContent = await generarVistaPrevia(factura);
+      // Enviamos la solicitud POST a /DescargarArchivos con las facturas
+      const response = await fetch('http://31.220.31.152:8082/DescargarArchivos', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(facturasValidas),
+      });
+      if (response.ok) {
 
-          if (factura.uuid === '') {
-            // Generar PDF
-            await generarPDF(htmlContent, `${name}.pdf`);
+        console.log('Data received from API (zip):', response);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
 
-            // Actualizar nombre con extensión PDF en el estado
-            setFacturasStatus(prevStatus =>
-              prevStatus.map(f =>
-                f.id === id ? { ...f, name: `${name}.pdf`, status: 'downloaded' } : f
-              )
-            );
-          } else {
-            // Generar XML y ZIP
-            const xmlContent = await generarXML(id);
-            if (xmlContent) {
-              await generarZIP(htmlContent, xmlContent, `${name}.zip`);
-
-              // Actualizar nombre con extensión ZIP en el estado
-              setFacturasStatus(prevStatus =>
-                prevStatus.map(f =>
-                  f.id === id ? { ...f, name: `${name}.zip`, status: 'downloaded' } : f
-                )
-              );
-            } else {
-              console.error('Error al descargar el XML', id);
-            }
-          }
-        }
-
-        // Incrementa el contador de facturas descargadas
-        downloadedFacturas += 1;
-
-        // Calcula el progreso y actualiza el estado
-        const newProgress = (downloadedFacturas / totalFacturas) * 100;
-        console.log('downloadedFacturas:', downloadedFacturas);
-        console.log('totalFacturas:', totalFacturas);
-        console.log('Progress:', newProgress);
-        setProgress(newProgress);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const handleDownload = async (id) => {
-    // Mostrar el modal de espera
-    setOpenModal(true);
-    setLoading(true);
-    // const name = `Factura_${id}`;
-
-    // Descargar el XML
-    try {
-      const data = await obtenerFactura(id);
-      if (data) {
-        const htmlContent = await generarVistaPrevia(data);
-        const name = `${data.factura.Emisor.Nombre}_${data.factura.Folio}`;
-        if (data.factura.uuid === '') {
-          await generarPDF(htmlContent, name);
+        const a = document.createElement('a');
+        a.href = url;
+        if (facturasValidas.length === 1) {
+          a.download = `${facturasValidas[0].name}`;
         }
         else {
-          const xmlContent = await generarXML(id);
-          if (xmlContent) {
-            await generarZIP(htmlContent, xmlContent, name);
-            setLoading(false);
-            setConfirmationMessage(`Su archivo ${name}.zip se ha descargado. <br/>
-         Revise su carpeta de descargas.`);
-            setOpenModalSuccess(true);
-          }
-          else {
-            console.error('Error al descargar el XML:', xmlContent);
-            console.error('Error al descargar el XML:', xmlContent.statusText);
-          }
-        }
-      }
-      else {
-        console.error('Error al obtener la factura:', id);
 
+          a.download = `Facturas`;
+        }
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setLoading(false);
+        if(facturasValidas.length === 1){
+          setConfirmationMessage(`Su archivo ${facturasValidas[0].name}.zip se ha descargado. <br/>
+          Revise su carpeta de descargas.`);
+        }
+        else{
+          setConfirmationMessage(`Su archivo Facturas.zip se ha descargado. <br/>
+          Revise su carpeta de descargas.`);
+        }
+
+        setOpenModalSuccess(true);
       }
+
+      if (!response.ok) {
+        throw new Error('Error en la descarga de archivos');
+      }
+
+
 
     } catch (error) {
+      console.error('Error:', error);
       console.error('Error:', error);
       setConfirmationMessage('Error al descargar la factura.');
       setOpenModalError(true);
@@ -396,33 +235,8 @@ export default function DataTable({ token, filtro}) {
     }
   };
 
-  const handleVistaPrevia = async (id) => {
-    console.log('ID:', id);
-    try {
-      // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-      const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Data received from API:', data);
-        const vistaPrevia = await generarVistaPrevia(data);
-        console.log('Vista Previa:', vistaPrevia);
-        setPreviewContent(vistaPrevia);
-        setOpenModal(true);
-
-      }
-
-    } catch (error) {
-
-    }
-
-  };
-
+  
   // Función para timbrar múltiples facturas
   const handleTimbrar = async (ids) => {
     setOpenModal(true);
@@ -549,45 +363,30 @@ export default function DataTable({ token, filtro}) {
   useEffect(() => {
     if (filtro) {
       console.log('Filtrando:', filtro);
-  
-      // // Asegúrate de que filtro.Emisor y filtro.Receptor estén definidos
-      // const emisorFilter = filtro.Emisor ? filtro.Emisor : '';
-      // const receptorFilter = filtro.Receptor ? filtro.Receptor : '';
-      // const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
-      // const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
-  
-      // console.log('Emisor:', emisorFilter);
-      // console.log('Receptor:', receptorFilter);
-      // console.log('Estatus:', filtro.Estatus);
-  
-      // // Filtrando los registros basado en Emisor y Receptor
-      // let newFilteredRows = registros.filter(registro =>
-      //   registro.Emisor.Rfc.includes(emisorFilter) && 
-      //   registro.Receptor.Rfc.includes(receptorFilter)
-      // );
+
 
       const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
       const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
       let newFilteredRows = registros;
-  
+
       console.log('Filtered rows after Emisor and Receptor:', newFilteredRows);
-      
-      if(filtro.Emisor !== ""){
+
+      if (filtro.Emisor !== "") {
         newFilteredRows = registros.filter(registro =>
           registro.Emisor.Rfc.includes(filtro.Emisor)
         );
       }
-      if(filtro.Receptor !== ""){
+      if (filtro.Receptor !== "") {
         newFilteredRows = registros.filter(registro =>
           registro.Receptor.Rfc.includes(filtro.Receptor)
         );
       }
-      if(filtro.Emisor !== "" && filtro.Receptor !== ""){
+      if (filtro.Emisor !== "" && filtro.Receptor !== "") {
         newFilteredRows = registros.filter(registro =>
           registro.Emisor.Rfc.includes(filtro.Emisor) && registro.Receptor.Rfc.includes(filtro.Receptor)
         );
       }
-  
+
       // Filtrando por Estatus
       if (filtro.Estatus === 'timbrada') {
         console.log('Filtrando timbradas');
@@ -599,23 +398,23 @@ export default function DataTable({ token, filtro}) {
         console.log('Filtered rows after Estatus:', newFilteredRows);
       }
       // Filtrando por fecha
-    if (fechaInicio && fechaFin) {
-      newFilteredRows = newFilteredRows.filter(registro => {
-        const fechaRegistro = new Date(registro.Fecha);
-        return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
-      });
-    }
-    console.log('Filtered rows after Fecha:', newFilteredRows);
-  
+      if (fechaInicio && fechaFin) {
+        newFilteredRows = newFilteredRows.filter(registro => {
+          const fechaRegistro = new Date(registro.Fecha);
+          return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
+        });
+      }
+      console.log('Filtered rows after Fecha:', newFilteredRows);
+
       setRows(newFilteredRows);
-   
+
     } else {
       console.log('No hay filtro');
     }
   }, [filtro]);
-  
+
   // Usa filteredRows para renderizar la tabla
-  
+
 
   const handleRowClick = (row) => {
     setSelectedRow(row);
@@ -663,7 +462,7 @@ export default function DataTable({ token, filtro}) {
 
           disabled={selectedRows.length === 0}
           onClick={() => handleTimbrar(selectedRows)}
-          sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
         >
           Timbrar Seleccionadas
         </Button>
@@ -672,7 +471,8 @@ export default function DataTable({ token, filtro}) {
 
           disabled={selectedRows.length === 0}
           onClick={() => handleDownloadSelecteds(selectedRows)}
-          sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f',} }}
+          // onClick={() => descargarZIPServers(selectedRows)}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
         >
           Descargar Seleccionadas
         </Button>
@@ -704,7 +504,7 @@ export default function DataTable({ token, filtro}) {
                   onClick={() => handleRowClick(row)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <TableCell padding="checkbox" sx={{ textAlign: 'center'  }}>
+                  <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
                     <Checkbox
                       color="primary"
                       checked={selectedRows.includes(row.ID)}
@@ -741,7 +541,7 @@ export default function DataTable({ token, filtro}) {
                     >
                       {menuRow && menuRow.uuid === '' && [
                         <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
-                        <MenuItem key="prefactura" onClick={() => handlePrefactura([menuRow.ID])}>Descargar Prefactura</MenuItem>,
+                        <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                         <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                         <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
                         // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
@@ -749,11 +549,10 @@ export default function DataTable({ token, filtro}) {
                       ]}
                       {
                         menuRow && menuRow.uuid !== '' && [
-                          <MenuItem key="descargar" onClick={() => handleDownload([menuRow.ID])}>Descargar</MenuItem>,
+                          <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
                         ]
                       }
-
 
                     </Menu>
                   </TableCell>
@@ -779,7 +578,7 @@ export default function DataTable({ token, filtro}) {
       <ModalLoading openModal={openModal} handleCloseModal={handleCloseModal} loading={loading} loadingMessage={loadingMessage} />
 
       {/* Success Modal */}
-     <ModalExito openModalSuccess={openModalSuccess} handleCloseModal={handleCloseModal} confirmationMessage={confirmationMessage} />
+      <ModalExito openModalSuccess={openModalSuccess} handleCloseModal={handleCloseModal} confirmationMessage={confirmationMessage} />
 
       {/* Error Modal */}
       <ModalError openModalError={openModalError} handleCloseModal={handleCloseModal} confirmationMessage={confirmationMessage} />

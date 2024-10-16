@@ -1,4 +1,5 @@
-export default function RecuperarFactura(Factura) {
+export default function RecuperarFactura(FacturaRecuperada) {
+    const Factura = FacturaRecuperada.factura;
     if (Factura && Factura.Conceptos && Factura.Conceptos.ListaConceptos) {
         // Mapea los conceptos a la estructura deseada
         const ListaConceptos = Factura.Conceptos.ListaConceptos.map((concepto) => {
@@ -31,7 +32,7 @@ export default function RecuperarFactura(Factura) {
                 Descuento: concepto.Descuento,
                 ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                 Impuestos: Impuestos.map(impuesto => ({
-
+                    NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
                     Impuesto: impuesto.ImpuestoCatalogoID,
                     ImpuestoClave: impuesto.ImpuestoClave,
                     Tasa: impuesto.TasaCatalogoID,
@@ -41,6 +42,7 @@ export default function RecuperarFactura(Factura) {
                     Tipo: impuesto.TipoFactor
                 })),
                 Retenciones: Retenciones.map(retencion => ({
+                    NombreImpuesto: retencion.ImpuestoCatalogo.Impuesto,
                     BaseImpuesto: retencion.Base,
                     Impuesto: retencion.ImpuestoCatalogoID,
                     ImpuestoClave: retencion.ImpuestoClave,
@@ -51,6 +53,7 @@ export default function RecuperarFactura(Factura) {
                 })),
                 // Retenciones: concepto.Impuestos?.Retenciones || [],
                 Traslados: Traslados.map(traslado => ({
+                    NombreImpuesto: traslado.ImpuestoCatalogo.Impuesto,
                     BaseImpuesto: traslado.Base,
                     Impuesto: traslado.ImpuestoCatalogoID,
                     ImpuestoClave: traslado.ImpuestoClave,
@@ -85,6 +88,7 @@ export default function RecuperarFactura(Factura) {
             DomicilioFiscalReceptor: Factura.Receptor.DomicilioFiscalReceptor,
             Nombre: Factura.Receptor.Nombre,
             UsoCFDI: Factura.UsoCFDI,
+            UsoCFDIDescripcion: FacturaRecuperada.uso_cfdi.Descripcion,
             RegimenFiscal: Factura.Receptor.RegimenFiscalReceptor,
             LugarExpedicion: Factura.Receptor.LugarExpedicion,
             Calle: Factura.Receptor.Calle,
@@ -94,7 +98,9 @@ export default function RecuperarFactura(Factura) {
             Municipio: Factura.Receptor.Municipio,
             Estado: Factura.Receptor.Estado,
             MetodoPago: Factura.MetodoPago,
+            MetodoPagoDescripcion: FacturaRecuperada.metodo_pago.Descripcion,
             FormaPago: Factura.FormaPago,
+            FormaPagoDescripcion: FacturaRecuperada.forma_pago.Descripcion,
     
             //informacion Global
             InformacionGlobal:{

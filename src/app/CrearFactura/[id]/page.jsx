@@ -50,38 +50,45 @@ export default function CrearFactura() {
 
 
     useEffect(() => {
+       
         const fetchFactura = async () => {
-            if (token) {
-                try {
-                    // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-                    const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                    const data = await response.json();
-                    setFacturaEdit(data.factura);
-                    console.log("Factura", data);
-                } catch (error) {
-                    console.error('Error fetching factura:', error);
-                }
+            try {
+                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+                const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                setFacturaEdit(data);
+                console.log("Factura", data);
+            } catch (error) {
+                console.error('Error fetching factura:', error);
             }
-
         };
 
-        if (id) {
+        if (id && token) {
             fetchFactura(); // Solo llama a la API si hay una ID
         }
     }, [id, token]);
+
+   
+
+
+
+
 
 
 
 
     useEffect(() => {
+        if(facturaEdit){
+            console.log("Factura editada", facturaEdit);
         const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
         if (Conceptos) {
+            console.log("Conceptos", Conceptos);    
             setConceptos(Conceptos);
         }
         if (Emisor) {
@@ -89,8 +96,9 @@ export default function CrearFactura() {
         }
         if (Receptor) {
             setReceptorData(Receptor);
+        } 
         }
-
+       
     }, [facturaEdit]);
 
 

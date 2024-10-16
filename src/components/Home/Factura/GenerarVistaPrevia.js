@@ -242,6 +242,7 @@ const fillTemplate = async (template, data) => {
         .replace('{{selloCFDI}}', factura.Sello || "<br><br>")
         .replace('{{selloSAT}}', factura.selloSAT || "<br><br>")
         .replace('{{cadenaSAT}}', factura.cadenaOriginalSAT || "<br><br>")
+        .replace('{{serieCertificadoSAT}}', factura.NoCertificado || "<br><br>")
         .replace('{{fechaCertificacion}}', factura.fechaTimbrado || "<br><br>")
 
 
@@ -279,7 +280,7 @@ const generarVistaPrevia = async (factura) => {
             const data = factura.factura;
             const templateFactura = String(await fillTemplate(template, data));
             if (typeof templateFactura === 'string') {
-                console.log('templateFactura', templateFactura);
+                // console.log('templateFactura', templateFactura);
                    filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
             }
 
