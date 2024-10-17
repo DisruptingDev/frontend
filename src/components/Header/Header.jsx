@@ -1,16 +1,27 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // Importa usePathname para obtener la ruta actual
+import { usePathname, useRouter } from "next/navigation"; // Importa usePathname para obtener la ruta actual
 import { Inter } from "next/font/google";
 import Image from "next/image";
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
 
+
 export default function Header({ name }) {
   const pathname = usePathname(); // Obtiene la ruta actual
+  const router = useRouter();
+
+const handleLogout = () => {
+  // Aquí puedes remover el token de localStorage, cookies, etc.
+  localStorage.removeItem('authToken'); 
+  sessionStorage.removeItem('authToken');
+  // Redireccionar a la página de inicio de sesión
+  router.push('/IniciaSesion');
+};
 
   // Función para determinar si una ruta está activa
   const isActive = (path) => pathname === path;
@@ -84,7 +95,7 @@ export default function Header({ name }) {
         >
           Comprar +
         </Link> */}
-        <Link
+        {/* <Link
           href="#"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/Conceptos") ? "text-selected-color underline" : "text-muted-foreground"
@@ -101,7 +112,7 @@ export default function Header({ name }) {
           prefetch={false}
         >
           Estatus +
-        </Link>
+        </Link> */}
         {/* <Link
           href="/AltaEmpresa"
           className={`text-white text-lg hover:underline underline-offset-4 ${
@@ -112,6 +123,9 @@ export default function Header({ name }) {
           Alta de Empresa +
         </Link> */}
       </nav>
+      <button onClick={handleLogout} className="ml-auto text-white">
+        <LogoutIcon />
+      </button>
     </header>
   );
 }

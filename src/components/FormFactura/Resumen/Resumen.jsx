@@ -50,11 +50,11 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                             </tr>
                         ))}
                     </tbody>
-                    <tfoot className="bg-primary-dark-total text-white h-12">
+                    <tfoot className="bg-primary-dark-total text-white h-12 text-base">
                         <tr>
                             <th colSpan="3"></th>
-                            <th className="text-right">Subtotal: {finales.SubTotalFinal}</th>
-                            <th>Descuento: {finales.DescuentoFinal}</th>
+                            <th >Subtotal: {finales.SubTotalFinal}</th>
+                            <th >Descuento: {finales.DescuentoFinal}</th>
                             <th>Retenciones: {finales.RetencionesFinal}</th>
                             <th>Traslados: {finales.TrasladosFinal}</th>
                             <th>Total: {finales.TotalFinal}</th>

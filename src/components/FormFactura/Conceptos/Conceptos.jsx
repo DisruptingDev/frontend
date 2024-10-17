@@ -343,9 +343,9 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Descripcion: '',
 
                     Unidad: '',
-                    Cantidad: '',
-                    ValorUnitario: '',
-                    Descuento: '',
+                    Cantidad: 1,
+                    ValorUnitario: 0,
+                    Descuento: 0,
                     ObjetoImpuesto: "02",
                     impuestos: [{ Impuesto: '', Tasa: '' }]
                 });

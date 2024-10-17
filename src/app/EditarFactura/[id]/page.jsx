@@ -209,7 +209,7 @@ export default function EditarFactura() {
                         {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
                         <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}} onClick={handlePreview}>Vista previa</Button>
                         {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
-                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Actualizar Factura</Button>
                         {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
                     </div>
                 </Resumen>
