@@ -132,22 +132,56 @@ const fillTemplate = async (template, data) => {
     const impuestos = retencionesHTML + trasladosHTML;
 
 
-    let direccionEmisor =
-        factura.Emisor.Calle ? factura.Emisor.Calle + ', ' : '' +
-            factura.Emisor.NumeroExterior ? factura.Emisor.NumeroExterior + ', ' : '';
-    factura.Emisor.NumeroInterior ? factura.Emisor.NumeroInterior + ', ' : '' +
-        factura.Emisor.Colonia ? factura.Emisor.Colonia + ', ' : '' +
-            factura.Emisor.Municipio ? factura.Emisor.Municipio + ', ' : '' +
-                factura.Emisor.Estado ? factura.Emisor.Estado + ', ' : '';
 
+    let direccionEmisor='';
+        if(factura.Emisor.Calle){
+            direccionEmisor += factura.Emisor.Calle ;
+            if(factura.Emisor.NumeroExterior){
+                direccionEmisor += ', ' + factura.Emisor.NumeroExterior;
+            }
+            if(factura.Emisor.NumeroInterior){
+                direccionEmisor += ', ' + factura.Emisor.NumeroInterior;
+            }
+            if(factura.Emisor.Colonia){
+                direccionEmisor += ', ' + factura.Emisor.Colonia;
+            }
+            if(factura.Emisor.Municipio){
+                direccionEmisor += ', ' + factura.Emisor.Municipio;
+            }
+        }
+        
 
-    let direccionReceptor =
-        factura.Receptor.Calle ? factura.Receptor.Calle + ', ' : '' +
-            factura.Receptor.NumeroExterior ? factura.Receptor.NumeroExterior + ', ' : '' +
-                factura.Receptor.NumeroInterior ? factura.Receptor.NumeroInterior + ', ' : '' +
-                    factura.Receptor.Colonia ? factura.Receptor.Colonia + ', ' : '' +
-                        factura.Receptor.Municipio ? factura.Receptor.Municipio + ', ' : '' +
-                            factura.Receptor.Estado ? factura.Receptor.Estado + ', ' : '';
+ 
+    
+    console.log('direccionEmisor', direccionEmisor);
+
+    // let direccionReceptor =
+    //     factura.Receptor.Calle ? factura.Receptor.Calle + ', ' : '' +
+    //         factura.Receptor.NumeroExterior ? factura.Receptor.NumeroExterior + ', ' : '' +
+    //             factura.Receptor.NumeroInterior ? factura.Receptor.NumeroInterior + ', ' : '' +
+    //                 factura.Receptor.Colonia ? factura.Receptor.Colonia + ', ' : '' +
+    //                     factura.Receptor.Municipio ? factura.Receptor.Municipio + ', ' : '' +
+    //                         factura.Receptor.Estado ? factura.Receptor.Estado + ', ' : '';
+    let direccionReceptor = '';
+    if(factura.Receptor.Calle){
+        direccionReceptor += factura.Receptor.Calle ;
+        if(factura.Receptor.NumeroExterior){
+            direccionReceptor += ', ' + factura.Receptor.NumeroExterior;
+        }
+        if(factura.Receptor.NumeroInterior){
+            direccionReceptor += ', ' + factura.Receptor.NumeroInterior;
+        }
+        if(factura.Receptor.Colonia){
+            direccionReceptor += ', ' + factura.Receptor.Colonia;
+        }
+        if(factura.Receptor.Municipio){
+            direccionReceptor += ', ' + factura.Receptor.Municipio;
+        }
+        if(factura.Receptor.Estado){
+            direccionReceptor += ', ' + factura.Receptor.Estado;
+        }
+    }
+    console.log('direccionReceptor', direccionReceptor);
 
     if (direccionEmisor.includes('undefined')) {
         direccionEmisor = '';
@@ -202,7 +236,7 @@ const fillTemplate = async (template, data) => {
         .replace('{{logo}}', factura.Emisor.LogoPath)
         .replace('{{nombreEmisor}}', factura.Emisor.Nombre)
         .replace('{{rfcEmisor}}', factura.Emisor.Rfc)
-        .replace('{{direccionEmisor}}', factura.EmisorDireccion || direccionEmisor || "")
+        .replace('{{direccionEmisor}}',  direccionEmisor || "")
         .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor)
 
         .replace('{{folioFactura}}', factura.Folio || "")

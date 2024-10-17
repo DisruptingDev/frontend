@@ -37,8 +37,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("RFCReceptor", receptorData.Rfc);
             setValue("NombreReceptor", receptorData.Nombre);
             setValue("Calle", receptorData.Calle);
-            setValue("NoExterior", receptorData.NumeroExterior);
-            // setValue("NoInterior", data["NoInterior"]);
+            setValue("NoExterior", receptorData.NoExterior);
+            setValue("NoInterior", receptorData.NoInterior);
             setValue("Colonia", receptorData.Colonia);
             setValue("Municipio", receptorData.Municipio);
             setValue("Estado", receptorData.Estado);

@@ -55,9 +55,9 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("RFCEmisor", emisorData.Rfc);
             setValue("LugarExpedicion", emisorData.LugarExpedicion);
             setValue("NombreEmisor", emisorData.Nombre);
-            setValue("Calle", emisorData.Calle);
-            setValue("NoExterior", emisorData.NumeroExterior);
-            setValue("NoInterior", emisorData.NumeroInterior);
+            setValue("CalleEmisor", emisorData.Calle);
+            setValue("NoExteriorEmisor", emisorData.NumeroExterior);
+            setValue("NoInteriorEmisor", emisorData.NumeroInterior);
             setValue("ColoniaEmisor", emisorData.Colonia);
             setValue("MunicipioEmisor", emisorData.Municipio);
             setValue("EstadoEmisor", emisorData.Estado);
@@ -91,7 +91,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("RFCEmisor", emisor.Rfc);
             setValue("LugarExpedicion", emisor.LugarExpedicion);
             setValue("NombreEmisor", emisor.Nombre);
-            setValue("Calle", emisor.Calle)
+            setValue("CalleEmisor", emisor.Calle)
             setValue("NoExterior", emisor.NumeroExterior)
             setValue("NoInterior", emisor.NumeroInterior)
             setValue("ColoniaEmisor", emisor.Colonia)
