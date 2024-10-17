@@ -76,6 +76,7 @@ const loadTemplate = async (path) => {
 // Función para reemplazar los placeholders en la plantilla con los datos de factura
 const fillTemplate = async (template, data) => {
     let factura
+
     if (data.factura) {
         factura = data.factura;
     }
@@ -155,14 +156,9 @@ const fillTemplate = async (template, data) => {
     
     console.log('direccionEmisor', direccionEmisor);
 
-    // let direccionReceptor =
-    //     factura.Receptor.Calle ? factura.Receptor.Calle + ', ' : '' +
-    //         factura.Receptor.NumeroExterior ? factura.Receptor.NumeroExterior + ', ' : '' +
-    //             factura.Receptor.NumeroInterior ? factura.Receptor.NumeroInterior + ', ' : '' +
-    //                 factura.Receptor.Colonia ? factura.Receptor.Colonia + ', ' : '' +
-    //                     factura.Receptor.Municipio ? factura.Receptor.Municipio + ', ' : '' +
-    //                         factura.Receptor.Estado ? factura.Receptor.Estado + ', ' : '';
+
     let direccionReceptor = '';
+    console.log('factura.Receptor', factura.Receptor);
     if(factura.Receptor.Calle){
         direccionReceptor += factura.Receptor.Calle ;
         if(factura.Receptor.NumeroExterior){
@@ -193,7 +189,6 @@ const fillTemplate = async (template, data) => {
 
     let qrImageBase64 = '';
 
-    let formaPago, metodoPago, RegimenFiscalReceptor, regimenFiscalEmisor, usoCFDI;
 
     if (factura.uuid) {
         const firma = factura.Certificado;
@@ -208,6 +203,7 @@ const fillTemplate = async (template, data) => {
 
 
     }
+    let formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI;
     if (data.forma_pago) {
         formaPago = data.forma_pago.Clave + ' ' + data.forma_pago.Descripcion;
         metodoPago = data.metodo_pago.Clave + ' ' + data.metodo_pago.Descripcion;
@@ -224,9 +220,7 @@ const fillTemplate = async (template, data) => {
         usoCFDI = factura.Receptor.UsoCFDI + ' ' + factura.Receptor.UsoCFDIDescripcion;
 
     }
-
-
-
+    
 
 
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
@@ -292,15 +286,15 @@ const fillTemplate = async (template, data) => {
 
 };
 
-const fillDescription = async (template, formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI) => {
-    console.log('fillDescription', formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI);
-    return template
-        .replace('{{formaPago}}', formaPago.Clave + ' ' + formaPago.Descripcion)
-        .replace('{{metodoPago}}', metodoPago.Clave + ' ' + metodoPago.Descripcion)
-        // .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor.Clave + ' ' + regimenFiscalEmisor.Descripcion)
-        .replace('{{regimenFiscal}}', RegimenFiscalReceptor.Clave + ' ' + RegimenFiscalReceptor.Descripcion)
-        .replace('{{usoCFDI}}', usoCFDI.Clave + ' ' + usoCFDI.Descripcion)
-};
+// const fillDescription = async (template, formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI) => {
+//     console.log('fillDescription', formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI);
+//     return template
+//         .replace('{{formaPago}}', formaPago.Clave + ' ' + formaPago.Descripcion)
+//         .replace('{{metodoPago}}', metodoPago.Clave + ' ' + metodoPago.Descripcion)
+//         // .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor.Clave + ' ' + regimenFiscalEmisor.Descripcion)
+//         .replace('{{regimenFiscal}}', RegimenFiscalReceptor.Clave + ' ' + RegimenFiscalReceptor.Descripcion)
+//         .replace('{{usoCFDI}}', usoCFDI.Clave + ' ' + usoCFDI.Descripcion)
+// };
 // Función para generar el PDF usando html2pdf
 const generarVistaPrevia = async (factura) => {
     console.log('Ejecutando generatePDF con la factura:', factura);  // Agrega este log
@@ -310,22 +304,24 @@ const generarVistaPrevia = async (factura) => {
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
         }
-        if (factura.factura) {
-            const data = factura.factura;
-            const templateFactura = String(await fillTemplate(template, data));
-            if (typeof templateFactura === 'string') {
-                // console.log('templateFactura', templateFactura);
-                   filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
-            }
+        // if (factura) {
+ 
+        //     const templateFactura = String(await fillTemplate(template, data));
+        //     if (typeof templateFactura === 'string') {
+        //         // console.log('templateFactura', templateFactura);
+        //            filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
+        //         console.log('filledTemplate .factura', filledTemplate);
+        //         }
 
-        }
-        else {
+        // }
+        // else {
+    filledTemplate = await fillTemplate(template, factura);
 
-        }
+        // }
 
-        filledTemplate = fillTemplate(template, factura);
-
-
+        
+      
+// console.log('filledTemplate', filledTemplate);
         return filledTemplate;
     } catch (error) {
         console.error("Error al mostrar la vista previa: ", error);

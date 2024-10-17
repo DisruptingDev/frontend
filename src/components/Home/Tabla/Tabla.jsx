@@ -156,6 +156,7 @@ export default function DataTable({ token, filtro }) {
           const factura = await obtenerFactura(id);
           if (factura) {
             const htmlContent = await generarVistaPrevia(factura);
+            console.log('HTML content:', htmlContent);
 
             // Verificamos si hay un solo ID para recuperar el nombre
             const name = ids.length === 1 ? `${factura.factura.Emisor.Nombre}_${factura.factura.Folio}` : null;
