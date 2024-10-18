@@ -82,7 +82,7 @@ export default function Planes() {
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>
-                                    Sin expiración
+                                    Renovación mensual automática
                                     </Typography>
                                 </Box>
                             </CardContent>

@@ -1,27 +1,18 @@
+// components/Header.js
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // Importa usePathname para obtener la ruta actual
+import { usePathname } from "next/navigation";
 import { Inter } from "next/font/google";
 import Image from "next/image";
-import LogoutIcon from '@mui/icons-material/Logout';
+import UserMenu from "./UserMenu";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
 });
 
-
 export default function Header({ name }) {
-  const pathname = usePathname(); // Obtiene la ruta actual
-  const router = useRouter();
-
-const handleLogout = () => {
-  // Aquí puedes remover el token de localStorage, cookies, etc.
-  localStorage.removeItem('authToken'); 
-  sessionStorage.removeItem('authToken');
-  // Redireccionar a la página de inicio de sesión
-  router.push('/IniciaSesion');
-};
+  const pathname = usePathname();
 
   // Función para determinar si una ruta está activa
   const isActive = (path) => pathname === path;
@@ -44,7 +35,9 @@ const handleLogout = () => {
         <Link
           href="/CrearFactura"
           className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/CrearFactura") ? "text-selected-color underline" : "text-muted-foreground"
+            isActive("/CrearFactura")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
           }`}
           prefetch={false}
         >
@@ -53,7 +46,9 @@ const handleLogout = () => {
         <Link
           href="/AltaCliente"
           className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/AltaCliente") ? "text-selected-color underline" : "text-muted-foreground"
+            isActive("/AltaCliente")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
           }`}
           prefetch={false}
         >
@@ -62,7 +57,9 @@ const handleLogout = () => {
         <Link
           href="/Empresas"
           className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/Empresas") ? "text-selected-color underline" : "text-muted-foreground"
+            isActive("/Empresas")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
           }`}
           prefetch={false}
         >
@@ -71,7 +68,9 @@ const handleLogout = () => {
         <Link
           href="/AltaSerie"
           className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/AltaSerie") ? "text-selected-color underline" : "text-muted-foreground"
+            isActive("/AltaSerie")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
           }`}
           prefetch={false}
         >
@@ -80,71 +79,18 @@ const handleLogout = () => {
         <Link
           href="/Timbres"
           className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/Timbres") ? "text-selected-color underline" : "text-muted-foreground"
+            isActive("/Timbres")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
           }`}
           prefetch={false}
         >
           Timbres +
         </Link>
-        {/* <Link
-          href="/CompraTimbres"
-          className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/CompraTimbres") ? "text-selected-color underline" : "text-muted-foreground"
-          }`}
-          prefetch={false}
-        >
-          Comprar +
-        </Link> */}
-        {/* <Link
-          href="#"
-          className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/Conceptos") ? "text-selected-color underline" : "text-muted-foreground"
-          }`}
-          prefetch={false}
-        >
-          Conceptos +
-        </Link>
-        <Link
-          href="#"
-          className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/Estatus") ? "text-selected-color underline" : "text-muted-foreground"
-          }`}
-          prefetch={false}
-        >
-          Estatus +
-        </Link> */}
-        {/* <Link
-          href="/AltaEmpresa"
-          className={`text-white text-lg hover:underline underline-offset-4 ${
-            isActive("/AltaEmpresa") ? "text-selected-color underline" : "text-muted-foreground"
-          }`}
-          prefetch={false}
-        >
-          Alta de Empresa +
-        </Link> */}
       </nav>
-      <button onClick={handleLogout} className="ml-auto text-white">
-        <LogoutIcon />
-      </button>
-    </header>
-  );
-}
 
-function MountainIcon(props) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
-    </svg>
+      {/* Aquí usamos el componente UserMenu */}
+      <UserMenu />
+    </header>
   );
 }
