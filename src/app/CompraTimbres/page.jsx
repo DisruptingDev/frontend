@@ -25,9 +25,15 @@ export default function CompraTimbres() {
             <Tabs 
                 value={valorTab} 
                 onChange={manejarCambioTab} 
-                indicatorColor="primary" 
-                textColor="primary"
+
+                textColor="#1b384a"
                 centered
+                sx={{
+                  
+                    '& .MuiTabs-indicator': {
+                        backgroundColor: '#1b384a', // Cambiar el color del indicador aquí
+                    },
+                }}
             >
                 <Tab label="Paquetes" />
                 <Tab label="Planes" />

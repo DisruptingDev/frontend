@@ -78,7 +78,7 @@ export default function Planes() {
 
                                 {/* Botón y leyenda */}
                                 <Box mt="auto">
-                                <Button variant="contained" color="primary" fullWidth onClick={() => handleOpenModal(plan)}>
+                                <Button sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }} variant="contained" fullWidth onClick={() => handleOpenModal(plan)}>
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>

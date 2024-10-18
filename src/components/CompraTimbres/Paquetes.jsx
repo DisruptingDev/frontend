@@ -76,7 +76,7 @@ export default function Paquetes() {
 
                                 {/* Botón y leyenda */}
                                 <Box mt="auto">
-                                    <Button variant="contained" color="primary" fullWidth onClick={() => handleOpenModal(paquete)}>
+                                    <Button  sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }} variant="contained" fullWidth onClick={() => handleOpenModal(paquete)}>
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>
