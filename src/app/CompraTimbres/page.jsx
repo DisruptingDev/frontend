@@ -29,12 +29,12 @@ export default function CompraTimbres() {
                 textColor="primary"
                 centered
             >
-                <Tab label="Planes" />
                 <Tab label="Paquetes" />
+                <Tab label="Planes" />
             </Tabs>
 
             {/* Mostrar el componente correspondiente */}
-            {valorTab === 0 ? <Planes /> : <Paquetes />}
+            {valorTab === 0 ? <Paquetes /> : <Planes />}
         </Box>
       </div>
     );

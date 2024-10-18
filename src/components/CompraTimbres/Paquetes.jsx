@@ -1,7 +1,11 @@
 import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import DoneIcon from '@mui/icons-material/Done';
+import PagoModal from './PagoModal';
+import { useState } from 'react';
 
 export default function Paquetes() {
+    const [openModal, setOpenModal] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState(null);
     const paquetes = [
         {
             titulo: "Paquete Pequeño",
@@ -22,6 +26,16 @@ export default function Paquetes() {
             beneficios: ["250 timbres ", "Sin caducidad", "Pago único"],
         }
     ];
+
+    const handleOpenModal = (paquete) => {
+        setSelectedPlan(paquete);
+        setOpenModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setOpenModal(false);
+        setSelectedPlan(null);
+    };
     return (
         <Box my={4} >
             {/* Títulos centrados */}
@@ -46,7 +60,7 @@ export default function Paquetes() {
                                         {paquete.timbres}
                                     </Typography>
                                     <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {paquete.precio} <Typography variant="subtitle1" component="span">MXN / mes</Typography>
+                                        {paquete.precio} <Typography variant="subtitle1" component="span">MXN</Typography>
                                     </Typography>
                                 </Box>
 
@@ -62,11 +76,11 @@ export default function Paquetes() {
 
                                 {/* Botón y leyenda */}
                                 <Box mt="auto">
-                                    <Button variant="contained" color="primary" fullWidth>
+                                    <Button variant="contained" color="primary" fullWidth onClick={() => handleOpenModal(paquete)}>
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>
-                                        Renovación mensual automática
+                                        Sin expiración
                                     </Typography>
                                 </Box>
                             </CardContent>
@@ -74,6 +88,10 @@ export default function Paquetes() {
                     </Grid>
                 ))}
             </Grid>
+            {/* Modal de Pago */}
+            {selectedPlan && (
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} />
+            )}
         </Box>
     );
 }

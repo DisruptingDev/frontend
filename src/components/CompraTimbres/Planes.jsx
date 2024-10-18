@@ -1,7 +1,11 @@
 import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import DoneIcon from '@mui/icons-material/Done';
-
+import PagoModal from './PagoModal';
+import { useState } from 'react';
 export default function Planes() {
+
+    const [openModal, setOpenModal] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState(null);
     const planes = [
         {
             titulo: "Plan Básico",
@@ -22,6 +26,17 @@ export default function Planes() {
             beneficios: ["250 timbres mensuales", "Reinicio mensual a 250 timbres", "Pago Anual"],
         }
     ];
+
+    const handleOpenModal = (paquete) => {
+        setSelectedPlan(paquete);
+        setOpenModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setOpenModal(false);
+        setSelectedPlan(null);
+    };
+
 
     return (
         <Box my={4} >
@@ -63,7 +78,7 @@ export default function Planes() {
 
                                 {/* Botón y leyenda */}
                                 <Box mt="auto">
-                                    <Button variant="contained" color="primary" fullWidth>
+                                <Button variant="contained" color="primary" fullWidth onClick={() => handleOpenModal(plan)}>
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>
@@ -75,6 +90,10 @@ export default function Planes() {
                     </Grid>
                 ))}
             </Grid>
+            {/* Modal de Pago */}
+            {selectedPlan && (
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} />
+            )}
         </Box>
     );
 }
