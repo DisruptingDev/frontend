@@ -46,7 +46,7 @@ const ModalPago = ({ open, onClose, opcion }) => {
         // Cerrar el modal después de confirmar
         setTimeout(() => {
 
-        onClose();
+            onClose();
         }, 2000);
     };
 
@@ -151,32 +151,33 @@ const ModalPago = ({ open, onClose, opcion }) => {
                     descripcion="Nombre"
                 />
 
-               {/* Subir comprobante */}
-<Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px',  }}>
-    <Button
-        variant="outlined"
-        component="label"
-        fullWidth
-    >
-        Seleccionar archivo
-        <input
-            type="file"
-            hidden
-            onChange={handleFileUpload}
-        />
-    </Button>
-    {archivo && (
-        <Box mt={1}>
+                {/* Subir comprobante */}
+                <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px', }}>
+                    <Button
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                        sx={{borderBlockColor: '#1b384a', color:'#1b384a' }}
+                    >
+                        Seleccionar archivo
+                        <input
+                            type="file"
+                            hidden
+                            onChange={handleFileUpload}
+                        />
+                    </Button>
+                    {archivo && (
+                        <Box mt={1}>
 
-        <Typography mt={1} sx={{ fontWeight: '500', fontSize: '1rem', padding:'0.5em' }}>
-            Archivo seleccionado: <span style={{ fontWeight: 'bold' }}>{archivo.name}</span>
-        </Typography>
-        </Box>
-    )}
-</Box>
+                            <Typography mt={1} sx={{ fontWeight: '500', fontSize: '1rem', padding: '0.5em' }}>
+                                Archivo seleccionado: <span style={{ fontWeight: 'bold' }}>{archivo.name}</span>
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
             </DialogContent>
             <DialogActions>
-                <Button variant="contained" color="primary" fullWidth onClick={handleConfirmPago}>
+                <Button variant="contained" color="primary" fullWidth onClick={handleConfirmPago} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
                     Confirmar Pago
                 </Button>
             </DialogActions>

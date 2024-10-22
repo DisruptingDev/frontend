@@ -1,74 +1,145 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography, IconButton,
-    Menu,
-    MenuItem,
-    TextField,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Box, Button, IconButton, Menu, MenuItem, Modal, Typography, Collapse, TextField
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-
-
+import ModalComprobante from './ModalComprobante';
 
 const VistaOrdenes = () => {
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuRow, setMenuRow] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-    const ordenes = [
-        { ID: 1, Opcion: 'Opcion 1',
-            Monto: 100, Fecha: '2022-01-01', Comprobante: '' },
-        { ID: 2, Opcion: 'Opcion 2',
-            Monto: 200, Fecha: '2022-02-02', Comprobante: 'comprobante1.pdf' },
-        { ID: 3, Opcion: 'Opcion 3',
-            Monto: 300, Fecha: '2022-03-03', Comprobante: '' },
-    ];
+  // Función para formatear como moneda
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+    }).format(value);
+  }
 
-    // Supongo que tienes una función para manejar el cambio del input de archivo
-    const handleFileChange = (event, ordenId) => {
-        // Aquí puedes manejar el archivo subido
-        const file = event.target.files[0];
-        // Lógica para manejar el archivo...
-    };
+  const ordenes = [
+    { ID: 1, Opcion: 'Opcion 1', Monto: 100, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Escuela', Comprobante: '' },
+    { ID: 2, Opcion: 'Opcion 2', Monto: 200, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Empresa', Comprobante: 'comprobante1.pdf' },
+    { ID: 3, Opcion: 'Opcion 3', Monto: 300, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Hospital', Comprobante: '' },
+  ];
 
-    return (
-        <TableContainer component={Paper}>
+  const handleMenuClick = (event, row) => {
+    setAnchorEl(event.currentTarget);
+    setMenuRow(row);
+  };
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuRow(null);
+  };
 
-            <Table>
-                <TableHead>
-                    <TableRow sx={{ backgroundColor: '#04b2ca' }}>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Opcion</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Monto</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Comprobante</TableCell>
+  const handleSelectRow = (row) => {
+    setSelectedRows((prev) => {
+      if (prev.includes(row.ID)) {
+        return prev.filter((id) => id !== row.ID);
+      } else {
+        return [...prev, row.ID];
+      }
+    });
+  };
 
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {ordenes.map((orden) => (
-                        <TableRow key={orden.ID}>
-                            <TableCell sx={{ textAlign: 'center' }}>{orden.ID}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{orden.Opcion}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{orden.Monto}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{orden.Fecha}</TableCell>
+  const selectedOrdenes = ordenes.filter((orden) => selectedRows.includes(orden.ID));
+  const totalAPagar = selectedOrdenes.reduce((acc, orden) => acc + orden.Monto, 0);
 
-                            <TableCell sx={{ textAlign: 'center' }}>
-                                {orden.Comprobante !== '' ? (
-                                    // Si hay comprobante, mostrar el nombre del archivo
-                                    <Typography variant="body2">{orden.Comprobante}</Typography>
-                                ) : (
-                                    // Si no hay comprobante, mostrar el input para subir archivo
-                                    <TextField
-                                        type="file"
-                                        onChange={(event) => handleFileChange(event, orden.ID)} // Manejar el cambio
-                                        inputProps={{ accept: '.pdf,.jpg,.png' }} // Aceptar tipos de archivo específicos
-                                        sx={{ width: 'auto', height:'auto', padding:'0px'}} // Ajustar el tamaño según sea necesario
-                                    />
-                                )}
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
-    );
-}
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setShowDetails(false); // Resetear al cerrar el modal
+  };
+
+  const handleToggleDetails = () => {
+    setShowDetails((prev) => !prev);
+  };
+
+  return (
+    <Box>
+      <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+        <Button
+          variant="contained"
+          disabled={selectedRows.length === 0}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+          onClick={handleOpenModal}
+        >
+          Subir Comprobante
+        </Button>
+      </Box>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: '#04b2ca' }}>
+              <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Opción</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Empresa</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Monto</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Orden</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Pago</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Comprobante</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {ordenes.map((orden) => (
+              <TableRow key={orden.ID} sx={{ borderBottom: '1px solid #ddd' }}>
+                <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
+                  <Checkbox
+                    color="primary"
+                    checked={selectedRows.includes(orden.ID)}
+                    onChange={() => handleSelectRow(orden)}
+                    sx={{
+                      color: '#04b2ca',
+                      '&.Mui-checked': { color: '#028596' },
+                    }}
+                  />
+                </TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.ID}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.Opcion}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.Empresa}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(orden.Monto)}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.FechaOrden}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.FechaPago}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.Comprobante}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <IconButton onClick={(event) => handleMenuClick(event, orden)}>
+                    <MoreVertIcon />
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                    sx={{ boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }}
+                  >
+                    <MenuItem>Descargar</MenuItem>
+                  </Menu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Modal para mostrar el resumen */}
+        <ModalComprobante
+            open={openModal}
+            onClose={handleCloseModal}
+            ordenesSeleccionadas={selectedOrdenes}
+            totalAPagar={totalAPagar}
+            />
+    </Box>
+  );
+};
+
 export default VistaOrdenes;
