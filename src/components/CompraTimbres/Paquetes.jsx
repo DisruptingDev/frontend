@@ -1,31 +1,73 @@
 import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
-import { useState } from 'react';
+import { useState, useEffect, useCallback} from 'react';
+import { set } from 'date-fns';
 
-export default function Paquetes() {
+export default function Paquetes({token}) {
     const [openModal, setOpenModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
-    const paquetes = [
-        {
-            titulo: "Paquete Pequeño",
-            timbres: "50 timbres",
-            precio: "$299.00",
-            beneficios: ["50 timbres ", "Sin caducidad", "Pago único"],
-        },
-        {
-            titulo: "Paquete Mediano",
-            timbres: "100 timbres",
-            precio: "$349.00",
-            beneficios: ["100 timbres ", "Sin caducidad", "Pago único"],
-        },
-        {
-            titulo: "Paquete Grande",
-            timbres: "250 timbres",
-            precio: "$949.00",
-            beneficios: ["250 timbres ", "Sin caducidad", "Pago único"],
-        }
-    ];
+    const [paquetes, setPaquetes] = useState([]);
+
+      // Función para formatear como moneda
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+    }).format(value);
+  }
+    // const paquetes = [
+    //     {
+    //         titulo: "Paquete Pequeño",
+    //         timbres: "50 timbres",
+    //         precio: "$299.00",
+    //         beneficios: ["50 timbres ", "Sin caducidad", "Pago único"],
+    //     },
+    //     {
+    //         titulo: "Paquete Mediano",
+    //         timbres: "100 timbres",
+    //         precio: "$349.00",
+    //         beneficios: ["100 timbres ", "Sin caducidad", "Pago único"],
+    //     },
+    //     {
+    //         titulo: "Paquete Grande",
+    //         timbres: "250 timbres",
+    //         precio: "$949.00",
+    //         beneficios: ["250 timbres ", "Sin caducidad", "Pago único"],
+    //     }
+    // ];
+
+        const fetchPaquetes = useCallback(async () => {
+            if (token!='') {
+                console.log('Fetching paquetes', token);
+                try {
+                    console.log('Token:', token);   
+                    const response = await fetch('http://31.220.31.152:8081/Catalogos/Paquetes', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    const data = await response.json();
+                    console.log('Data:', data);
+                    if(response.ok){
+                        console.log('Paquetes:', data);
+                        setPaquetes(data);
+                    } else {
+                        console.error('Error fetching paquetes:', data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching paquetes:', error);
+                }
+            }
+        }, [token]);
+
+    useEffect(() => {
+        fetchPaquetes();
+    }, [fetchPaquetes, token]);
+
+
 
     const handleOpenModal = (paquete) => {
         setSelectedPlan(paquete);
@@ -54,24 +96,29 @@ export default function Paquetes() {
                                 {/* Contenido del plan */}
                                 <Box>
                                     <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {paquete.titulo}
+                                        {paquete.Nombre || 'Paquete'}
                                     </Typography>
                                     <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        {paquete.timbres}
+                                        {paquete.CantidadTimbres} Timbres
                                     </Typography>
                                     <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {paquete.precio} <Typography variant="subtitle1" component="span">MXN</Typography>
+                                    {formatCurrency(paquete.Costo)} <Typography variant="subtitle1" component="span">MXN</Typography>
                                     </Typography>
                                 </Box>
 
                                 {/* Beneficios */}
                                 <Box flexGrow={1} mb={2}>
-                                    {paquete.beneficios.map((beneficio, i) => (
-                                        <Box key={i} display="flex" alignItems="center" mb={1}>
+                                    
+                                        <Box  display="flex" alignItems="center" mb={1}>
                                             <DoneIcon color="success" sx={{ mr: 1 }} />
-                                            <Typography variant="body2">{beneficio}</Typography>
+                                            <Typography variant="body2">Sin caducidad</Typography>
+
                                         </Box>
-                                    ))}
+                                        <Box  display="flex" alignItems="center" mb={1}>
+                                            <DoneIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">Pago único</Typography>
+                                        </Box>
+                                 
                                 </Box>
 
                                 {/* Botón y leyenda */}
@@ -90,7 +137,7 @@ export default function Paquetes() {
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
-                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} />
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token} />
             )}
         </Box>
     );

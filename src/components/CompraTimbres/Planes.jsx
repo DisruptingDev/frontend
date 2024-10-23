@@ -1,31 +1,69 @@
 import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material';
 import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
-import { useState } from 'react';
-export default function Planes() {
+import { useState, useEffect, useCallback } from 'react';
+export default function Planes({ token }) {
 
     const [openModal, setOpenModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
-    const planes = [
-        {
-            titulo: "Plan Básico",
-            timbres: "50 timbres mensuales",
-            precio: "$249.00",
-            beneficios: ["50 timbres mensuales", "Reinicio mensual a 50 timbres", "Pago Anual"],
-        },
-        {
-            titulo: "Plan Estándar",
-            timbres: "100 timbres mensuales",
-            precio: "$399.00",
-            beneficios: ["100 timbres mensuales", "Reinicio mensual a 100 timbres", "Pago Anual"],
-        },
-        {
-            titulo: "Plan Premium",
-            timbres: "250 timbres mensuales",
-            precio: "$899.00",
-            beneficios: ["250 timbres mensuales", "Reinicio mensual a 250 timbres", "Pago Anual"],
+    const [planes, setPlanes] = useState([]);
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
+          minimumFractionDigits: 2,
+        }).format(value);
+      }
+    // const planes = [
+    //     {
+    //         titulo: "Plan Básico",
+    //         timbres: "50 timbres mensuales",
+    //         precio: "$249.00",
+    //         beneficios: ["50 timbres mensuales", "Reinicio mensual a 50 timbres", "Pago Anual"],
+    //     },
+    //     {
+    //         titulo: "Plan Estándar",
+    //         timbres: "100 timbres mensuales",
+    //         precio: "$399.00",
+    //         beneficios: ["100 timbres mensuales", "Reinicio mensual a 100 timbres", "Pago Anual"],
+    //     },
+    //     {
+    //         titulo: "Plan Premium",
+    //         timbres: "250 timbres mensuales",
+    //         precio: "$899.00",
+    //         beneficios: ["250 timbres mensuales", "Reinicio mensual a 250 timbres", "Pago Anual"],
+    //     }
+    // ];
+
+    const fetchPlanes = useCallback(async () => {
+        if (token != '') {
+            console.log('Fetching plan', token);
+            try {
+                console.log('Token:', token);
+                const response = await fetch('http://31.220.31.152:8081/Catalogos/Planes', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const data = await response.json();
+                console.log('Data:', data);
+                if (response.ok) {
+                    console.log('plan:', data);
+                    setPlanes(data);
+                } else {
+                    console.error('Error fetching plan:', data);
+                }
+            } catch (error) {
+                console.error('Error fetching plan:', error);
+            }
         }
-    ];
+    }, [token]);
+
+    useEffect(() => {
+        fetchPlanes();
+    }, [fetchPlanes, token]);
 
     const handleOpenModal = (paquete) => {
         setSelectedPlan(paquete);
@@ -56,33 +94,33 @@ export default function Planes() {
                                 {/* Contenido del plan */}
                                 <Box>
                                     <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {plan.titulo}
+                                        {plan.Nombre || 'Plan'}
                                     </Typography>
                                     <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        {plan.timbres}
+                                        {plan.CantidadTimbres} timbres mensuales
                                     </Typography>
                                     <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {plan.precio} <Typography variant="subtitle1" component="span">MXN / mes</Typography>
+                                        {formatCurrency(plan.Costo)} <Typography variant="subtitle1" component="span">MXN / mes</Typography>
                                     </Typography>
                                 </Box>
 
                                 {/* Beneficios */}
                                 <Box flexGrow={1} mb={2}>
-                                    {plan.beneficios.map((beneficio, i) => (
-                                        <Box key={i} display="flex" alignItems="center" mb={1}>
-                                            <DoneIcon color="success" sx={{ mr: 1 }} />
-                                            <Typography variant="body2">{beneficio}</Typography>
-                                        </Box>
-                                    ))}
+
+                                    <Box display="flex" alignItems="center" mb={1}>
+                                        <DoneIcon color="success" sx={{ mr: 1 }} />
+                                        <Typography variant="body2">Reinicio mensual</Typography>
+                                    </Box>
+
                                 </Box>
 
                                 {/* Botón y leyenda */}
                                 <Box mt="auto">
-                                <Button sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }} variant="contained" fullWidth onClick={() => handleOpenModal(plan)}>
+                                    <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth onClick={() => handleOpenModal(plan)}>
                                         Comprar Ahora
                                     </Button>
                                     <Typography variant="caption" display="block" align="center" mt={2}>
-                                    Renovación mensual automática
+                                        Renovación mensual automática
                                     </Typography>
                                 </Box>
                             </CardContent>

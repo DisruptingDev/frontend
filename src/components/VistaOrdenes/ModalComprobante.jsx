@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider
+    Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider,Snackbar,
+    Alert
 } from '@mui/material';
 
-const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar }) => {
+const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar, token }) => {
     const [showDetails, setShowDetails] = useState(false);
     const [archivo, setArchivo] = useState(null);
+    const [alertMessage, setAlertMessage] = useState(''); // Estado para manejar mensajes de error
+    const [severity, setSeverity] = useState('error'); // Severidad del mensaje
 
     const handleFileUpload = (event) => {
         setArchivo(event.target.files[0]);
@@ -19,6 +22,44 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             minimumFractionDigits: 2,
         }).format(value);
     };
+
+    const SubirComprobante= async () => {
+        if (archivo) {
+            const ordenesID = ordenesSeleccionadas.map((orden) => orden.ID);
+            const formData = new FormData();
+            formData.append('comprobante', archivo);
+            formData.append('ordenesID', JSON.stringify(ordenesID));
+            console.log('Subiendo comprobante', formData);
+            try {
+                const response = await fetch('http://31.220.31.152:8092/SubirComprobante', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: formData,
+                });
+                const data = await response.json();
+                console.log(data);
+                if (response.ok) {
+                    setAlertMessage('Comprobante subido correctamente');
+                    setSeverity('success');
+                }
+                else {
+                    setAlertMessage(data.message);
+                    setSeverity('error');
+                }
+            } catch (error) {
+                setAlertMessage('Error al subir el comprobante');
+                setSeverity('error');
+            }
+        }else{
+            setAlertMessage('Seleccione un archivo');
+            setSeverity('error');
+
+        }
+    };
+
+
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -47,9 +88,9 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                             <TableBody>
                                 {ordenesSeleccionadas.map((orden) => (
                                     <TableRow key={orden.ID}>
-                                        <TableCell>{orden.Empresa}</TableCell>
-                                        <TableCell>{orden.Opcion}</TableCell>
-                                        <TableCell>{formatCurrency(orden.Monto)}</TableCell>
+                                        <TableCell>{orden.EmisorID}</TableCell>
+                                        <TableCell>{orden.PlanID? orden.Plan.ID: orden.Paquete.ID}</TableCell>
+                                        <TableCell>{orden.PlanID? formatCurrency(orden.Plan.Costo): formatCurrency(orden.Paquete.Costo)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -123,7 +164,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                 </Box>
             </DialogContent>
             <DialogActions>
-            <Button variant="contained" color="primary" fullWidth sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} >
+            <Button onClick={SubirComprobante} variant="contained" color="primary" fullWidth sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} >
                     Confirmar Pago
                 </Button>
             </DialogActions>

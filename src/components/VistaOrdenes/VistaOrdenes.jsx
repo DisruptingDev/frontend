@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Box, Button, IconButton, Menu, MenuItem, Modal, Typography, Collapse, TextField
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ModalComprobante from './ModalComprobante';
 
-const VistaOrdenes = () => {
+
+function createData(item) {
+  return { ...item };
+}
+
+const VistaOrdenes = ({token}) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuRow, setMenuRow] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+
+  const [ordenes, setOrdenes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
 
   // Función para formatear como moneda
   const formatCurrency = (value) => {
@@ -21,11 +30,45 @@ const VistaOrdenes = () => {
     }).format(value);
   }
 
-  const ordenes = [
-    { ID: 1, Opcion: 'Opcion 1', Monto: 100, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Escuela', Comprobante: '' },
-    { ID: 2, Opcion: 'Opcion 2', Monto: 200, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Empresa', Comprobante: 'comprobante1.pdf' },
-    { ID: 3, Opcion: 'Opcion 3', Monto: 300, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Hospital', Comprobante: '' },
-  ];
+  const fetchOrdenes = useCallback( async () => {
+    if (token) {
+      console.log('Fetching ordenes', token);
+      try {
+        const response = await fetch('http://31.220.31.152:8092/ListarOrdenes',{
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          const transformedData = data.map((item) => createData(item));
+          const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+          console.log('Ordenes:', sortedData);
+          setOrdenes(sortedData);
+        } else {
+          console.error('Expected an array but received:', typeof data);
+        }
+      } catch (error) {
+        console.error('Error fetching ordenes:', error);
+      } finally {
+        setLoading(false);
+      }
+
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchOrdenes();
+  }, [fetchOrdenes, token]);
+
+
+  
+  // const ordenes = [
+  //   { ID: 1, Opcion: 'Opcion 1', Monto: 100, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Escuela', Comprobante: '' },
+  //   { ID: 2, Opcion: 'Opcion 2', Monto: 200, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Empresa', Comprobante: 'comprobante1.pdf' },
+  //   { ID: 3, Opcion: 'Opcion 3', Monto: 300, FechaOrden: '2022-01-01', FechaPago: '2024-01-01', Empresa: 'Hospital', Comprobante: '' },
+  // ];
 
   const handleMenuClick = (event, row) => {
     setAnchorEl(event.currentTarget);
@@ -47,7 +90,7 @@ const VistaOrdenes = () => {
   };
 
   const selectedOrdenes = ordenes.filter((orden) => selectedRows.includes(orden.ID));
-  const totalAPagar = selectedOrdenes.reduce((acc, orden) => acc + orden.Monto, 0);
+  const totalAPagar = selectedOrdenes.reduce((acc, orden) => acc + (orden.PlanID? orden.Plan.Costo : orden.Paquete.Costo), 0);
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -82,10 +125,12 @@ const VistaOrdenes = () => {
               <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Opción</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Timbres</TableCell>
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Empresa</TableCell>
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Monto</TableCell>
-              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Orden</TableCell>
-              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Pago</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estatus</TableCell>
+              {/* <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Orden</TableCell>
+              <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha de Pago</TableCell> */}
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Comprobante</TableCell>
               <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
             </TableRow>
@@ -106,12 +151,14 @@ const VistaOrdenes = () => {
                   />
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{orden.ID}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{orden.Opcion}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{orden.Empresa}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(orden.Monto)}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{orden.FechaOrden}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{orden.FechaPago}</TableCell>
-                <TableCell sx={{ textAlign: 'center' }}>{orden.Comprobante}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.PlanID? 'Plan ' +  orden .Plan.ID : 'Paquete '+ orden.Paquete.ID}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.PlanID? orden .Plan.CantidadTimbres :  orden.Paquete.CantidadTimbres}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.EmisorID}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.PlanID?  formatCurrency(orden.Plan.Costo): formatCurrency(orden.Paquete.Costo) }</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.Estatus}</TableCell>
+                {/* <TableCell sx={{ textAlign: 'center' }}>{orden.FechaOrden}</TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>{orden.FechaPago}</TableCell> */}
+                <TableCell sx={{ textAlign: 'center' }}>{orden.ComprobantePath}</TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>
                   <IconButton onClick={(event) => handleMenuClick(event, orden)}>
                     <MoreVertIcon />
@@ -137,6 +184,7 @@ const VistaOrdenes = () => {
             onClose={handleCloseModal}
             ordenesSeleccionadas={selectedOrdenes}
             totalAPagar={totalAPagar}
+            token={token}
             />
     </Box>
   );

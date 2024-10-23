@@ -176,8 +176,8 @@ export default function UserMenu() {
 
   return (
     <>
-      <IconButton onClick={handleMenuOpen} className="ml-auto text-white">
-        <AccountCircleIcon fontSize="large" />
+      <IconButton onClick={handleMenuOpen} sx={{marginLeft:"auto"}}>
+      <AccountCircleIcon fontSize="large" sx={{ color: "white", marginLeft:"auto" }} />
       </IconButton>
 
       <Menu

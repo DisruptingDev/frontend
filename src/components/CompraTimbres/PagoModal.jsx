@@ -5,17 +5,23 @@ import {
     Alert
 } from '@mui/material';
 import { set } from 'date-fns';
+import { includes } from 'valibot';
 
-const ModalPago = ({ open, onClose, opcion }) => {
+const ModalPago = ({ open, onClose, opcion, token}) => {
     const [empresa, setEmpresa] = useState('');
     const [archivo, setArchivo] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
     const [alertMessage, setAlertMessage] = useState(''); // Estado para manejar mensajes de error
     const [severity, setSeverity] = useState('error'); // Severidad del mensaje
-    const empresas = [
-        { label: 'Empresa 1', value: 'empresa1' },
-        { label: 'Empresa 2', value: 'empresa2' },
-    ];
+
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency: 'MXN',
+          minimumFractionDigits: 2,
+        }).format(value);
+      }
 
     const handleFileUpload = (event) => {
         setArchivo(event.target.files[0]);
@@ -25,40 +31,84 @@ const ModalPago = ({ open, onClose, opcion }) => {
         setShowDetails(!showDetails);
     };
 
-    const handleConfirmPago = () => {
+    const handleConfirmPago = async () => {
+        let formData = {};
         // Validar que todos los campos estén llenos
-        if (!empresa || !archivo) {
+        if (!empresa ) {
             setAlertMessage('Por favor, complete todos los campos.');
             setSeverity('error');
             return; // Salir de la función si hay campos vacíos
         }
-
-        // Recuperar datos ingresados
-        const formData = {
-            empresa,
-            archivo,
-            opcion,
+        if(opcion.Nombre.includes('Plan')){
+            console.log('Es un plan');
+            // Recuperar datos ingresados
+         formData = {
+            EmisorID: empresa,
+            // archivo,
+            PanID: opcion.ID,
         };
+        }
+        else{
+            console.log('Es un paquete');
+            // Recuperar datos ingresados
+         formData = {
+            EmisorID: empresa,
+            // archivo,
+            PaqueteID: opcion.ID,
+        }
+    }
 
-        console.log('Datos a enviar:', formData);
-        setAlertMessage('Pago realizado con éxito.'); // Mensaje de éxito
-        setSeverity('success'); // Cambiar severidad a éxito
-        // Cerrar el modal después de confirmar
-        setTimeout(() => {
+    try {
+         // Enviar datos al servidor
+         const response = await fetch('http://31.220.31.152:8092/GenerarOrden', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(formData),
+        })
+   
 
-            onClose();
-        }, 2000);
+        if (response.ok) {
+            console.log('Pago realizado con éxito');
+
+            setAlertMessage('Pago realizado con éxito.'); // Mensaje de éxito
+            setSeverity('success'); // Cambiar severidad a éxito
+            // Cerrar el modal después de confirmar
+            setTimeout(() => {
+
+                onClose();
+            }, 2000);
+        } else {
+            console.error('Error en el pago:', response);
+            setAlertMessage('Error al realizar el pago. Por favor, intente de nuevo.'); // Mensaje de error
+        }
+
+    } catch (error) {
+        console.error('Error en el pago:', error);
+        
+    }
+        
     };
 
     // Función para manejar el cierre del Snackbar
     const handleCloseSnackbar = () => {
         setAlertMessage('');
     };
+    const handleEmpresa = (e) => {
+        const data = JSON.parse(e.target.value);
+
+        console.log(data.ID);
+        setEmpresa(data.ID);
+   
+       
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
             <DialogTitle sx={{ fontWeight: "600", fontSize: "1.5em" }}>
-                Realizar Pago
+                Realizar Orden
             </DialogTitle>
             <DialogContent>
                 {/* Detalles de la compra */}
@@ -72,10 +122,10 @@ const ModalPago = ({ open, onClose, opcion }) => {
                         </Button>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Typography sx={{ fontWeight: "500", fontSize: "0.9em" }}>{opcion.titulo}</Typography>
-                        <Typography>{opcion.precio}</Typography>
+                        <Typography sx={{ fontWeight: "500", fontSize: "0.9em" }}>{opcion.Nombre}</Typography>
+                        <Typography>{formatCurrency(opcion.Costo)}</Typography>
                     </Box>
-                    <Typography color="textSecondary">{opcion.timbres}</Typography>
+                    <Typography color="textSecondary">{opcion.CantidadTimbres} Timbres </Typography>
 
                     {showDetails && (
                         <Box mt={1}>
@@ -132,7 +182,7 @@ const ModalPago = ({ open, onClose, opcion }) => {
                         </Grid>
                         <Divider sx={{ my: 1 }} />
                         <Typography>
-                            Monto a pagar: <strong>{opcion.precio}</strong>
+                            Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong>
                         </Typography>
                         {/* <Typography variant="caption" color="text.secondary">
                             Por favor, realice la transferencia a la cuenta proporcionada y suba el comprobante de pago.
@@ -147,12 +197,12 @@ const ModalPago = ({ open, onClose, opcion }) => {
                     id="ID"
                     clave=""
                     // value={empresa}
-                    onChange={(e) => setEmpresa(e.target.value)}
+                    onChange={handleEmpresa}
                     descripcion="Nombre"
                 />
 
                 {/* Subir comprobante */}
-                <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px', }}>
+                {/* <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px', }}>
                     <Button
                         variant="outlined"
                         component="label"
@@ -174,7 +224,7 @@ const ModalPago = ({ open, onClose, opcion }) => {
                             </Typography>
                         </Box>
                     )}
-                </Box>
+                </Box> */}
             </DialogContent>
             <DialogActions>
                 <Button variant="contained" color="primary" fullWidth onClick={handleConfirmPago} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
