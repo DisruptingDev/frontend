@@ -138,7 +138,8 @@
 //     </>
 //   );
 // }
-import { useState } from 'react';
+"use client";
+import { useState, useEffect } from 'react';
 import { Menu, MenuItem, IconButton, ListItemIcon, Typography, Divider, Box } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -150,8 +151,17 @@ export default function UserMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
   const router = useRouter();
 
-  const correo = localStorage.getItem("correo");
-  const usuario = localStorage.getItem("usuario");
+  const [correo, setCorreo] = useState('');
+  const [usuario, setUsuario] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedCorreo = localStorage.getItem('correo');
+      const storedUsuario = localStorage.getItem('usuario');
+      setCorreo(storedCorreo || '');
+      setUsuario(storedUsuario || '');
+    }
+  }, []);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget); // Abrir el menú

@@ -63,30 +63,6 @@ export default function RegistroClientes() {
         
     }, [clienteIdEditar, token]);
 
-    // useEffect(() => {
-    //     try {
-
-    //         const token = localStorage.getItem("token");
-    //         console.log(token);
-    //         const response = fetch("http://31.220.31.152:8081/Catalogos/Receptor", {
-    //             method: "GET",
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //             },
-    //         });
-    //         if (response.ok) {
-    //             const data = response.json();
-    //             setClientes(data);k
-    //         }
-    //         else {
-    //             console.log("Error al cargar los clientes");
-    //         }
-    //     } catch (error) {
-    //         console.log("Error al cargar los clientes");
-    //     }
-
-
-    // }, []);
 
     const handleOpenModal = () => {
         setOpenModal(true);

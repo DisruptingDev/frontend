@@ -3,6 +3,10 @@
 // };
 "use client";
 export const isAuthenticated = () => {
+    if (typeof window === 'undefined') {
+        // Si estamos en el servidor, no intentes acceder a localStorage o sessionStorage
+        return false;
+    }
     const authToken = localStorage.getItem("authToken");
     const authTokenSession = sessionStorage.getItem("authToken");
     const loginDate = localStorage.getItem("loginDate");
