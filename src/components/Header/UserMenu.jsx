@@ -150,6 +150,9 @@ export default function UserMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
   const router = useRouter();
 
+  const correo = localStorage.getItem("correo");
+  const usuario = localStorage.getItem("usuario");
+
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget); // Abrir el menú
   };
@@ -207,10 +210,10 @@ export default function UserMenu() {
         </Box>
 
         <Typography variant="h6" textAlign="center" sx={{ fontWeight: '600', paddingTop: '10px', color: '#333' }}>
-          Kevin
+        {usuario}
         </Typography>
         <Typography variant="subtitle2" textAlign="center" sx={{ fontSize: '0.7em', color: '#666' }}>
-          kevin@gmail.com
+          {correo}
         </Typography>
 
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />

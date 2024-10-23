@@ -33,7 +33,7 @@ export default function Login() {
 
             if (response.ok) {
                 const result = JSON.parse(text);
-            
+
                 if (result.error) {
                     setAlert({ open: true, message: result.error, severity: 'error' });
                 } else {
@@ -41,26 +41,34 @@ export default function Login() {
                     // localStorage.setItem('authToken', result.token);
                     // localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
                     // Almacena el token dependiendo de "Recuérdame"
+                    localStorage.setItem('correo', data.usuario);
+
+                    // Extraer todo lo antes del '@'
+                    const nombreUsuario = data.usuario.split('@')[0];
+
+                    // Guardar en localStorage
+                    localStorage.setItem('usuario', nombreUsuario);
                     if (data.remember) {
                         console.log('Recuérdame activado');
                         sessionStorage.removeItem("authToken");
+
                         localStorage.setItem('authToken', result.token); // Guarda en Local Storage
                         localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
                     } else {
                         console.log('Recuérdame desactivado');
-                         localStorage.removeItem("authToken");
+                        localStorage.removeItem("authToken");
                         localStorage.removeItem("loginDate");
                         sessionStorage.setItem('authToken', result.token); // Guarda en Session Storage
                     }
                     setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
                     console.log('Login exitoso', result.token, currentDate);
-            
+
                     if (isMounted) { // Solo redirige si el componente está montado
                         router.push('/Home');
                     }
                 }
             }
-             else {
+            else {
                 setAlert({ open: true, message: 'Error en la autenticación', severity: 'error' });
             }
         } catch (error) {
@@ -122,11 +130,11 @@ export default function Login() {
                             },
                         }}
                     />
-                     {/*
+                    {/*
                     <Link href="#" variant="body2" sx={{ display: 'block', marginBottom: 2, textAlign: 'initial' }}>
                         ¿Olvidaste tu contraseña?
                     </Link> */}
-                    <Button sx={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'} }} variant="contained" fullWidth type="submit">
+                    <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth type="submit">
                         Iniciar sesión
                     </Button>
                 </Box>
