@@ -45,7 +45,7 @@ const ModalPago = ({ open, onClose, opcion, token}) => {
          formData = {
             EmisorID: empresa,
             // archivo,
-            PanID: opcion.ID,
+            PlanID: opcion.ID,
         };
         }
         else{
@@ -58,6 +58,7 @@ const ModalPago = ({ open, onClose, opcion, token}) => {
         }
     }
 
+    console.log('Datos a enviar:', formData);
     try {
          // Enviar datos al servidor
          const response = await fetch('http://31.220.31.152:8092/GenerarOrden', {

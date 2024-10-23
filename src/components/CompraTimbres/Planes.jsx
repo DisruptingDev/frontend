@@ -130,7 +130,7 @@ export default function Planes({ token }) {
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
-                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} />
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token}/>
             )}
         </Box>
     );
