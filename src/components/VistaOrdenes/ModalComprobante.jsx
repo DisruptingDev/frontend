@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
-    Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider,Snackbar,
+    Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider, Snackbar,
     Alert
 } from '@mui/material';
 
-const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar, token }) => {
+const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar, token, setActualizar }) => {
     const [showDetails, setShowDetails] = useState(false);
     const [archivo, setArchivo] = useState(null);
     const [alertMessage, setAlertMessage] = useState(''); // Estado para manejar mensajes de error
@@ -23,7 +23,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
         }).format(value);
     };
 
-    const SubirComprobante= async () => {
+    const SubirComprobante = async () => {
         if (archivo) {
             const ordenesID = ordenesSeleccionadas.map((orden) => orden.ID);
             const formData = new FormData();
@@ -43,6 +43,13 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                 if (response.ok) {
                     setAlertMessage('Comprobante subido correctamente');
                     setSeverity('success');
+            
+                    setTimeout(() => {
+                        setActualizar(true);
+                        setArchivo(null);
+                        onClose();
+                    }
+                        , 2000);
                 }
                 else {
                     setAlertMessage(data.message);
@@ -52,11 +59,15 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                 setAlertMessage('Error al subir el comprobante');
                 setSeverity('error');
             }
-        }else{
+        } else {
             setAlertMessage('Seleccione un archivo');
             setSeverity('error');
 
         }
+    };
+    // Función para manejar el cierre del Snackbar
+    const handleCloseSnackbar = () => {
+        setAlertMessage('');
     };
 
 
@@ -86,11 +97,16 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                     {showDetails && (
                         <Table sx={{ mt: 2 }}>
                             <TableBody>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Emisor</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Costo</TableCell>
+                                </TableRow>
                                 {ordenesSeleccionadas.map((orden) => (
                                     <TableRow key={orden.ID}>
                                         <TableCell>{orden.EmisorID}</TableCell>
-                                        <TableCell>{orden.PlanID? orden.Plan.ID: orden.Paquete.ID}</TableCell>
-                                        <TableCell>{orden.PlanID? formatCurrency(orden.Plan.Costo): formatCurrency(orden.Paquete.Costo)}</TableCell>
+                                        <TableCell>{orden.PlanID ? orden.Plan.ID : orden.Paquete.ID}</TableCell>
+                                        <TableCell>{orden.PlanID ? formatCurrency(orden.Plan.Costo) : formatCurrency(orden.Paquete.Costo)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -144,7 +160,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                         variant="outlined"
                         component="label"
                         fullWidth
-                        sx={{borderBlockColor: '#1b384a', color:'#1b384a' }}
+                        sx={{ borderBlockColor: '#1b384a', color: '#1b384a' }}
                     >
                         Seleccionar archivo
                         <input
@@ -164,10 +180,22 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                 </Box>
             </DialogContent>
             <DialogActions>
-            <Button onClick={SubirComprobante} variant="contained" color="primary" fullWidth sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} >
+                <Button onClick={SubirComprobante} variant="contained" color="primary" fullWidth sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} >
                     Confirmar Pago
                 </Button>
             </DialogActions>
+
+            <Snackbar
+                open={Boolean(alertMessage)}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                message={alertMessage}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={severity} variant='filled' sx={{ width: '100%' }}>
+                    {alertMessage}
+                </Alert>
+            </Snackbar>
         </Dialog>
     );
 };

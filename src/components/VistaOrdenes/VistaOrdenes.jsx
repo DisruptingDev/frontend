@@ -17,6 +17,8 @@ const VistaOrdenes = ({token}) => {
   const [openModal, setOpenModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
+  const [actualizar, setActualizar] = useState(false);
+
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,6 +63,14 @@ const VistaOrdenes = ({token}) => {
   useEffect(() => {
     fetchOrdenes();
   }, [fetchOrdenes, token]);
+
+  useEffect(() => {
+    if (actualizar) {
+      fetchOrdenes();
+      setActualizar(false);
+      setSelectedRows([]);
+    }
+  }, [actualizar, fetchOrdenes]);
 
 
   
@@ -185,6 +195,7 @@ const VistaOrdenes = ({token}) => {
             ordenesSeleccionadas={selectedOrdenes}
             totalAPagar={totalAPagar}
             token={token}
+            setActualizar={setActualizar}
             />
     </Box>
   );
