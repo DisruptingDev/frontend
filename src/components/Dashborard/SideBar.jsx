@@ -34,23 +34,24 @@ const SideBar = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     margin: '0.5rem',
-                    marginBottom: '0.5rem',
-                    height: 'calc(100% - 1rem)',
+                   
+                    marginTop: '5.5rem',
+                    height: 'calc(100vh - 6rem)',
                     // justifyContent: 'space-between',
                 },
             }}
         >
-            <Box sx={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+            {/* <Box sx={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
                 <Image
                     src="/images/logo.png"
                     alt="Logo de la empresa"
                     width={203}
                     height={64}
                 />
-            </Box>
+            </Box> */}
             <Box>
         
-                <List>
+                <List sx={{marginTop:'1rem'}}>
                     <Link href="/Dashboard">
 
                         <ListItem button >
