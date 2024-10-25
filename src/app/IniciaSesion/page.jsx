@@ -48,6 +48,9 @@ export default function Login() {
 
                     // Guardar en localStorage
                     localStorage.setItem('usuario', nombreUsuario);
+
+                    localStorage.setItem('superUser', result.sudo);
+
                     if (data.remember) {
                         console.log('Recuérdame activado');
                         sessionStorage.removeItem("authToken");
@@ -64,7 +67,12 @@ export default function Login() {
                     console.log('Login exitoso', result.token, currentDate);
 
                     if (isMounted) { // Solo redirige si el componente está montado
-                        router.push('/Home');
+                       if(result.sudo){
+                            router.push('/Dashboard');
+                        }
+                        else{
+                            router.push('/Home');
+                       }
                     }
                 }
             }

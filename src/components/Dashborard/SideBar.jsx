@@ -35,8 +35,11 @@ const SideBar = () => {
                     flexDirection: 'column',
                     margin: '0.5rem',
                    
-                    marginTop: '5.5rem',
-                    height: 'calc(100vh - 6rem)',
+                    // marginTop: '5.5rem',
+                    marginTop: '6rem',
+                    height: 'calc(100vh - 6.5rem)',
+                    borderRadius: '0.2rem',
+                    boxShadow: '0px 0px 10px 0px rgba(0,0,0,0.45)',
                     // justifyContent: 'space-between',
                 },
             }}
@@ -88,16 +91,21 @@ const SideBar = () => {
                  
                 </List>
             </Box>
+
             <Box sx={{ padding: '16px', marginTop:'auto' }}>
+            <Link href="/IniciaSesion" passHref>
                 <Button
                     variant="outlined"
                     // color="secondary"
                     startIcon={<ExitToAppIcon />}
                     fullWidth
                     sx={{ color: '#fff' }} // Rojo para "Cerrar sesión"
+                    onClick={() => {  localStorage.removeItem('authToken');
+                        sessionStorage.removeItem('authToken');}}
                 >
                     Cerrar sesión
                 </Button>
+                </Link>
             </Box>
         </Drawer>
     );

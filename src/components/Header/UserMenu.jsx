@@ -145,6 +145,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useRouter } from 'next/navigation';
 
 export default function UserMenu() {
@@ -153,11 +154,14 @@ export default function UserMenu() {
 
   const [correo, setCorreo] = useState('');
   const [usuario, setUsuario] = useState('');
+  const [superUser, setSuperUser] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedCorreo = localStorage.getItem('correo');
       const storedUsuario = localStorage.getItem('usuario');
+      const superUser = localStorage.getItem('superUser');
+      setSuperUser(superUser || '');
       setCorreo(storedCorreo || '');
       setUsuario(storedUsuario || '');
     }
@@ -169,6 +173,11 @@ export default function UserMenu() {
 
   const handleMenuClose = () => {
     setAnchorEl(null); // Cerrar el menú
+  };
+
+  const handleDashboardClick = () => {
+    handleMenuClose();
+    router.push('/Dashboard');
   };
 
   const handleBuyClick = () => {
@@ -189,8 +198,8 @@ export default function UserMenu() {
 
   return (
     <>
-      <IconButton onClick={handleMenuOpen} sx={{marginLeft:"auto"}}>
-      <AccountCircleIcon fontSize="large" sx={{ color: "white", marginLeft:"auto" }} />
+      <IconButton onClick={handleMenuOpen} sx={{ marginLeft: "auto" }}>
+        <AccountCircleIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
       </IconButton>
 
       <Menu
@@ -220,19 +229,21 @@ export default function UserMenu() {
         </Box>
 
         <Typography variant="h6" textAlign="center" sx={{ fontWeight: '600', paddingTop: '10px', color: '#333' }}>
-        {usuario}
+          {usuario}
         </Typography>
         <Typography variant="subtitle2" textAlign="center" sx={{ fontSize: '0.7em', color: '#666' }}>
           {correo}
         </Typography>
 
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
-        
-        <MenuItem
-          onClick={handleBuyClick}
+
+
+        {superUser === 'true' && (<MenuItem
+          onClick={handleDashboardClick}
+           
           sx={{
             padding: '10px 20px',
-           "&:hover": {
+            "&:hover": {
               // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
               backgroundColor: '#1d394d', // Color de fondo al hacer hover
               color: '#fff',
@@ -245,21 +256,24 @@ export default function UserMenu() {
             },
           }}
         >
-           <ListItemIcon sx={{ color: '#333' }}>
-            <ShoppingCartIcon /> {/* Cambiar color del ícono */}
+          <ListItemIcon sx={{ color: '#333' }}>
+            <DashboardIcon /> {/* Cambiar color del ícono */}
           </ListItemIcon>
-          <Typography  noWrap sx={{ color: 'inherit',}}>
-            Comprar Timbres
+          <Typography noWrap sx={{ color: 'inherit', }}>
+            Dashboard
           </Typography>
         </MenuItem>
+          )}
+
+        
 
         <MenuItem
-          onClick={handleViewOrdersClick}
+          onClick={handleBuyClick}
           sx={{
             padding: '10px 20px',
-           "&:hover": {
-                // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-                backgroundColor: '#1d394d', // Color de fondo al hacer hover
+            "&:hover": {
+              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+              backgroundColor: '#1d394d', // Color de fondo al hacer hover
               color: '#fff',
               '& .MuiListItemIcon-root': {
                 color: '#fff', // Cambiar color del ícono al hacer hover
@@ -270,10 +284,35 @@ export default function UserMenu() {
             },
           }}
         >
-           <ListItemIcon sx={{ color: '#333' }}>
-            <ListAltIcon  /> {/* Cambiar color del ícono */}
+          <ListItemIcon sx={{ color: '#333' }}>
+            <ShoppingCartIcon /> {/* Cambiar color del ícono */}
           </ListItemIcon>
-          <Typography  noWrap sx={{ color: 'inherit',}}>
+          <Typography noWrap sx={{ color: 'inherit', }}>
+            Comprar Timbres
+          </Typography>
+        </MenuItem>
+
+        <MenuItem
+          onClick={handleViewOrdersClick}
+          sx={{
+            padding: '10px 20px',
+            "&:hover": {
+              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+              backgroundColor: '#1d394d', // Color de fondo al hacer hover
+              color: '#fff',
+              '& .MuiListItemIcon-root': {
+                color: '#fff', // Cambiar color del ícono al hacer hover
+              },
+              '& MuiSvgIcon-root': {
+                color: '#fff', // Cambiar color del ícono al hacer hover
+              },
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: '#333' }}>
+            <ListAltIcon /> {/* Cambiar color del ícono */}
+          </ListItemIcon>
+          <Typography noWrap sx={{ color: 'inherit', }}>
             Ver órdenes
           </Typography>
         </MenuItem>
@@ -284,7 +323,7 @@ export default function UserMenu() {
           onClick={handleLogout}
           sx={{
             padding: '10px 20px',
-           "&:hover": {
+            "&:hover": {
               // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
               backgroundColor: '#1d394d', // Color de fondo al hacer hover
               color: '#fff',
@@ -297,10 +336,10 @@ export default function UserMenu() {
             },
           }}
         >
-           <ListItemIcon sx={{ color: '#333' }}>
-            <LogoutIcon  /> {/* Cambiar color del ícono */}
+          <ListItemIcon sx={{ color: '#333' }}>
+            <LogoutIcon /> {/* Cambiar color del ícono */}
           </ListItemIcon>
-          <Typography  noWrap sx={{ color: 'inherit',}}>
+          <Typography noWrap sx={{ color: 'inherit', }}>
             Cerrar sesión
           </Typography>
         </MenuItem>
