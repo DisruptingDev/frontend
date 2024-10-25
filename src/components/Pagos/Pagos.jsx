@@ -139,20 +139,20 @@ const Pagos = ({ token }) => {
           'Authorization': `Bearer ${token}`,
         },
       });
-     if(response.ok){
-       const blob = await response.blob();
-       const url = URL.createObjectURL(blob);
-       window.open(url);
-     }
-     else{
-       console.error('Error al obtener el comprobante');
-     }
-    }catch(error){
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+      }
+      else {
+        console.error('Error al obtener el comprobante');
+      }
+    } catch (error) {
       console.error('Error al obtener el comprobante', error
       );
     }
-
   }
+  
   return (
     <Box>
       <Box display="flex" justifyContent="flex-end" mb={2}>
@@ -196,7 +196,7 @@ const Pagos = ({ token }) => {
                       sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
                     />
                   ) : null}
-                
+
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{pago.ID}</TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{pago.PlanID ? 'Plan ' + pago.Plan.ID : 'Paquete ' + pago.Paquete.ID}</TableCell>
@@ -208,16 +208,16 @@ const Pagos = ({ token }) => {
                 <TableCell sx={{ textAlign: 'center' }}>{pago.FechaPago}</TableCell> */}
                 {/* <TableCell sx={{ textAlign: 'center' }}>{pago.ComprobantePath}</TableCell>
                  */}
-                 <TableCell sx={{ textAlign: 'center' }}>
+                <TableCell sx={{ textAlign: 'center' }}>
                   {pago.ComprobantePath ? (
                     <Button
                       variant="text"
                       onClick={() => handleVerComprobante(pago.ID)}>
-                        Ver
-                      </Button>
+                      Ver
+                    </Button>
                   ) : null}
-                      
-                  </TableCell>
+
+                </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>
                   <IconButton onClick={(event) => handleMenuClick(event, pago)}>
                     <MoreVertIcon />

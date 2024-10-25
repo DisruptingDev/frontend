@@ -90,21 +90,26 @@ const VistaUsuarios = ({token}) => {
     }
     return (
         <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h4">Usuarios</Typography>
-                <Button variant="contained" color="primary">Agregar Usuario</Button>
+            <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
+                {/* <Typography variant="h4">Usuarios</Typography> */}
+                <Button variant="contained"
+                disabled={selectedRows.length === 0}
+                 color="primary"
+                 sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                 >Agregar Usuario</Button>
             </Box>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
                        <TableRow sx={{ backgroundColor: '#04b2ca' }}>
-                            <TableCell></TableCell>
-                            <TableCell>Nombre</TableCell>
-                            <TableCell>Apellido</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Rol</TableCell>
-                            <TableCell>Activo</TableCell>
-                            <TableCell></TableCell>
+                       <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
+                       <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Nombre</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Apellido</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Email</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Rol</TableCell>
+                            {/* <TableCell>Activo</TableCell> */}
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -116,12 +121,13 @@ const VistaUsuarios = ({token}) => {
                                         onChange={() => handleSelectRow(row.ID)}
                                     />
                                 </TableCell>
-                                <TableCell>{row.Nombre}</TableCell>
-                                <TableCell>{row.Apellido}</TableCell>
-                                <TableCell>{row.Email}</TableCell>
-                                <TableCell>{row.Rol}</TableCell>
-                                <TableCell>{row.Activo ? 'Si' : 'No'}</TableCell>
-                                <TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.Nombre}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.Apellido}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.Email}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.Rol}</TableCell>
+                                {/* <TableCell>{row.Activo ? 'Si' : 'No'}</TableCell> */}
+                                <TableCell sx={{ textAlign: 'center' }}>
                                     <IconButton onClick={(event) => handleMenuClick(event, row)}>
                                         <MoreVertIcon />
                                     </IconButton>

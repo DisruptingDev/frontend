@@ -115,6 +115,29 @@ const VistaOrdenes = ({token}) => {
     setShowDetails((prev) => !prev);
   };
 
+  const handleVerComprobante = async (ID) => {
+    console.log('Ver comprobante', ID);
+    try {
+      const response = await fetch(`http://31.220.31.152:8093/ComprobanteFile/${ID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+      }
+      else {
+        console.error('Error al obtener el comprobante');
+      }
+    } catch (error) {
+      console.error('Error al obtener el comprobante', error
+      );
+    }
+  }
+  
+
   return (
     <Box>
       <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
@@ -168,7 +191,18 @@ const VistaOrdenes = ({token}) => {
                 <TableCell sx={{ textAlign: 'center' }}>{orden.Estatus}</TableCell>
                 {/* <TableCell sx={{ textAlign: 'center' }}>{orden.FechaOrden}</TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{orden.FechaPago}</TableCell> */}
-                <TableCell sx={{ textAlign: 'center' }}>{orden.ComprobantePath}</TableCell>
+                {/* <TableCell sx={{ textAlign: 'center' }}>{orden.ComprobantePath}</TableCell> */}
+
+                <TableCell sx={{ textAlign: 'center' }}>
+                  {orden.ComprobantePath ? (
+                    <Button
+                      variant="text"
+                      onClick={() => handleVerComprobante(orden.ID)}>
+                      Ver
+                    </Button>
+                  ) : null}
+                  </TableCell>
+
                 <TableCell sx={{ textAlign: 'center' }}>
                   <IconButton onClick={(event) => handleMenuClick(event, orden)}>
                     <MoreVertIcon />

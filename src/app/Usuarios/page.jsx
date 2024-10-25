@@ -6,6 +6,7 @@ import { Box, Typography } from '@mui/material';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/utils/authRedirect";
+import SideBar from '@/components/Dashborard/SideBar';
 
 export default function Usuarios (){
     const router = useRouter(); // Inicializa el router
@@ -24,11 +25,28 @@ export default function Usuarios (){
     }, [router]);
 
     return (
-        <div>
+        // <div>
+        //     <Header />
+        //     <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        //         <VistaUsuarios token={token}/>
+        //     </Box>
+        // </div>
+        <Box sx={{ backgroundColor: '#f3f4f6', height: '98vh' }}>
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
+            <SideBar />
+            <Box
+                sx={{
+                    width: 'calc(100% - 250px)',  // Ajuste del ancho restando el tamaño de la barra lateral
+                    height: 'calc(99vh - 6em)', // Ajuste de la altura restando el tamaño del header
+                    marginLeft: 'auto',
+                    padding: '1.5rem',
+                    backgroundColor: 'white',
+                    overflowY: 'auto'
+
+                }}
+            >
                 <VistaUsuarios token={token}/>
             </Box>
-        </div>
+        </Box>
     );
 }

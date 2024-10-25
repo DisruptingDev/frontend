@@ -61,13 +61,16 @@ const SideBar = () => {
                             <ListItemText primary={'Dashboard'} sx={{ color: '#ffffff' }} />
                         </ListItem>
                     </Link>
-
+                    <Link href="/Usuarios">
                         <ListItem button >
                             <ListItemIcon sx={{ color: '#ffffff' }}>
                                 <ClientesIcon />
                             </ListItemIcon>
                             <ListItemText primary={'Usuarios'} sx={{ color: '#ffffff' }} />
                         </ListItem>
+                    </Link>
+
+
                     <Link href="/AsignarTimbres">
                         <ListItem button >
                             <ListItemIcon sx={{ color: '#ffffff' }}>
