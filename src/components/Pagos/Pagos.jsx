@@ -18,7 +18,7 @@ const Pagos = ({ token }) => {
   const [menuRow, setMenuRow] = useState(null);
   const [openDetails, setOpenDetails] = useState({}); // Controla visibilidad de los detalles
   const [pagos, setPagos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [openModalExito, setOpenModalExito] = useState(false);
   const [openModalError, setOpenModalError] = useState(false);
 
@@ -47,7 +47,7 @@ const Pagos = ({ token }) => {
     if (token) {
       console.log('Fetching pagoes', token);
       try {
-        const response = await fetch('http://31.220.31.152:8092/ListarOrdenes', {
+        const response = await fetch('http://31.220.31.152:8093/ListarOrdenes', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -103,7 +103,7 @@ const Pagos = ({ token }) => {
   };
 
   const handleAsignarTimbres = async () => {
-    setLoading(true);
+    // setLoading(true);
     const formData = selectedRows;
 
     console.log('Asignando timbres', formData);
@@ -112,24 +112,17 @@ const Pagos = ({ token }) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify(formData),
       });
       const data = await response.json();
       console.log(data);
-      if (response.ok) {
-        setLoading(false);
+      if (data) {
         setOpenModalExito(true);
-        setPagos((prev) => prev.map((pago) => {
-          if (selectedRows.includes(pago.ID)) {
-            return { ...pago, Estatus: 'Pagado' };
-          } else {
-            return pago;
-          }
-        }));
+        fetchOrdenes();
       } else {
-        setLoading(false);
-        setOpenModalError(true);
+        throw new Error('Error al asignar timbres');
       }
     }
     catch (error) {
@@ -138,12 +131,34 @@ const Pagos = ({ token }) => {
       setOpenModalError(true);
     }
   }
+  const handleVerComprobante = async (ID) => {
+    console.log('Ver comprobante', ID);
+    try {
+      const response = await fetch(`http://31.220.31.152:8093/ComprobanteFile/${ID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+     if(response.ok){
+       const blob = await response.blob();
+       const url = URL.createObjectURL(blob);
+       window.open(url);
+     }
+     else{
+       console.error('Error al obtener el comprobante');
+     }
+    }catch(error){
+      console.error('Error al obtener el comprobante', error
+      );
+    }
 
+  }
   return (
     <Box>
       <Box display="flex" justifyContent="flex-end" mb={2}>
         <Button
           variant="contained"
+          disabled={selectedRows.length === 0}
           sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
           onClick={handleAsignarTimbres}
         >
@@ -173,12 +188,15 @@ const Pagos = ({ token }) => {
               // <React.Fragment key={pago.ID}>
               <TableRow key={pago.ID} sx={{ borderBottom: '1px solid #ddd' }}>
                 <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
-                  <Checkbox
-                    color="primary"
-                    checked={selectedRows.includes(pago.ID)}
-                    onChange={() => handleSelectRow(pago)}
-                    sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
-                  />
+                  {pago.Estatus === 'En proceso de revisión' ? (
+                    <Checkbox
+                      color="primary"
+                      checked={selectedRows.includes(pago.ID)}
+                      onChange={() => handleSelectRow(pago)}
+                      sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
+                    />
+                  ) : null}
+                
                 </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{pago.ID}</TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{pago.PlanID ? 'Plan ' + pago.Plan.ID : 'Paquete ' + pago.Paquete.ID}</TableCell>
@@ -188,7 +206,18 @@ const Pagos = ({ token }) => {
                 <TableCell sx={{ textAlign: 'center' }}>{pago.Estatus}</TableCell>
                 {/* <TableCell sx={{ textAlign: 'center' }}>{pago.FechaOrden}</TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>{pago.FechaPago}</TableCell> */}
-                <TableCell sx={{ textAlign: 'center' }}>{pago.ComprobantePath}</TableCell>
+                {/* <TableCell sx={{ textAlign: 'center' }}>{pago.ComprobantePath}</TableCell>
+                 */}
+                 <TableCell sx={{ textAlign: 'center' }}>
+                  {pago.ComprobantePath ? (
+                    <Button
+                      variant="text"
+                      onClick={() => handleVerComprobante(pago.ID)}>
+                        Ver
+                      </Button>
+                  ) : null}
+                      
+                  </TableCell>
                 <TableCell sx={{ textAlign: 'center' }}>
                   <IconButton onClick={(event) => handleMenuClick(event, pago)}>
                     <MoreVertIcon />
@@ -208,8 +237,8 @@ const Pagos = ({ token }) => {
         </Table>
       </TableContainer>
       <ModalLoading openModal={loading} handleCloseModal={() => setLoading(false)} loading={loading} loadingMessage="Asignando Timbres..." />
-      <ModalExito openModal={openModalExito} handleCloseModal={() => setOpenModalExito(false)} confirmationMessage="Timbres asignados correctamente" />
-      <ModalError openModal={openModalError} handleCloseModal={() => setOpenModalError(false)} confirmationMessage="Error al asignar timbres" />
+      <ModalExito openModalSuccess={openModalExito} handleCloseModal={() => setOpenModalExito(false)} confirmationMessage="Timbres asignados correctamente" />
+      <ModalError openModalError={openModalError} handleCloseModal={() => setOpenModalError(false)} confirmationMessage="Error al asignar timbres" />
 
     </Box>
   );

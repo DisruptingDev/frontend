@@ -43,7 +43,7 @@ const ModalPago = ({ open, onClose, opcion, token}) => {
             console.log('Es un plan');
             // Recuperar datos ingresados
          formData = {
-            EmisorID: empresa,
+            
             // archivo,
             PlanID: opcion.ID,
         };
@@ -72,9 +72,9 @@ const ModalPago = ({ open, onClose, opcion, token}) => {
    
 
         if (response.ok) {
-            console.log('Pago realizado con éxito');
+            console.log('Orden realizado con éxito');
 
-            setAlertMessage('Pago realizado con éxito.'); // Mensaje de éxito
+            setAlertMessage('Orden realizado con éxito.'); // Mensaje de éxito
             setSeverity('success'); // Cambiar severidad a éxito
             // Cerrar el modal después de confirmar
             setTimeout(() => {
