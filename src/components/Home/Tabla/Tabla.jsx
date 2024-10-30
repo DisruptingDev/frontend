@@ -489,6 +489,8 @@ export default function DataTable({ token, filtro }) {
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Folio</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Emisor</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Receptor</TableCell>
+                <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha Emisión</TableCell>
+                <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha Timbrado</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Serie</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estatus</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Subtotal</TableCell>
@@ -522,6 +524,8 @@ export default function DataTable({ token, filtro }) {
                   <TableCell sx={{ textAlign: 'center' }}>{row.Folio}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
