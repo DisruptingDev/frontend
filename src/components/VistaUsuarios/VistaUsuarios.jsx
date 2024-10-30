@@ -1,76 +1,87 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { use, useCallback, useEffect, useState } from 'react';
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Box, Button, IconButton, Menu, MenuItem, Modal, Typography, Collapse, TextField
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Box, Button, IconButton, Menu, MenuItem, Modal, Typography, Collapse, TextField
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Password } from '@mui/icons-material';
-
+import  {onSuplantar}  from '@/utils/activarSuplantar';
+import { useRouter } from "next/navigation";
 
 
 function createData(item) {
-  return { ...item };
+    return { ...item };
 }
 
-const VistaUsuarios = ({token}) => {
+const VistaUsuarios = ({ token }) => {
     const [selectedRows, setSelectedRows] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
-    
-    const [actualizar, setActualizar] = useState(false);
-    
-    // const [usuarios, setUsuarios] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const usuarios = [
-        {
-            ID: 1,
-            Nombre: 'Juan',
-            Apellido: 'Perez',
-            Email: 'Juan@gmail.com',
-            Password: '123456',
-            Rol: 'Admin',
-            Activo: true,
-        },
-        {
-            ID: 2,
-            Nombre: 'Pedro',
-            Apellido: 'Lopez',
-            Email: 'pedro@gmail.com',
-            Password: '123456',
-            Rol: 'Admin',
-            Activo: true,
-        },
-    ];
 
-    // const fetchUsuarios = useCallback( async () => {
-    //     if (token) {
-    //         console.log('Fetching usuarios', token);
-    //         try {
-    //             const response = await fetch('http://Uusarios',{
-    //                 headers: {
-    //                     'Authorization': `Bearer ${token}`,
-    //                 },
-    //             });
-    //             const data = await response.json();
-    //             if (Array.isArray(data)) {
-    //                 const transformedData = data.map((item) => createData(item));
-    //                 const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-    //                 console.log('Usuarios:', sortedData);
-    //                 setUsuarios(sortedData);
-    //             }
-    //             else {
-    //                 console.error('Expected an array but received:', typeof data);
-    //             }
-    //         }
-    //         catch (error) {
-    //             console.error('Error fetching usuarios:', error);
-    //         }
-    //         finally {
-    //             setLoading(false);
-    //         }
-    //     }
-    // }, [token]);
+    const [actualizar, setActualizar] = useState(false);
+
+    const [usuarios, setUsuarios] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const router = useRouter();
+
+    // const usuarios = [
+    //     {
+    //         ID: 1,
+    //         Nombre: 'Juan',
+    //         Apellido: 'Perez',
+    //         Email: 'Juan@gmail.com',
+    //         Password: '123456',
+    //         Rol: 'Admin',
+    //         Activo: true,
+    //     },
+    //     {
+    //         ID: 2,
+    //         Nombre: 'Pedro',
+    //         Apellido: 'Lopez',
+    //         Email: 'pedro@gmail.com',
+    //         Password: '123456',
+    //         Rol: 'Admin',
+    //         Activo: true,
+    //     },
+    // ];
+
+    const fetchUsuarios = useCallback(async () => {
+        if (token) {
+            console.log('Fetching usuarios', token);
+            try {
+                const response = await fetch('http://31.220.31.152:8094/Usuarios/ListarUsuarios', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    const transformedData = data.map((item) => createData(item));
+                    const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+                    console.log('Usuarios:', sortedData);
+                    setUsuarios(sortedData);
+                }
+                else {
+                    console.error('Expected an array but received:', typeof data);
+                }
+            }
+            catch (error) {
+                console.error('Error fetching usuarios:', error);
+            }
+            finally {
+                setLoading(false);
+            }
+        }
+    }, [token]);
+
+    useEffect(() => {
+        if (token) {
+            fetchUsuarios();
+        }
+    }, [fetchUsuarios, token]);
+
 
     const handleMenuClick = (event, row) => {
         setAnchorEl(event.currentTarget);
@@ -88,24 +99,66 @@ const VistaUsuarios = ({token}) => {
             setSelectedRows([...selectedRows, row]);
         }
     }
+
+    const handleSuplantar = async () => {
+        const ID = menuRow.ID;
+        const Nombre = menuRow.Nombre;
+        console.log('Suplantando usuario:', ID);
+        try {
+            const response = await fetch(`http://31.220.31.152:8094/Usuarios/SuplantarUsuario/${ID}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            console.log('Suplantar:', data);
+            if (data) {
+                if(onSuplantar(data.token, Nombre)){
+                    console.log('Suplantado exitosamente', Nombre);
+                    router.push('/Home');
+                }
+                else{
+                    console.error('Error suplantando usuario:', data);
+                }
+
+                // localStorage.setItem('tokenUsuarioSuplantado', data.token);
+                // localStorage.setItem('tokenSuperUsuario', token);
+                // localStorage.setItem('authToken', data.token);
+
+                // sessionStorage.setItem('authToken', data.token);
+
+                // console.log('Suplantado exitosamente', Nombre);
+
+            }
+            else {
+                console.error('Error suplantando usuario:', data);
+            }
+        }  
+        catch (error) {
+            console.error('Error suplantando usuario:', error);
+        }
+    }
+
+
+
     return (
         <Box>
             <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
                 {/* <Typography variant="h4">Usuarios</Typography> */}
                 <Button variant="contained"
-                disabled={selectedRows.length === 0}
-                 color="primary"
-                 sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
-                 >Agregar Usuario</Button>
+                    disabled={selectedRows.length === 0}
+                    color="primary"
+                    sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                >Agregar Usuario</Button>
             </Box>
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead>
-                       <TableRow sx={{ backgroundColor: '#04b2ca' }}>
-                       <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
-                       <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
+                        <TableRow sx={{ backgroundColor: '#04b2ca' }}>
+                            <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Nombre</TableCell>
-                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Apellido</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Email</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Rol</TableCell>
                             {/* <TableCell>Activo</TableCell> */}
@@ -123,14 +176,22 @@ const VistaUsuarios = ({token}) => {
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.Nombre}</TableCell>
-                                <TableCell sx={{ textAlign: 'center' }}>{row.Apellido}</TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.Email}</TableCell>
-                                <TableCell sx={{ textAlign: 'center' }}>{row.Rol}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>{row.TipoUsuario}</TableCell>
                                 {/* <TableCell>{row.Activo ? 'Si' : 'No'}</TableCell> */}
                                 <TableCell sx={{ textAlign: 'center' }}>
                                     <IconButton onClick={(event) => handleMenuClick(event, row)}>
                                         <MoreVertIcon />
                                     </IconButton>
+                                    <Menu
+                                        anchorEl={anchorEl}
+                                        open={Boolean(anchorEl)}
+                                        onClose={handleMenuClose}
+                                    >
+                                        {/* <MenuItem onClick={ handleSuplantar}>Suplantar</MenuItem> */}
+                                        <MenuItem onClick={() => handleSuplantar(row)}>Suplantar</MenuItem>
+
+                                    </Menu>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -139,7 +200,7 @@ const VistaUsuarios = ({token}) => {
             </TableContainer>
         </Box>
     );
-    
+
 
 }
 export default VistaUsuarios;

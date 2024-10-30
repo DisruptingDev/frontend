@@ -147,6 +147,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useRouter } from 'next/navigation';
+import { offSuplantar } from '@/utils/desactivarSuplantar';
 
 export default function UserMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -155,6 +156,7 @@ export default function UserMenu() {
   const [correo, setCorreo] = useState('');
   const [usuario, setUsuario] = useState('');
   const [superUser, setSuperUser] = useState('');
+  const [usuarioSuplantado, setUsuarioSuplantado] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -164,6 +166,9 @@ export default function UserMenu() {
       setSuperUser(superUser || '');
       setCorreo(storedCorreo || '');
       setUsuario(storedUsuario || '');
+
+      const usuarioSuplantado = localStorage.getItem('usuarioSuplantado');
+      setUsuarioSuplantado(usuarioSuplantado || '');
     }
   }, []);
 
@@ -194,6 +199,16 @@ export default function UserMenu() {
     localStorage.removeItem('authToken');
     sessionStorage.removeItem('authToken');
     router.push('/IniciaSesion');
+  };
+  const handleOffSuplantar = async () => {
+    console.log('Desactivando suplantar');
+    setUsuarioSuplantado('');
+
+
+    offSuplantar();
+    // setUsuarioSuplantado('');
+    router.push('/Dashboard');
+   
   };
 
   return (
@@ -231,16 +246,57 @@ export default function UserMenu() {
         <Typography variant="h6" textAlign="center" sx={{ fontWeight: '600', paddingTop: '10px', color: '#333' }}>
           {usuario}
         </Typography>
-        <Typography variant="subtitle2" textAlign="center" sx={{ fontSize: '0.7em', color: '#666' }}>
+        <Typography variant="subtitle2" textAlign="center" sx={{ fontSize: '0.7em', color: '#777' }}>
           {correo}
         </Typography>
+
+        {usuarioSuplantado && [
+          <Divider
+            key="divider"
+            sx={{ margin: '10px 0', backgroundColor: '#1d394d' }}
+          />,
+          <Typography
+            key="suplantando-text"
+            variant="subtitle2"
+            textAlign="center"
+            sx={{ fontSize: '0.7em', color: '#000', fontWeight: '600' }}
+          >
+            Suplantando a: {usuarioSuplantado}
+          </Typography>,
+          <MenuItem
+            key="dejar-suplantar"
+            onClick={handleOffSuplantar}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+                '& .MuiSvgIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <LogoutIcon />
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit' }}>
+              Dejar de suplantar
+            </Typography>
+          </MenuItem>
+        ]}
+
+
 
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
 
 
         {superUser === 'true' && (<MenuItem
           onClick={handleDashboardClick}
-           
+
           sx={{
             padding: '10px 20px',
             "&:hover": {
@@ -263,9 +319,9 @@ export default function UserMenu() {
             Dashboard
           </Typography>
         </MenuItem>
-          )}
+        )}
 
-        
+
 
         <MenuItem
           onClick={handleBuyClick}
