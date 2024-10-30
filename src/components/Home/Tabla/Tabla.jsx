@@ -542,11 +542,8 @@ export default function DataTable({ token, filtro }) {
                       onClose={handleMenuClose}
                       sx={{
                         "& .MuiPaper-root": {
-                          backgroundColor: '#fff', // Color de fondo invertido
-                          color: '#333', // Color de texto invertido
-                          // minWidth: '250px',
-                          borderRadius: '8px',
-                          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                        
+                          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.125)',
                         },
                       }}
                     >

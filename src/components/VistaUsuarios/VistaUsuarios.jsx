@@ -187,6 +187,12 @@ const VistaUsuarios = ({ token }) => {
                                         anchorEl={anchorEl}
                                         open={Boolean(anchorEl)}
                                         onClose={handleMenuClose}
+                                        sx={{
+                                            "& .MuiPaper-root": {
+                                            
+                                              boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+                                            },
+                                          }}
                                     >
                                         {/* <MenuItem onClick={ handleSuplantar}>Suplantar</MenuItem> */}
                                         <MenuItem onClick={() => handleSuplantar(row)}>Suplantar</MenuItem>
