@@ -146,6 +146,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useRouter } from 'next/navigation';
 import { offSuplantar } from '@/utils/desactivarSuplantar';
 
@@ -259,7 +260,7 @@ export default function UserMenu() {
             key="suplantando-text"
             variant="subtitle2"
             textAlign="center"
-            sx={{ fontSize: '0.7em', color: '#000', fontWeight: '600' }}
+            sx={{ fontSize: '0.9em', color: '#333', fontWeight: '600' }}
           >
             Suplantando a: {usuarioSuplantado}
           </Typography>,
@@ -281,7 +282,7 @@ export default function UserMenu() {
             }}
           >
             <ListItemIcon sx={{ color: '#333' }}>
-              <LogoutIcon />
+              <ClearIcon />
             </ListItemIcon>
             <Typography noWrap sx={{ color: 'inherit' }}>
               Dejar de suplantar
