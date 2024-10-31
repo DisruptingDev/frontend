@@ -87,7 +87,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
         console.log('Datos a enviar:', formData);
         try {
             // Enviar datos al servidor
-            const response = await fetch('http://31.220.31.152:8092/GenerarOrden', {
+            const response = await fetch('http://31.220.31.152:8092/CompraTimbres/GenerarOrden', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Button } from '@mui/material';
 
-const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerComprobante }) => {
+const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerComprobante, origen }) => {
     return (
         <TableContainer component={Paper}>
             <Table>
@@ -20,22 +20,30 @@ const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerCompr
                 </TableHead>
                 <TableBody>
                     {paquetes.map((paquete) => (
-                        <TableRow key={paquete.PaqueteID}>
+                        <TableRow key={paquete.ID}>
                             <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
-                                <Checkbox
-                                    color="primary"
-                                    checked={selectedRows.includes(paquete.ID)}
-                                    onChange={() => handleSelectRow(paquete)}
-                                    sx={{
-                                        color: '#04b2ca',
-                                        '&.Mui-checked': { color: '#028596' },
-                                    }}
-                                />
+                                {origen === 'Pagos' ? (
+                                    paquete.Estatus === 'En proceso de revisión' ? (
+                                        <Checkbox
+                                            color="primary"
+                                            checked={selectedRows.includes(paquete.ID)}
+                                            onChange={() => handleSelectRow(paquete)}
+                                            sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
+                                        />
+                                    ) : null
+                                ) : (
+                                    <Checkbox
+                                        color="primary"
+                                        checked={selectedRows.includes(paquete.ID)}
+                                        onChange={() => handleSelectRow(paquete)}
+                                        sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
+                                    />
+                                )}
                             </TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.ID}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.Nombre}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.CantidadTimbres}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{paquete.EmisorID}</TableCell>
+                            <TableCell sx={{ textAlign: 'center' }}>{paquete.Emisor__Nombre}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.Costo}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Estatus}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>

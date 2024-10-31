@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useState, useEffect} from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider, Snackbar,
@@ -11,9 +11,25 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
     const [alertMessage, setAlertMessage] = useState(''); // Estado para manejar mensajes de error
     const [severity, setSeverity] = useState('error'); // Severidad del mensaje
 
+    useEffect(() => {
+        console.log('Ordenes seleccionadas', ordenesSeleccionadas);
+    }, [ordenesSeleccionadas]);
+
+
     const handleFileUpload = (event) => {
-        setArchivo(event.target.files[0]);
+        const file = event.target.files[0];
+        const allowedExtensions = /(\.pdf|\.jpg|\.jpeg|\.png)$/i;
+    
+        if (file && allowedExtensions.test(file.name)) {
+            setArchivo(file);
+            setAlertMessage(''); // Limpiar mensaje de error si el archivo es válido
+        } else {
+            setArchivo(null);
+            setAlertMessage('Solo se permiten archivos PDF, JPG o PNG');
+            setSeverity('error');
+        }
     };
+    
     // Función para formatear como moneda
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('es-MX', {
@@ -31,7 +47,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             formData.append('ordenesID', JSON.stringify(ordenesID));
             console.log('Subiendo comprobante', formData);
             try {
-                const response = await fetch('http://31.220.31.152:8092/SubirComprobante', {
+                const response = await fetch('http://31.220.31.152:8092/CompraTimbres/SubirComprobante', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -98,15 +114,15 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                         <Table sx={{ mt: 2 }}>
                             <TableBody>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Emisor</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+                                    {/* <TableCell sx={{ fontWeight: 'bold' }}>Emisor</TableCell> */}
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Opción</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Costo</TableCell>
                                 </TableRow>
                                 {ordenesSeleccionadas.map((orden) => (
                                     <TableRow key={orden.ID}>
-                                        <TableCell>{orden.EmisorID}</TableCell>
-                                        <TableCell>{orden.PlanID ? orden.Plan.ID : orden.Paquete.ID}</TableCell>
-                                        <TableCell>{orden.PlanID ? formatCurrency(orden.Plan.Costo) : formatCurrency(orden.Paquete.Costo)}</TableCell>
+                                        {/* <TableCell>{orden.EmisorID}</TableCell> */}
+                                        <TableCell>{orden.Paquete.Nombre ? orden.Paquete.Nombre : orden.Plan.Nombre}</TableCell>
+                                        <TableCell>{orden.PaqueteID ? formatCurrency(orden.Paquete.Costo) : formatCurrency(orden.Plan.Costo)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
