@@ -24,6 +24,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
             const TotalTraslados = concepto.Impuestos?.Traslados.reduce((acc, tras) => acc + tras.Importe, 0) || 0;
 
             return {
+                ID: concepto.ID,
                 Cantidad: concepto.Cantidad,
                 ClaveProdServ: concepto.ClaveProdServ,
                 ClaveUnidad: concepto.ClaveUnidad,

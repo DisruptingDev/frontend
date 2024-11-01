@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, TextField, Typography, Button, Autocomplete, Snackbar, Alert } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -8,12 +8,16 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from '@/components/Select/Select.jsx';
 import { BoxZoomHandler } from 'mapbox-gl';
 import padding from 'tailwindcss-logical/plugins/padding.js';
+import { set } from 'date-fns';
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token }) {
+    const [conceptoOptions, setConceptoOptions] = useState(null);
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
+    const [queryConcepto, setQueryConcepto] = useState('');
     const [queryProdServ, setQueryProdServ] = useState('');
     const [queryUnidad, setQueryUnidad] = useState('');
+    const [selectedConcepto, setSelectedConcepto] = useState(null);
     const [selectedClaveProdServ, setSelectedClaveProdServ] = useState(null);
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
     // const [token, setToken] = useState(null);
@@ -56,6 +60,37 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         name: 'impuestos',
     });
 
+    const fetchConceptos = useCallback(async () => {
+        if (!token) return;
+        try {
+            const response = await fetch(`http://31.220.31.152:8081/Catalogos/Conceptos?descripcion=${queryConcepto}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await response.json();
+            console.log("CONCEPTOS", data);
+            setConceptoOptions(Array.isArray(data) ? data : []);
+
+
+
+        } catch (error) {
+            console.error('Error al buscar Conceptos:', error);
+        }
+
+    }, [queryConcepto, token]);
+
+    const handleAddNewOption = (newOption) => {
+        const newConcepto = { ID: '000', Descripcion: newOption };
+        setConceptoOptions((prevOptions) => [...prevOptions, newConcepto]);
+        setSelectedConcepto(newConcepto);
+        setDescripcionError(false);
+    };
+
+
+    useEffect(() => {
+        fetchConceptos();
+    }, [fetchConceptos, queryConcepto, token]);
+
     const fetchOptions = async () => {
         if (!token) return;
 
@@ -78,6 +113,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         }
     };
 
+
+
     useEffect(() => {
         if (selectedClaveUnidad) {
             console.log("Seleccion", selectedClaveUnidad.Descripcion);
@@ -88,7 +125,10 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     }, [selectedClaveUnidad, setValue])
 
+
+
     useEffect(() => {
+        console.log("Entre a la funcion");
         fetchOptions();
     }, [queryProdServ, queryUnidad, token]);
 
@@ -189,10 +229,30 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
 
 
-
-
-
             console.log('Concepto editado:', getValues(`impuestos`));
+
+            if(!conceptoOptions.some(opt => opt.ID === concepto.ID)){
+                console.log(`Consultando opciones de Conceptos para: ${concepto.ID}`);
+                fetch(`http://31.220.31.152:8081/Catalogos/Conceptos?descripcion=${concepto.Descripcion}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Opciones recibidas de Conceptos:", data);
+                        setConceptoOptions(prevOptions => [...prevOptions, ...data]);
+                        const selectedConcepto = data.find(opt => opt.ID == concepto.ID);
+                        console.log("Concepto seleccionado tras la consulta:", selectedConcepto);
+                        setSelectedConcepto(selectedConcepto || null);
+                    })
+                    .catch(error => console.error('Error al buscar Conceptos:', error));
+            } else {
+                console.log("Opciones Conceptos ya disponibles:", conceptoOptions);
+                const selectedConcepto = conceptoOptions.find(opt => opt.ID == concepto.ID);
+                console.log("Concepto seleccionado:", selectedConcepto);
+                setSelectedConcepto(selectedConcepto || null);
+            }
+
 
             // Fetch ClaveProdServ options if needed
             if (!claveProdServOptions.some(opt => opt.Clave === concepto.ClaveProdServ)) {
@@ -369,11 +429,57 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         const data = JSON.parse(e.target.value);
         setObjetoImpuesto(data.Clave);
     };
+
+    const handleConcepto = (event, value) => {
+        // const value =  JSON.parse(e.target.value);
+
+
+        console.log("VALUE", value);
+        if (typeof value === 'string') {
+            console.log("VALUE STRING", value);
+            handleAddNewOption(value);
+            setValue('Descripcion', value);
+
+        } else {// console.log("VALUE", value.ID);
+            setSelectedConcepto(value);
+            setValue('Descripcion', value?.Descripcion || '');
+            setDescripcionError(false);
+
+            setValue('ClaveProdServ', value?.ClaveProdServ || '');
+            setQueryProdServ(value?.ClaveProdServ || '');
+            const selectedProdServ = claveProdServOptions.find(opt => opt.Clave == value?.ClaveProdServ);
+            console.log("ClaveProdServ seleccionada tras la consulta:", selectedProdServ);
+            setSelectedClaveProdServ(selectedProdServ || null);
+
+            setValue('ClaveUnidad', value?.ClaveUnidad || '');
+            setQueryUnidad(value?.ClaveUnidad || '');
+            const selectedUnidad = claveUnidadOptions.find(opt => opt.Clave == value?.ClaveUnidad);
+            console.log("ClaveUnidad seleccionada tras la consulta:", selectedUnidad);
+            setSelectedClaveUnidad(selectedUnidad || null);
+
+            
+            setValue('Cantidad', value?.Cantidad || 1);
+
+            setValue('ValorUnitario', value?.ValorUnitario || 0);
+            setValue('Descuento', value?.Descuento || 0);
+            setValue('Subtotal', value?.Subtotal || 0);
+            setValue('ObjetoImpuesto', value?.ObjetoImp || "02");
+            setObjetoImpuesto(value?.ObjetoImp || "02");
+            console.log('Impuestos:', getValues(`impuestos`));
+            console.log("IMPUESTOS", value?.Impuestos);
+            setValue("impuestos", value?.Impuestos)
+            trigger('impuestos');
+
+        }
+    }
+
+
+
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
             <Box display="grid" gridTemplateColumns="8fr" gap={3}>
-                <TextField
+                {/* <TextField
                     label="Descripción"
                     {...register("Descripcion")}
                     error={descripcionError}
@@ -381,6 +487,25 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     fullWidth
                     multiline
                     rows={4}
+                /> */}
+                <Autocomplete
+                    freeSolo
+                    options={conceptoOptions}
+                    getOptionLabel={(option) => `${option.ID} - ${option.Descripcion}`}
+                    value={selectedConcepto}
+                    isOptionEqualToValue={(option, value) => option.ID === value.ID}
+                    onInputChange={(event, newInputValue) => setQueryConcepto(newInputValue)}
+
+                    onChange={handleConcepto}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Descripción"
+                            fullWidth
+                            error={descripcionError}
+                            helperText={descripcionError && "Campo obligatorio."}
+                        />
+                    )}
                 />
             </Box>
             <Box display="grid"
@@ -455,34 +580,34 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     }} // Elimina caracteres no numéricos
                 />
                 <TextField
-    label="Precio Unitario"
-    type="number"
-    value={getValues("ValorUnitario")}
-    onChange={(e) => {
-        // Captura el valor introducido
-        let inputValue = e.target.value;
+                    label="Precio Unitario"
+                    type="number"
+                    value={getValues("ValorUnitario")}
+                    onChange={(e) => {
+                        // Captura el valor introducido
+                        let inputValue = e.target.value;
 
-        // Permitir solo números y un solo punto decimal
-        inputValue = inputValue.replace(/[^0-9.]/g, '');
+                        // Permitir solo números y un solo punto decimal
+                        inputValue = inputValue.replace(/[^0-9.]/g, '');
 
-        // Asegurar que solo haya un punto decimal
-        if ((inputValue.match(/\./g) || []).length > 1) {
-            inputValue = inputValue.replace(/\.+$/, '');
-        }
+                        // Asegurar que solo haya un punto decimal
+                        if ((inputValue.match(/\./g) || []).length > 1) {
+                            inputValue = inputValue.replace(/\.+$/, '');
+                        }
 
-        // Establecer el valor solo si es válido
-        setValue('ValorUnitario', inputValue);
-        setValorUnitarioError(false);
-    }}
-    error={valorUnitarioError}
-    helperText={valorUnitarioError && "Campo obligatorio."}
-    fullWidth
-    inputProps={{
-        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
-    }}
-/>
-{/* 
+                        // Establecer el valor solo si es válido
+                        setValue('ValorUnitario', inputValue);
+                        setValorUnitarioError(false);
+                    }}
+                    error={valorUnitarioError}
+                    helperText={valorUnitarioError && "Campo obligatorio."}
+                    fullWidth
+                    inputProps={{
+                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
+                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                    }}
+                />
+                {/* 
                 <TextField
                     label="Descuento"
                     type="number"
@@ -494,33 +619,33 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
                 />
                  */}
-                 <TextField
-    label="Descuento"
-    type="number"
-    value={getValues("Descuento")}
-    onChange={(e) => {
-        // Captura el valor introducido
-        let inputValue = e.target.value;
+                <TextField
+                    label="Descuento"
+                    type="number"
+                    value={getValues("Descuento")}
+                    onChange={(e) => {
+                        // Captura el valor introducido
+                        let inputValue = e.target.value;
 
-        // Permitir solo números y un solo punto decimal
-        inputValue = inputValue.replace(/[^0-9.]/g, '');
+                        // Permitir solo números y un solo punto decimal
+                        inputValue = inputValue.replace(/[^0-9.]/g, '');
 
-        // Asegurar que solo haya un punto decimal
-        if ((inputValue.match(/\./g) || []).length > 1) {
-            inputValue = inputValue.replace(/\.+$/, '');
-        }
+                        // Asegurar que solo haya un punto decimal
+                        if ((inputValue.match(/\./g) || []).length > 1) {
+                            inputValue = inputValue.replace(/\.+$/, '');
+                        }
 
-        // Establecer el valor solo si es válido
-        setValue('Descuento', inputValue);
-    }}
-    error={descuentoError}
-    helperText={descuentoError && descuentoErrorMesage}
-    fullWidth
-    inputProps={{
-        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
-    }}
-/>
+                        // Establecer el valor solo si es válido
+                        setValue('Descuento', inputValue);
+                    }}
+                    error={descuentoError}
+                    helperText={descuentoError && descuentoErrorMesage}
+                    fullWidth
+                    inputProps={{
+                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
+                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                    }}
+                />
 
                 <TextField
                     label="Subtotal"
@@ -550,9 +675,9 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             </Box>
 
             {objetoImpuesto !== "01" && (
-                console.log("NO ES 01", objetoImpuesto),
+                // console.log("NO ES 01", objetoImpuesto),
                 <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
-                  {/* <Typography variant="h6" mt={4} mb={2}>CAmpos:{fields}</Typography> */}
+                    {/* <Typography variant="h6" mt={4} mb={2}>CAmpos:{fields}</Typography> */}
                     {/* {fields.map((field, index) => {
                         const impuestoEditor = getValues(`impuestos.${index}`);
                         console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
@@ -577,29 +702,29 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         );
                     })} */}
                     {(fields.length > 0 ? fields : [{}]).map((field, index) => {
-    const impuestoEditor = getValues(`impuestos.${index}`);
-    console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
+                        const impuestoEditor = getValues(`impuestos.${index}`);
+                        console.log(`Impuesto enviado al componente Impuesto:`, impuestoEditor); // Debug log
 
-    return (
-        <Box key={field.id || index} gridColumn="span 6">
-            <Impuesto
-                watch={watch}
-                register={register}
-                setValue={setValue}
-                getValues={getValues}
-                index={index}
-                baseImpuesto={watch('Subtotal') || 0}
-                remove={remove}
-                fieldsLength={fields.length}
-                objetoImpuestoError={objetoImpuestoError}
-                impuestoError={impuestoError}
-                setObjetoImpuestoError={setObjetoImpuestoError}
-                setImpuestoError={setImpuestoError}
-                impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
-            />
-        </Box>
-    );
-})}
+                        return (
+                            <Box key={field.id || index} gridColumn="span 6">
+                                <Impuesto
+                                    watch={watch}
+                                    register={register}
+                                    setValue={setValue}
+                                    getValues={getValues}
+                                    index={index}
+                                    baseImpuesto={watch('Subtotal') || 0}
+                                    remove={remove}
+                                    fieldsLength={fields.length}
+                                    objetoImpuestoError={objetoImpuestoError}
+                                    impuestoError={impuestoError}
+                                    setObjetoImpuestoError={setObjetoImpuestoError}
+                                    setImpuestoError={setImpuestoError}
+                                    impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
+                                />
+                            </Box>
+                        );
+                    })}
 
                     <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="start">
                         <Button
