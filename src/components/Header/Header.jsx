@@ -87,6 +87,17 @@ export default function Header({ name }) {
         >
           Timbres +
         </Link>
+        <Link
+          href="/Conceptos"
+          className={`text-white text-lg hover:underline underline-offset-4 ${
+            isActive("/Conceptos")
+              ? "text-selected-color underline"
+              : "text-muted-foreground"
+          }`}
+          prefetch={false}
+        >
+          Conceptos +
+        </Link>
       </nav>
 
       {/* Aquí usamos el componente UserMenu */}
