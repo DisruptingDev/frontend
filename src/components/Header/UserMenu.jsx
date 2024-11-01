@@ -149,6 +149,9 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useRouter } from 'next/navigation';
 import { offSuplantar } from '@/utils/desactivarSuplantar';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
+
+import ModalCorreos from '../ModalCorreos/ModalCorreos';
 
 export default function UserMenu() {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -158,6 +161,8 @@ export default function UserMenu() {
   const [usuario, setUsuario] = useState('');
   const [superUser, setSuperUser] = useState('');
   const [usuarioSuplantado, setUsuarioSuplantado] = useState('');
+
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -194,6 +199,12 @@ export default function UserMenu() {
   const handleViewOrdersClick = () => {
     handleMenuClose();
     router.push('/VerOrdenes');
+  };
+
+  const handleInviteTeamMembersClick = () => {
+    handleMenuClose();
+    const handleOpen = () => setOpen(true);
+    handleOpen();
   };
 
   const handleLogout = () => {
@@ -374,6 +385,32 @@ export default function UserMenu() {
           </Typography>
         </MenuItem>
 
+        <MenuItem
+          onClick={handleInviteTeamMembersClick}
+          sx={{
+            padding: '10px 20px',
+            "&:hover": {
+              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+              backgroundColor: '#1d394d', // Color de fondo al hacer hover
+              color: '#fff',
+              '& .MuiListItemIcon-root': {
+                color: '#fff', // Cambiar color del ícono al hacer hover
+              },
+              '& MuiSvgIcon-root': {
+                color: '#fff', // Cambiar color del ícono al hacer hover
+              },
+            },
+          }}
+        >
+          <ListItemIcon sx={{ color: '#333' }}>
+            <GroupAddIcon /> {/* Cambiar color del ícono */}
+          </ListItemIcon>
+          <Typography noWrap sx={{ color: 'inherit', }}>
+            Invitar Miembros del Equipo
+          </Typography>
+        </MenuItem>
+
+
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
 
         <MenuItem
@@ -401,6 +438,7 @@ export default function UserMenu() {
           </Typography>
         </MenuItem>
       </Menu>
+      <ModalCorreos open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
