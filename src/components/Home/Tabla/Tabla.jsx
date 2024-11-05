@@ -207,11 +207,11 @@ export default function DataTable({ token, filtro }) {
         a.remove();
 
         setLoading(false);
-        if(facturasValidas.length === 1){
+        if (facturasValidas.length === 1) {
           setConfirmationMessage(`Su archivo ${facturasValidas[0].name}.zip se ha descargado. <br/>
           Revise su carpeta de descargas.`);
         }
-        else{
+        else {
           setConfirmationMessage(`Su archivo Facturas.zip se ha descargado. <br/>
           Revise su carpeta de descargas.`);
         }
@@ -237,7 +237,7 @@ export default function DataTable({ token, filtro }) {
   };
 
 
-  
+
   // Función para timbrar múltiples facturas
   const handleTimbrar = async (ids) => {
     setOpenModal(true);
@@ -316,6 +316,83 @@ export default function DataTable({ token, filtro }) {
       setActualizar(true);
     }
   };
+
+  // Función para cancelar múltiples facturas
+  const handleCancelar = async (ids) => {
+    setOpenModal(true);
+    setLoading(true);
+    console.log('Cancelando facturas:', ids);
+    console.log('Selcted rows:', selectedRows);
+
+    try {
+      console.log('Cancelando facturas:', ids);
+      // const token = localStorage.getItem('authToken');
+      const response = await fetch('http://31.220.31.152:8095/CancelacionFacturas/Cancelar', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selectedRows),
+      });
+
+      if (response.ok) {
+        const data = await response.json(); // Obtén la respuesta JSON
+        console.log('Data received from API:', data);
+        console.log('Data received from API tamaño:', data.length);
+        if (data.length > 1) {
+          console.log('Entre al mas de 1'); 
+          setOpenModalTimbrar(true);
+          // for (const factura of data) {
+
+            const statusList = data.map(factura => ({
+              id: factura.facturaID, // Suponiendo que cada factura tiene un ID
+              status: factura.status === 'success' ? 'success' : 'error',
+              error: factura.error || null,
+            }));
+            console.log('Status list:', statusList);
+            setFacturasTimbradas(statusList); // Guarda el estado de las facturas
+
+            // console.log('Factura:', factura); 
+            // if (factura.status === 'success') {
+            //   console.log('Factura cancelada:', factura);
+            // } else if (factura.status === 'Error') {
+            //   console.error('Error al cancelar factura:', factura);
+            // }
+
+          // }
+        }
+        else {
+          console.log('Entre al 1');
+          if (data.status === 'success') {
+            console.log('Factura cancelada:', data);
+            setConfirmationMessage('Facturas canceladas exitosamente.');
+            setOpenModalSuccess(true); // Show success modal
+          }
+          else if (data.status === 'error') {
+            console.error('Error al cancelar factura:', data);
+            setConfirmationMessage('Error al cancelar facturas:  <br/> ' + data.error);
+            setOpenModalError(true); // Show error modal
+          }
+
+        }
+
+      }
+      else {
+        setConfirmationMessage('Error en la conexión con el servidor.');
+        setOpenModalError(true); // Show error modal
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setConfirmationMessage('Error en la conexión o en el timbrado.');
+      setOpenModalError(true); // Show error modal
+    } finally {
+      setLoading(false);
+      setOpenModal(false); // Hide loading modal
+      setActualizar(true);
+    }
+  };
+
 
   const fetchData = useCallback(async () => {
     if (token) {
@@ -477,6 +554,14 @@ export default function DataTable({ token, filtro }) {
         >
           Descargar Seleccionadas
         </Button>
+        <Button
+          variant="contained"
+          onClick={() => handleCancelar(selectedRows)}
+          disabled={selectedRows.length === 0}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
+        >
+          Cancelar Seleccionadas
+        </Button>
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
@@ -527,7 +612,7 @@ export default function DataTable({ token, filtro }) {
                   <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.Estatus ? row.Estatus : row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
@@ -542,7 +627,7 @@ export default function DataTable({ token, filtro }) {
                       onClose={handleMenuClose}
                       sx={{
                         "& .MuiPaper-root": {
-                        
+
                           boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.125)',
                         },
                       }}

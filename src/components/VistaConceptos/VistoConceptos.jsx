@@ -33,7 +33,7 @@ const VistaConceptos = ({ token }) => {
         if (token) {
             console.log('Fetching conceptos', token);
             try {
-                const response = await fetch('http://31.220.31.152:8081/Catalogos/Conceptos', {
+                const response = await fetch('http://31.220.31.152:8081/Catalogos/Conceptos?allData=true', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

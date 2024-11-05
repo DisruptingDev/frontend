@@ -11,7 +11,7 @@ import padding from 'tailwindcss-logical/plugins/padding.js';
 import { set } from 'date-fns';
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token }) {
-    const [conceptoOptions, setConceptoOptions] = useState(null);
+    const [conceptoOptions, setConceptoOptions] = useState([]);
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
     const [queryConcepto, setQueryConcepto] = useState('');
@@ -490,7 +490,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 /> */}
                 <Autocomplete
                     freeSolo
-                    options={conceptoOptions}
+                    options={[{ ID: "Nuevo", Descripcion: "Nuevo Concepto" }, ...conceptoOptions]}
+                    // options={conceptoOptions}
                     getOptionLabel={(option) => `${option.ID} - ${option.Descripcion}`}
                     value={selectedConcepto}
                     isOptionEqualToValue={(option, value) => option.ID === value.ID}
@@ -507,6 +508,17 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         />
                     )}
                 />
+                {getValues("Descripcion") === "Nuevo Concepto" && 
+               <TextField
+               label="Descripción"
+               {...register("Descripcion")}
+               error={descripcionError}
+               helperText={descripcionError && "La descripción es obligatoria."}
+               fullWidth
+               multiline
+               rows={4}
+           />
+           }
             </Box>
             <Box display="grid"
                 gridTemplateColumns={{

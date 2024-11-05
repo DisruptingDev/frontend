@@ -24,7 +24,7 @@ return(
         }}
       >
         <Typography variant="h6" gutterBottom>
-          Resultados de Timbrado de Facturas
+          Resultados
         </Typography>
         <Typography variant="subtitle1" gutterBottom>
           Total: {facturasTimbradas.length} | Exitosas: {facturasTimbradas.filter(f => f.status === 'success').length} | Con Error: {facturasTimbradas.filter(f => f.status === 'error').length}
@@ -59,10 +59,14 @@ return(
                
                   </Box>
                 ) : (
-                  <ListItemIcon>
-                    <CheckCircleIcon color="success" />
-                  </ListItemIcon>
-                )}
+
+                  null
+                  // <ListItemIcon>
+                  //   <CheckCircleIcon color="success" />
+                  // </ListItemIcon>
+                )
+
+                }
               </ListItem>
             ))}
           </List>
