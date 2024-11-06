@@ -127,7 +127,7 @@ export default function DataTable({ token, filtro }) {
   const obtenerFactura = async (id) => {
     try {
       // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-      const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+      const response = await fetch(`https://facturacioncfditotal.com/api/facturas/ObtenerFactura/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ export default function DataTable({ token, filtro }) {
       console.log('Facturas válidas:', facturasValidas);
 
       // Enviamos la solicitud POST a /DescargarArchivos con las facturas
-      const response = await fetch('http://31.220.31.152:8082/DescargarArchivos', {
+      const response = await fetch('https://facturacioncfditotal.com/api/descargararchivos/DescargarArchivos', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -246,7 +246,7 @@ export default function DataTable({ token, filtro }) {
     try {
       console.log('Timbrando facturas:', ids);
       // const token = localStorage.getItem('authToken');
-      const response = await fetch('http://31.220.31.152:8088/TimbradoCorporativo', {
+      const response = await fetch('https://facturacioncfditotal.com/api/timbradocorporativo/TimbradoCorporativo', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -327,7 +327,7 @@ export default function DataTable({ token, filtro }) {
     try {
       console.log('Cancelando facturas:', ids);
       // const token = localStorage.getItem('authToken');
-      const response = await fetch('http://31.220.31.152:8095/CancelacionFacturas/Cancelar', {
+      const response = await fetch('https://facturacioncfditotal.com/api/cancelacionfacturas/CancelacionFacturas/Cancelar', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -399,7 +399,7 @@ export default function DataTable({ token, filtro }) {
       try {
         // const token = localStorage.getItem('authToken');
 
-        const response = await fetch('http://31.220.31.152:8087/ListarFacturas', {
+        const response = await fetch('https://facturacioncfditotal.com/api/facturas/ListarFacturas', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',

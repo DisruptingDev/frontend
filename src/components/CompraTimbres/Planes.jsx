@@ -41,7 +41,7 @@ export default function Planes({ token }) {
             console.log('Fetching plan', token);
             try {
                 console.log('Token:', token);
-                const response = await fetch('http://31.220.31.152:8081/Catalogos/Planes', {
+                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Planes', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

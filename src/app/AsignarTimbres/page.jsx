@@ -66,7 +66,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch('http://31.220.31.152:8093/ActivacionOrdenes/ListarOrdenesPaquetes', {
+                const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPaquetes', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -95,7 +95,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch('http://31.220.31.152:8093/ActivacionOrdenes/ListarOrdenesPlanes', {
+                const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPlanes', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -178,7 +178,7 @@ export default function AsignarTimbres() {
     
         console.log('Asignando timbres', formData);
         try {
-          const response = await fetch('http://31.220.31.152:8093/ActivacionOrdenes/ActivarOrden', {
+          const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ActivarOrden', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -205,7 +205,7 @@ export default function AsignarTimbres() {
     const handleVerComprobante = async (ID) => {
         console.log('Ver comprobante', ID);
         try {
-            const response = await fetch(`http://31.220.31.152:8093/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+            const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

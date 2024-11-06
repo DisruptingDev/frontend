@@ -47,7 +47,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             formData.append('ordenesID', JSON.stringify(ordenesID));
             console.log('Subiendo comprobante', formData);
             try {
-                const response = await fetch('http://31.220.31.152:8092/CompraTimbres/SubirComprobante', {
+                const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/SubirComprobante', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

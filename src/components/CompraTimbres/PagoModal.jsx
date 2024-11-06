@@ -87,7 +87,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
         console.log('Datos a enviar:', formData);
         try {
             // Enviar datos al servidor
-            const response = await fetch('http://31.220.31.152:8092/CompraTimbres/GenerarOrden', {
+            const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/GenerarOrden', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -221,7 +221,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                     // Seleccionar empresa
                     <Select
                         label="Seleccionar empresa"
-                        url="http://31.220.31.152:8081/Catalogos/Emisor"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
                         id="ID"
                         clave=""
                         // value={empresa}

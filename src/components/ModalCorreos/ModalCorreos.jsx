@@ -14,7 +14,7 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
     const handleSendInvitations = async () => {
         const emailsArray = emailAddresses.split(',').map(email => email.trim());
         try {
-            const response = await fetch('http://31.220.31.152:8097/InvitacionColaboradores/Invitar', {
+            const response = await fetch('https://facturacioncfditotal.com/api/invitacioncolaboradores/InvitacionColaboradores/Invitar', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

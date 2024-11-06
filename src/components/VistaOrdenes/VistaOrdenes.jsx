@@ -36,7 +36,7 @@ const VistaOrdenes = ({token}) => {
     if (token) {
       console.log('Fetching ordenes', token);
       try {
-        const response = await fetch('http://31.220.31.152:8092/ListarOrdenes',{
+        const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/ListarOrdenes',{
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -118,7 +118,7 @@ const VistaOrdenes = ({token}) => {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`http://31.220.31.152:8093/ComprobanteFile/${ID}`, {
+      const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

@@ -54,7 +54,7 @@ export default function CrearFactura() {
         const fetchFactura = async () => {
             try {
                 // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-                const response = await fetch(`http://31.220.31.152:8087/ObtenerFactura/${id}`, {
+                const response = await fetch(`https://facturacioncfditotal.com/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',

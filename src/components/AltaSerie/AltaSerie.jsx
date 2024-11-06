@@ -33,7 +33,7 @@ export default function AltaSerie({ token }) {
         console.log("Formateo", datos);
 
         try {
-            const response = await fetch('http://31.220.31.152:8089/CrearSerie', {
+            const response = await fetch('https://facturacioncfditotal.com/api/series/CrearSerie', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ export default function AltaSerie({ token }) {
                         register={register}
                         nombre="Empresa"
                         label={"Empresa*"}
-                        url="http://31.220.31.152:8081/Catalogos/Emisor"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
                         id="ID"
                         clave=""
                         descripcion="Nombre"
@@ -86,7 +86,7 @@ export default function AltaSerie({ token }) {
                         register={register}
                         nombre="TipoComprobante"
                         label={"Tipo Comprobante*"}
-                        url="http://31.220.31.152:8081/Catalogos/TipoComprobante"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/TipoComprobante"
 
                         clave="Clave"
                         descripcion="Descripcion"

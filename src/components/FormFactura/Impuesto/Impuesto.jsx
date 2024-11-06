@@ -72,7 +72,7 @@ export default function Impuesto({
             const nombreImpuesto = impuestoEditor.NombreImpuesto || getValues(`impuestos[${index}].NombreImpuesto`);
             const tipo = impuestoEditor.Tipo || getValues(`impuestos[${index}].Tipo`);
             if (nombreImpuesto && tipo) {
-                setTasaUrl(`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                setTasaUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
             }
         }
     }, [impuestoEditor, index, setValue, getValues]);
@@ -91,8 +91,8 @@ export default function Impuesto({
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
-                    setTasaUrl(`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
-                    setValue(`impuestos.${index}.TasaUrl`,`http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
+                    setTasaUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                    setValue(`impuestos.${index}.TasaUrl`,`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
                 }
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
@@ -181,7 +181,7 @@ export default function Impuesto({
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         label='Impuesto'
-                        url="http://31.220.31.152:8081/Catalogos/ImpuestoClave"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/ImpuestoClave"
                         onChange={handleImpuestoChange}
                         error={impuestoError}
                         helperText={impuestoError ? "El impuesto es requerido." : ""}

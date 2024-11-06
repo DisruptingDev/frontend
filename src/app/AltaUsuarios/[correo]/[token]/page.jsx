@@ -48,7 +48,7 @@ const AltaUsuarios = () => {
         // Handle form submission logic here
         console.log(formData);
         try {
-            const response = await fetch(`http://31.220.31.152:8091/RegistroUsuario/${token}`, {
+            const response = await fetch(`https://facturacioncfditotal.com/api/registrousuarios/RegistroUsuario/${token}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

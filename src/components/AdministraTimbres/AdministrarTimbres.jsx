@@ -24,14 +24,14 @@ export default function AdministrarTimbres({ token }) {
     const fetchData = useCallback(async () => {
         if (token) {
             try {
-                const response = await fetch(`http://31.220.31.152:8081/Catalogos/Emisor`, {
+                const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
                     const data = await response.json();
                     const empresasConSeries = [];
                     for (let empresa of data) {
-                        const seriesResponse = await fetch(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${empresa.ID}`, {
+                        const seriesResponse = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${empresa.ID}`, {
                             headers: { 'Authorization': `Bearer ${token}` },
                         });
                         const seriesData = await seriesResponse.json();
@@ -58,7 +58,7 @@ export default function AdministrarTimbres({ token }) {
     const fetchTimbresDisponibles = useCallback(async () => {
         if (token) {
             try {
-                const response = await fetch(`http://31.220.31.152:8085/TimbresDisponibles`, {
+                const response = await fetch(`https://facturacioncfditotal.com/api/administraciontimbres/TimbresDisponibles`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
@@ -116,7 +116,7 @@ export default function AdministrarTimbres({ token }) {
         console.log('Datos a enviar:', datosCompletos);
 
         try {
-            const response = await fetch('http://31.220.31.152:8085/ActualizarTimbres', {
+            const response = await fetch('https://facturacioncfditotal.com/api/administraciontimbres/ActualizarTimbres', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

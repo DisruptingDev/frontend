@@ -154,7 +154,7 @@ export default function SearchFilter({setFiltro}) {
                     <Select
                         register={register}
                         nombre="Emisor"
-                        url="http://31.220.31.152:8081/Catalogos/Emisor"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
                         clave="Rfc"
                         descripcion="Nombre"
                         opcion={true}
@@ -168,7 +168,7 @@ export default function SearchFilter({setFiltro}) {
                     <Select
                         register={register}
                         nombre="Receptor"
-                        url="http://31.220.31.152:8081/Catalogos/Receptor"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor"
                         clave="Rfc"
                         descripcion="Nombre"
                         opcion={true}

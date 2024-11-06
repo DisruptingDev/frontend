@@ -68,7 +68,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setLoading(true);
 
             try {
-                const response = await fetch('http://31.220.31.152:8086/RegistroReceptor', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestores/RegistroReceptor', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 Estado: data.Estado         // String
             };
             try {
-                const response = await fetch('http://31.220.31.152:8086/EditarReceptor ', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestores/EditarReceptor ', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         register={register} // Pasa register como prop
                         label={"Regimen Fiscal*"}
                         nombre="RegimenFiscal"
-                        url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal"
                         clave="Clave"
                         descripcion="Descripcion"
                         onChange={(e) => setValue('RegimenFiscal', e.target.value)}

@@ -65,7 +65,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch('http://31.220.31.152:8092/CompraTimbres/ListarOrdenesPaquetes', {
+        const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/ListarOrdenesPaquetes', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -94,7 +94,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch('http://31.220.31.152:8092/CompraTimbres/ListarOrdenesPlanes', {
+        const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/ListarOrdenesPlanes', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -193,7 +193,7 @@ export default function VerOrdenes() {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`http://31.220.31.152:8093/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+      const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

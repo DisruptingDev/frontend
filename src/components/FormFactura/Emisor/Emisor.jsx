@@ -77,7 +77,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 setValue("Fecha", formattedDate);
             }
 
-            setSerieUrl(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${emisorData.ID}`);
+            setSerieUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
             trigger(["Emisor","RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
@@ -100,7 +100,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
             setValue("LogoEmisor", emisor.LogoPath)
 
-            setSerieUrl(`http://31.220.31.152:8081/Catalogos/Serie?emisorID=${emisor.ID}`);
+            setSerieUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisor.ID}`);
 
             setLugarExpedicion(emisor.LugarExpedicion);
 
@@ -159,7 +159,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
-                    url="http://31.220.31.152:8081/Catalogos/Emisor"
+                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
                     id="ID"
                     clave=""
                     descripcion="Nombre"

@@ -38,7 +38,7 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
         if (token) {
             console.log('Fetching emisores', token);
             try {
-                const response = await fetch('http://31.220.31.152:8081/Catalogos/Emisor', {
+                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

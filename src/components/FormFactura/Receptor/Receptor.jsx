@@ -74,7 +74,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setHiddeInfoGlobal(false);
             }
-            setUsoCFDIURL(`http://31.220.31.152:8081/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            setUsoCFDIURL(`https://facturacioncfditotal.com/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
             trigger("RFCReceptor");
             trigger("DomicilioFiscalReceptor");
@@ -102,7 +102,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             // setUsoCFDI("");
             setValue("UsoCFDI", "");
             setValue("UsoCFDIDescripcion", "");
-            setUsoCFDIURL(`http://31.220.31.152:8081/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            setUsoCFDIURL(`https://facturacioncfditotal.com/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
             setRFC(data["Rfc"]);
             setValue("RFCReceptor", data["Rfc"]);
@@ -154,7 +154,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             if (regimenFiscal) {
                 console.log("REGIMEN", token);
                 // const token = localStorage.getItem('authToken');
-                fetch(`http://31.220.31.152:8081/Catalogos/RegimenFiscal`, {
+                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal`, {
                     // method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -208,7 +208,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="Receptor"
-                    url="http://31.220.31.152:8081/Catalogos/Receptor"
+                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor"
                     id="ID"
                     descripcion="Nombre"
                     onChange={(e) => setReceptor(e.target.value)}
@@ -272,7 +272,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="MetodoPago"
-                    url="http://31.220.31.152:8081/Catalogos/MetodoPago"
+                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/MetodoPago"
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.MetodoPago}
@@ -316,7 +316,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="FormaPago"
-                    url="http://31.220.31.152:8081/Catalogos/FormaPago"
+                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/FormaPago"
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.FormaPago}
@@ -340,7 +340,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                         // register={register}
                         nombre="Exportación"
-                       url="http://31.220.31.152:8081/Catalogos/Exportaciones"
+                       url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Exportaciones"
                         clave="Clave"
                         value={exportacion}
                         descripcion="Descripcion"
@@ -364,7 +364,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <Select
                         register={register}
                         nombre="Periodicidad"
-                        url="http://31.220.31.152:8081/Catalogos/Periodicidad"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Periodicidad"
                         clave="Clave"
                         descripcion="Descripcion"
                         error={!!errors.Periodicidad}
@@ -375,7 +375,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <Select
                         register={register}
                         nombre="Meses"
-                        url="http://31.220.31.152:8081/Catalogos/PeriodicidadMeses"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/PeriodicidadMeses"
                         clave="Clave"
                         descripcion="Descripcion"
                         error={!!errors.Meses}

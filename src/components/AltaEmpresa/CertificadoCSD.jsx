@@ -69,7 +69,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
             try {
                
 
-                const response = await fetch('http://31.220.31.152:8083/EditarCertificado', {
+                const response = await fetch('https://facturacioncfditotal.com/api/certificados/EditarCertificado', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
@@ -121,7 +121,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
         }
         else{
             try {
-                const response = await fetch('http://31.220.31.152:8083/SubirCSD', {
+                const response = await fetch('https://facturacioncfditotal.com/api/certificados/SubirCSD', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados

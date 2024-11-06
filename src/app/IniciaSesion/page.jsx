@@ -17,7 +17,7 @@ export default function Login() {
 
     const onSubmit = async (data) => {
         try {
-            const response = await fetch('http://31.220.31.152:8084/Login', {
+            const response = await fetch('https://facturacioncfditotal.com/api/login/Login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

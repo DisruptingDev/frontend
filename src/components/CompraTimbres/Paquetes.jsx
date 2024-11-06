@@ -43,7 +43,7 @@ export default function Paquetes({token}) {
                 console.log('Fetching paquetes', token);
                 try {
                     console.log('Token:', token);   
-                    const response = await fetch('http://31.220.31.152:8081/Catalogos/Paquetes', {
+                    const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Paquetes', {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,

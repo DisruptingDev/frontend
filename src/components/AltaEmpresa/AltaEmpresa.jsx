@@ -153,7 +153,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setLoading(true);
 
             try {
-                const response = await fetch('http://31.220.31.152:8086/EditarEmisor ', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestores/EditarEmisor ', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -211,7 +211,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setLoading(true);
 
             try {
-                const response = await fetch('http://31.220.31.152:8086/RegistroEmisor', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestores/RegistroEmisor', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     <Select
                         nombre="RegimenFiscal"
                         label={"Régimen Fiscal*"}
-                        url="http://31.220.31.152:8081/Catalogos/RegimenFiscal"
+                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal"
                         clave="Clave"
                         descripcion="Descripcion"
                         fullWidth

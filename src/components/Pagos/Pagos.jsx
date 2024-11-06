@@ -47,7 +47,7 @@ const Pagos = ({ token }) => {
     if (token) {
       console.log('Fetching pagoes', token);
       try {
-        const response = await fetch('http://31.220.31.152:8093/ListarOrdenes', {
+        const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenes', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -108,7 +108,7 @@ const Pagos = ({ token }) => {
 
     console.log('Asignando timbres', formData);
     try {
-      const response = await fetch('http://31.220.31.152:8093/ActivarOrden', {
+      const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ActivarOrden', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +134,7 @@ const Pagos = ({ token }) => {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`http://31.220.31.152:8093/ComprobanteFile/${ID}`, {
+      const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

@@ -40,7 +40,7 @@ export default function RegistroClientes() {
         if(clienteIdEditar){
             async function fetchData() {
             try {
-                const response = await fetch(`http://31.220.31.152:8081/Catalogos/Receptor/${clienteIdEditar}`, {
+                const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor/${clienteIdEditar}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

@@ -51,7 +51,7 @@ const VistaUsuarios = ({ token }) => {
         if (token) {
             console.log('Fetching usuarios', token);
             try {
-                const response = await fetch('http://31.220.31.152:8094/Usuarios/ListarUsuarios', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestionusuarios/Usuarios/ListarUsuarios', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -105,7 +105,7 @@ const VistaUsuarios = ({ token }) => {
         const Nombre = menuRow.Nombre;
         console.log('Suplantando usuario:', ID);
         try {
-            const response = await fetch(`http://31.220.31.152:8094/Usuarios/SuplantarUsuario/${ID}`, {
+            const response = await fetch(`https://facturacioncfditotal.com/api/gestionusuarios/Usuarios/SuplantarUsuario/${ID}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

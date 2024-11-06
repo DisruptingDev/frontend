@@ -3,7 +3,7 @@ export default async function GuardarFactura(factura, onSuccess, onError ,{token
         console.log("factura",factura);
       
            
-            const response = await fetch('http://31.220.31.152:8087/GuardarFactura', {
+            const response = await fetch('https://facturacioncfditotal.com/api/facturas/GuardarFactura', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
