@@ -438,7 +438,7 @@ export default function UserMenu() {
           </Typography>
         </MenuItem>
       </Menu>
-      <ModalCorreos open={open} onClose={() => setOpen(false)} />
+      <ModalCorreos open={open} onClose={() => setOpen(false)} setOpen={setOpen} />
     </>
   );
 }
