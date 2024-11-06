@@ -87,7 +87,7 @@ export default function Header({ name }) {
         >
           Timbres +
         </Link>
-        <Link
+        {/* <Link
           href="/Conceptos"
           className={`text-white text-lg hover:underline underline-offset-4 ${
             isActive("/Conceptos")
@@ -97,7 +97,7 @@ export default function Header({ name }) {
           prefetch={false}
         >
           Conceptos +
-        </Link>
+        </Link> */}
       </nav>
 
       {/* Aquí usamos el componente UserMenu */}
