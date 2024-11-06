@@ -479,7 +479,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={6}>Conceptos</Typography>
             <Box display="grid" gridTemplateColumns="8fr" gap={3}>
-                {/* <TextField
+                <TextField
                     label="Descripción"
                     {...register("Descripcion")}
                     error={descripcionError}
@@ -487,8 +487,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     fullWidth
                     multiline
                     rows={4}
-                /> */}
-                <Autocomplete
+                />
+                {/* <Autocomplete
                     freeSolo
                     options={[{ ID: "Nuevo", Descripcion: "Nuevo Concepto" }, ...conceptoOptions]}
                     // options={conceptoOptions}
@@ -518,7 +518,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                multiline
                rows={4}
            />
-           }
+           } */}
             </Box>
             <Box display="grid"
                 gridTemplateColumns={{

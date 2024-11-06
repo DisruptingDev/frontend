@@ -364,14 +364,14 @@ export default function DataTable({ token, filtro }) {
         }
         else {
           console.log('Entre al 1');
-          if (data.status === 'success') {
+          if (data[0].status === 'success') {
             console.log('Factura cancelada:', data);
             setConfirmationMessage('Facturas canceladas exitosamente.');
             setOpenModalSuccess(true); // Show success modal
           }
-          else if (data.status === 'error') {
+          else if (data[0].status === 'Error') {
             console.error('Error al cancelar factura:', data);
-            setConfirmationMessage('Error al cancelar facturas:  <br/> ' + data.error);
+            setConfirmationMessage('Error al cancelar facturas:  <br/> ' + data[0].error);
             setOpenModalError(true); // Show error modal
           }
 
