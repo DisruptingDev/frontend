@@ -4,9 +4,9 @@
   "license": "Commercial",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8000",
-    "build": "next build -p 8000",
-    "start": "next start -p 8000",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
@@ -90,7 +90,8 @@
     "react-use": "17.5.1",
     "recharts": "2.12.7",
     "server-only": "0.0.1",
-    "valibot": "0.36.0"
+    "valibot": "0.36.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@iconify/json": "2.2.230",

@@ -33,7 +33,7 @@ const VistaConceptos = ({ token }) => {
         if (token) {
             console.log('Fetching conceptos', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Conceptos?allData=true', {
+                const response = await fetch('https://facturacioncfditotal.com/api/conceptos/ListarConceptos', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

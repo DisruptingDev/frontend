@@ -25,6 +25,7 @@ import {
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation'; // Importa correctamente desde next/navigation
 import generarVistaPrevia from '../Factura/GenerarVistaPrevia';
+import convertXMLToPDF from '../Factura/GenerarAcuse';
 import { CheckCircleOutline, ErrorOutline, CheckCircle as CheckCircleIcon, HourglassEmpty as HourglassEmptyIcon, Info as InfoIcon, ExpandLess as ExpandLessIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { set } from 'date-fns';
 import typography from '@/@core/theme/typography';
@@ -155,8 +156,19 @@ export default function DataTable({ token, filtro }) {
         ids.map(async (id) => {
           const factura = await obtenerFactura(id);
           if (factura) {
-            const htmlContent = await generarVistaPrevia(factura);
-            console.log('HTML content:', htmlContent);
+            let htmlContent;
+            let acuseContent;
+            if (factura.factura.Estatus === 'Cancelada') {
+              console.log('Factura cancelada:', factura);
+              await convertXMLToPDF(factura.factura.xmlCancelacion, `Acuse_${factura.factura.Emisor.Nombre}_${factura.factura.Folio}.pdf`);
+            }
+            else {
+              console.log('Factura:', factura); 
+              htmlContent = await generarVistaPrevia(factura);
+              console.log('HTML content:', htmlContent);
+            }
+
+
 
             // Verificamos si hay un solo ID para recuperar el nombre
             const name = ids.length === 1 ? `${factura.factura.Emisor.Nombre}_${factura.factura.Folio}` : null;
@@ -341,24 +353,24 @@ export default function DataTable({ token, filtro }) {
         console.log('Data received from API:', data);
         console.log('Data received from API tamaño:', data.length);
         if (data.length > 1) {
-          console.log('Entre al mas de 1'); 
+          console.log('Entre al mas de 1');
           setOpenModalTimbrar(true);
           // for (const factura of data) {
 
-            const statusList = data.map(factura => ({
-              id: factura.facturaID, // Suponiendo que cada factura tiene un ID
-              status: factura.status === 'success' ? 'success' : 'error',
-              error: factura.error || null,
-            }));
-            console.log('Status list:', statusList);
-            setFacturasTimbradas(statusList); // Guarda el estado de las facturas
+          const statusList = data.map(factura => ({
+            id: factura.facturaID, // Suponiendo que cada factura tiene un ID
+            status: factura.status === 'success' ? 'success' : 'error',
+            error: factura.error || null,
+          }));
+          console.log('Status list:', statusList);
+          setFacturasTimbradas(statusList); // Guarda el estado de las facturas
 
-            // console.log('Factura:', factura); 
-            // if (factura.status === 'success') {
-            //   console.log('Factura cancelada:', factura);
-            // } else if (factura.status === 'Error') {
-            //   console.error('Error al cancelar factura:', factura);
-            // }
+          // console.log('Factura:', factura); 
+          // if (factura.status === 'success') {
+          //   console.log('Factura cancelada:', factura);
+          // } else if (factura.status === 'Error') {
+          //   console.error('Error al cancelar factura:', factura);
+          // }
 
           // }
         }

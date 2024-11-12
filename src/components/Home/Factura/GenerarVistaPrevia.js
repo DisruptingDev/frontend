@@ -301,6 +301,7 @@ const generarVistaPrevia = async (factura) => {
     try {
         let filledTemplate;
         const template = await loadTemplate('/plantillas/plantilla-prueba.html');
+        // const template = await loadTemplate('/plantillas/cancelado.html');
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
         }
