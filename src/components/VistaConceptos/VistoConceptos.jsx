@@ -11,7 +11,7 @@ function createData(item) {
     return { ...item };
 }
 
-const VistaConceptos = ({ token }) => {
+const VistaConceptos = ({ token, actualizar, setActualizar }) => {
 
     const [conceptos, setConceptos] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -58,6 +58,13 @@ const VistaConceptos = ({ token }) => {
         fetchConceptos();
     }, [fetchConceptos, token]);
 
+    useEffect(() => {
+        if (actualizar) {
+            fetchConceptos();
+            setActualizar(false);
+        }
+    }, [actualizar, setActualizar, fetchConceptos]);
+
     return (
         <TableContainer component={Paper}>
             <Table>
@@ -66,8 +73,11 @@ const VistaConceptos = ({ token }) => {
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ClaveProdServ</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ClaveUnidad</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Descripcion</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acciones</TableCell>
+                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Nombre</TableCell>
+                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Descripción</TableCell>
+                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Traslados</TableCell>
+                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
+                        {/* <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acciones</TableCell> */}
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -76,26 +86,38 @@ const VistaConceptos = ({ token }) => {
                             <TableCell align="center">{row.ID}</TableCell>
                             <TableCell align="center">{row.ClaveProdServ}</TableCell>
                             <TableCell align="center">{row.ClaveUnidad}</TableCell>
+                            <TableCell align="center">{row.Nombre}</TableCell>
                             <TableCell align="center">{row.Descripcion}</TableCell>
+
+                            {/* Mostrar descripciones de todos los Traslados */}
                             <TableCell align="center">
-                                <IconButton
-                                    onClick={(event) => handleMenuClick(event, row)}
-                                >
+                                {row.Impuestos.Traslados.length > 0
+                                    ? row.Impuestos.Traslados.map((traslado) => traslado.ImpuestoCatalogo?.Descripcion).join(', ')
+                                    : ''}
+                            </TableCell>
+
+                            {/* Mostrar descripciones de todos los Retenciones */}
+                            <TableCell align="center">
+                                {row.Impuestos.Retenciones.length > 0
+                                    ? row.Impuestos.Retenciones.map((retencion) => retencion.ImpuestoCatalogo?.Descripcion).join(', ')
+                                    : ''}
+                            </TableCell>
+
+                            {/* <TableCell align="center">
+                                <IconButton onClick={(event) => handleMenuClick(event, row)}>
                                     <MoreVertIcon />
                                 </IconButton>
-                                <Menu
-                                    anchorEl={anchorEl}
-                                    open={Boolean(anchorEl)}
-                                    onClose={handleMenuClose}
-                                >
+                                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                                     <MenuItem onClick={handleMenuClose}>Editar</MenuItem>
                                     <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
                                 </Menu>
-                            </TableCell>
+                            </TableCell> */}
                         </TableRow>
                     ))}
+
                 </TableBody>
             </Table>
+            {/* <pre>{JSON.stringify(conceptos, null, 2)}</pre> */}
 
         </TableContainer>
 

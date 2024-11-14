@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Box, TextField, Typography, Button, Autocomplete, Snackbar, Alert } from '@mui/material';
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto.jsx";
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, get } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from '@/components/Select/Select.jsx';
 
-export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token }) {
+export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token, modalAgregarConcepto, onClose }) {
     const [conceptoOptions, setConceptoOptions] = useState([]);
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
@@ -21,6 +21,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [objetoImpuesto, setObjetoImpuesto] = useState("02");
     const [conceptoSeleccionado, setConceptoSeleccionado] = useState(null);
     // Resto del código para los estados de error y el manejo del formulario
+    const [nombreError, setNombreError] = useState(false);  
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
@@ -54,6 +55,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         control,
         name: 'impuestos',
     });
+
+
 
     const fetchConceptos = useCallback(async () => {
         if (!token) return;
@@ -140,13 +143,13 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     useEffect(() => {
         if ((editIndex !== null && conceptos[editIndex]) || conceptoSeleccionado) {
             let concepto
-            if(conceptoSeleccionado){
+            if (conceptoSeleccionado) {
                 console.log("CONCEPTO SELECCIONADO", conceptoSeleccionado);
                 concepto = conceptoSeleccionado;
             } else {
-                
-           concepto = conceptos[editIndex];
-            console.log('Concepto seleccionado para editar:', concepto);
+
+                concepto = conceptos[editIndex];
+                console.log('Concepto seleccionado para editar:', concepto);
             }
 
             // Establecer valores del concepto
@@ -209,7 +212,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             // trigger('impuestos');
             console.log('Concepto editado:', getValues(`impuestos`));
 
-            if(!conceptoOptions.some(opt => opt.ID === concepto.ID)){
+            if (!conceptoOptions.some(opt => opt.ID === concepto.ID)) {
                 console.log(`Consultando opciones de Conceptos para: ${concepto.ID}`);
                 fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Conceptos?descripcion=${concepto.Descripcion}`, {
                     method: 'GET',
@@ -220,11 +223,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         console.log("Opciones recibidas de Conceptos:", data);
                         setConceptoOptions(prevOptions => [...prevOptions, ...data]);
                         const selectedConcepto = data.find(opt => opt.ID == concepto.ID);
-                        if(selectedConcepto){
-                        console.log("Concepto seleccionado tras la consulta:", selectedConcepto);
-                        setSelectedConcepto(selectedConcepto || null);
+                        if (selectedConcepto) {
+                            console.log("Concepto seleccionado tras la consulta:", selectedConcepto);
+                            setSelectedConcepto(selectedConcepto || null);
                         }
-                        else{
+                        else {
                             handleAddNewOption(concepto.Descripcion);
                         }
                     })
@@ -279,7 +282,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 console.log("ClaveUnidad seleccionada:", selectedUnidad);
                 setSelectedClaveUnidad(selectedUnidad || null);
             }
-         
+
         }
     }, [editIndex, conceptos, conceptoSeleccionado, setValue, trigger]);
 
@@ -287,7 +290,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         // Resetear errores antes de validar
         setConceptoSeleccionado(null);
         // setValue("Descripcion",'');
-        setQueryConcepto('');
+
         setDescripcionError(false);
         setClaveProdServError(false);
         setClaveUnidadError(false);
@@ -298,6 +301,12 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         setImpuestoError(false);
         let hasError = false;
         // Validaciones para los campos de Conceptos
+
+        if(modalAgregarConcepto && !getValues('Nombre')){
+            setNombreError(true);
+            hasError = true;
+        }
+
         if (!getValues('Descripcion')) {
             setDescripcionError(true);
             hasError = true;
@@ -379,12 +388,17 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setSelectedClaveProdServ(null);
             setSelectedClaveUnidad(null);
             setSelectedConcepto(null);
+            setQueryConcepto('');
+            handleAddNewOption('');
             // setValue("Descripcion", '');
             console.log("Conepto Seleccionad0", selectedConcepto);
             console.log("Conepto Seleccionad", conceptoSeleccionado);
-            console.log("ClaveProdServ", selectedClaveProdServ);   
+            console.log("ClaveProdServ", selectedClaveProdServ);
             console.log("ClaveUnidad", selectedClaveUnidad);
-       
+            if (modalAgregarConcepto) {
+                onClose();
+            }
+
         } else {
             console.log("Ocurrió un error en el concepto");
         }
@@ -404,12 +418,14 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             handleAddNewOption(value);
             setValue('Descripcion', value);
         } else {// console.log("VALUE", value.ID);
-            if(value){ 
+            if (value) {
+                console.log("VALUE", value);
+
                 const impuestos = [
                     ...(value.Impuestos?.Retenciones || []), // Incluye las retenciones si existen
                     ...(value.Impuestos?.Traslados || [])   // Incluye los traslados si existen
                 ]
-                const concepto ={
+                const concepto = {
                     ID: value.ID,
                     Descripcion: value.Descripcion,
                     ClaveProdServ: value.ClaveProdServ,
@@ -419,7 +435,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     ValorUnitario: value.ValorUnitario,
                     Descuento: value.Descuento,
                     Subtotal: value.Subtotal,
-                    ObjetoImpuesto: value.ObjetoImp || "02", 
+                    ObjetoImpuesto: value.ObjetoImp || "02",
                     Impuestos: impuestos.map(impuesto => ({
                         NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
                         Impuesto: impuesto.ImpuestoCatalogoID,
@@ -433,37 +449,87 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 }
                 setConceptoSeleccionado(concepto);
             }
+            else{
+                setValue("Descripcion",'')
+            }
+
+            setSelectedConcepto(null);
         }
     }
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
-            <Typography variant="h6" mb={6}>Conceptos</Typography>
-            <Box display="grid" gridTemplateColumns="8fr" gap={3}>
-                <Autocomplete
-                    freeSolo
-                    // options={[{ ID: "Nuevo", Nombre: "Nuevo Concepto" }, ...conceptoOptions]}
-                    options={conceptoOptions}
-                    getOptionLabel={(option) => ` ${option.Descripcion}`}
-                    value={selectedConcepto}
-                    isOptionEqualToValue={(option, value) => option.ID === value.ID}
-                    onInputChange={(event, newInputValue) => setQueryConcepto(newInputValue)}
 
-                    onChange={handleConcepto}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Descripcion"
-                            // {...register("Descripcion")}
-                            multiline
-                            rows={4} // Ajusta el número de líneas visibles
-                            fullWidth
-                            error={descripcionError}
-                            helperText={descripcionError && "Campo obligatorio."}
-                        />
-                    )}
-                />
-               
-            </Box>
+        // <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        // <Box bgcolor="white" p={4}>
+        <Box
+            bgcolor="white"
+            p={4}
+            my={modalAgregarConcepto ? 0 : 6}
+            mx={modalAgregarConcepto ? 0 : 4}
+            boxShadow={modalAgregarConcepto ? 0 : 3}
+            borderRadius={modalAgregarConcepto ? 0 : 2}
+        >
+            <Typography variant="h6" mb={4}>Conceptos</Typography>
+            {modalAgregarConcepto === true ?
+                <Box display="grid" gridTemplateColumns="8fr">
+                    <TextField
+                        sx={{ marginBottom: 2 }}
+                        label='Nombre del Concepto'
+                        {...register("Nombre")}
+                        fullWidth
+                        error={nombreError}
+                        helperText={nombreError && "Campo obligatorio."}
+
+                    />
+                    <TextField
+
+                        label="Descripcion"
+                        {...register("Descripcion")}
+                        multiline
+                        rows={4} // Ajusta el número de líneas visibles
+                        fullWidth
+                        error={descripcionError}
+                        helperText={descripcionError && "Campo obligatorio."}
+                    />
+                    <Typography variant="caption" color="textSecondary" align="right">
+                        {`${getValues("Descripcion").length}/1000`}
+                    </Typography>
+                </Box>
+
+                :
+                <Box display="grid" gridTemplateColumns="8fr" >
+                    <Autocomplete
+                        freeSolo
+                        // options={[{ ID: "Nuevo", Nombre: "Nuevo Concepto" }, ...conceptoOptions]}
+                        options={conceptoOptions}
+                        getOptionLabel={(option) => `${option.Nombre} - ${option.Descripcion}`}
+                        value={selectedConcepto || null}
+                        inputValue={getValues("Descripcion") || ''} 
+                        // value={getValues("Descripcion")|| ''}
+                        isOptionEqualToValue={(option, value) => option.ID === value.ID}
+                        onInputChange={(event, newInputValue) => setQueryConcepto(newInputValue)}
+
+                        onChange={handleConcepto}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Descripcion"
+                                {...register("Descripcion")}
+                                // value={getValues("Descripcion")}
+                                multiline
+                                rows={4} // Ajusta el número de líneas visibles
+                                fullWidth
+                                error={descripcionError}
+                                helperText={descripcionError && "Campo obligatorio."}
+                            />
+                        )}
+                    />
+                    <Typography variant="caption" color="textSecondary" align="right">
+                        {`${getValues("Descripcion").length}/1000`}
+                    </Typography>
+
+                </Box>
+            }
+
             <Box display="grid"
                 gridTemplateColumns={{
                     xs: '1fr',
@@ -612,9 +678,9 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             {objetoImpuesto !== "01" && (
                 // console.log("NO ES 01", objetoImpuesto),
                 <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
-          
+
                     {(fields.length > 0 ? fields : [{}]).map((field, index) => {
-                     
+
                         return (
                             <Box key={field.id || index} gridColumn="span 6">
                                 <Impuesto
@@ -630,7 +696,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                                     impuestoError={impuestoError}
                                     setObjetoImpuestoError={setObjetoImpuestoError}
                                     setImpuestoError={setImpuestoError}
-                                    // impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
+                                // impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
                                 />
                             </Box>
                         );
@@ -681,6 +747,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+            {/* <pre>{JSON.stringify(getValues(), null, 2)}</pre>
+            <pre>{'Concepto: ' + JSON.stringify(selectedConcepto)}</pre> */}
         </Box>
     );
 }

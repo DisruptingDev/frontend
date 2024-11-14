@@ -5,6 +5,7 @@ export default function CrearConcepto(getValues, impuestos) {
 
     console.log("Creando concepto objeto impuesto", getValues("ObjetoImpuesto"));
     let concepto = {
+        Nombre: getValues("Nombre"),
         ClaveProdServ: getValues("ClaveProdServ"),
         ClaveUnidad: getValues("ClaveUnidad"),
         Unidad: getValues("Unidad"),
