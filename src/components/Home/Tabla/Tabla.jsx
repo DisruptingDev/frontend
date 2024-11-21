@@ -534,6 +534,12 @@ export default function DataTable({ token, filtro }) {
       router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
+  const handleFacturaPago  = () => {
+    if (menuRow) {
+      console.log(menuRow);
+      router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+    }
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -656,6 +662,11 @@ export default function DataTable({ token, filtro }) {
                         menuRow && menuRow.uuid !== '' && [
                           <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
+                        ]
+                      }
+                      {
+                        menuRow && menuRow.TipoDeComprobante === 'P' && [
+                          <MenuItem key="pago" onClick={handleFacturaPago}>Factura de Pago</MenuItem>
                         ]
                       }
 

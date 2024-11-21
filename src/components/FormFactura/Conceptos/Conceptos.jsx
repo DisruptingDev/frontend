@@ -167,9 +167,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             console.log("IMPUESTOS ACT", concepto.Impuestos);
 
             console.log('Concepto editado:', getValues(`impuestos`));
+            console.log('Impuestos editado:', concepto.Impuestos);
             concepto.Impuestos.forEach((impuesto, index) => {
                 // setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
                 setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
+                setValue(`impuestos.${index}.ImpuestoClave`, impuesto.ImpuestoClave || '');
                 setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
                 setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
                 setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
@@ -439,7 +441,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Impuestos: impuestos.map(impuesto => ({
                         NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
                         Impuesto: impuesto.ImpuestoCatalogoID,
-                        ImpuestoClave: impuesto.ImpuestoClave,
+                        ImpuestoClave:  formatImpuestoClave(impuesto.ImpuestoClave),
                         Tasa: impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || value.Subtotal,
@@ -447,6 +449,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         Tipo: impuesto.TipoFactor
                     })),
                 }
+                console.log("CONCEPTO", concepto);
                 setConceptoSeleccionado(concepto);
             }
             else{
@@ -456,6 +459,16 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setSelectedConcepto(null);
         }
     }
+    const formatImpuestoClave = (value) => {
+        console.log("VALUE rellenar", value);
+        // Verifica si el valor es un número o se puede convertir a número
+        if (!isNaN(value)) {
+            console.log("VALUE rellenar2", value);
+            // Convierte a string y rellena con ceros al inicio hasta que tenga al menos 3 caracteres
+            return value.toString().padStart(3, '0');
+        }
+        return value; // Si no es un número, devuelve el valor tal cual
+    };
     return (
 
         // <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
@@ -747,8 +760,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-            {/* <pre>{JSON.stringify(getValues(), null, 2)}</pre>
-            <pre>{'Concepto: ' + JSON.stringify(selectedConcepto)}</pre> */}
+            <pre>{JSON.stringify(getValues(), null, 2)}</pre>
+            <pre>{'Concepto: ' + JSON.stringify(selectedConcepto, null, 2)}</pre>
         </Box>
     );
 }

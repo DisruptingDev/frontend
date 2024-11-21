@@ -1,43 +1,112 @@
-"use client";
+"use client"
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from 'react-hook-form';
+import { get, useForm } from 'react-hook-form';
 import { Snackbar, Alert, Modal, Box, Button } from '@mui/material';
+import { useParams } from 'next/navigation';
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
 import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
+import Pagos from "@/components/FormFactura/Pagos/Pagos";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
+import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
 
+// 
 
-
-export default function CrearFactura() {
+export default function FacturaPago() {
+    const { id } = useParams(); // Captura la ID de la URL
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
+    const [pagos, setPagos] = useState([]);
     const [conceptos, setConceptos] = useState([]);
+    const [emisorData, setemisorData] = useState([])
+    const [receptorData, setReceptorData] = useState([])
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [snackbarSeverity, setSnackbarSeverity] = useState('error'); // Nuevo estado para la severidad del Snackbar
+    const [snackbarSeverity, setSnackbarSeverity] = useState('error');
     const [editIndex, setEditIndex] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
-    const router = useRouter();
+    const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
+    const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState("");
 
     useEffect(() => {
+        // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            router.push("/IniciaSesion");
+            // console.log("SEsion",!isAuthenticated());
+            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
             setToken(token);
+            console.log("Token", token);
         }
     }, [router]);
+
+
+    useEffect(() => {
+
+        const fetchFactura = async () => {
+            try {
+                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
+                const response = await fetch(`https://facturacioncfditotal.com/api/facturas/ObtenerFactura/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                setFacturaEdit(data);
+                console.log("Factura", data);
+            } catch (error) {
+                console.error('Error fetching factura:', error);
+            }
+        };
+
+        if (id && token) {
+            fetchFactura(); // Solo llama a la API si hay una ID
+        }
+    }, [id, token]);
+
+
+    useEffect(() => {
+        if (facturaEdit) {
+            console.log("Factura editada", facturaEdit);
+            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
+
+            if (Conceptos) {
+                console.log("Conceptos", Conceptos);
+                setConceptos(Conceptos);
+            }
+            if (Emisor) {
+                setemisorData(Emisor);
+            }
+            if (Receptor) {
+                setReceptorData(Receptor);
+            }
+            // console.log("Docto Relacionado", facturaEdit.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados);
+            // console.log("Numero Parcialidad", facturaEdit.factura.Complemento.Pagos.Pagos?.DoctoRelacionados.NumParcialidad);
+            const pagos = {
+                numOperacion:
+                  facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.NumParcialidad ?? 0,
+                saldo:
+                  facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.ImpSaldoInsoluto ??
+                  facturaEdit?.factura?.Total ??
+                  0,
+              };
+            console.log("Pagos", pagos);
+            setPagos(pagos);
+        }
+
+    }, [facturaEdit]);
+
 
     const onSubmit = (data) => {
         if (conceptos.length === 0) {
@@ -56,38 +125,19 @@ export default function CrearFactura() {
                 setSnackbarSeverity('success'); // Configura el Snackbar como éxito
                 setOpenSnackbar(true);
                 // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
-             setTimeout(() => {
-                router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-            }, 1000); // Espera 3 segundos antes de redirigir
+                setTimeout(() => {
+                    router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
+                }, 1000); // Espera 3 segundos antes de redirigir
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
             },
-            {token}
+            { token }
         );
     };
 
-    const generatePDF = async (htmlContent) => {
-        const response = await fetch('/api/generate-pdf', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ htmlContent }),
-          });
-        
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-        
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'generated.pdf';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        };
 
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
@@ -98,16 +148,12 @@ export default function CrearFactura() {
         }
         const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
-        console.log('Vista previa generada:', vistaPrevia);
-        const html = '<h1>Mi contenido dinámico</h1>'
-        // await generatePDF(vistaPrevia);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
     });
 
     const handleEditConcepto = (index) => {
         const conceptoToEdit = conceptos[index];
-        console.log("Editando Concepto Impuestos", conceptoToEdit.Impuestos);
         setEditIndex(index);
         setValue('Descripcion', conceptoToEdit.Descripcion);
         setValue('ClaveProdServ', conceptoToEdit.ClaveProdServ);
@@ -134,6 +180,7 @@ export default function CrearFactura() {
                     getValues={getValues}
                     trigger={trigger}
                     errors={errors}
+                    emisorData={emisorData}  // Usa emisorData aquí
                 />
                 <Receptor
                     register={register}
@@ -142,9 +189,13 @@ export default function CrearFactura() {
                     setValue={setValue}
                     getValues={getValues}
                     trigger={trigger}
+                    receptorData={receptorData}
                     token={token}
                 />
-                <Conceptos
+                <Pagos conceptos={conceptos} pagos={pagos} />
+
+
+                {/* <Conceptos
                     trigger={trigger}
                     register={register}
                     watch={watch}
@@ -155,7 +206,7 @@ export default function CrearFactura() {
                     editIndex={editIndex}
                     setEditIndex={setEditIndex}
                     token={token}
-                />
+                /> */}
                 <Resumen
                     conceptos={conceptos}
                     subTotal={watch("Subtotal")}
@@ -163,17 +214,14 @@ export default function CrearFactura() {
                     handleDeleteConcepto={handleDeleteConcepto}
                 >
                     <div className="flex justify-end w-full space-x-2 mt-10">
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}} onClick={() => router.push("/Home")}>Cancelar</Button>
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
                         {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}} onClick={handlePreview}>Vista previa</Button>
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
                         {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
                         <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
                         {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
                     </div>
                 </Resumen>
-                {/* <pre>
-                    {JSON.stringify(watch(), null, 2)}
-                </pre> */}
             </form>
             <Modal
                 open={openModal}

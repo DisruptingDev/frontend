@@ -80,25 +80,30 @@ export default function Impuesto({
     // Actualizar URL de tasas y sincronizar valores al cambiar impuesto
     useEffect(() => {
         if (impuesto) {
-            console.log('Entre impuestos')
+            console.log('Entre impuestos',impuesto);
             try {
                 const data = JSON.parse(impuesto);
 
                 setValue(`impuestos[${index}].NombreImpuesto`, data.Impuesto || '');
                 setValue(`impuestos[${index}].Tipo`, data.Tipo || '');
                 setValue(`impuestos[${index}].ImpuestoClave`, data.Clave || '');
+                // trigger(`impuestos[${index}].ImpuestoClave`);
 
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
                     setTasaUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
                     setValue(`impuestos.${index}.TasaUrl`,`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
+                    // trigger(`impuestos[${index}].TasaUrl`);
                 }
+                
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
             }
         }
     }, [impuesto, index, setValue, getValues]);
+
+    
 
     // Calcular el monto basado en la tasa y base de impuesto
     useEffect(() => {

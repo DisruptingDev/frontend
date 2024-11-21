@@ -20,8 +20,8 @@ export default function RecuperarFactura(FacturaRecuperada) {
             ]
 
             // Calcula los totales de retenciones y traslados
-            const TotalRetenciones = concepto.Impuestos?.Retenciones.reduce((acc, ret) => acc + ret.Importe, 0) || 0;
-            const TotalTraslados = concepto.Impuestos?.Traslados.reduce((acc, tras) => acc + tras.Importe, 0) || 0;
+            const TotalRetenciones = concepto.Impuestos?.Retenciones?.reduce((acc, ret) => acc + ret.Importe, 0) || 0;
+            const TotalTraslados = concepto.Impuestos?.Traslados?.reduce((acc, tras) => acc + tras.Importe, 0) || 0;
 
             return {
                 ID: concepto.ID,
