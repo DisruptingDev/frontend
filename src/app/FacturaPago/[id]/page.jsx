@@ -102,21 +102,25 @@ export default function FacturaPago() {
                   0,
               };
             console.log("Pagos", pagos);
+            setValue("IdDocumento", facturaEdit.factura.uuid);
+            setValue("SaldoAnterior", pagos.saldo);
             setPagos(pagos);
         }
 
-    }, [facturaEdit]);
+    }, [facturaEdit, setValue]);
 
 
     const onSubmit = (data) => {
+        // setValue('NumeroOperacion', pagos.numOperacion + 1);    
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
+        console.log("Data", data);  
         console.log("Conceptos ante de crear", conceptos);
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura");
+        const factura = FormatearFactura(data, data, conceptos, "", "Pago");
         console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
@@ -192,7 +196,14 @@ export default function FacturaPago() {
                     receptorData={receptorData}
                     token={token}
                 />
-                <Pagos conceptos={conceptos} pagos={pagos} />
+                <Pagos 
+                conceptos={conceptos}
+                pagos={pagos}
+                register={register}
+                errors={errors}
+                getValues={getValues}
+                setValue={setValue}
+                  />
 
 
                 {/* <Conceptos

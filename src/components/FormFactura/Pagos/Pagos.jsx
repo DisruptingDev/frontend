@@ -1,59 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, forwardRef } from "react";
+import React, { useState, forwardRef } from "react";
 import { TextField, Box, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Select from "@/components/Select/Select.jsx";
+import DatePickerComponent from "./DatePickerComponent";
+import { get } from "react-hook-form";
+import Impuesto from "../Impuesto/Impuesto";
 
-// Estilo personalizado para ReactDatePicker
-const StyledReactDatePicker = styled("div")(({ theme }) => ({
-  "& .react-datepicker-wrapper": { width: "100%" },
-  "& .react-datepicker-popper": { zIndex: 20, paddingTop: `${theme.spacing(0.5)} !important` },
-  "& .react-datepicker": {
-    fontFamily: theme.typography.fontFamily,
-    borderRadius: theme.shape.borderRadius,
-    boxShadow: theme.shadows[3],
-    border: "none",
-    "& .react-datepicker__header": { backgroundColor: theme.palette.background.paper },
-    "& .react-datepicker__day--selected": { backgroundColor: theme.palette.primary.light, color: theme.palette.common.white },
-  },
-}));
 
-const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
-  <TextField
-    fullWidth
-    variant="outlined"
-    label="Fecha y hora de pago"
-    value={value}
-    onClick={onClick}
-    inputRef={ref}
-    sx={{ "& .MuiInputBase-root": { height: "56px", display: "flex", alignItems: "center" } }}
-  />
-));
 
-CustomDateInput.displayName = "CustomDateInput";
-
-// Función para calcular totales globales
-const calcularTotales = (desglose) => {
-  return desglose.reduce(
-    (totales, concepto) => {
-      totales.pagoTotal += parseFloat(concepto.PagoProporcional);
-      totales.subtotalTotal += parseFloat(concepto.SubtotalProporcional);
-      concepto.ImpuestosProporcionales.forEach((impuesto) => {
-        totales.impuestosTotales += parseFloat(impuesto.MontoProporcional);
-      });
-      return totales;
-    },
-    { pagoTotal: 0, subtotalTotal: 0, impuestosTotales: 0 }
-  );
-};
-
-export default function Pagos({ register, conceptos }) {
+export default function Pagos({ register, conceptos, pagos, errors, getValues, setValue }) {
+  
   const [pago, setPago] = useState({});
   const [fechaPago, setFechaPago] = useState(new Date());
   const [desglose, setDesglose] = useState([]);
+  const [totalesImpuestos, setTotalesImpuestos] = useState([]);
   const [totales, setTotales] = useState({
     TotalRetencionesIVA: 0,
     TotalRetencionesISR: 0,
@@ -64,8 +28,8 @@ export default function Pagos({ register, conceptos }) {
     TotalTrasladosImpuestoIVA8: 0,
     TotalTrasladosBaseIVA0: 0,
     TotalTrasladosImpuestoIVA0: 0,
-    TotalTrasladosBaseIVAExento: 0,
-  });
+   TotalTrasladosBaseIVAExento: 0,
+});
 
   const calcularDesglose = (monto) => {
     if (!conceptos || conceptos.length === 0 || monto <= 0) return;
@@ -76,15 +40,21 @@ export default function Pagos({ register, conceptos }) {
     );
 
     const nuevoDesglose = conceptos.map((concepto) => {
+
       const totalConcepto = concepto.Subtotal + concepto.TotalTraslados;
       const proporcion = totalConcepto / totalFactura;
       const pagoParcial = monto * proporcion;
 
       const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
+        console.log("Impuesto proporcional", impuesto);
         const baseProporcional = (impuesto.BaseImpuesto / totalConcepto) * pagoParcial;
         const montoProporcional = baseProporcional * impuesto.TasaOCuota;
         return {
+          ImpuestoCatalogoID: impuesto.Impuesto || 0,
+          TipoImpuesto: impuesto.TipoImpuesto,
           NombreImpuesto: impuesto.NombreImpuesto,
+          ImpuestoClave: impuesto.ImpuestoClave || "",
+          TasaOCuota: impuesto.TasaOCuota,
           BaseProporcional: baseProporcional.toFixed(2),
           MontoProporcional: montoProporcional.toFixed(2),
         };
@@ -98,33 +68,51 @@ export default function Pagos({ register, conceptos }) {
       };
     });
 
-    // Calcular totales globales
-    const nuevosTotales = nuevoDesglose.reduce((acc, concepto) => {
+    // Consolidar totales de impuestos
+    const nuevosTotalesImpuestos = [];
+    nuevoDesglose.forEach((concepto) => {
       concepto.ImpuestosProporcionales.forEach((impuesto) => {
-        acc[`Total${impuesto.NombreImpuesto}`] =
-          (acc[`Total${impuesto.NombreImpuesto}`] || 0) + parseFloat(impuesto.MontoProporcional);
+        const index = nuevosTotalesImpuestos.findIndex(
+          (item) => item.NombreImpuesto === impuesto.NombreImpuesto && item.TasaOCuota === impuesto.TasaOCuota
+        );
+        if (index !== -1) {
+          nuevosTotalesImpuestos[index].Base += parseFloat(impuesto.BaseProporcional);
+          nuevosTotalesImpuestos[index].Importe += parseFloat(impuesto.MontoProporcional);
+        } else {
+          nuevosTotalesImpuestos.push({
+            ImpuestoCatalogoID: impuesto.ImpuestoCatalogoID || 0,
+            TipoImpuesto: impuesto.TipoImpuesto,
+            NombreImpuesto: impuesto.NombreImpuesto,
+            ImpuestoClave: impuesto.ImpuestoClave || "",
+            TasaOCuota: impuesto.TasaOCuota,
+            Base: parseFloat(impuesto.BaseProporcional),
+            Importe: parseFloat(impuesto.MontoProporcional),
+          });
+        }
       });
-      return acc;
-    }, { ...totales });
+    });
+   // Calcular totales globales directamente
+const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
+  const key = `Total${impuesto.TipoImpuesto}sImpuesto${impuesto.NombreImpuesto}${impuesto.TasaOCuota * 100}`;
+  acc[key] = (acc[key] || 0) + parseFloat(impuesto.Importe);
+  return acc;
+}, {});
+  setTotales(nuevosTotales);
+  setValue("Totales", nuevosTotales);
 
     setDesglose(nuevoDesglose);
-    setTotales(nuevosTotales);
-  };
+    setTotalesImpuestos(nuevosTotalesImpuestos);
+    setValue("ImpuestosPagos", nuevosTotalesImpuestos);
 
-  const mostrarTotalesImpuestos = (totales) => {
-    return Object.entries(totales)
-      .filter(([_, value]) => value > 0)
-      .map(([key, value], index) => (
-        <Typography key={index} variant="body2">
-          {key}: ${value.toFixed(2)}
-        </Typography>
-      ));
   };
 
   const handleMontoChange = (e) => {
     const nuevoMonto = parseFloat(e.target.value) || 0;
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
+    setValue("Monto", nuevoMonto);
+    setValue("NumeroOperacion", pagos.numOperacion + 1);  
+    
   };
 
   return (
@@ -132,77 +120,157 @@ export default function Pagos({ register, conceptos }) {
       <Typography variant="h6" mb={4}>
         Pagos
       </Typography>
-      <Box display="grid" gap={3}>
-        <StyledReactDatePicker>
-          <ReactDatePicker
-            selected={fechaPago}
-            onChange={(date) => {
-              setFechaPago(date);
-              setPago({ ...pago, fechaPago: date });
-            }}
-            showTimeSelect
-            timeIntervals={15}
-            dateFormat="MM/dd/yyyy h:mm aa"
-            customInput={<CustomDateInput />}
-          />
-        </StyledReactDatePicker>
+      <Box display="grid" 
+      gap={2}
+      mt={4}
+      sx={{
+          gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+          }
+      }}>
+        <DatePickerComponent
+          selectedDate={fechaPago}
+          onChange={(date) => {
+            setFechaPago(date);
+            setPago({ ...pago, fechaPago: date });
+            setValue("FechaPago", date);
+          }}
+        />
+       
         <Select
           register={register}
-          nombre="FormaPago"
+          nombre="FormaPagoComprobante"
+          label={"Forma de Pago"}
           url="https://facturacioncfditotal.com/api/catalogos/Catalogos/FormaPago"
           clave="Clave"
+          value={getValues("FormaPagoComprobante") || ""}
           descripcion="Descripcion"
+          error={!!errors.FormaPagoComprobante}
+          helperText={errors.FormaPagoComprobante? "Este campo es obligatorio" : ""}
         />
         <TextField
+          {...register("Monto", { required: "Este campo es obligatorio" })}
           label="Monto"
           name="monto"
           value={pago.monto || ""}
           onChange={handleMontoChange}
           fullWidth
+          error={!!errors.Monto}
+          helperText={errors.Monto?.message}
+
+        />
+        <TextField
+         
+          label="Moneda"
+          name="moneda"
+          value={"MXN"}
+          fullWidth
+          disabled
+        />
+        <TextField
+          label="Tipo de Cambio"
+          name="tipoCambio"
+          value={"1"}
+          fullWidth
+          disabled
         />
       </Box>
-      <Box mt={4}>
-        <Typography variant="h6">Totales de Impuestos</Typography>
-        {mostrarTotalesImpuestos(totales)}
-      </Box>
-      <Box mt={4}>
-        <Typography variant="h6">Desglose del Pago por Concepto</Typography>
-        {desglose.map((concepto, index) => (
-          <Box key={index} p={2} border="1px solid #ddd" borderRadius={2} mb={2}>
-            <Typography variant="subtitle1">{concepto.Descripcion}</Typography>
-            <Typography variant="body2">
-              Pago Proporcional: ${concepto.PagoProporcional}
-            </Typography>
-            <Typography variant="body2">
-              Base Gravada: ${concepto.SubtotalProporcional}
-            </Typography>
-            <Box ml={2}>
-              <Typography variant="body2">Impuestos:</Typography>
-              {concepto.ImpuestosProporcionales.map((impuesto, idx) => (
-                <Typography key={idx} variant="body2">
-                  - {impuesto.NombreImpuesto}: ${impuesto.MontoProporcional}
-                </Typography>
-              ))}
+      <Box display="grid"
+                gap={2}
+                mt={4}
+                sx={{
+                    gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(3, 1fr)',
+                        lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+                    }
+                }}
+            >
+                <TextField
+                    label="Número de operación"
+                    name="numeroOperacion"
+                    value={pagos.numOperacion + 1 || ""}
+                    disabled
+                    fullWidth
+                />
+                <TextField
+                    label="Importe del saldo anterior"
+                    name="saldoAnterior"
+                    value={pagos.saldo || ""}
+                    disabled
+                    fullWidth
+
+                />
+                <TextField
+                    label="Importe del saldo Pagado"
+                    name="saldoPagado"
+                    value={pago.monto || ""}
+                    disabled
+                    fullWidth
+                />
+                <TextField
+                    label="Importe del saldo insoluto"
+                    name="saldoInsoluto"
+                    value={pagos.saldo - pago.monto || ""}
+                    disabled
+                    fullWidth
+                />
             </Box>
-          </Box>
-        ))}
-        {desglose.length > 0 && (
-          <Box mt={4}>
-            <Typography variant="h6">Totales Generales</Typography>
-            <Box p={2} border="1px solid #ddd" borderRadius={2} mb={2}>
-              <Typography variant="body1">
-                Total Pago Proporcional: ${calcularTotales(desglose).pagoTotal.toFixed(2)}
-              </Typography>
-              <Typography variant="body1">
-                Total Base Gravada: ${calcularTotales(desglose).subtotalTotal.toFixed(2)}
-              </Typography>
-              <Typography variant="body1">
-                Total Impuestos: ${calcularTotales(desglose).impuestosTotales.toFixed(2)}
-              </Typography>
+      <Box mt={4}>
+       
+        {totalesImpuestos.length > 0 ? (
+          totalesImpuestos.map((impuesto, index) => (
+            <Box key={index}>
+            <Typography variant="h6">Impuestos</Typography>
+            <Box
+              display="grid"
+              gridTemplateColumns="repeat(4, 1fr)"
+              gap={2}
+              alignItems="center"
+              my={2}
+            >
+              <TextField
+                label="Impuesto"
+                value={impuesto.NombreImpuesto}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                disabled
+              />
+              <TextField
+                label="Tasa o Cuota"
+                value={impuesto.TasaOCuota}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                disabled
+              />
+              <TextField
+                label="Base Gravada"
+                value={impuesto.Base.toFixed(2)}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                disabled
+              />
+              <TextField
+                label="Importe"
+                value={impuesto.Importe.toFixed(2)}
+                fullWidth
+                InputProps={{ readOnly: true }}
+                disabled
+              />
             </Box>
-          </Box>
+            </Box>
+          ))
+        ) : (
+          ""
+          // <Typography variant="body2">No hay totales de impuestos calculados.</Typography>
         )}
       </Box>
+      {/* <pre> {JSON.stringify(totalesImpuestos,null,2)}</pre>
+      <pre> {JSON.stringify(totales,null,2)}</pre> */}
     </Box>
   );
 }

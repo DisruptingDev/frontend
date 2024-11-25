@@ -40,7 +40,8 @@ export default function RecuperarFactura(FacturaRecuperada) {
                     TasaOCuota: impuesto.TasaOCuota,
                     BaseImpuesto: impuesto.Base || Subtotal,
                     Monto: impuesto.Importe,
-                    Tipo: impuesto.TipoFactor
+                    Tipo: impuesto.TipoFactor,
+                    TipoImpuesto: impuesto.ImpuestoCatalogo.Tipo
                 })),
                 Retenciones: Retenciones.map(retencion => ({
                     NombreImpuesto: retencion.ImpuestoCatalogo.Impuesto,
