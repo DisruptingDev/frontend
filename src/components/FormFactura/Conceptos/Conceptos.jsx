@@ -760,8 +760,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-            <pre>{JSON.stringify(getValues(), null, 2)}</pre>
-            <pre>{'Concepto: ' + JSON.stringify(selectedConcepto, null, 2)}</pre>
+            {/* <pre>{JSON.stringify(getValues(), null, 2)}</pre>
+            <pre>{'Concepto: ' + JSON.stringify(selectedConcepto, null, 2)}</pre> */}
         </Box>
     );
 }
