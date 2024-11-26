@@ -4,7 +4,7 @@ import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled=false }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -167,6 +167,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     error={!!errors.Emisor}
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}
+                    disabled={disabled}
                 />
 
                 <TextField
@@ -214,6 +215,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Serie ? "Este campo es obligatorio" : ""}
                     value={getValues("Serie") || ""}
                     onChange={handleSerieChange}
+                    disabled={disabled}
+                    
                 />
 
                 <TextField
@@ -243,6 +246,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Fecha && errors.Fecha.message}
                     // value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
                     // onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
+                    disabled={disabled}
                 />
 
                 <TextField

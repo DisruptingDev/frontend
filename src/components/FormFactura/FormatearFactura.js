@@ -199,7 +199,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     else if (modo === "Pago") {
         factura = {
             Version: "4.0",
-            Serie: emisor.Serie,
+            Serie: 'P',
             Fecha: fechaFormateada,
             LugarExpedicion: emisor.LugarExpedicion,
             FormaPago: receptor.FormaPago,

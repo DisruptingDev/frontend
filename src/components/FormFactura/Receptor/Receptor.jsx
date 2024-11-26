@@ -6,7 +6,7 @@ import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 import { set } from 'date-fns';
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled=false }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -216,6 +216,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("ReceptorID") || ""}
                     reset={isModalClosed}  // Pasa el estado al componente Select
+                    disabled={disabled}
                 />
 
                 <TextField
@@ -279,6 +280,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setMetodoPago(e.target.value)}
                     value={getValues("MetodoPago") || ""}
+                    disabled={disabled}
                     
 
                 />
@@ -297,6 +299,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         }
                     }}
                     onClick={handleOpenModal}
+                    disabled={disabled}
                 >
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
@@ -323,6 +326,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.FormaPago ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setFormaPago(e.target.value)}
                     value={getValues("FormaPago") || ""}
+                    disabled={disabled}
                 />
 
                 <Select
@@ -336,6 +340,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
                     onChange={(e) => setUsoCFDI(e.target.value)}
                     value={getValues("UsoCFDI") || ""}
+                    disabled={disabled}
                 />
                 <Select
                         // register={register}
@@ -344,6 +349,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         clave="Clave"
                         value={exportacion}
                         descripcion="Descripcion"
+                        disabled={disabled}
                     />
             </Box>
             {hiddeInfoGlobal && (

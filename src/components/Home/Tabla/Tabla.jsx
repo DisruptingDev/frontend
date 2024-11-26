@@ -595,6 +595,7 @@ export default function DataTable({ token, filtro }) {
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha Emisión</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha Timbrado</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Serie</TableCell>
+                <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Método de Pago</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estatus</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Subtotal</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Traslados</TableCell>
@@ -630,6 +631,7 @@ export default function DataTable({ token, filtro }) {
                   <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.MetodoPago}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{row.Estatus ? row.Estatus : row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
@@ -665,7 +667,7 @@ export default function DataTable({ token, filtro }) {
                         ]
                       }
                       {
-                        menuRow && menuRow.TipoDeComprobante === 'P' && [
+                        menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
                           <MenuItem key="pago" onClick={handleFacturaPago}>Factura de Pago</MenuItem>
                         ]
                       }

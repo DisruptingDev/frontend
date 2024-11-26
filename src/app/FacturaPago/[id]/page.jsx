@@ -185,6 +185,7 @@ export default function FacturaPago() {
                     trigger={trigger}
                     errors={errors}
                     emisorData={emisorData}  // Usa emisorData aquí
+                    disabled={facturaEdit ? true : false}
                 />
                 <Receptor
                     register={register}
@@ -195,6 +196,7 @@ export default function FacturaPago() {
                     trigger={trigger}
                     receptorData={receptorData}
                     token={token}
+                    disabled={facturaEdit ? true : false}   
                 />
                 <Pagos 
                 conceptos={conceptos}
@@ -203,7 +205,16 @@ export default function FacturaPago() {
                 errors={errors}
                 getValues={getValues}
                 setValue={setValue}
-                  />
+                  >
+                     <div className="flex justify-end w-full space-x-2 mt-10">
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
+                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
+                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
+                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
+                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
+                    </div>
+                    </Pagos>
 
 
                 {/* <Conceptos
@@ -218,21 +229,16 @@ export default function FacturaPago() {
                     setEditIndex={setEditIndex}
                     token={token}
                 /> */}
-                <Resumen
+                
+                {/* <Resumen
                     conceptos={conceptos}
                     subTotal={watch("Subtotal")}
                     handleEditConcepto={handleEditConcepto}
                     handleDeleteConcepto={handleDeleteConcepto}
                 >
-                    <div className="flex justify-end w-full space-x-2 mt-10">
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
-                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
-                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
-                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
-                    </div>
-                </Resumen>
+                   
+                </Resumen> */}
+
             </form>
             <Modal
                 open={openModal}

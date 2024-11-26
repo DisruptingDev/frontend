@@ -12,7 +12,7 @@ import Impuesto from "../Impuesto/Impuesto";
 
 
 
-export default function Pagos({ register, conceptos, pagos, errors, getValues, setValue }) {
+export default function Pagos({ children, register, conceptos, pagos, errors, getValues, setValue }) {
   
   const [pago, setPago] = useState({});
   const [fechaPago, setFechaPago] = useState(new Date());
@@ -271,6 +271,7 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
       </Box>
       {/* <pre> {JSON.stringify(totalesImpuestos,null,2)}</pre>
       <pre> {JSON.stringify(totales,null,2)}</pre> */}
+      {children}
     </Box>
   );
 }
