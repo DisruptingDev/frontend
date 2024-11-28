@@ -35,6 +35,7 @@ import ModalExito from '@/components/Home/Modales/modalExito';
 import ModalError from '@/components/Home/Modales/modalError';
 import ModalDescarga from '@/components/Home/Modales/modalDescarga';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
+import ModalCancelar from '../Modales/modalCancelar';
 
 
 function createData(item) {
@@ -101,6 +102,9 @@ export default function DataTable({ token, filtro }) {
   const [facturasTimbradas, setFacturasTimbradas] = useState([]);
   const [openModalTimbrar, setOpenModalTimbrar] = useState(false)
 
+  const [openModalCancelar, setOpenModalCancelar] = useState(false)
+  const [facturasRemplazo, setFacturasRemplazo] = useState([]);
+
   const [progress, setProgress] = useState(0);
 
   const [actualizar, setActualizar] = useState(false);
@@ -111,6 +115,7 @@ export default function DataTable({ token, filtro }) {
     setOpenModalError(false);
     setIsModalOpen(false);
     setOpenModalTimbrar(false);
+    setOpenModalCancelar(false);
   };
 
 
@@ -163,7 +168,7 @@ export default function DataTable({ token, filtro }) {
               await convertXMLToPDF(factura.factura.xmlCancelacion, `Acuse_${factura.factura.Emisor.Nombre}_${factura.factura.Folio}.pdf`);
             }
             else {
-              console.log('Factura:', factura); 
+              console.log('Factura:', factura);
               htmlContent = await generarVistaPrevia(factura);
               console.log('HTML content:', htmlContent);
             }
@@ -329,81 +334,98 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
-  // Función para cancelar múltiples facturas
-  const handleCancelar = async (ids) => {
-    setOpenModal(true);
-    setLoading(true);
-    console.log('Cancelando facturas:', ids);
-    console.log('Selcted rows:', selectedRows);
-
-    try {
-      console.log('Cancelando facturas:', ids);
-      // const token = localStorage.getItem('authToken');
-      const response = await fetch('https://facturacioncfditotal.com/api/cancelacionfacturas/CancelacionFacturas/Cancelar', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(selectedRows),
-      });
-
-      if (response.ok) {
-        const data = await response.json(); // Obtén la respuesta JSON
-        console.log('Data received from API:', data);
-        console.log('Data received from API tamaño:', data.length);
-        if (data.length > 1) {
-          console.log('Entre al mas de 1');
-          setOpenModalTimbrar(true);
-          // for (const factura of data) {
-
-          const statusList = data.map(factura => ({
-            id: factura.facturaID, // Suponiendo que cada factura tiene un ID
-            status: factura.status === 'success' ? 'success' : 'error',
-            error: factura.error || null,
-          }));
-          console.log('Status list:', statusList);
-          setFacturasTimbradas(statusList); // Guarda el estado de las facturas
-
-          // console.log('Factura:', factura); 
-          // if (factura.status === 'success') {
-          //   console.log('Factura cancelada:', factura);
-          // } else if (factura.status === 'Error') {
-          //   console.error('Error al cancelar factura:', factura);
-          // }
-
-          // }
-        }
-        else {
-          console.log('Entre al 1');
-          if (data[0].status === 'success') {
-            console.log('Factura cancelada:', data);
-            setConfirmationMessage('Facturas canceladas exitosamente.');
-            setOpenModalSuccess(true); // Show success modal
-          }
-          else if (data[0].status === 'Error') {
-            console.error('Error al cancelar factura:', data);
-            setConfirmationMessage('Error al cancelar facturas:  <br/> ' + data[0].error);
-            setOpenModalError(true); // Show error modal
-          }
-
-        }
-
+  const handleCancelar = () => {
+    if (menuRow) {
+      console.log('Cancelando factura:', menuRow);
+      const filtro ={
+        Emisor: menuRow.Emisor.Rfc,
+        Receptor: menuRow.Receptor.Rfc,
       }
-      else {
-        setConfirmationMessage('Error en la conexión con el servidor.');
-        setOpenModalError(true); // Show error modal
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setConfirmationMessage('Error en la conexión o en el timbrado.');
-      setOpenModalError(true); // Show error modal
-    } finally {
-      setLoading(false);
-      setOpenModal(false); // Hide loading modal
-      setActualizar(true);
+      const registros = filtrado(filtro);
+      console.log('Filtrado:', registros);
+      setFacturasRemplazo(registros);
+      setOpenModalCancelar(true);
+
+
+
     }
   };
+
+  // Función para cancelar múltiples facturas
+  // const handleCancelar = async (ids) => {
+  //   setOpenModal(true);
+  //   setLoading(true);
+  //   console.log('Cancelando facturas:', ids);
+  //   console.log('Selcted rows:', selectedRows);
+
+  //   try {
+  //     console.log('Cancelando facturas:', ids);
+  //     // const token = localStorage.getItem('authToken');
+  //     const response = await fetch('https://facturacioncfditotal.com/api/cancelacionfacturas/CancelacionFacturas/Cancelar', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify(selectedRows),
+  //     });
+
+  //     if (response.ok) {
+  //       const data = await response.json(); // Obtén la respuesta JSON
+  //       console.log('Data received from API:', data);
+  //       console.log('Data received from API tamaño:', data.length);
+  //       if (data.length > 1) {
+  //         console.log('Entre al mas de 1');
+  //         setOpenModalTimbrar(true);
+  //         // for (const factura of data) {
+
+  //         const statusList = data.map(factura => ({
+  //           id: factura.facturaID, // Suponiendo que cada factura tiene un ID
+  //           status: factura.status === 'success' ? 'success' : 'error',
+  //           error: factura.error || null,
+  //         }));
+  //         console.log('Status list:', statusList);
+  //         setFacturasTimbradas(statusList); // Guarda el estado de las facturas
+
+  //         // console.log('Factura:', factura); 
+  //         // if (factura.status === 'success') {
+  //         //   console.log('Factura cancelada:', factura);
+  //         // } else if (factura.status === 'Error') {
+  //         //   console.error('Error al cancelar factura:', factura);
+  //         // }
+
+  //         // }
+  //       }
+  //       else {
+  //         console.log('Entre al 1');
+  //         if (data[0].status === 'success') {
+  //           console.log('Factura cancelada:', data);
+  //           setConfirmationMessage('Facturas canceladas exitosamente.');
+  //           setOpenModalSuccess(true); // Show success modal
+  //         }
+  //         else if (data[0].status === 'Error') {
+  //           console.error('Error al cancelar factura:', data);
+  //           setConfirmationMessage('Error al cancelar facturas:  <br/> ' + data[0].error);
+  //           setOpenModalError(true); // Show error modal
+  //         }
+
+  //       }
+
+  //     }
+  //     else {
+  //       setConfirmationMessage('Error en la conexión con el servidor.');
+  //       setOpenModalError(true); // Show error modal
+  //     }
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     setConfirmationMessage('Error en la conexión o en el timbrado.');
+  //     setOpenModalError(true); // Show error modal
+  //   } finally {
+  //     setLoading(false);
+  //     setOpenModal(false); // Hide loading modal
+  //     setActualizar(true);
+  //   }
+  // };
 
 
   const fetchData = useCallback(async () => {
@@ -449,53 +471,55 @@ export default function DataTable({ token, filtro }) {
 
   }, [actualizar, fetchData]);
 
+  const filtrado = (filtro) => {
+    const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
+    const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
+    let newFilteredRows = registros;
+
+    console.log('Filtered rows after Emisor and Receptor:', newFilteredRows);
+
+    if (filtro.Emisor !== "") {
+      newFilteredRows = registros.filter(registro =>
+        registro.Emisor.Rfc.includes(filtro.Emisor)
+      );
+    }
+    if (filtro.Receptor !== "") {
+      newFilteredRows = registros.filter(registro =>
+        registro.Receptor.Rfc.includes(filtro.Receptor)
+      );
+    }
+    if (filtro.Emisor !== "" && filtro.Receptor !== "") {
+      newFilteredRows = registros.filter(registro =>
+        registro.Emisor.Rfc.includes(filtro.Emisor) && registro.Receptor.Rfc.includes(filtro.Receptor)
+      );
+    }
+
+    // Filtrando por Estatus
+    if (filtro.Estatus === 'timbrada') {
+      console.log('Filtrando timbradas');
+      newFilteredRows = newFilteredRows.filter(registro => registro.uuid !== '');
+      console.log('Filtered rows after Estatus:', newFilteredRows);
+    } else if (filtro.Estatus === 'notimbrada') {
+      console.log('Filtrando no timbradas');
+      newFilteredRows = newFilteredRows.filter(registro => registro.uuid === '');
+      console.log('Filtered rows after Estatus:', newFilteredRows);
+    }
+    // Filtrando por fecha
+    if (fechaInicio && fechaFin) {
+      newFilteredRows = newFilteredRows.filter(registro => {
+        const fechaRegistro = new Date(registro.Fecha);
+        return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
+      });
+    }
+    console.log('Filtered rows after Fecha:', newFilteredRows);
+    return newFilteredRows;
+  }
 
   useEffect(() => {
     if (filtro) {
       console.log('Filtrando:', filtro);
 
-
-      const fechaInicio = filtro.FechaInicio ? new Date(filtro.FechaInicio) : null;
-      const fechaFin = filtro.FechaFin ? new Date(filtro.FechaFin) : null;
-      let newFilteredRows = registros;
-
-      console.log('Filtered rows after Emisor and Receptor:', newFilteredRows);
-
-      if (filtro.Emisor !== "") {
-        newFilteredRows = registros.filter(registro =>
-          registro.Emisor.Rfc.includes(filtro.Emisor)
-        );
-      }
-      if (filtro.Receptor !== "") {
-        newFilteredRows = registros.filter(registro =>
-          registro.Receptor.Rfc.includes(filtro.Receptor)
-        );
-      }
-      if (filtro.Emisor !== "" && filtro.Receptor !== "") {
-        newFilteredRows = registros.filter(registro =>
-          registro.Emisor.Rfc.includes(filtro.Emisor) && registro.Receptor.Rfc.includes(filtro.Receptor)
-        );
-      }
-
-      // Filtrando por Estatus
-      if (filtro.Estatus === 'timbrada') {
-        console.log('Filtrando timbradas');
-        newFilteredRows = newFilteredRows.filter(registro => registro.uuid !== '');
-        console.log('Filtered rows after Estatus:', newFilteredRows);
-      } else if (filtro.Estatus === 'notimbrada') {
-        console.log('Filtrando no timbradas');
-        newFilteredRows = newFilteredRows.filter(registro => registro.uuid === '');
-        console.log('Filtered rows after Estatus:', newFilteredRows);
-      }
-      // Filtrando por fecha
-      if (fechaInicio && fechaFin) {
-        newFilteredRows = newFilteredRows.filter(registro => {
-          const fechaRegistro = new Date(registro.Fecha);
-          return fechaRegistro >= fechaInicio && fechaRegistro <= fechaFin;
-        });
-      }
-      console.log('Filtered rows after Fecha:', newFilteredRows);
-
+      const newFilteredRows = filtrado(filtro);
       setRows(newFilteredRows);
 
     } else {
@@ -534,11 +558,11 @@ export default function DataTable({ token, filtro }) {
       router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
-  const handleFacturaPago  = async () => {
+  const handleFacturaPago = async () => {
     if (menuRow) {
       console.log(menuRow);
-      if(menuRow.Emisor.ID){
-        console.log("Emisor ID",menuRow.Emisor.ID);
+      if (menuRow.Emisor.ID) {
+        console.log("Emisor ID", menuRow.Emisor.ID);
         try {
           const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${menuRow.Emisor.ID}`, {
             headers: {
@@ -551,7 +575,7 @@ export default function DataTable({ token, filtro }) {
             console.log('Data received from API:', data);
             const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
             console.log('Opciones:', opciones);
-            if(opciones.length > 0) {
+            if (opciones.length > 0) {
               router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
             }
             else {
@@ -679,13 +703,16 @@ export default function DataTable({ token, filtro }) {
                         },
                       }}
                     >
-                      {menuRow && menuRow.uuid === '' && [
+                      {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
                         <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                         <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                         <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                         <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
                         // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
 
+                      ]}
+                      {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
+                        <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                       ]}
                       {
                         menuRow && menuRow.uuid !== '' && [
@@ -698,6 +725,7 @@ export default function DataTable({ token, filtro }) {
                           <MenuItem key="pago" onClick={handleFacturaPago}>Factura de Pago</MenuItem>
                         ]
                       }
+                      <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
 
                     </Menu>
                   </TableCell>
@@ -719,6 +747,7 @@ export default function DataTable({ token, filtro }) {
         />
       </Paper>
 
+
       {/* Loading Modal */}
       <ModalLoading openModal={openModal} handleCloseModal={handleCloseModal} loading={loading} loadingMessage={loadingMessage} />
 
@@ -734,6 +763,8 @@ export default function DataTable({ token, filtro }) {
       {/* Timbrado Modal */}
       <ModalTimbrar openModalTimbrar={openModalTimbrar} handleCloseModal={handleCloseModal} facturasTimbradas={facturasTimbradas} expandedIndexes={expandedIndexes} handleToggleExpand={handleToggleExpand} />
 
+      {/* Cancelar Modal */}
+      <ModalCancelar openModalCancelar={openModalCancelar} handleCloseModal={handleCloseModal} facturasRemplazo={facturasRemplazo} />
 
     </Box>
   );
