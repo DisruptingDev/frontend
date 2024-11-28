@@ -37,6 +37,7 @@ export default function FacturaPago() {
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState("");
 
+
     useEffect(() => {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
@@ -104,6 +105,7 @@ export default function FacturaPago() {
             console.log("Pagos", pagos);
             setValue("IdDocumento", facturaEdit.factura.uuid);
             setValue("SaldoAnterior", pagos.saldo);
+            setValue("Folio", facturaEdit.factura.Folio);
             setPagos(pagos);
         }
 
@@ -199,12 +201,14 @@ export default function FacturaPago() {
                     disabled={facturaEdit ? true : false}   
                 />
                 <Pagos 
+                emisorID={emisorData.ID}
                 conceptos={conceptos}
                 pagos={pagos}
                 register={register}
                 errors={errors}
                 getValues={getValues}
                 setValue={setValue}
+                token={token}
                   >
                      <div className="flex justify-end w-full space-x-2 mt-10">
                         <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>

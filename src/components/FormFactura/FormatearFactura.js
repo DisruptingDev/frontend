@@ -17,6 +17,12 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     console.log("Receptor", receptor);
     console.log("Conceptos", conceptos);
 
+    const formatter = new Intl.NumberFormat('es-MX', {
+        style: 'decimal',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
     let factura
     if (modo == "Factura") {
         factura = {
@@ -199,13 +205,13 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     else if (modo === "Pago") {
         factura = {
             Version: "4.0",
-            Serie: 'P',
+            Serie: emisor.SeriePagos || "P",
             Fecha: fechaFormateada,
             LugarExpedicion: emisor.LugarExpedicion,
             FormaPago: receptor.FormaPago,
             Moneda: emisor.Divisa || "MXN",
             TipoDeComprobante: 'P',
-            UsoCFDI: receptor.UsoCFDI,
+            UsoCFDI: "CP01",
             Exportacion: "01",
             Descripcion: '',
             Subtotal: 0,
@@ -234,48 +240,47 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 Pagos: {
                     Version: "2.0",
                     Totales: {
-                        TotalRetencionesIVA: emisor.Totales.TotalRetencionesIVA || 0,
-                        TotalRetencionesISR: emisor.Totales.TotalRetencionesISR || 0,
-                        TotalRetencionesIEPS: emisor.Totales.TotalRetencionesIEPS || 0,
-                        TotalTrasladosBaseIVA16: (emisor.Totales.TotalTrasladosImpuestoIVA16) * 100 / 16 || 0,
-                        TotalTrasladosImpuestoIVA16: emisor.Totales.TotalTrasladosImpuestoIVA16 || 0,
-                        TotalTrasladosBaseIVA8: (emisor.Totales.TotalTrasladosImpuestoIVA8) * 100 / 8 || 0,
-                        TotalTrasladosImpuestoIVA8: emisor.Totales.TotalTrasladosImpuestoIVA8 || 0,
-                        TotalTrasladosBaseIVA0: emisor.Totales.TotalTrasladosBaseIVA0 || 0,
-                        TotalTrasladosImpuestoIVA0: emisor.Totales.TotalTrasladosImpuestoIVA0 || 0,
-                        TotalTrasladosBaseIVAExento: emisor.Totales.TotalTrasladosBaseIVAExento || 0,
-                        TotalTrasladosImpuestoIVAExento: emisor.Totales.TotalTrasladosImpuestoIVAExento || 0,
-                        montoTotalPagos: emisor.Totales.TotalTrasladosImpuestoIVA16
-
+                        TotalRetencionesIVA: Number((emisor.Totales.TotalRetencionesIVA || 0).toFixed(2)),
+                        TotalRetencionesISR: Number((emisor.Totales.TotalRetencionesISR || 0).toFixed(2)),
+                        TotalRetencionesIEPS: Number((emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA16: Number(((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0) * 100 / 16).toFixed(2)),
+                        TotalTrasladosImpuestoIVA16: Number((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA8: Number(((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0) * 100 / 8).toFixed(2)),
+                        TotalTrasladosImpuestoIVA8: Number((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA0: Number((emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2)),
+                        TotalTrasladosImpuestoIVA0: Number((emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVAExento: Number((emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2)),
+                        TotalTrasladosImpuestoIVAExento: Number((emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2)),
+                        montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
                     },
                     Pagos: [
                         {
                             FechaPago: fechaFormateada,
-                            FormaPagoP: receptor.FormaPagoComprobante,
+                            FormaDePagoP: receptor.FormaPagoComprobante,
                             Moneda: "MXN",
                             TipoCambioP: "1",
                             Monto: receptor.Monto,
-                            DoctoRelacionado: [{
+                            DoctoRelacionados: [{
                                 IdDocumento: receptor.IdDocumento,
                                 Serie: emisor.Serie,
-                                Folio: 1,
+                                Folio: emisor.Folio,
                                 MonedaDR: "MXN",
                                 EquivalenciaDR: 1,
                                 Numparcialidad: emisor.NumeroOperacion,
                                 ImpSaldoAnt: emisor.SaldoAnterior,
                                 ImpPagado: receptor.Monto,
-                                ImpSaldoInsoluto:emisor.SaldoAnterior - receptor.Monto,
+                                ImpSaldoInsoluto: emisor.SaldoAnterior - receptor.Monto,
                                 ObjetoImpDr: "02",
                             }],
                             Impuestos: {
-        
+
                                 Retenciones: emisor.ImpuestosPagos
                                     .filter(retencion => retencion.TipoImpuesto === "Retencion") // Filtrar primero las retenciones
                                     .map(retencion => ({
                                         Base: retencion.Base,
                                         ImpuestoCatalogoID: retencion.ImpuestoCatalogoID,
                                         ImpuestoClave: retencion.ImpuestoClave,
-                                       
+                                        TipoFactor: retencion.TipoFactor || "Tasa",
                                         TasaOCuota: retencion.TasaOCuota,
                                         Importe: retencion.Importe
                                     })),
@@ -285,19 +290,17 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                                         Base: traslado.Base,
                                         ImpuestoCatalogoID: traslado.ImpuestoCatalogoID,
                                         ImpuestoClave: traslado.ImpuestoClave,
-                              
+                                        TipoFactor: traslado.TipoFactor || "Tasa",
                                         TasaOCuota: traslado.TasaOCuota,
                                         Importe: traslado.Importe
                                     }))
-        
-        
                             }
-        
+
                         }
                     ]
                 }
             },
-           
+
 
         };
 

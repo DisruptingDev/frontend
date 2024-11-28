@@ -534,10 +534,37 @@ export default function DataTable({ token, filtro }) {
       router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
-  const handleFacturaPago  = () => {
+  const handleFacturaPago  = async () => {
     if (menuRow) {
       console.log(menuRow);
-      router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+      if(menuRow.Emisor.ID){
+        console.log("Emisor ID",menuRow.Emisor.ID);
+        try {
+          const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${menuRow.Emisor.ID}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Data received from API:', data);
+            const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
+            console.log('Opciones:', opciones);
+            if(opciones.length > 0) {
+              router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+            }
+            else {
+              setConfirmationMessage('Error al obtener la serie de pago.');
+              setOpenModalError(true); // Show error modal
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching serie:', error);
+
+        }
+      }
+      // router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
 

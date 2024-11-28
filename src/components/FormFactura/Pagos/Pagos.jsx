@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, forwardRef } from "react";
-import { TextField, Box, Typography } from "@mui/material";
+import React, { useState, forwardRef, useEffect } from "react";
+import { TextField, Box, Typography, FormControl, Select as MuiSelect, InputLabel, MenuItem, } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -12,12 +12,14 @@ import Impuesto from "../Impuesto/Impuesto";
 
 
 
-export default function Pagos({ children, register, conceptos, pagos, errors, getValues, setValue }) {
-  
+export default function Pagos({ emisorID, children, register, conceptos, pagos, errors, getValues, setValue, token }) {
+
   const [pago, setPago] = useState({});
   const [fechaPago, setFechaPago] = useState(new Date());
   const [desglose, setDesglose] = useState([]);
   const [totalesImpuestos, setTotalesImpuestos] = useState([]);
+  const [serieUrl, setSerieUrl] = useState('');
+  const [opcionesSerie, setOpcionesSerie] = useState([]);
   const [totales, setTotales] = useState({
     TotalRetencionesIVA: 0,
     TotalRetencionesISR: 0,
@@ -28,8 +30,45 @@ export default function Pagos({ children, register, conceptos, pagos, errors, ge
     TotalTrasladosImpuestoIVA8: 0,
     TotalTrasladosBaseIVA0: 0,
     TotalTrasladosImpuestoIVA0: 0,
-   TotalTrasladosBaseIVAExento: 0,
-});
+    TotalTrasladosBaseIVAExento: 0,
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      if (emisorID) {
+        console.log("emisorID", emisorID);
+        try {
+          const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Data received from API:', data);
+            const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
+              .map(opcion => ({
+                ID: opcion.ID,
+                Clave: opcion.Clave,
+              }))
+            setOpcionesSerie(opciones);
+          }
+        } catch (error) {
+          console.error('Error fetching serie:', error);
+
+        }
+      }
+    }
+    fetchData();
+  }, [emisorID, token]);
+  // Selección por defecto en un useEffect:
+  useEffect(() => {
+    if (!getValues("SeriePagos") && opcionesSerie.length > 0) {
+      setValue("SeriePagos", opcionesSerie[0].Clave, { shouldValidate: true });
+    }
+  }, [opcionesSerie, setValue, getValues]);
+
 
   const calcularDesglose = (monto) => {
     if (!conceptos || conceptos.length === 0 || monto <= 0) return;
@@ -57,6 +96,7 @@ export default function Pagos({ children, register, conceptos, pagos, errors, ge
           TasaOCuota: impuesto.TasaOCuota,
           BaseProporcional: baseProporcional.toFixed(2),
           MontoProporcional: montoProporcional.toFixed(2),
+          TipoFactor: impuesto.TipoF,
         };
       });
 
@@ -87,18 +127,19 @@ export default function Pagos({ children, register, conceptos, pagos, errors, ge
             TasaOCuota: impuesto.TasaOCuota,
             Base: parseFloat(impuesto.BaseProporcional),
             Importe: parseFloat(impuesto.MontoProporcional),
+            TipoFactor: impuesto.TipoFactor,
           });
         }
       });
     });
-   // Calcular totales globales directamente
-const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
-  const key = `Total${impuesto.TipoImpuesto}sImpuesto${impuesto.NombreImpuesto}${impuesto.TasaOCuota * 100}`;
-  acc[key] = (acc[key] || 0) + parseFloat(impuesto.Importe);
-  return acc;
-}, {});
-  setTotales(nuevosTotales);
-  setValue("Totales", nuevosTotales);
+    // Calcular totales globales directamente
+    const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
+      const key = `Total${impuesto.TipoImpuesto}sImpuesto${impuesto.NombreImpuesto}${impuesto.TasaOCuota * 100}`;
+      acc[key] = (acc[key] || 0) + parseFloat(impuesto.Importe);
+      return acc;
+    }, {});
+    setTotales(nuevosTotales);
+    setValue("Totales", nuevosTotales);
 
     setDesglose(nuevoDesglose);
     setTotalesImpuestos(nuevosTotalesImpuestos);
@@ -111,8 +152,8 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
-    setValue("NumeroOperacion", pagos.numOperacion + 1);  
-    
+    setValue("NumeroOperacion", pagos.numOperacion + 1);
+
   };
 
   return (
@@ -120,17 +161,17 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
       <Typography variant="h6" mb={4}>
         Pagos
       </Typography>
-      <Box display="grid" 
-      gap={2}
-      mt={4}
-      sx={{
+      <Box display="grid"
+        gap={2}
+        mt={4}
+        sx={{
           gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)',
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
-      }}>
+        }}>
         <DatePickerComponent
           selectedDate={fechaPago}
           onChange={(date) => {
@@ -139,7 +180,27 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
             setValue("FechaPago", date);
           }}
         />
-       
+        <FormControl variant="outlined" fullWidth>
+          <InputLabel id="serie-label">Serie</InputLabel>
+          <MuiSelect
+            labelId="serie-label"
+            id="serie-select"
+            {...register("SeriePagos", { required: "Este campo es obligatorio" })}
+            value={getValues("SeriePagos") || ""}
+            onChange={(e) => {
+              setValue("SeriePagos", e.target.value, { shouldValidate: true });
+            }}
+            label="Serie"
+          >
+            {opcionesSerie.map((opcion) => (
+              <MenuItem key={opcion.ID} value={opcion.Clave}>
+                {opcion.Clave}
+              </MenuItem>
+            ))}
+          </MuiSelect>
+        </FormControl>
+
+
         <Select
           register={register}
           nombre="FormaPagoComprobante"
@@ -149,7 +210,7 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
           value={getValues("FormaPagoComprobante") || ""}
           descripcion="Descripcion"
           error={!!errors.FormaPagoComprobante}
-          helperText={errors.FormaPagoComprobante? "Este campo es obligatorio" : ""}
+          helperText={errors.FormaPagoComprobante ? "Este campo es obligatorio" : ""}
         />
         <TextField
           {...register("Monto", { required: "Este campo es obligatorio" })}
@@ -163,7 +224,7 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
 
         />
         <TextField
-         
+
           label="Moneda"
           name="moneda"
           value={"MXN"}
@@ -179,89 +240,89 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
         />
       </Box>
       <Box display="grid"
-                gap={2}
-                mt={4}
-                sx={{
-                    gridTemplateColumns: {
-                        xs: '1fr',
-                        sm: 'repeat(2, 1fr)',
-                        md: 'repeat(3, 1fr)',
-                        lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
-                    }
-                }}
-            >
-                <TextField
-                    label="Número de operación"
-                    name="numeroOperacion"
-                    value={pagos.numOperacion + 1 || ""}
-                    disabled
-                    fullWidth
-                />
-                <TextField
-                    label="Importe del saldo anterior"
-                    name="saldoAnterior"
-                    value={pagos.saldo || ""}
-                    disabled
-                    fullWidth
+        gap={2}
+        mt={4}
+        sx={{
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)',
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+          }
+        }}
+      >
+        <TextField
+          label="Número de operación"
+          name="numeroOperacion"
+          value={pagos.numOperacion + 1 || ""}
+          disabled
+          fullWidth
+        />
+        <TextField
+          label="Importe del saldo anterior"
+          name="saldoAnterior"
+          value={pagos.saldo || ""}
+          disabled
+          fullWidth
 
-                />
-                <TextField
-                    label="Importe del saldo Pagado"
-                    name="saldoPagado"
-                    value={pago.monto || ""}
-                    disabled
-                    fullWidth
-                />
-                <TextField
-                    label="Importe del saldo insoluto"
-                    name="saldoInsoluto"
-                    value={pagos.saldo - pago.monto || ""}
-                    disabled
-                    fullWidth
-                />
-            </Box>
+        />
+        <TextField
+          label="Importe del saldo Pagado"
+          name="saldoPagado"
+          value={pago.monto || ""}
+          disabled
+          fullWidth
+        />
+        <TextField
+          label="Importe del saldo insoluto"
+          name="saldoInsoluto"
+          value={pagos.saldo - pago.monto || ""}
+          disabled
+          fullWidth
+        />
+      </Box>
       <Box mt={4}>
-       
+
         {totalesImpuestos.length > 0 ? (
           totalesImpuestos.map((impuesto, index) => (
             <Box key={index}>
-            <Typography variant="h6">Impuestos</Typography>
-            <Box
-              display="grid"
-              gridTemplateColumns="repeat(4, 1fr)"
-              gap={2}
-              alignItems="center"
-              my={2}
-            >
-              <TextField
-                label="Impuesto"
-                value={impuesto.NombreImpuesto}
-                fullWidth
-                InputProps={{ readOnly: true }}
-                disabled
-              />
-              <TextField
-                label="Tasa o Cuota"
-                value={impuesto.TasaOCuota}
-                fullWidth
-                InputProps={{ readOnly: true }}
-                disabled
-              />
-              <TextField
-                label="Base Gravada"
-                value={impuesto.Base.toFixed(2)}
-                fullWidth
-                InputProps={{ readOnly: true }}
-                disabled
-              />
-              <TextField
-                label="Importe"
-                value={impuesto.Importe.toFixed(2)}
-                fullWidth
-                InputProps={{ readOnly: true }}
-                disabled
-              />
-            </Box>
+              <Typography variant="h6">Impuestos</Typography>
+              <Box
+                display="grid"
+                gridTemplateColumns="repeat(4, 1fr)"
+                gap={2}
+                alignItems="center"
+                my={2}
+              >
+                <TextField
+                  label="Impuesto"
+                  value={impuesto.NombreImpuesto}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+                <TextField
+                  label="Tasa o Cuota"
+                  value={impuesto.TasaOCuota}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+                <TextField
+                  label="Base Gravada"
+                  value={impuesto.Base.toFixed(2)}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+                <TextField
+                  label="Importe"
+                  value={impuesto.Importe.toFixed(2)}
+                  fullWidth
+                  InputProps={{ readOnly: true }}
+                  disabled
+                />
+              </Box>
             </Box>
           ))
         ) : (
@@ -269,6 +330,7 @@ const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
           // <Typography variant="body2">No hay totales de impuestos calculados.</Typography>
         )}
       </Box>
+      {/* <pre> {"Prueba" + JSON.stringify(getValues("SeriePagos"), null, 2)}</pre> */}
       {/* <pre> {JSON.stringify(totalesImpuestos,null,2)}</pre>
       <pre> {JSON.stringify(totales,null,2)}</pre> */}
       {children}
