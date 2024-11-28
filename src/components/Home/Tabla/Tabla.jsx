@@ -600,7 +600,7 @@ export default function DataTable({ token, filtro }) {
               router.push(`/FacturaPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
             }
             else {
-              setConfirmationMessage('Error al obtener la serie de pago.');
+              setConfirmationMessage('No existe serie de pago, validar');
               setOpenModalError(true); // Show error modal
             }
           }

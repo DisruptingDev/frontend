@@ -93,12 +93,15 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
 
             // Subir imagen al servidor para obtener la ruta
             const formData = new FormData();
-            formData.append('file', file);
-            formData.append('rfc', rfcValue); // Añadir RFC al FormData
+            formData.append('logo', file);
+            formData.append('rfcEmisor', rfcValue); // Añadir RFC al FormData
 
             try {
-                const response = await fetch('/api/upload', {
+                const response = await fetch('https://facturacioncfditotal.com/api/gestores/SubirLogo', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                    },
                     body: formData,
                 });
 

@@ -16,7 +16,16 @@ import {
     Checkbox,
     Button,
 } from "@mui/material";
+import Select from "@/components/Select/Select";
 import React, { useState } from "react";
+
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+    }).format(value);
+  }
 
 export default function ModalCancelar({
     openModalCancelar,
@@ -103,17 +112,27 @@ export default function ModalCancelar({
                         onChange={(e) => { setMotivo(e.target.value); setSelectedRow(null); }}
                     >
                         <MenuItem value="01">
-                            Comprobantes emitidos con errores con relación.
+                           01 - Comprobantes emitidos con errores con relación.
                         </MenuItem>
                         <MenuItem value="02">
-                            Comprobantes emitidos con errores sin relación
+                            02 -Comprobantes emitidos con errores sin relación
                         </MenuItem>
-                        <MenuItem value="03">No se llevó a cabo la operación</MenuItem>
+                        <MenuItem value="03"> 03 - No se llevó a cabo la operación</MenuItem>
                         <MenuItem value="04">
-                            Operación nominativa relacionada en una factura global
+                            04 - Operación nominativa relacionada en una factura global
                         </MenuItem>
                     </MuiSelect>
                 </FormControl>
+
+                {/* <Select
+                    nombre="Motivo"
+                    url="208.109.245.251/api/catalogos/Catalogos/MotivosCancelacion"
+                    clave="Clave"
+                    descripcion="Descripcion"
+                    fullWidth
+                    value={motivo}
+                    onChange={(e) => { setMotivo(e.target.value); setSelectedRow(null); }}
+                /> */}
                 {motivo === "01" && (
                     <Paper>
                         <TableContainer component={Paper}>
@@ -123,7 +142,9 @@ export default function ModalCancelar({
                                         <TableCell>No. Factura</TableCell>
                                         <TableCell>Emisor</TableCell>
                                         <TableCell>Receptor</TableCell>
+                                        <TableCell>Total</TableCell>
                                         <TableCell>Seleccionar</TableCell>
+                                    
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -132,6 +153,7 @@ export default function ModalCancelar({
                                             <TableCell>{row.ID}</TableCell>
                                             <TableCell>{row.Emisor.Nombre}</TableCell>
                                             <TableCell>{row.Receptor.Nombre}</TableCell>
+                                            <TableCell>{formatCurrency(row.Total)}</TableCell>
                                             <TableCell>
                                                 <Checkbox
                                                     checked={selectedRow?.ID === row.ID}
