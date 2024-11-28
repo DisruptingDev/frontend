@@ -99,11 +99,14 @@ export default function DataTable({ token, filtro }) {
   const [facturaActual, setFacturaActual] = useState('');
 
 
+
   const [facturasTimbradas, setFacturasTimbradas] = useState([]);
   const [openModalTimbrar, setOpenModalTimbrar] = useState(false)
 
   const [openModalCancelar, setOpenModalCancelar] = useState(false)
   const [facturasRemplazo, setFacturasRemplazo] = useState([]);
+  const [IDFacturaCancelada, setIDFacturaCancelada] = useState(null);
+  const [resultadoCancelar, setResultadoCancelar] = useState(null);
 
   const [progress, setProgress] = useState(0);
 
@@ -340,9 +343,12 @@ export default function DataTable({ token, filtro }) {
       const filtro ={
         Emisor: menuRow.Emisor.Rfc,
         Receptor: menuRow.Receptor.Rfc,
+        Estatus: 'timbrada'
       }
       const registros = filtrado(filtro);
       console.log('Filtrado:', registros);
+      console.log("ID", menuRow.ID);
+      setIDFacturaCancelada(menuRow.ID);
       setFacturasRemplazo(registros);
       setOpenModalCancelar(true);
 
@@ -350,6 +356,21 @@ export default function DataTable({ token, filtro }) {
 
     }
   };
+
+  useEffect(() => {
+    if(resultadoCancelar === "success"){
+      setOpenModalSuccess(true);
+      setConfirmationMessage('Factura cancelada exitosamente.');
+      setIDFacturaCancelada(null);
+      setActualizar(true);
+    }
+    else if(resultadoCancelar === "error"){
+      setOpenModalError(true);
+      setConfirmationMessage('Error al cancelar facturas.');
+      setIDFacturaCancelada(null);
+      setActualizar(true);
+    }
+  }, [resultadoCancelar]);
 
   // Función para cancelar múltiples facturas
   // const handleCancelar = async (ids) => {
@@ -623,14 +644,14 @@ export default function DataTable({ token, filtro }) {
         >
           Descargar Seleccionadas
         </Button>
-        <Button
+        {/* <Button
           variant="contained"
           onClick={() => handleCancelar(selectedRows)}
           disabled={selectedRows.length === 0}
           sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
         >
           Cancelar Seleccionadas
-        </Button>
+        </Button> */}
       </Box>
 
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
@@ -717,7 +738,8 @@ export default function DataTable({ token, filtro }) {
                       {
                         menuRow && menuRow.uuid !== '' && [
                           <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
-                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
+                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
+                          <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
                         ]
                       }
                       {
@@ -725,7 +747,7 @@ export default function DataTable({ token, filtro }) {
                           <MenuItem key="pago" onClick={handleFacturaPago}>Factura de Pago</MenuItem>
                         ]
                       }
-                      <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
+                      
 
                     </Menu>
                   </TableCell>
@@ -764,7 +786,7 @@ export default function DataTable({ token, filtro }) {
       <ModalTimbrar openModalTimbrar={openModalTimbrar} handleCloseModal={handleCloseModal} facturasTimbradas={facturasTimbradas} expandedIndexes={expandedIndexes} handleToggleExpand={handleToggleExpand} />
 
       {/* Cancelar Modal */}
-      <ModalCancelar openModalCancelar={openModalCancelar} handleCloseModal={handleCloseModal} facturasRemplazo={facturasRemplazo} />
+      <ModalCancelar openModalCancelar={openModalCancelar} handleCloseModal={handleCloseModal} facturasRemplazo={facturasRemplazo} IDFacturaCancelada={IDFacturaCancelada} token={token} setResultadoCancelar={setResultadoCancelar} />
 
     </Box>
   );
