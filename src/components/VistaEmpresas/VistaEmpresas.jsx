@@ -5,6 +5,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
     return { ...item };
@@ -38,7 +39,7 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
         if (token) {
             console.log('Fetching emisores', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor', {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

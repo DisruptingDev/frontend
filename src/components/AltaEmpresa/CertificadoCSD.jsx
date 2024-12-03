@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Button, TextField, Box, Typography, Snackbar, Alert } from '@mui/material';
 import FileInput from "@/components/FileInput/FileInput";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEditar, token }) {
     const [csdFile, setCsdFile] = useState(null);
@@ -69,7 +70,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
             try {
                
 
-                const response = await fetch('https://facturacioncfditotal.com/api/certificados/EditarCertificado', {
+                const response = await fetch(`${apiUrl}/api/certificados/EditarCertificado`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
@@ -121,7 +122,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
         }
         else{
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/certificados/SubirCSD', {
+                const response = await fetch(`${apiUrl}/api/certificados/SubirCSD`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados

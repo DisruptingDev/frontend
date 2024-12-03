@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import Select from "@/components/Select/Select";
 import React, { useState } from "react";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -51,7 +52,7 @@ export default function ModalCancelar({
                 FolioReemplazo: motivo === "01" ? selectedRow.uuid : null,
             }
             console.log("body", body);
-            const response = await fetch("https://facturacioncfditotal.com/api/cancelacionfacturas/Cancelar", {
+            const response = await fetch(`${apiUrl}/api/cancelacionfacturas/Cancelar`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

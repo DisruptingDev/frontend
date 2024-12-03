@@ -6,6 +6,7 @@ import { useForm, useFieldArray, get } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from '@/components/Select/Select.jsx';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token, modalAgregarConcepto, onClose }) {
     const [conceptoOptions, setConceptoOptions] = useState([]);
@@ -61,7 +62,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const fetchConceptos = useCallback(async () => {
         if (!token) return;
         try {
-            const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Conceptos?descripcion=${queryConcepto}`, {
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Conceptos?descripcion=${queryConcepto}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -88,14 +89,14 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         if (!token) return;
 
         try {
-            const prodServResponse = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
+            const prodServResponse = await fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveProdServ?query=${queryProdServ}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const prodServData = await prodServResponse.json();
             setClaveProdServOptions(Array.isArray(prodServData) ? prodServData : []);
 
-            const unidadResponse = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
+            const unidadResponse = await fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveUnidad?query=${queryUnidad}`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -180,7 +181,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 console.log("MONT", impuesto.Monto)
                 setValue(`impuestos.${index}.Monto`, impuesto.Monto || 0);
                 // const token = localStorage.getItem('authToken');
-                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ImpuestoClave`, {
+                fetch(`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -197,7 +198,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                             // const data = JSON.parse(opcionSeleccionada)
                             // setValue(`impuestos[${index}].Nom`, opcionSeleccionada.Clave);
                             // console.log("opcionSeleccionada",opcionSeleccionada["Impuesto"]);  
-                            setValue(`impuestos.${index}.TasaUrl`, `https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
+                            setValue(`impuestos.${index}.TasaUrl`, `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
                             // setValue(`impuestos.${index}.Tasa`,impuesto.TasaCatalogoID);
                             // setValue(`impuestos.${index}.Tasa`, opcionSeleccionada["ID"]);
                             setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
@@ -205,7 +206,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         }
                         // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
                     })
-                // setValue(`impuestos.${index}.TasaUrl`, `http://31.220.31.152:8081/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`)
+                // setValue(`impuestos.${index}.TasaUrl`, `${apiUrl}/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`)
 
                 console.log('Concepto editado:', getValues(`impuestos.${index}`));
                 // console.log('Concepto editado:', getValues(`impuestos.${index}`);
@@ -216,7 +217,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
             if (!conceptoOptions.some(opt => opt.ID === concepto.ID)) {
                 console.log(`Consultando opciones de Conceptos para: ${concepto.ID}`);
-                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Conceptos?descripcion=${concepto.Descripcion}`, {
+                fetch(`${apiUrl}/api/catalogos/Catalogos/Conceptos?descripcion=${concepto.Descripcion}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 })
@@ -243,7 +244,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             // Fetch ClaveProdServ options if needed
             if (!claveProdServOptions.some(opt => opt.Clave === concepto.ClaveProdServ)) {
                 console.log(`Consultando opciones de ClaveProdServ para: ${concepto.ClaveProdServ}`);
-                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ClaveProdServ?query=${concepto.ClaveProdServ}`, {
+                fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveProdServ?query=${concepto.ClaveProdServ}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 })
@@ -265,7 +266,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             // Fetch ClaveUnidad options if needed
             if (!claveUnidadOptions.some(opt => opt.Clave === concepto.ClaveUnidad)) {
                 console.log(`Consultando opciones de ClaveUnidad para: ${concepto.ClaveUnidad}`);
-                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ClaveUnidad?query=${concepto.ClaveUnidad}`, {
+                fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveUnidad?query=${concepto.ClaveUnidad}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 })
@@ -682,7 +683,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     nombre='ObjetoImpuesto'
                     label='Objeto Impuesto'
                     descripcion='Descripcion'
-                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/ObjetoImpuestos"
+                    url={`${apiUrl}/api/catalogos/Catalogos/ObjetoImpuestos`}
                     value={getValues("ObjetoImpuesto") || "02"}
                     onChange={handleObjetoImpuestoChange}
                     sx={{ width: 'auto', minWidth: '23%' }}

@@ -4,7 +4,7 @@ import {
     Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider, Snackbar,
     Alert
 } from '@mui/material';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar, token, setActualizar }) => {
     const [showDetails, setShowDetails] = useState(false);
     const [archivo, setArchivo] = useState(null);
@@ -47,7 +47,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             formData.append('ordenesID', JSON.stringify(ordenesID));
             console.log('Subiendo comprobante', formData);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/SubirComprobante', {
+                const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/SubirComprobante`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

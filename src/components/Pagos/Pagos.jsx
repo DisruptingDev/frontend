@@ -7,6 +7,7 @@ import ModalLoading from '../Home/Modales/modalLoading';
 import ModalExito from '../Home/Modales/modalExito';
 import ModalError from '../Home/Modales/modalError';
 import { set } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
   return { ...item };
@@ -21,6 +22,7 @@ const Pagos = ({ token }) => {
   const [loading, setLoading] = useState(false);
   const [openModalExito, setOpenModalExito] = useState(false);
   const [openModalError, setOpenModalError] = useState(false);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -47,7 +49,7 @@ const Pagos = ({ token }) => {
     if (token) {
       console.log('Fetching pagoes', token);
       try {
-        const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenes', {
+        const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ListarOrdenes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -108,7 +110,7 @@ const Pagos = ({ token }) => {
 
     console.log('Asignando timbres', formData);
     try {
-      const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ActivarOrden', {
+      const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ActivarOrden`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +136,7 @@ const Pagos = ({ token }) => {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+      const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

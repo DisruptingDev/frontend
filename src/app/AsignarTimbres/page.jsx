@@ -9,6 +9,7 @@ import VistaPaquetes from '@/components/VistaOrdenes/VistaPaquetes';
 import VistaPlanes from '@/components/VistaOrdenes/VistaPlanes';
 import ModalComprobante from '@/components/VistaOrdenes/ModalComprobante';
 import SideBar from '@/components/Dashborard/SideBar';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -66,7 +67,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPaquetes', {
+                const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPaquetes`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -95,7 +96,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPlanes', {
+                const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPlanes`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -178,7 +179,7 @@ export default function AsignarTimbres() {
     
         console.log('Asignando timbres', formData);
         try {
-          const response = await fetch('https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ActivarOrden', {
+          const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ActivarOrden`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -205,7 +206,7 @@ export default function AsignarTimbres() {
     const handleVerComprobante = async (ID) => {
         console.log('Ver comprobante', ID);
         try {
-            const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+            const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

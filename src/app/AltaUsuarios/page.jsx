@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation'; 
 import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment, Collapse, Alert } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const AltaUsuarios = () => {
 
@@ -31,7 +32,7 @@ const AltaUsuarios = () => {
         // Handle form submission logic here
         console.log(formData);
         try {
-            const response = await fetch('https://facturacioncfditotal.com/api/registrousuarios/RegistroUsuario', {
+            const response = await fetch(`${apiUrl}/api/registrousuarios/RegistroUsuario`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

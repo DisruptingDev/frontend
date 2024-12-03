@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation'; // Importa useRouter de next/navigation
 import { TextField, Button, Box, Checkbox, FormControlLabel, Link, Alert, Collapse } from "@mui/material";
 import Image from 'next/image';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Login() {
     const { register, handleSubmit } = useForm();
@@ -17,7 +18,7 @@ export default function Login() {
 
     const onSubmit = async (data) => {
         try {
-            const response = await fetch('https://facturacioncfditotal.com/api/login/Login', {
+            const response = await fetch(`${apiUrl}/api/login/Login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

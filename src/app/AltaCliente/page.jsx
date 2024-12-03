@@ -6,6 +6,7 @@ import AltaCliente from "@/components/AltaCliente/AltaCliente";
 import VistaClientes from "@/components/ViastaClientes/VistaClientes";
 import { Box, Button, Dialog, DialogTitle, DialogContent} from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 export default function RegistroClientes() {
@@ -40,7 +41,7 @@ export default function RegistroClientes() {
         if(clienteIdEditar){
             async function fetchData() {
             try {
-                const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor/${clienteIdEditar}`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor/${clienteIdEditar}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

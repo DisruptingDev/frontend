@@ -2,6 +2,7 @@ import { Button, Box, Typography, Card, CardContent, Grid } from '@mui/material'
 import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
 import { useState, useEffect, useCallback } from 'react';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default function Planes({ token }) {
 
     const [openModal, setOpenModal] = useState(false);
@@ -41,7 +42,7 @@ export default function Planes({ token }) {
             console.log('Fetching plan', token);
             try {
                 console.log('Token:', token);
-                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Planes', {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Planes`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

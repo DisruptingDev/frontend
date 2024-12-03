@@ -7,7 +7,7 @@ import { Box, Button, Dialog, DialogTitle, DialogContent, Typography, Divider } 
 import { isAuthenticated } from "@/utils/authRedirect";
 import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa";
 import CertificadoCSD from "@/components/AltaEmpresa/CertificadoCSD";
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdministraEmpresas() {
 
@@ -52,7 +52,7 @@ export default function AdministraEmpresas() {
             // setOpenModal(true);
             async function fetchData() {
             try {
-                const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor/${empresaIdEditar}`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor/${empresaIdEditar}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Grid, TextField, Button, Typography, Box, Snackbar, Alert } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { useRouter } from "next/navigation";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdministrarTimbres({ token }) {
     const router = useRouter();
@@ -24,14 +25,14 @@ export default function AdministrarTimbres({ token }) {
     const fetchData = useCallback(async () => {
         if (token) {
             try {
-                const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
                     const data = await response.json();
                     const empresasConSeries = [];
                     for (let empresa of data) {
-                        const seriesResponse = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${empresa.ID}`, {
+                        const seriesResponse = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${empresa.ID}`, {
                             headers: { 'Authorization': `Bearer ${token}` },
                         });
                         const seriesData = await seriesResponse.json();
@@ -58,7 +59,7 @@ export default function AdministrarTimbres({ token }) {
     const fetchTimbresDisponibles = useCallback(async () => {
         if (token) {
             try {
-                const response = await fetch(`https://facturacioncfditotal.com/api/administraciontimbres/TimbresDisponibles`, {
+                const response = await fetch(`${apiUrl}/api/administraciontimbres/TimbresDisponibles`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (response.ok) {
@@ -116,7 +117,7 @@ export default function AdministrarTimbres({ token }) {
         console.log('Datos a enviar:', datosCompletos);
 
         try {
-            const response = await fetch('https://facturacioncfditotal.com/api/administraciontimbres/ActualizarTimbres', {
+            const response = await fetch(`${apiUrl}/api/administraciontimbres/ActualizarTimbres`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

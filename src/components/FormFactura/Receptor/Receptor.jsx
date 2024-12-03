@@ -5,6 +5,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 import { set } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled=false }) {
     const [receptor, setReceptor] = useState();
@@ -74,7 +75,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setHiddeInfoGlobal(false);
             }
-            setUsoCFDIURL(`https://facturacioncfditotal.com/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
             trigger("RFCReceptor");
             trigger("DomicilioFiscalReceptor");
@@ -102,7 +103,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             // setUsoCFDI("");
             setValue("UsoCFDI", "");
             setValue("UsoCFDIDescripcion", "");
-            setUsoCFDIURL(`https://facturacioncfditotal.com/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
             setRFC(data["Rfc"]);
             setValue("RFCReceptor", data["Rfc"]);
@@ -154,7 +155,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             if (regimenFiscal) {
                 console.log("REGIMEN", token);
                 // const token = localStorage.getItem('authToken');
-                fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal`, {
+                fetch(`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`, {
                     // method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -208,7 +209,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="Receptor"
-                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
                     id="ID"
                     descripcion="Nombre"
                     onChange={(e) => setReceptor(e.target.value)}
@@ -273,7 +274,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="MetodoPago"
-                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/MetodoPago"
+                    url={`${apiUrl}/api/catalogos/Catalogos/MetodoPago`}
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.MetodoPago}
@@ -319,7 +320,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="FormaPago"
-                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/FormaPago"
+                    url={`${apiUrl}/api/catalogos/Catalogos/FormaPago`}
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.FormaPago}
@@ -332,7 +333,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="UsoCFDI"
-                    // url="http://31.220.31.152:8081/Catalogos/UsoCFDI"
+                    // url="`${apiUrl}/Catalogos/UsoCFDI"
                     url={usoCFDIURL}
                     clave="Clave"
                     descripcion="Descripcion"
@@ -345,7 +346,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                         // register={register}
                         nombre="Exportación"
-                       url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Exportaciones"
+                       url={`${apiUrl}/api/catalogos/Catalogos/Exportaciones`}
                         clave="Clave"
                         value={exportacion}
                         descripcion="Descripcion"
@@ -370,7 +371,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <Select
                         register={register}
                         nombre="Periodicidad"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Periodicidad"
+                        url={`${apiUrl}/api/catalogos/Catalogos/Periodicidad`}
                         clave="Clave"
                         descripcion="Descripcion"
                         error={!!errors.Periodicidad}
@@ -381,7 +382,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <Select
                         register={register}
                         nombre="Meses"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/PeriodicidadMeses"
+                        url={`${apiUrl}/api/catalogos/Catalogos/PeriodicidadMeses`}
                         clave="Clave"
                         descripcion="Descripcion"
                         error={!!errors.Meses}

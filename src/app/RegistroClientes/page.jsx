@@ -3,7 +3,7 @@ import Input from "@/components/Input/Input.jsx"
 import Select from "@/components/Select/Select.jsx"
 import Button from "@mui/material/Button"; // Importa el componente Button de Material UI
 import TextField from '@mui/material/TextField';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Registro() {
     return (

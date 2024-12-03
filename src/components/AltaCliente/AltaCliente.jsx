@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { set } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaCliente({ onClose, cliente, setActualizar, token }) {
     const { register, getValues, reset, handleSubmit, setValue, formState: { errors } } = useForm();
@@ -68,7 +69,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setLoading(true);
 
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestores/RegistroReceptor', {
+                const response = await fetch(`${apiUrl}/api/gestores/RegistroReceptor`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 Estado: data.Estado         // String
             };
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestores/EditarReceptor ', {
+                const response = await fetch(`${apiUrl}/api/gestores/EditarReceptor`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -194,7 +195,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         register={register} // Pasa register como prop
                         label={"Regimen Fiscal*"}
                         nombre="RegimenFiscal"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal"
+                        url={`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`}
                         clave="Clave"
                         descripcion="Descripcion"
                         onChange={(e) => setValue('RegimenFiscal', e.target.value)}

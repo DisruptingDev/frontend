@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar }) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
@@ -97,7 +98,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             formData.append('rfcEmisor', rfcValue); // Añadir RFC al FormData
 
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestores/SubirLogo', {
+                const response = await fetch(`${apiUrl}/api/gestores/SubirLogo`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
@@ -156,7 +157,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setLoading(true);
 
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestores/EditarEmisor ', {
+                const response = await fetch(`${apiUrl}/api/gestores/EditarEmisor`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -214,7 +215,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setLoading(true);
 
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestores/RegistroEmisor', {
+                const response = await fetch(`${apiUrl}/api/gestores/RegistroEmisor`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -304,7 +305,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     <Select
                         nombre="RegimenFiscal"
                         label={"Régimen Fiscal*"}
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/RegimenFiscal"
+                        url={`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`}
                         clave="Clave"
                         descripcion="Descripcion"
                         fullWidth

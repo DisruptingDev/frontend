@@ -17,6 +17,8 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/EditarFactura";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 
 
 export default function EditarFactura() {
@@ -52,7 +54,7 @@ export default function EditarFactura() {
         const fetchFactura = async () => {
             try {
                 // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-                const response = await fetch(`https://facturacioncfditotal.com/api/facturas/ObtenerFactura/${id}`, {
+                const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',

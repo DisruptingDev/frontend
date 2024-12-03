@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
+
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography, IconButton,
     Menu,
     MenuItem,
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
     return { ...item };
@@ -33,7 +34,7 @@ const VistaConceptos = ({ token, actualizar, setActualizar }) => {
         if (token) {
             console.log('Fetching conceptos', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/conceptos/ListarConceptos', {
+                const response = await fetch(`${apiUrl}/api/conceptos/ListarConceptos`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

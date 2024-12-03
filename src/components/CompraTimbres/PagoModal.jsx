@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { set } from 'date-fns';
 import { includes } from 'valibot';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const ModalPago = ({ open, onClose, opcion, token }) => {
     const [empresa, setEmpresa] = useState('');
@@ -87,7 +88,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
         console.log('Datos a enviar:', formData);
         try {
             // Enviar datos al servidor
-            const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/GenerarOrden', {
+            const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/GenerarOrden`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -221,7 +222,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                     // Seleccionar empresa
                     <Select
                         label="Seleccionar empresa"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
+                        url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
                         id="ID"
                         clave=""
                         // value={empresa}

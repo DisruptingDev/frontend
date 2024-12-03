@@ -3,6 +3,7 @@ import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
 import { useState, useEffect, useCallback} from 'react';
 import { set } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Paquetes({token}) {
     const [openModal, setOpenModal] = useState(false);
@@ -43,7 +44,7 @@ export default function Paquetes({token}) {
                 console.log('Fetching paquetes', token);
                 try {
                     console.log('Token:', token);   
-                    const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Paquetes', {
+                    const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Paquetes`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,

@@ -1,9 +1,11 @@
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default async function GuardarFactura(factura, onSuccess, onError ,{token}) {
+
     try {
         console.log("factura",factura);
       
            
-            const response = await fetch('https://facturacioncfditotal.com/api/facturas/GuardarFactura', {
+            const response = await fetch(`${apiUrl}/api/facturas/GuardarFactura`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

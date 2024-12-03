@@ -7,6 +7,7 @@ import { Box, Button, Dialog, DialogTitle, DialogContent, Snackbar, Alert } from
 import { isAuthenticated } from "@/utils/authRedirect";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos";
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ModuloConceptos() {
 
@@ -71,7 +72,7 @@ export default function ModuloConceptos() {
 
                 }
 
-                const response = await fetch('https://facturacioncfditotal.com/api/conceptos/GuardarConcepto', {
+                const response = await fetch(`${apiUrl}/api/conceptos/GuardarConcepto`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

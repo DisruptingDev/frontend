@@ -6,6 +6,7 @@ import {
     MenuItem,
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
     return { ...item };
@@ -39,7 +40,7 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
         // console.log('Fetching receptores 2',token);
         if (token) {
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor', {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },

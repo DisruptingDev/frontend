@@ -1,6 +1,6 @@
 import React from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Button } from '@mui/material';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerComprobante, origen }) => {
     return (
         <TableContainer component={Paper}>

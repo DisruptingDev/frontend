@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment, Collapse, Alert } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useParams } from 'next/navigation';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 const AltaUsuarios = () => {
@@ -48,7 +49,7 @@ const AltaUsuarios = () => {
         // Handle form submission logic here
         console.log(formData);
         try {
-            const response = await fetch(`https://facturacioncfditotal.com/api/registrousuarios/RegistroUsuario/${token}`, {
+            const response = await fetch(`${apiUrl}/api/registrousuarios/RegistroUsuario/${token}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

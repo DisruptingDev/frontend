@@ -6,6 +6,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { Password } from '@mui/icons-material';
 import  {onSuplantar}  from '@/utils/activarSuplantar';
 import { useRouter } from "next/navigation";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 function createData(item) {
@@ -51,7 +52,7 @@ const VistaUsuarios = ({ token }) => {
         if (token) {
             console.log('Fetching usuarios', token);
             try {
-                const response = await fetch('https://facturacioncfditotal.com/api/gestionusuarios/Usuarios/ListarUsuarios', {
+                const response = await fetch(`${apiUrl}/api/gestionusuarios/Usuarios/ListarUsuarios`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -105,7 +106,7 @@ const VistaUsuarios = ({ token }) => {
         const Nombre = menuRow.Nombre;
         console.log('Suplantando usuario:', ID);
         try {
-            const response = await fetch(`https://facturacioncfditotal.com/api/gestionusuarios/Usuarios/SuplantarUsuario/${ID}`, {
+            const response = await fetch(`${apiUrl}/api/gestionusuarios/Usuarios/SuplantarUsuario/${ID}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -158,6 +159,7 @@ const VistaUsuarios = ({ token }) => {
                         <TableRow sx={{ backgroundColor: '#04b2ca' }}>
                             <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
+                            <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Grupo</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Nombre</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Email</TableCell>
                             <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Rol</TableCell>
@@ -175,6 +177,7 @@ const VistaUsuarios = ({ token }) => {
                                     />
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>Grupo</TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.Nombre}</TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.Email}</TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>{row.TipoUsuario}</TableCell>

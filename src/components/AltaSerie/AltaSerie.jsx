@@ -5,6 +5,7 @@ import { Button, TextField, Box, Snackbar, Alert, Typography, FormControl, Input
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 import { useRouter } from "next/navigation";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaSerie({ token }) {
     const { register, handleSubmit, setValue, formState: { errors } } = useForm();
@@ -33,7 +34,7 @@ export default function AltaSerie({ token }) {
         console.log("Formateo", datos);
 
         try {
-            const response = await fetch('https://facturacioncfditotal.com/api/series/CrearSerie', {
+            const response = await fetch(`${apiUrl}/api/series/CrearSerie`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,7 +74,7 @@ export default function AltaSerie({ token }) {
                         register={register}
                         nombre="Empresa"
                         label={"Empresa*"}
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
+                        url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
                         id="ID"
                         clave=""
                         descripcion="Nombre"
@@ -86,7 +87,7 @@ export default function AltaSerie({ token }) {
                         register={register}
                         nombre="TipoComprobante"
                         label={"Tipo Comprobante*"}
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/TipoComprobante"
+                        url={`${apiUrl}/api/catalogos/Catalogos/TipoComprobante`}
 
                         clave="Clave"
                         descripcion="Descripcion"

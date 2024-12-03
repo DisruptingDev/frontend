@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Modal, Box, Typography, TextField, Button, List, ListItem, ListItemText, IconButton, Tooltip } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { isAuthenticated } from '@/utils/authRedirect';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const ModalCorreos = ({ open, onClose, setOpen}) => {
     const [emailAddresses, setEmailAddresses] = useState('');
@@ -14,7 +15,7 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
     const handleSendInvitations = async () => {
         const emailsArray = emailAddresses.split(',').map(email => email.trim());
         try {
-            const response = await fetch('https://facturacioncfditotal.com/api/invitacioncolaboradores/InvitacionColaboradores/Invitar', {
+            const response = await fetch(`${apiUrl}/api/invitacioncolaboradores/InvitacionColaboradores/Invitar`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

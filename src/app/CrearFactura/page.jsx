@@ -13,7 +13,7 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 export default function CrearFactura() {

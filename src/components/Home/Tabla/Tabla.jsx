@@ -37,6 +37,7 @@ import ModalDescarga from '@/components/Home/Modales/modalDescarga';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
   return { ...item };
@@ -136,7 +137,7 @@ export default function DataTable({ token, filtro }) {
   const obtenerFactura = async (id) => {
     try {
       // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-      const response = await fetch(`https://facturacioncfditotal.com/api/facturas/ObtenerFactura/${id}`, {
+      const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -199,7 +200,7 @@ export default function DataTable({ token, filtro }) {
       console.log('Facturas válidas:', facturasValidas);
 
       // Enviamos la solicitud POST a /DescargarArchivos con las facturas
-      const response = await fetch('https://facturacioncfditotal.com/api/descargararchivos/DescargarArchivos', {
+      const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -266,7 +267,7 @@ export default function DataTable({ token, filtro }) {
     try {
       console.log('Timbrando facturas:', ids);
       // const token = localStorage.getItem('authToken');
-      const response = await fetch('https://facturacioncfditotal.com/api/timbradocorporativo/TimbradoCorporativo', {
+      const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -382,7 +383,7 @@ export default function DataTable({ token, filtro }) {
   //   try {
   //     console.log('Cancelando facturas:', ids);
   //     // const token = localStorage.getItem('authToken');
-  //     const response = await fetch('https://facturacioncfditotal.com/api/cancelacionfacturas/CancelacionFacturas/Cancelar', {
+  //     const response = await fetch(`${apiUrl}/api/cancelacionfacturas/CancelacionFacturas/Cancelar`, {
   //       method: 'POST',
   //       headers: {
   //         'Authorization': `Bearer ${token}`,
@@ -454,7 +455,7 @@ export default function DataTable({ token, filtro }) {
       try {
         // const token = localStorage.getItem('authToken');
 
-        const response = await fetch('https://facturacioncfditotal.com/api/facturas/ListarFacturas', {
+        const response = await fetch(`${apiUrl}/api/facturas/ListarFacturas`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -585,7 +586,7 @@ export default function DataTable({ token, filtro }) {
       if (menuRow.Emisor.ID) {
         console.log("Emisor ID", menuRow.Emisor.ID);
         try {
-          const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${menuRow.Emisor.ID}`, {
+          const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${menuRow.Emisor.ID}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',

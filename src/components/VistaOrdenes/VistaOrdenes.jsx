@@ -4,7 +4,7 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ModalComprobante from './ModalComprobante';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function createData(item) {
   return { ...item };
@@ -36,7 +36,7 @@ const VistaOrdenes = ({token}) => {
     if (token) {
       console.log('Fetching ordenes', token);
       try {
-        const response = await fetch('https://facturacioncfditotal.com/api/catalogos/Catalogos/ListarOrdenes',{
+        const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/ListarOrdenes`,{
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -118,7 +118,7 @@ const VistaOrdenes = ({token}) => {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/ComprobanteFile/${ID}`, {
+      const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

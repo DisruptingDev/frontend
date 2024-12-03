@@ -3,6 +3,7 @@ import React, { useState, useEffect, use } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled=false }) {
     const [emisor, setEmisor] = useState({});
@@ -77,7 +78,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 setValue("Fecha", formattedDate);
             }
 
-            setSerieUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
+            setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
             trigger(["Emisor","RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
@@ -100,7 +101,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
             setValue("LogoEmisor", emisor.LogoPath)
 
-            setSerieUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisor.ID}`);
+            setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisor.ID}`);
 
             setLugarExpedicion(emisor.LugarExpedicion);
 
@@ -159,7 +160,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
-                    url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
                     id="ID"
                     clave=""
                     descripcion="Nombre"

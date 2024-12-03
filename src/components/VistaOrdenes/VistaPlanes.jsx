@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 import { date } from 'valibot';
 import { format } from 'date-fns';
 import es from 'date-fns/locale/es'; // Para formatear en español
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const VistaPlanes = ({ planes, selectedRows, handleSelectRow, handleVerComprobante, origen }) => {
     return (

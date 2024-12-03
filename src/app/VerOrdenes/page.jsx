@@ -12,6 +12,8 @@ import React, { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/utils/authRedirect";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 function createData(item) {
   return { ...item };
 }
@@ -65,7 +67,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/ListarOrdenesPaquetes', {
+        const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/ListarOrdenesPaquetes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -94,7 +96,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch('https://facturacioncfditotal.com/api/compratimbres/CompraTimbres/ListarOrdenesPlanes', {
+        const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/ListarOrdenesPlanes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -193,7 +195,7 @@ export default function VerOrdenes() {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`https://facturacioncfditotal.com/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+      const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

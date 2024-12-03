@@ -9,7 +9,7 @@ import Select from "@/components/Select/Select.jsx";
 import DatePickerComponent from "./DatePickerComponent";
 import { get } from "react-hook-form";
 import Impuesto from "../Impuesto/Impuesto";
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
 export default function Pagos({ emisorID, children, register, conceptos, pagos, errors, getValues, setValue, token }) {
@@ -38,7 +38,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
       if (emisorID) {
         console.log("emisorID", emisorID);
         try {
-          const response = await fetch(`https://facturacioncfditotal.com/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
+          const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -205,7 +205,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           register={register}
           nombre="FormaPagoComprobante"
           label={"Forma de Pago"}
-          url="https://facturacioncfditotal.com/api/catalogos/Catalogos/FormaPago"
+          url={`${apiUrl}/api/catalogos/Catalogos/FormaPago`}
           clave="Clave"
           value={getValues("FormaPagoComprobante") || ""}
           descripcion="Descripcion"

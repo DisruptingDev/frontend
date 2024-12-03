@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Box, TextField, Button } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default function Impuesto({
     watch,
     register,
@@ -38,7 +38,7 @@ export default function Impuesto({
             // // Solo buscar opciones de impuestos si el nombre de impuesto está vacío
             // if (impuestoEditor.NombreImpuesto === "") {
             //     const token = localStorage.getItem('authToken');
-            //     fetch(`http://31.220.31.152:8081/Catalogos/ImpuestoClave`, {
+            //     fetch(`${apiUrl}/Catalogos/ImpuestoClave`, {
             //         method: 'GET',
             //         headers: {
             //             'Authorization': `Bearer ${token}`,
@@ -72,7 +72,7 @@ export default function Impuesto({
             const nombreImpuesto = impuestoEditor.NombreImpuesto || getValues(`impuestos[${index}].NombreImpuesto`);
             const tipo = impuestoEditor.Tipo || getValues(`impuestos[${index}].Tipo`);
             if (nombreImpuesto && tipo) {
-                setTasaUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                setTasaUrl(`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
             }
         }
     }, [impuestoEditor, index, setValue, getValues]);
@@ -92,8 +92,8 @@ export default function Impuesto({
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
-                    setTasaUrl(`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
-                    setValue(`impuestos.${index}.TasaUrl`,`https://facturacioncfditotal.com/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
+                    setTasaUrl(`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                    setValue(`impuestos.${index}.TasaUrl`,`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
                     // trigger(`impuestos[${index}].TasaUrl`);
                 }
                 
@@ -170,7 +170,7 @@ export default function Impuesto({
                         nombre={`impuestos[${index}].ObjetoImpuesto`}
                         label='ObjetoImpuesto'
                         descripcion='Descripcion'
-                        url="http://31.220.31.152:8081/Catalogos/ObjetoImpuestos"
+                        url="`${apiUrl}/Catalogos/ObjetoImpuestos`
                         onChange={handleObjetoImpuestoChange}
                         error={objetoImpuestoError}
                         helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
@@ -186,7 +186,7 @@ export default function Impuesto({
                         descripcion='Descripcion'
                         nombre={`impuestos[${index}].Impuesto`}
                         label='Impuesto'
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/ImpuestoClave"
+                        url={`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`}
                         onChange={handleImpuestoChange}
                         error={impuestoError}
                         helperText={impuestoError ? "El impuesto es requerido." : ""}

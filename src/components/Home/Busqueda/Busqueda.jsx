@@ -7,6 +7,7 @@ import Select from "@/components/Select/Select.jsx";
 import PickersMinMax from "@/components/PickersMinMax/PickersMinMax.jsx";
 import 'react-datepicker/dist/react-datepicker.css';
 import { set } from 'date-fns';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -154,7 +155,7 @@ export default function SearchFilter({setFiltro}) {
                     <Select
                         register={register}
                         nombre="Emisor"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Emisor"
+                        url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
                         clave="Rfc"
                         descripcion="Nombre"
                         opcion={true}
@@ -168,7 +169,7 @@ export default function SearchFilter({setFiltro}) {
                     <Select
                         register={register}
                         nombre="Receptor"
-                        url="https://facturacioncfditotal.com/api/catalogos/Catalogos/Receptor"
+                        url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
                         clave="Rfc"
                         descripcion="Nombre"
                         opcion={true}
