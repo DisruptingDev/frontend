@@ -5,7 +5,7 @@ import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled=false }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -26,24 +26,24 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         setMinDate(formatDate(threeDaysAgo));
         setMaxDate(formatDate(today));
         // console.logh
-       
+
     }, []);
     useEffect(() => {
-            const today = new Date();
-           
-    
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
+        const today = new Date();
 
-            if(!emisorData){
-                setValue("Fecha", formatDate(today));
-            }
-    
-    },[emisorData, setValue]);
+
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (!emisorData) {
+            setValue("Fecha", formatDate(today));
+        }
+
+    }, [emisorData, setValue]);
 
     // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
@@ -71,8 +71,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
             // Solo establece la fecha si no está definida
             if (!getValues("Fecha")) {
-                const formattedDate = emisorData.Fecha 
-                    ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd') 
+                const formattedDate = emisorData.Fecha
+                    ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd')
                     : '';
                 console.log(formattedDate);
                 setValue("Fecha", formattedDate);
@@ -80,12 +80,12 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
             setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
-            trigger(["Emisor","RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
+            trigger(["Emisor", "RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
         }
     }, [emisorData, setValue, trigger, getValues]);
 
-     // Cada vez que se selecciona un nuevo Emisor
-     useEffect(() => {
+    // Cada vez que se selecciona un nuevo Emisor
+    useEffect(() => {
         if (emisor && emisor.Rfc) {
             // Actualiza los valores de RFC y LugarExpedicion en react-hook-form
             setValue("Emisor", emisor.ID);
@@ -109,7 +109,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             trigger("RFCEmisor");
             trigger("LugarExpedicion");
 
-     
+
         }
     }, [emisor, setLugarExpedicion, setValue, trigger]);
     useEffect(() => {
@@ -134,8 +134,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
-            console.log("SERie",data);
-           setValue("TipoComprobante", data.TipoComprobante);
+            console.log("SERie", data);
+            setValue("TipoComprobante", data.TipoComprobante);
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
@@ -208,7 +208,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 <Select
                     register={register}
                     nombre="Serie"
-                    url={serieUrl} 
+                    url={serieUrl}
                     id="Clave"
                     clave='Clave'
                     descripcion="TimbresDisponibles"
@@ -217,24 +217,25 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     value={getValues("Serie") || ""}
                     onChange={handleSerieChange}
                     disabled={disabled}
-                    
+
                 />
 
                 <TextField
                     label="Fecha"
                     type="date"
-                    // {...register("Fecha", { required: "La fecha es requerida." })}
-                    {...register("Fecha", { 
-                        required: "La fecha es requerida.",
-                        validate: {
-                            notTooOld: (value) => {
-                                const currentDate = new Date();
-                                const inputDate = new Date(value);
-                                const threeDaysAgo = new Date();
-                                threeDaysAgo.setDate(currentDate.getDate() - 4);
-                                return inputDate >= threeDaysAgo || "Fecha invalida";
+                    {...register("Fecha", {
+                        required: !disabled ? "La fecha es requerida." : false, // Solo aplica validación si no está deshabilitado
+                        validate: !disabled
+                            ? {
+                                notTooOld: (value) => {
+                                    const currentDate = new Date();
+                                    const inputDate = new Date(value);
+                                    const threeDaysAgo = new Date();
+                                    threeDaysAgo.setDate(currentDate.getDate() - 4);
+                                    return inputDate >= threeDaysAgo || "Fecha invalida";
+                                },
                             }
-                        }
+                            : undefined, // No se aplican validaciones si está deshabilitado
                     })}
                     fullWidth
                     InputLabelProps={{
@@ -243,12 +244,11 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     InputProps={{
                         inputProps: { min: minDate, max: maxDate },
                     }}
-                    error={!!errors.Fecha}
-                    helperText={errors.Fecha && errors.Fecha.message}
-                    // value={getValues("Fecha") || ""}  // Usa getValues para manejar el valor
-                    // onChange={(e) => setValue("Fecha", e.target.value)}  // Permite edición manual
+                    error={!disabled && !!errors.Fecha} // Solo marca error si no está deshabilitado
+                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""} // No muestra mensaje si está deshabilitado
                     disabled={disabled}
                 />
+
 
                 <TextField
                     label="Divisa"

@@ -9,6 +9,7 @@ import Select from "@/components/Select/Select.jsx";
 import DatePickerComponent from "./DatePickerComponent";
 import { get } from "react-hook-form";
 import Impuesto from "../Impuesto/Impuesto";
+import { format } from "date-fns";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -62,6 +63,14 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     }
     fetchData();
   }, [emisorID, token]);
+
+  useEffect(() => {
+    const today = new Date();
+    const formattedDate = format(today, "yyyy-MM-dd'T'HH:mm:ss");
+    setFechaPago(formattedDate);
+
+    setValue("FechaPago", formattedDate);
+  }, [setValue]);
   // Selección por defecto en un useEffect:
   useEffect(() => {
     if (!getValues("SeriePagos") && opcionesSerie.length > 0) {
@@ -175,9 +184,10 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <DatePickerComponent
           selectedDate={fechaPago}
           onChange={(date) => {
-            setFechaPago(date);
-            setPago({ ...pago, fechaPago: date });
-            setValue("FechaPago", date);
+            const formattedDate = format(new Date(date), "yyyy-MM-dd'T'HH:mm:ss");
+            setFechaPago(formattedDate);
+            setPago({ ...pago, fechaPago: formattedDate });
+            setValue("FechaPago", formattedDate);
           }}
         />
         <FormControl variant="outlined" fullWidth>
@@ -282,7 +292,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         />
       </Box>
       <Box mt={4}>
-{/* 
+        {/* 
         {totalesImpuestos.length > 0 ? (
           totalesImpuestos.map((impuesto, index) => (
             <Box key={index}>

@@ -206,7 +206,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
         factura = {
             Version: "4.0",
             Serie: emisor.SeriePagos || "P",
-            Fecha: fechaFormateada,
+            Fecha:  emisor.FechaPago,
             LugarExpedicion: emisor.LugarExpedicion,
             FormaPago: receptor.FormaPago,
             Moneda: emisor.Divisa || "MXN",
