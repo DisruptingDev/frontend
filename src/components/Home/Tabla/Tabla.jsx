@@ -161,44 +161,37 @@ export default function DataTable({ token, filtro }) {
 
     try {
       // Generamos las vistas previas y los datos para el POST
-      const facturas = await Promise.all(
-        ids.map(async (id) => {
-          const factura = await obtenerFactura(id);
-          if (factura) {
-            let htmlContent;
-            let acuseContent;
-            if (factura.factura.Estatus === 'Cancelada') {
-              console.log('Factura cancelada:', factura);
-              await convertXMLToPDF(factura.factura.xmlCancelacion, `Acuse_${factura.factura.Emisor.Nombre}_${factura.factura.Folio}.pdf`);
-            }
-            else {
-              console.log('Factura:', factura);
-              htmlContent = await generarVistaPrevia(factura);
-              console.log('HTML content:', htmlContent);
-            }
-
-
-
-            // Verificamos si hay un solo ID para recuperar el nombre
-            const name = ids.length === 1 ? `${factura.factura.Emisor.Nombre}_${factura.factura.Folio}` : null;
-
-            return {
-              ID: id,
-              htmlString: htmlContent,
-              ...(name && { name }) // Agregamos el nombre solo si existe
-            };
-          } else {
-            console.error('Error al obtener la factura', id);
-            return null;
-          }
-        })
-      );
-
-
+      // const facturas = await Promise.all(
+      //   ids.map(async (id) => {
+      //     const factura = await obtenerFactura(id);
+      //     if (factura) {
+      //       let htmlContent;
+      //       let acuseContent;
+      //       if (factura.factura.Estatus === 'Cancelada') {
+      //         console.log('Factura cancelada:', factura);
+      //         await convertXMLToPDF(factura.factura.xmlCancelacion, `Acuse_${factura.factura.Emisor.Nombre}_${factura.factura.Folio}.pdf`);
+      //       }
+      //       else {
+      //         console.log('Factura:', factura);
+      //         htmlContent = await generarVistaPrevia(factura);
+      //         console.log('HTML content:', htmlContent);
+      //       }
+      //       // Verificamos si hay un solo ID para recuperar el nombre
+      //       const name = ids.length === 1 ? `${factura.factura.Emisor.Nombre}_${factura.factura.Folio}` : null;
+      //       return {
+      //         ID: id,
+      //         htmlString: htmlContent,
+      //         ...(name && { name }) // Agregamos el nombre solo si existe
+      //       };
+      //     } else {
+      //       console.error('Error al obtener la factura', id);
+      //       return null;
+      //     }
+      //   })
+      // );
       // Filtramos facturas válidas
-      const facturasValidas = facturas.filter(factura => factura !== null);
-      console.log('Facturas válidas:', facturasValidas);
-
+      // const facturasValidas = facturas.filter(factura => factura !== null);
+      // console.log('Facturas válidas:', facturasValidas);
       // Enviamos la solicitud POST a /DescargarArchivos con las facturas
       const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
         method: 'POST',
@@ -206,7 +199,8 @@ export default function DataTable({ token, filtro }) {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(facturasValidas),
+        // body: JSON.stringify(facturasValidas),
+        body: JSON.stringify(ids),
       });
       if (response.ok) {
 
@@ -216,8 +210,9 @@ export default function DataTable({ token, filtro }) {
 
         const a = document.createElement('a');
         a.href = url;
-        if (facturasValidas.length === 1) {
-          a.download = `${facturasValidas[0].name}`;
+        if (ids.length === 1) {
+          // a.download = `${facturasValidas[0].name}`;
+          a.download = `Factura`;
         }
         else {
 
@@ -228,8 +223,8 @@ export default function DataTable({ token, filtro }) {
         a.remove();
 
         setLoading(false);
-        if (facturasValidas.length === 1) {
-          setConfirmationMessage(`Su archivo ${facturasValidas[0].name}.zip se ha descargado. <br/>
+        if (ids.length === 1) {
+          setConfirmationMessage(`Su archivo  se ha descargado. <br/>
           Revise su carpeta de descargas.`);
         }
         else {
