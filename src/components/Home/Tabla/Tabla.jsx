@@ -709,7 +709,7 @@ export default function DataTable({ token, filtro }) {
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Total)}</TableCell>
+                  <TableCell sx={{ textAlign: 'center' }}>{row.Complemento.Pagos.Pagos? formatCurrency(row.Complemento.Pagos.Totales.MontoTotalPagos) : formatCurrency(row.Total)}</TableCell>
                   <TableCell sx={{ textAlign: 'center' }}>
                     <IconButton onClick={(event) => handleMenuClick(event, row)}>
                       <MoreVertIcon />
@@ -737,15 +737,21 @@ export default function DataTable({ token, filtro }) {
                         <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                       ]}
                       {
-                        menuRow && menuRow.uuid !== '' && [
+                        menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !=="P" && [
                           <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
                           <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
                         ]
                       }
+                       {
+                        menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante ==="P" && [
+                          <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
+                        ]
+                      }
+
                       {
                         menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
-                          <MenuItem key="pago" onClick={handleFacturaPago}>Factura de Pago</MenuItem>
+                          <MenuItem key="pago" onClick={handleFacturaPago}>Comprobante de Pago</MenuItem>
                         ]
                       }
                       
