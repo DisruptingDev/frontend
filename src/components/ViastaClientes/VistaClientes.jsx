@@ -13,31 +13,34 @@ function createData(item) {
 }
 
 const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
-
-
+    // Estados para gestionar los receptores y el estado de carga
     const [receptores, setReceptores] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    //Para el menu
+    // Estados para manejar el menú contextual
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
 
+    // Maneja la apertura del menú contextual
     const handleMenuClick = (event, row) => {
-        setAnchorEl(event.currentTarget);
-        setMenuRow(row);
+        setAnchorEl(event.currentTarget); // Establece la posición del menú
+        setMenuRow(row); // Asigna la fila seleccionada
     };
 
+    // Maneja el cierre del menú contextual
     const handleMenuClose = () => {
         setAnchorEl(null);
         setMenuRow(null);
     };
-    const handleEditar = () => {
-        setClienteIdEditar(menuRow.ID);
-        handleMenuClose();
 
+    // Maneja la acción de editar un cliente
+    const handleEditar = () => {
+        setClienteIdEditar(menuRow.ID); // Asigna el ID del cliente a editar
+        handleMenuClose(); // Cierra el menú
     };
+
+    // Función para obtener la lista de receptores desde la API
     const fetchReceptores = useCallback(async () => {
-        // console.log('Fetching receptores 2',token);
         if (token) {
             try {
                 const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
@@ -46,37 +49,33 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
                     },
                 });
                 const data = await response.json();
-                console
                 if (Array.isArray(data)) {
                     const transformedData = data.map((item) => createData(item));
                     const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
-                    // setRows(sortedData);
                     setReceptores(sortedData);
                 } else {
                     console.error('Expected an array but received:', typeof data);
                 }
-                // setReceptores(data);
             } catch (error) {
                 console.error('Error fetching receptores:', error);
             } finally {
                 setLoading(false);
             }
         }
-
     }, [token]);
 
+    // Efecto para cargar los receptores al montar el componente
     useEffect(() => {
-        // console.log('Fetching receptores',token);
         fetchReceptores();
     }, [fetchReceptores, token]);
 
+    // Efecto para actualizar la lista de receptores
     useEffect(() => {
         if (actualizar) {
             console.log('Actualizando');
             fetchReceptores();
         }
-    }
-        , [actualizar, fetchReceptores]);
+    }, [actualizar, fetchReceptores]);
 
     if (loading) {
         return <CircularProgress />;
@@ -95,12 +94,6 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Regimen Fiscal</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Domicilio Fiscal</TableCell>
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Uso CFDI</TableCell>
-                        {/* <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Calle</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Número Exterior</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Número Interior</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Colonia</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Municipio</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estado</TableCell> */}
                         <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acción</TableCell>
                     </TableRow>
                 </TableHead>
@@ -113,12 +106,6 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.RegimenFiscalReceptor}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.DomicilioFiscalReceptor}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{receptor.UsoCFDI}</TableCell>
-                            {/* <TableCell sx={{ textAlign: 'center' }}>{receptor.Calle}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.NumeroExterior}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.NumeroInterior}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Colonia}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Municipio}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{receptor.Estado}</TableCell> */}
                             <TableCell sx={{ textAlign: 'center' }}>
                                 {receptor.Rfc !== 'XAXX010101000' && (
                                     <React.Fragment>
@@ -131,7 +118,6 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
                                             onClose={handleMenuClose}
                                         >
                                             <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                            {/* <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem> */}
                                         </Menu>
                                     </React.Fragment>
                                 )}

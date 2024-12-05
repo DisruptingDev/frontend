@@ -13,12 +13,10 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
     const [editar, setEditar] = useState(false);
 
 
+    // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
-        console.log("cliente", cliente);
         if (cliente && Object.keys(cliente).length > 0) {
             setEditar(true);
-            console.log(cliente);
-            //Rellena los campos con los datos del cliente
             setValue('Nombre', cliente.Nombre);
             setValue('Rfc', cliente.Rfc);
             setValue('RegimenFiscal', cliente.RegimenFiscalReceptor);
@@ -29,134 +27,91 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setValue('Colonia', cliente.Colonia);
             setValue('Municipio', cliente.Municipio);
             setValue('Estado', cliente.Estado);
-
         }
+    }, [cliente, setValue]);
 
-    }, [cliente, reset, setValue]);
+    // Cerrar el Snackbar
     const handleClose = () => {
         setToast({ ...toast, open: false });
     };
-    const handleCancelar = () => {
-        //Resetea los campos del formulario
 
+    // Cancelar el formulario y resetear campos
+    const handleCancelar = () => {
         onClose();
         reset();
 
     };
 
+    // Función para manejar el envío del formulario
     const onSubmit = async (data) => {
-        console.log(editar);
-        if (!editar) {
-            console.log("entro registro");
+        setLoading(true);
 
-            // Construir el objeto de datos como lo espera la API
-            const clienteData = {
+        const clienteData = editar
+            ? { // Datos para editar cliente
+                ID: cliente.ID,
+                Rfc: data.Rfc,
+                Nombre: data.Nombre,
+                RegimenFiscalReceptor: data.RegimenFiscal,
+                DomicilioFiscalReceptor: data.DomicilioFiscal,
+                ResidenciaFiscal: "",
+                NumRegIdTrib: "",
+                UsoCFDI: "",
+                Calle: data.Calle,
+                NumeroExterior: data.NumeroExterior,
+                NumeroInterior: data.NumeroInterior,
+                Colonia: data.Colonia,
+                Municipio: data.Municipio,
+                Estado: data.Estado,
+            }
+            : { // Datos para registrar nuevo cliente
                 Receptor: {
                     Rfc: data.Rfc,
                     Nombre: data.Nombre,
                     RegimenFiscalReceptor: data.RegimenFiscal,
                     DomicilioFiscalReceptor: data.DomicilioFiscal,
                     Calle: data.Calle,
-                    NumeroExterior: parseInt(data.NumeroExterior, 10), // Convertir a número si es necesario
-                    NumeroInterior: parseInt(data.NumeroInterior, 10), // Convertir a número si es necesario
+                    NumeroExterior: parseInt(data.NumeroExterior, 10),
+                    NumeroInterior: parseInt(data.NumeroInterior, 10),
                     Colonia: data.Colonia,
                     Municipio: data.Municipio,
                     Estado: data.Estado,
                 }
             };
 
+        try {
+            const url = editar
+                ? `${apiUrl}/api/gestores/EditarReceptor`
+                : `${apiUrl}/api/gestores/RegistroReceptor`;
 
-            setLoading(true);
+            const method = editar ? 'PUT' : 'POST';
 
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/RegistroReceptor`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(clienteData),
-                });
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(clienteData),
+            });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Error al guardar:', errorData);
-                    const error = "Error al guardar los datos: "+ errorData.message;
-                    console.log(error);
-                    setToast({ open: true, message: error , severity: 'error' });
-                } else {
-                    const result = await response.json();
-                    console.log('Guardado exitoso:', result);
-                    setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
-                    if(setActualizar)setActualizar(true);
-                    setTimeout(() => {
-                        reset();
-                        
-                        if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
-                    }, 2000);
-                }
-            } catch (error) {
-                console.error('Error en la solicitud:', error);
-                setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
-            } finally {
-                setLoading(false);
+            if (response.ok) {
+                const result = await response.json();
+                setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
+                if (setActualizar) setActualizar(true);
+                setTimeout(() => {
+                    reset();
+                    if (onClose) onClose();
+                    if (setActualizar) setActualizar(false);
+                }, 2000);
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al guardar los datos');
             }
+        } catch (error) {
+            setToast({ open: true, message: `Error: ${error.message}`, severity: 'error' });
+        } finally {
+            setLoading(false);
         }
-        else {
-            // Construir el objeto de datos como lo espera la API
-            const clienteData = {
-                ID: cliente.ID,                            // Integer
-                Rfc: data.Rfc,              // String
-                Nombre: data.Nombre,    // String
-                RegimenFiscalReceptor: data.RegimenFiscal,      // String (es un código fiscal)
-                DomicilioFiscalReceptor: data.DomicilioFiscal,  // String (es un código postal)
-                ResidenciaFiscal: "",              // String (puede ser vacío si no aplica)
-                NumRegIdTrib: "",                  // String (puede ser vacío si no aplica)
-                UsoCFDI: "",                       // String (puede ser vacío si no aplica)
-                Calle: data.Calle,               // String
-                NumeroExterior: data.NumeroExterior,              // String (en algunos casos puede ser alfanumérico)
-                NumeroInterior: data.NumeroInterior,               // String (en algunos casos puede ser alfanumérico)
-                Colonia: data.Colonia,         // String
-                Municipio: data.Municipio,       // String
-                Estado: data.Estado         // String
-            };
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/EditarReceptor`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(clienteData),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Error al guardar:', errorData);
-                    setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
-                } else {
-                    const result = await response.json();
-                    console.log('Guardado exitoso:', result);
-                    setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
-                   //Depues de un tiempo resetea los campos del formulario
-                   if(setActualizar)setActualizar(true);
-                    setTimeout(() => {
-                        reset();
-                        
-                        if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
-                    }, 2000);
-                 
-                }
-            } catch (error) {
-                console.error('Error en la solicitud:', error);
-                setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
-            } finally {
-                setLoading(false);
-            }
-        }
-
     };
 
     return (
@@ -287,17 +242,6 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         {...register("Estado", { required: false })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
-                    {/* <Select
-                        nombre="Estado"
-                        url="http://31.220.31.152:8081/Catalogos/Estados"
-                        clave="Nombre"
-                        descripcion="Nombre"
-                        fullWidth
-                        error={!!errors.Estado}
-                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Estado", { required: true })}
-                        onChange={(e) => setValue('Estado', e.target.value)}
-                    /> */}
                 </Box>
                 <Box my={4} display="flex" justifyContent="flex-end" gap={3}>
                     <Button

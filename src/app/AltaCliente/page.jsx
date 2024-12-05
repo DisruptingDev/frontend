@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente";
 import VistaClientes from "@/components/ViastaClientes/VistaClientes";
-import { Box, Button, Dialog, DialogTitle, DialogContent} from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,98 +12,93 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default function RegistroClientes() {
     const [issuerName, setIssuerName] = useState('');
     const [issuerRfc, setIssuerRfc] = useState('');
-    const [cliente, setCliente] = useState([]);
+    const [cliente, setCliente] = useState([]); // Cliente a editar o agregar
 
-    const [openModal, setOpenModal] = useState(false);
-    const [isModalClosed, setIsModalClosed] = useState(false);
+    const [openModal, setOpenModal] = useState(false); // Estado del modal
+    const [isModalClosed, setIsModalClosed] = useState(false); // Detectar si el modal fue cerrado
 
-    const [clienteIdEditar, setClienteIdEditar] = useState('');
+    const [clienteIdEditar, setClienteIdEditar] = useState(''); // ID del cliente a editar
+    const [actualizar, setActualizar] = useState(false); // Estado para indicar si se debe actualizar la lista de clientes
 
-    const [actualizar, setActualizar] = useState(false);
+    const router = useRouter(); // Hook de navegación de Next.js
+    const [token, setToken] = useState(""); // Token de autenticación
 
-    const router = useRouter(); // Inicializa el router
-    const [token, setToken] = useState("");
-
+    // Efecto para verificar autenticación y obtener el token
     useEffect(() => {
-        
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
-            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
-        }
-        else
-        {
+            router.push("/IniciaSesion"); // Redirige al login si no está autenticado
+        } else {
             setToken(token);
         }
     }, [router]);
 
+    // Efecto para cargar datos del cliente a editar
     useEffect(() => {
-        if(clienteIdEditar){
+        if (clienteIdEditar) {
             async function fetchData() {
-            try {
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor/${clienteIdEditar}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                console.log(response);
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log(data);
-                    setCliente(data);
-                    setOpenModal(true);
-                } else {
-                    console.log("Error al cargar los clientes");
+                try {
+                    const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor/${clienteIdEditar}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    });
+                    console.log(response);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setCliente(data); // Configura los datos del cliente en el estado
+                        setOpenModal(true); // Abre el modal para edición
+                    } else {
+                        console.log("Error al cargar los clientes");
+                    }
+                } catch (error) {
+                    console.log("Error al cargar los clientes" + error);
                 }
-            } catch (error) {
-                console.log("Error al cargar los clientes" + error);
             }
+            fetchData();
         }
-        fetchData();
-        }
-        
     }, [clienteIdEditar, token]);
 
-
+    // Abrir el modal para agregar cliente
     const handleOpenModal = () => {
         setOpenModal(true);
     };
 
+    // Cerrar el modal
     const handleCloseModal = () => {
-        setCliente('');
-        setClienteIdEditar('');
-        setOpenModal(false);
-        setIsModalClosed(true);
-        
+        setCliente(''); // Limpia los datos del cliente
+        setClienteIdEditar(''); // Limpia el ID del cliente a editar
+        setOpenModal(false); // Cierra el modal
+        setIsModalClosed(true); // Indica que el modal fue cerrado
     };
-
-
 
 
     return (
         <div>
+            {/* Encabezado */}
             <Header />
             <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                {/* Botón para abrir el modal de alta */}
                 <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
                     <Button
                         variant="contained"
                         sx={{
-                            backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'},
+                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                           
+
                         }}
                         onClick={handleOpenModal}
                     >
                         Agregar Cliente
                     </Button>
                 </Box>
-                {/* <AltaCliente /> */}
-
-                <VistaClientes  setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token}/>
+                {/* Componente para listar clientes */}
+                <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
 
             </Box>
+            {/* Modal para alta o edición de cliente */}
             <Dialog
                 open={openModal}
                 onClose={handleCloseModal}
@@ -118,7 +113,7 @@ export default function RegistroClientes() {
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente cliente={cliente} onClose={handleCloseModal} setActualizar={setActualizar} token={token}/>
+                    <AltaCliente cliente={cliente} onClose={handleCloseModal} setActualizar={setActualizar} token={token} />
                 </DialogContent>
             </Dialog>
         </div>
