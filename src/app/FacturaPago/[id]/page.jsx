@@ -67,15 +67,43 @@ export default function FacturaPago() {
                 const data = await response.json();
                 setFacturaEdit(data);
                 console.log("Factura", data);
+        
             } catch (error) {
                 console.error('Error fetching factura:', error);
             }
         };
 
+        const fetchDoctosRelacionados = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await response.json();
+                console.log("Docto Relacionado", data);
+                const ultimoPago = data[data.length - 1];
+                console.log("Ultimo Pago", ultimoPago);
+                const pagos = {
+                    numOperacion: ultimoPago.NumParcialidad,
+                    saldo: ultimoPago.ImpSaldoInsoluto,
+                };
+                setPagos(pagos);
+                
+
+            } catch (error) {
+                console.error('Error fetching docto relacionado:', error);
+
+            }
+        };
+
         if (id && token) {
             fetchFactura(); // Solo llama a la API si hay una ID
+            fetchDoctosRelacionados(); // Solo llama a la API si hay una ID
         }
     }, [id, token]);
+
 
 
     useEffect(() => {
@@ -93,21 +121,22 @@ export default function FacturaPago() {
             if (Receptor) {
                 setReceptorData(Receptor);
             }
+            setValue("IdDocumento", facturaEdit.factura.uuid);
             // console.log("Docto Relacionado", facturaEdit.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados);
             // console.log("Numero Parcialidad", facturaEdit.factura.Complemento.Pagos.Pagos?.DoctoRelacionados.NumParcialidad);
-            const pagos = {
-                numOperacion:
-                  facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.NumParcialidad ?? 0,
-                saldo:
-                  facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.ImpSaldoInsoluto ??
-                  facturaEdit?.factura?.Total ??
-                  0,
-              };
-            console.log("Pagos", pagos);
-            setValue("IdDocumento", facturaEdit.factura.uuid);
-            setValue("SaldoAnterior", pagos.saldo);
-            setValue("Folio", facturaEdit.factura.Folio);
-            setPagos(pagos);
+            // const pagos = {
+            //     numOperacion:
+            //       facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.NumParcialidad ?? 0,
+            //     saldo:
+            //       facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.ImpSaldoInsoluto ??
+            //       facturaEdit?.factura?.Total ??
+            //       0,
+            //   };
+            // console.log("Pagos", pagos);
+            
+            // setValue("SaldoAnterior", pagos.saldo);
+            // setValue("Folio", facturaEdit.factura.Folio);
+            // setPagos(pagos);
         }
 
     }, [facturaEdit, setValue]);

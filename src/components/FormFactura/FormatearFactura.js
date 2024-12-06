@@ -251,15 +251,16 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                         TotalTrasladosImpuestoIVA0: Number((emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2)),
                         TotalTrasladosBaseIVAExento: Number((emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2)),
                         TotalTrasladosImpuestoIVAExento: Number((emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2)),
-                        montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
+                        // montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
+                        montoTotalPagos: parseFloat(receptor.Monto)
                     },
                     Pagos: [
                         {
-                            FechaPago: fechaFormateada,
+                            FechaPago: emisor.FechaPago,
                             FormaDePagoP: receptor.FormaPagoComprobante,
                             Moneda: "MXN",
                             TipoCambioP: "1",
-                            Monto: receptor.Monto,
+                            Monto: parseFloat(receptor.Monto),
                             DoctoRelacionados: [{
                                 IdDocumento: receptor.IdDocumento,
                                 Serie: emisor.Serie,
@@ -268,8 +269,8 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                                 EquivalenciaDR: 1,
                                 Numparcialidad: emisor.NumeroOperacion,
                                 ImpSaldoAnt: emisor.SaldoAnterior,
-                                ImpPagado: receptor.Monto,
-                                ImpSaldoInsoluto: emisor.SaldoAnterior - receptor.Monto,
+                                ImpPagado: parseFloat(receptor.Monto),
+                                ImpSaldoInsoluto: parseFloat(emisor.ImpSaldoInsoluto),
                                 ObjetoImpDr: "02",
                             }],
                             Impuestos: {

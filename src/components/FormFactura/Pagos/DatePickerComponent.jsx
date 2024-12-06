@@ -24,12 +24,9 @@ const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
     fullWidth
     variant="outlined"
     label="Fecha y hora de pago"
-    value={value}
+    value={value || ""}
     onClick={onClick}
     inputRef={ref}
-    sx={{
-      "& .MuiInputBase-root": { height: "56px", display: "flex", alignItems: "center" },
-    }}
   />
 ));
 

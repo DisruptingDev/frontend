@@ -3,13 +3,14 @@
 import React, { useState, forwardRef, useEffect } from "react";
 import { TextField, Box, Typography, FormControl, Select as MuiSelect, InputLabel, MenuItem, } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import ReactDatePicker from "react-datepicker";
+
 import "react-datepicker/dist/react-datepicker.css";
 import Select from "@/components/Select/Select.jsx";
-import DatePickerComponent from "./DatePickerComponent";
+// import DatePickerComponent from "./DatePickerComponent";
+import ReactDatePicker from "./DatePickerComponent";
 import { get } from "react-hook-form";
 import Impuesto from "../Impuesto/Impuesto";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -63,14 +64,17 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     }
     fetchData();
   }, [emisorID, token]);
+  
+
 
   useEffect(() => {
     const today = new Date();
-    const formattedDate = format(today, "yyyy-MM-dd'T'HH:mm:ss");
-    setFechaPago(formattedDate);
-
-    setValue("FechaPago", formattedDate);
+    setFechaPago(today); // Inicializa como una instancia válida de Date
+    setValue("FechaPago", format(today, "yyyy-MM-dd'T'HH:mm:ss"));
   }, [setValue]);
+
+
+
   // Selección por defecto en un useEffect:
   useEffect(() => {
     if (!getValues("SeriePagos") && opcionesSerie.length > 0) {
@@ -156,13 +160,28 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
   };
 
+  useEffect(() => {
+    if (pagos) {
+    
+      setValue("NumeroOperacion", pagos.numOperacion + 1);
+      setValue("SaldoAnterior", pagos.saldo);
+
+    }
+  },[pagos, setValue]);
+
   const handleMontoChange = (e) => {
-    const nuevoMonto = parseFloat(e.target.value) || 0;
+    let nuevoMonto = e.target.value;
+    nuevoMonto = nuevoMonto.replace(/[^0-9.]/g, "");
+    if((nuevoMonto.match(/\./g) || []).length > 1) {
+      nuevoMonto = nuevoMonto.replace(/\.+$/, '');
+  }
+
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
     setValue("NumeroOperacion", pagos.numOperacion + 1);
-
+    const saldoInsoluto = parseFloat(pagos.saldo - nuevoMonto).toFixed(2);
+    setValue("ImpSaldoInsoluto", saldoInsoluto);
   };
 
   return (
@@ -181,15 +200,23 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}>
-        <DatePickerComponent
+        {/* <DatePickerComponent
           selectedDate={fechaPago}
           onChange={(date) => {
             const formattedDate = format(new Date(date), "yyyy-MM-dd'T'HH:mm:ss");
             setFechaPago(formattedDate);
+            setFechaPago(date);
             setPago({ ...pago, fechaPago: formattedDate });
-            setValue("FechaPago", formattedDate);
+            // setValue("FechaPago", formattedDate);
           }}
-        />
+        /> */}
+         <ReactDatePicker
+        selectedDate={fechaPago} // Pasa el estado al componente hijo
+        onChange={(date) => {
+          setFechaPago(date); // Actualiza el estado
+          setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss")); // Actualiza el formulario
+        }}
+      />
         <FormControl variant="outlined" fullWidth>
           <InputLabel id="serie-label">Serie</InputLabel>
           <MuiSelect
@@ -223,15 +250,26 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           helperText={errors.FormaPagoComprobante ? "Este campo es obligatorio" : ""}
         />
         <TextField
-          {...register("Monto", { required: "Este campo es obligatorio" })}
+          {...register("Monto", { required: "Este campo es obligatorio",
+            validate: (value) => {
+              if (parseFloat(value) <= 0) {
+                return "El monto debe ser mayor a 0";
+              }
+              else if (parseFloat(value) > pagos.saldo) {
+                return "El monto no puede ser mayor al saldo";
+              } else {
+                return true;
+              }
+            }
+           })}
           label="Monto"
           name="monto"
-          value={pago.monto || ""}
+          // value = {getValues("Monto")}
           onChange={handleMontoChange}
           fullWidth
           error={!!errors.Monto}
           helperText={errors.Monto?.message}
-
+          
         />
         <TextField
 
@@ -286,7 +324,8 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Importe del saldo insoluto"
           name="saldoInsoluto"
-          value={pagos.saldo - pago.monto || ""}
+          // value={pagos.saldo - pago.monto || ""}
+          value={getValues("ImpSaldoInsoluto") || ""}
           disabled
           fullWidth
         />
@@ -343,7 +382,10 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
       {/* <pre> {"Prueba" + JSON.stringify(getValues("SeriePagos"), null, 2)}</pre> */}
       {/* <pre> {JSON.stringify(totalesImpuestos,null,2)}</pre>
       <pre> {JSON.stringify(totales,null,2)}</pre> */}
+      {/* <pre> {JSON.stringify(getValues("FechaPago"),null,2)}</pre> */}
+      {/* <pre> {JSON.stringify( parseFloat(pagos.saldo - getValues("Monto")))}</pre> */}
       {children}
+
     </Box>
   );
 }
