@@ -132,13 +132,22 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (metodoPago !== undefined) {
             let data = JSON.parse(metodoPago);
             setValue("MetodoPagoDescripcion", data["Descripcion"]);
+            console.log("Forma de pago", data["Clave"]);
+            if(data["Clave"]==="PPD"){
+                console.log("Forma de pago", data["Clave"]);
+                setValue("FormaPago", 99);
+                trigger("FormaPago");
+            }
+           
         }
-    }, [metodoPago, setValue])
+    }, [metodoPago, setValue, trigger])
 
     useEffect(() => {
         if (formaPago !== undefined) {
             let data = JSON.parse(formaPago);
             setValue("FormaPagoDescripcion", data["Descripcion"]);
+            
+                
         }
     }, [formaPago, setValue])
 
@@ -279,7 +288,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     descripcion="Descripcion"
                     error={!!errors.MetodoPago}
                     helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
-                    onChange={(e) => setMetodoPago(e.target.value)}
+                    onChange={(e) => {
+                        setMetodoPago(e.target.value);
+                    }}
                     value={getValues("MetodoPago") || ""}
                     disabled={disabled}
                     
@@ -426,6 +437,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <AltaCliente register={register} onClose={handleCloseModal} />
                 </DialogContent>
             </Dialog>
+            {/* <pre> {JSON.stringify(getValues("FormaPago"),null,2)}</pre>  */}
         </Box>
+         
     );
 }
