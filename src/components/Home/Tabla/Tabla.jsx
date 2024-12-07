@@ -70,6 +70,7 @@ export default function DataTable({ token, filtro }) {
   const [resultadoCancelar, setResultadoCancelar] = useState(null);
   const [expandedIndexes, setExpandedIndexes] = useState({});
   const [actualizar, setActualizar] = useState(false);
+  const [mensajeFiltros, setmensajeFiltros] = useState("");
 
   // Función para alternar la expansión de una factura específica
   const handleToggleExpand = (index) => {
@@ -341,17 +342,31 @@ export default function DataTable({ token, filtro }) {
     return filteredRows;
   };
 
-  // Filtra los datos al cambiar el filtro
   useEffect(() => {
     if (filtro) {
       console.log('Filtrando:', filtro);
       const newFilteredRows = filtrado(filtro);
-      setRows(newFilteredRows);
+      if (newFilteredRows.length === 0) {
+        console.log('No hay resultados con los filtros aplicados: ', filtro);
 
+        // Construir un mensaje legible a partir de los valores del filtro
+        const filtroDescripcion = Object.entries(filtro)
+          .map(([key, value]) => `<strong>${key}</strong>: ${value || 'N/A'}`)
+          .join(', ');
+
+        setmensajeFiltros(
+          `No hay resultados con los filtros aplicados: ${filtroDescripcion}`
+        );
+      } else {
+        setmensajeFiltros(''); // Limpiar el mensaje si hay resultados
+      }
+      setRows(newFilteredRows);
     } else {
       console.log('No hay filtro');
+      setmensajeFiltros(''); // Limpiar el mensaje si no hay filtro
     }
   }, [filtro]);
+
 
   // Función para manejar el click en una fila
   const handleRowClick = (row) => {
@@ -473,87 +488,118 @@ export default function DataTable({ token, filtro }) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-                <TableRow
-                  key={row.ID}
-                  onClick={() => handleRowClick(row)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
-                    <Checkbox
-                      color="primary"
-                      checked={selectedRows.includes(row.ID)}
-                      onChange={() => handleSelectRow(row)}
-                      sx={{
-                        color: '#04b2ca', // Color del checkbox cuando no está seleccionado
-                        '&.Mui-checked': {
-                          color: '#028596', // Color del checkbox cuando está seleccionado
-                        },
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Folio}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.MetodoPago}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.Estatus ? row.Estatus : row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>{row.TipoDeComprobante === "P" ? formatCurrency(row.Complemento.Pagos.Totales.MontoTotalPagos) : formatCurrency(row.Total)}</TableCell>
-                  <TableCell sx={{ textAlign: 'center' }}>
-                    <IconButton onClick={(event) => handleMenuClick(event, row)}>
-                      <MoreVertIcon />
-                    </IconButton>
-                    <Menu
-                      anchorEl={anchorEl}
-                      open={Boolean(anchorEl)}
-                      onClose={handleMenuClose}
-                      sx={{
-                        "& .MuiPaper-root": {
+              {rows.length > 0 ? (
+                rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
+                  <TableRow
+                    key={row.ID}
+                    onClick={() => handleRowClick(row)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
+                      <Checkbox
+                        color="primary"
+                        checked={selectedRows.includes(row.ID)}
+                        onChange={() => handleSelectRow(row)}
+                        sx={{
+                          color: '#04b2ca', // Color del checkbox cuando no está seleccionado
+                          '&.Mui-checked': {
+                            color: '#028596', // Color del checkbox cuando está seleccionado
+                          },
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.ID}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Folio}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Emisor.Nombre || 'Desconocido'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Receptor.Nombre || 'Desconocido'}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.MetodoPago}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Estatus ? row.Estatus : row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosRetenidos || 0)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.TipoDeComprobante === "P" ? formatCurrency(row.Complemento.Pagos.Totales.MontoTotalPagos) : formatCurrency(row.Total)}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <IconButton onClick={(event) => handleMenuClick(event, row)}>
+                        <MoreVertIcon />
+                      </IconButton>
+                      <Menu
+                        anchorEl={anchorEl}
+                        open={Boolean(anchorEl)}
+                        onClose={handleMenuClose}
+                        sx={{
+                          "& .MuiPaper-root": {
 
-                          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.125)',
-                        },
-                      }}
-                    >
-                      {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
-                        <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
-                        <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
-                        <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
-                        <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
-                        // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
+                            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.125)',
+                          },
+                        }}
+                      >
+                        {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
+                          <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                          <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
+                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
+                          // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
 
-                      ]}
-                      {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
-                        <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
-                      ]}
-                      {
-                        menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !== "P" && [
-                          <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
-                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
-                          <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
-                        ]
-                      }
-                      {
-                        menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante === "P" && [
-                          <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
-                        ]
-                      }
-                      {
-                        menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
-                          <MenuItem key="pago" onClick={handleFacturaPago}>Comprobante de Pago</MenuItem>
-                        ]
-                      }
+                        ]}
+                        {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
+                          <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                        ]}
+                        {
+                          menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !== "P" && [
+                            <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
+                            <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
+                            <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
+                          ]
+                        }
+                        {
+                          menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante === "P" && [
+                            <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
+                          ]
+                        }
+                        {
+                          menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
+                            <MenuItem key="pago" onClick={handleFacturaPago}>Comprobante de Pago</MenuItem>
+                          ]
+                        }
 
 
-                    </Menu>
+                      </Menu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={16}
+                    sx={{
+                      textAlign: 'center',
+                      color: '#555',
+                      backgroundColor: '#f9f9f9',
+                      fontSize: '1rem',
+                      padding: '20px',
+                      border: '1px solid #ddd',
+                    }}
+                  >
+                    {mensajeFiltros === '' ? (
+                      <span style={{ fontStyle: 'italic', color: '#888' }}>
+                        No hay datos para mostrar
+                      </span>
+                    ) : (
+                      <span
+                        dangerouslySetInnerHTML={{ __html: mensajeFiltros }}
+                        style={{
+                          display: 'block',
+                          padding: '10px',
+                          borderRadius: '4px',
+                        }}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
