@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: x-large;
+            font-weight: bold;
+        }
+
+        body {
+            width: 100%;
+            /* font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; */
+            font-family: Arial, sans-serif;
+            /* margin: 20px; */
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            /* background-color: #f4f4f4; */
+        }
+
+        .contenedor-factura {
+            width: 100%;
+            height: 90vh;
+            margin: auto;
+            padding: 20px;
+
+            /* background: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); */
+        }
+
+        .emisor {
+            display: flex;
+            flex-direction: column;
+            padding: 5px 0;
+            border-bottom: 1px solid #003a6c;
+        }
+
+        .titulo {
+            font-weight: 200;
+            background: #003a6c;
+            color: white;
+            text-align: center;
+            padding: 5px;
+            font-size: larger;
+        }
+
+
+        .emisor div {
+
+            display: flex;
+            /* flex-direction: row; */
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .logo {
+            width: 120px;
+
+        }
+
+        .logo img {
+            max-width: 120px;
+            object-fit: contain;
+        }
+
+        .datos1 {
+            display: flex;
+            flex-direction: column;
+            justify-content: start !important;
+            width: calc(60% - 120px);
+            padding: 10px;
+
+        }
+
+        p {
+            margin: 1.5px;
+        }
+
+        .datos2 {
+            display: flex;
+            flex-direction: column;
+            justify-content: start !important;
+            width: calc(40%);
+            padding: 10px;
+            text-align: end;
+        }
+
+        .datos2 strong {
+            color: #003a6c;
+            ;
+        }
+
+        .datos2 .folio {
+            color: rgb(170, 9, 9);
+            font-weight: bold;
+        }
+
+        .receptor {
+            width: 60%;
+            margin-top: 5px;
+        }
+
+        .receptor p {
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .receptor p :first-child {
+            width: 25%;
+        }
+
+        .receptor p :last-child {
+            width: 75%;
+        }
+
+        .conceptos {
+            margin-top: 20px;
+        }
+
+
+
+        .tabla-conceptos table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000000;
+        }
+
+        .tabla-conceptos th,
+        .tabla-conceptos td {
+            /* border: 1px solid #000000; */
+            padding: 8px;
+            text-align: left;
+        }
+
+        .tabla-conceptos tbody tr td {
+            border: 1px solid #000000;
+        }
+
+        .tabla-conceptos td small {
+            margin: 5px;
+        }
+
+        .tabla-conceptos td span {
+            font-weight: bold;
+        }
+
+        .tabla-conceptos th {
+            background-color: #f3f3f3;
+        }
+
+        .tabla-conceptos-pagos table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000000;
+        }
+
+
+        .tabla-conceptos-pagos th,
+        .tabla-conceptos-pagos td {
+            padding: 4px;
+            text-align: left;
+            font-size: x-small;
+        }
+
+        .tabla-conceptos-pagos tbody tr td {
+            border: 1px solid #000000;
+        }
+
+        .tabla-conceptos-pagos td small {
+            margin: 5px;
+        }
+
+        .tabla-conceptos-pagos td span {
+            font-weight: bold;
+        }
+
+        .tabla-conceptos-pagos th {
+            background-color: #f3f3f3;
+        }
+
+        .resultado {
+            display: flex;
+            /* flex-direction: row; */
+            /* flex-direction: column; */
+
+        }
+
+        .resultado p {
+            text-align: center;
+            width: 60%;
+            text-transform: uppercase;
+        }
+
+        .resultado div {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            align-items: end;
+        }
+
+        .resultado div :last-child {
+            margin-top: 5px;
+        }
+
+        .resultado div p {
+            width: 96%;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: #000000 1px solid;
+        }
+
+        .resultado div p :first-child {
+            width: 40%;
+        }
+
+        .resultado div p span {
+            width: 28%;
+
+        }
+
+        .pago {
+
+            display: flex;
+            width: 70%;
+        }
+
+        .pago .informacion {
+            width: calc(100% - 140px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .pago .informacion p {
+
+            margin: 2px 5.5px;
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            /* justify-content: space-around; */
+        }
+
+        .pago .informacion p :first-child {
+            width: 35%;
+        }
+
+        .pago .informacion p :last-child {
+            font-weight: bold;
+            width: 65%;
+        }
+
+        .pago img {
+            width: 115px;
+        }
+
+        .certificado {
+            margin-top: 5px;
+            overflow-wrap: break-word;
+        }
+
+        .certificado p strong {
+            margin-left: -5px;
+        }
+
+        .certificado span strong {
+            margin-left: -5px;
+            color: #003a6c;
+
+        }
+
+        .certificado :nth-last-child(2) {
+            margin-left: 85px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="contenedor-factura">
+        <h2 class="titulo">FACTURA ELECTRÓNICA (CFDI)</h2>
+        <div class="emisor">
+            <h1>{{nombreEmisor}}</h1>
+            <div>
+                <div class="logo">
+                    <img src="{{logo}}" alt="">
+                </div>
+
+                <div class="datos1">
+                    <p>RFC: {{rfcEmisor}}</p>
+                    <p>{{direccionEmisor}}</p>
+                    <p>{{regimenFiscalEmisor}}</p>
+                    <!-- <p>Tel:{{telEmisor}}</p>
+                <p>E-Mail:{{correoEmisor}}</p> -->
+                </div>
+                <div class="datos2">
+                    <p><strong>FACTURA:</strong></p>
+                    <span class="folio">{{folioFactura}}</span>
+                    <p><strong>Folio Fiscal:</strong></p>
+                    <span class="folio-fiscal">{{folioFiscal}}</span>
+                    <p><strong>No de Serie del Certificado del CSD:</strong></p>
+                    <span class="serie-csd">{{serieCSD}}</span>
+                    <p><strong>Fecha y hora de emisión:</strong></p>
+                    <span class="fecha-emision">{{fechaEmision}}</span>
+                </div>
+            </div>
+            <p>LUGAR EXPEDICIÓN: <strong>86125</strong></p>
+        </div>
+        <div class="receptor">
+            <p><span>RECEPTOR:</span><span><strong>{{nombreReceptor}} </strong></span></p>
+            <p><span>RFC CLIENTE:</span><span><strong>{{rfcReceptor}}</strong></span></p>
+            <p><span>DIRECCIÓN:</span><span><strong>{{direccionReceptor}}</strong></span></p>
+            <p><span>USO CFDI:</span><span><strong>{{usoCFDI}}</strong></span></p>
+        </div>
+        <div class="conceptos">
+            <div class="tabla-conceptos-pagos">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CANTIDAD</th>
+                            <th>UNIDAD DE MEDIDA</th>
+                            <th>DESCRIPCIÓN</th>
+                            <th>P. UNITARIO</th>
+                            <th>IMPORTE</th>
+                            <th>UUID</th>
+                            <th>Moneda</th>
+                            <th>Tipo de cambio</th>
+                            <th>Método de Pago</th>
+                            <th>N°. Parcialidad</th>
+                            <th>Saldo anterior</th>
+                            <th>Importe Pagado</th>
+                            <th>Saldo Insoluto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>ACT</td>
+                            <td>
+                                Pago
+                                <br>
+                                <small>CLAVE SAT: <span>84111506</span></small>
+                            </td>
+                            <td>0.00</td>
+                            <td>0.00</td>
+                            <td>{{uuidRelacionado}}</td>
+                            <td>MXN</td>
+                            <td>1.00</td>
+                            <td>PPD</td>
+                            <td>{{parcialidad}}</td>
+                            <td>${{saldoAnterior}}</td>
+                            <td>${{importePagado}}</td>
+                            <td>${{saldoInsoluto}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+        <div class="pago">
+            <!-- <img id="qr-image" alt="Código QR"> -->
+            {{qrCode}}
+            <div class="informacion">
+                <p><span>FORMA DE PAGO:</span><span>{{formaPago}}</span></p>
+                <!-- <P><span>CTA. BANCARIA:</span><span>{{ctaBancaria}}</span> </P> -->
+                <p><span>RÉGIMEN FISCAL</span><span>{{regimenFiscal}}</span> </p>
+                <p><span>MONEDA:</span><span>{{divisa}}</span> </p>
+                <p><span>MÉTODO DE PAGO:</span> <span>{{metodoPago}}</span> </p>
+            </div>
+        </div>
+        <div class="certificado">
+            <p><strong>Sello Digital del CFDI:</strong></p>
+
+            <p>{{selloCFDI}}</p>
+            <p><strong>Sello del SAT:</strong></p>
+
+            <p>{{selloSAT}}</p>
+            <p><strong>Cadena Original del complemento de certificación digital del SAT:</strong></p>
+
+            <p>{{cadenaSAT}}</p>
+            <br>
+            <span><strong>No de Serie del Certificado del SAT:</strong></span>
+            &nbsp;&nbsp;&nbsp;
+            <span>{{serieCertificadoSAT}}</span>
+
+            <span><strong>Fecha y hora de certificación:</strong></span>
+            <span>{{fechaCertificacion}}</span>
+        </div>
+
+
+    </div>
+</body>
+
+</html>

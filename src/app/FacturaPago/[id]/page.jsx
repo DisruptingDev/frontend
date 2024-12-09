@@ -11,7 +11,8 @@ import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Pagos from "@/components/FormFactura/Pagos/Pagos";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
-import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
+// import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
+import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPreviaRPE";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
@@ -182,7 +183,7 @@ export default function FacturaPago() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPreviaRPE");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);

@@ -306,6 +306,171 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
         };
 
     }
+    else if (modo==="VistaPreviaRPE") {
+        factura = {
+            UUID: "",
+            Version: "4.0",
+            Serie: emisor.Serie,
+            Folio: "",
+            Fecha: fechaFormateada,
+            Sello: "",
+            FormaPago: receptor.FormaPago,
+            FormaPagoDescripcion: receptor.FormaPagoDescripcion,
+            NoCertificado: "",
+            Certificado: "",
+            CondicionesDePago: "Condiciones de Pago",
+            SubTotal: subtotal,
+            Moneda: emisor.Divisa || "MXN",
+            TipoCambio: "1",
+            Total: total,
+            TipoDeComprobante: "I",
+            Exportacion: "01",
+            MetodoPago: receptor.MetodoPago,
+            MetodoPagoDescripcion: receptor.MetodoPagoDescripcion,
+            LugarExpedicion: emisor.LugarExpedicion,
+            Confirmacion: "",
+            InformacionGlobal: {
+                Periodicidad: "01",
+                Meses: "01",
+                Año: "2024"
+            },
+            EmisorID: emisor.Emisor,
+            Emisor: {
+                Rfc: emisor.RFCEmisor,
+                Nombre: emisor.NombreEmisor,
+                RegimenFiscal: emisor.RegimenFiscal,
+                LugarExpedicion: emisor.LugarExpedicion,
+                LogoPath: emisor.LogoEmisor,
+                Calle: emisor.CalleEmisor,
+                NumeroExterior: emisor.NoExteriorEmisor,
+                NumeroInterior: emisor.NoInteriorEmisor,
+                Colonia: emisor.ColoniaEmisor,
+                Municipio: emisor.MunicipioEmisor,
+                Estado: emisor.EstadoEmisor,
+            },
+            // EmisorNombre: emisor.NombreEmisor,
+            // EmisorRFC: emisor.RFCEmisor,
+            // EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
+            // EmisorRegimenFiscal: emisor.RegimenFiscal,
+            // EmisorLogo: emisor.LogoEmisor,
+            Receptor: {
+                Rfc: receptor.RFCReceptor,
+                Nombre: receptor.NombreReceptor,
+                RegimenFiscal: receptor.RegimenFiscal,
+                UsoCFDI: receptor.UsoCFDI,
+                UsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+                Calle: receptor.Calle,
+                NumeroExterior: receptor.NoExterior,
+                Colonia: receptor.Colonia,
+                Municipio: receptor.Municipio,
+                Estado: receptor.Estado,
+                // Direccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+            },
+            
+            Conceptos: {
+                ListaConceptos: conceptos.map(concepto => ({
+                    ClaveProdServ: String(concepto.ClaveProdServ),
+                    NoIdentificacion: concepto.NoIdentificacion || "",
+                    Cantidad: parseInt(concepto.Cantidad, 10),
+                    ClaveUnidad: String(concepto.ClaveUnidad),
+                    Unidad: concepto.Unidad || "",
+                    Descripcion: concepto.Descripcion,
+                    ValorUnitario: concepto.ValorUnitario,
+                    Importe: concepto.Subtotal,
+                    Descuento: concepto.Descuento,
+                    ObjetoImp: concepto.ObjetoImp || "",
+                    Impuestos: {
+                        Retenciones: concepto.Retenciones ? concepto.Retenciones.map(retencion => ({
+                            NombreImpuesto: retencion.NombreImpuesto,
+                            Base: retencion.BaseImpuesto,
+                            ImpuestoClave: String(retencion.Impuesto),
+                            TipoFactor: retencion.Tipo,
+                            TasaOCuota: retencion.Tasa,
+                            Importe: retencion.Monto
+                        })) : [],
+                        Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
+                            NombreImpuesto: traslado.NombreImpuesto,
+                            Base: traslado.BaseImpuesto,
+                            ImpuestoClave: String(traslado.Impuesto),
+                            TipoFactor: traslado.Tipo,
+                            TasaOCuota: traslado.Tasa,
+                            Importe: traslado.Monto
+                        })) : []
+                    }
+                })),
+                
+                TotalImpuestosTrasladados: TotalTraslados,
+                //Aqui restar
+                TotalImpuestosRetenidos: TotalRetenciones,
+                GrupoID: 1
+            },
+            Complemento: {
+                Pagos: {
+                    Version: "2.0",
+                    Totales: {
+                        TotalRetencionesIVA: Number((emisor.Totales.TotalRetencionesIVA || 0).toFixed(2)),
+                        TotalRetencionesISR: Number((emisor.Totales.TotalRetencionesISR || 0).toFixed(2)),
+                        TotalRetencionesIEPS: Number((emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA16: Number(((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0) * 100 / 16).toFixed(2)),
+                        TotalTrasladosImpuestoIVA16: Number((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA8: Number(((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0) * 100 / 8).toFixed(2)),
+                        TotalTrasladosImpuestoIVA8: Number((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVA0: Number((emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2)),
+                        TotalTrasladosImpuestoIVA0: Number((emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2)),
+                        TotalTrasladosBaseIVAExento: Number((emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2)),
+                        TotalTrasladosImpuestoIVAExento: Number((emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2)),
+                        // montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
+                        montoTotalPagos: parseFloat(receptor.Monto)
+                    },
+                    Pagos: [
+                        {
+                            FechaPago: emisor.FechaPago,
+                            FormaDePagoP: receptor.FormaPagoComprobante,
+                            Moneda: "MXN",
+                            TipoCambioP: "1",
+                            Monto: parseFloat(receptor.Monto),
+                            DoctoRelacionados: [{
+                                IdDocumento: receptor.IdDocumento,
+                                Serie: emisor.Serie,
+                                Folio: emisor.Folio,
+                                MonedaDR: "MXN",
+                                EquivalenciaDR: 1,
+                                Numparcialidad: emisor.NumeroOperacion,
+                                ImpSaldoAnt: emisor.SaldoAnterior,
+                                ImpPagado: parseFloat(receptor.Monto),
+                                ImpSaldoInsoluto: parseFloat(emisor.ImpSaldoInsoluto),
+                                ObjetoImpDr: "02",
+                            }],
+                            Impuestos: {
+
+                                Retenciones: emisor.ImpuestosPagos
+                                    .filter(retencion => retencion.TipoImpuesto === "Retencion") // Filtrar primero las retenciones
+                                    .map(retencion => ({
+                                        Base: retencion.Base,
+                                        ImpuestoCatalogoID: retencion.ImpuestoCatalogoID,
+                                        ImpuestoClave: retencion.ImpuestoClave,
+                                        TipoFactor: retencion.TipoFactor || "Tasa",
+                                        TasaOCuota: retencion.TasaOCuota,
+                                        Importe: retencion.Importe
+                                    })),
+                                Traslados: emisor.ImpuestosPagos
+                                    .filter(traslado => traslado.TipoImpuesto === "Traslado") // Filtrar primero los traslados
+                                    .map(traslado => ({
+                                        Base: traslado.Base,
+                                        ImpuestoCatalogoID: traslado.ImpuestoCatalogoID,
+                                        ImpuestoClave: traslado.ImpuestoClave,
+                                        TipoFactor: traslado.TipoFactor || "Tasa",
+                                        TasaOCuota: traslado.TasaOCuota,
+                                        Importe: traslado.Importe
+                                    }))
+                            }
+
+                        }
+                    ]
+                }
+            },
+        };
+    }
     console.log("Resultado de la factura", factura);
     return factura;
 }
