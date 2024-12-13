@@ -99,7 +99,11 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
 
 
             if (response.ok) {
-                console.log('Orden realizado con éxito');
+                console.log('Orden realizado con éxito', response);
+                const data = await response.json();
+                console.log('Data:', data);
+                const linkPago = data.link;
+                console.log('Link de pago:', linkPago);
 
                 setAlertMessage('Orden realizado con éxito.'); // Mensaje de éxito
                 setSeverity('success'); // Cambiar severidad a éxito
@@ -107,6 +111,10 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                 setTimeout(() => {
 
                     onClose();
+                    if(linkPago){
+                        window.open(linkPago, '_blank');
+                    }
+
                 }, 1500);
             } else {
                 console.error('Error en el pago:', response);
