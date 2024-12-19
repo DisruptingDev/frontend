@@ -136,8 +136,8 @@ export default function ModalCancelar({
                 /> */}
                 {motivo === "01" && (
                     <Paper>
-                        <TableContainer component={Paper}>
-                            <Table>
+                        <TableContainer component={Paper} sx={{ maxHeight: 300, overflowY: 'auto' }}>
+                        <Table stickyHeader>
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>No. Factura</TableCell>
