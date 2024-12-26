@@ -67,7 +67,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPaquetes`, {
+                const response = await fetch(`${apiUrl}/api/activacionordenes/ListarOrdenesPaquetes`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -96,7 +96,7 @@ export default function AsignarTimbres() {
         if (token) {
             console.log('Fetching Paquetes', token);
             try {
-                const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ListarOrdenesPlanes`, {
+                const response = await fetch(`${apiUrl}/api/activacionordenes/ListarOrdenesPlanes`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -179,7 +179,7 @@ export default function AsignarTimbres() {
     
         console.log('Asignando timbres', formData);
         try {
-          const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ActivarOrden`, {
+          const response = await fetch(`${apiUrl}/api/activacionordenes/ActivarOrden`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -206,7 +206,7 @@ export default function AsignarTimbres() {
     const handleVerComprobante = async (ID) => {
         console.log('Ver comprobante', ID);
         try {
-            const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+            const response = await fetch(`${apiUrl}/api/activacionordenes/ComprobanteFile/${ID}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

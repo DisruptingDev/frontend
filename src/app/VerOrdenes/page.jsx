@@ -67,7 +67,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/ListarOrdenesPaquetes`, {
+        const response = await fetch(`${apiUrl}/api/compratimbres/ListarOrdenesPaquetes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -96,7 +96,7 @@ export default function VerOrdenes() {
     if (token) {
       console.log('Fetching Paquetes', token);
       try {
-        const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/ListarOrdenesPlanes`, {
+        const response = await fetch(`${apiUrl}/api/compratimbres/ListarOrdenesPlanes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

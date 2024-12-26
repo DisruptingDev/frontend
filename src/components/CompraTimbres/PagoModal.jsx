@@ -59,6 +59,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
 
     const handleConfirmPago = async () => {
         let formData = {};
+        let URL
         // Validar que todos los campos estén llenos
         if (!empresa && opcion.Nombre.includes('Paquete')) {
             setAlertMessage('Por favor, complete todos los campos.');
@@ -73,6 +74,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                 // archivo,
                 PlanID: opcion.ID,
             };
+            URL = `${apiUrl}/api/compratimbres/GenerarOrdenPlan`
         }
         else {
             console.log('Es un paquete');
@@ -82,13 +84,14 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                 // archivo,
                 PaqueteID: opcion.ID,
             }
+            URL = `${apiUrl}/api/compratimbres/GenerarOrdenPaquete`
         }
         setDisabled(true);
 
         console.log('Datos a enviar:', formData);
         try {
             // Enviar datos al servidor
-            const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/GenerarOrden`, {
+            const response = await fetch(URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
