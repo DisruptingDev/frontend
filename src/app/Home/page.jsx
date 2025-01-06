@@ -23,7 +23,7 @@ export default function Home() {
     const router = useRouter();
 
     //Nuevo usuario
-    const [newUser, setNewUser] = useState(sessionStorage.getItem('newUser'));
+    const [newUser, setNewUser] = useState(null);
     // const [newUser, setNewUser] = useState("true");
     const [open, setOpen] = useState(false);
 
@@ -46,6 +46,12 @@ export default function Home() {
         }
     }, [router]); // Se ejecuta cada vez que cambia el router
 
+
+    useEffect(() => {
+        // Solo se ejecuta en el cliente
+        const storedNewUser = sessionStorage.getItem('newUser');
+        setNewUser(storedNewUser);
+      }, []);
     useEffect(() => {
       console.log('newUser', newUser);
        if (newUser === "true"){
