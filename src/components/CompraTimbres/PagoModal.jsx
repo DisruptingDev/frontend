@@ -8,7 +8,7 @@ import { set } from 'date-fns';
 import { includes } from 'valibot';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const ModalPago = ({ open, onClose, opcion, token }) => {
+const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [empresa, setEmpresa] = useState('');
     const [archivo, setArchivo] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
@@ -116,6 +116,7 @@ const ModalPago = ({ open, onClose, opcion, token }) => {
                     onClose();
                     if(linkPago){
                         window.open(linkPago, '_blank');
+                        if(setCompra)setCompra(true);
                     }
 
                 }, 1500);

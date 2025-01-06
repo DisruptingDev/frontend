@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
 import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
 import { isAuthenticated } from "@/utils/authRedirect"; 
@@ -20,6 +21,11 @@ export default function Home() {
 
     // Hook para manejar la navegación
     const router = useRouter();
+
+    //Nuevo usuario
+    const [newUser, setNewUser] = useState(sessionStorage.getItem('newUser'));
+    // const [newUser, setNewUser] = useState("true");
+    const [open, setOpen] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
@@ -35,12 +41,30 @@ export default function Home() {
         } else {
             // Guarda el token en el estado
             setToken(token);
+            
+
         }
     }, [router]); // Se ejecuta cada vez que cambia el router
+
+    useEffect(() => {
+      console.log('newUser', newUser);
+       if (newUser === "true"){
+         setOpen(true);
+         sessionStorage.setItem('newUser', "false");
+       }
+      
+
+    }
+    , [newUser]);
+
 
     // Renderizado del componente
     return (
         <Box>
+
+               
+             <ModalWizard  open={open} handleClose={() => setOpen(false)} token={token} />
+   
             {/* Componente del encabezado */}
             <Header />  
             

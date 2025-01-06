@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback} from 'react';
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Paquetes({token}) {
+export default function Paquetes({token, setCompra}) {
     const [openModal, setOpenModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [paquetes, setPaquetes] = useState([]);
@@ -138,7 +138,7 @@ export default function Paquetes({token}) {
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
-                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token} />
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token} setCompra={setCompra} />
             )}
         </Box>
     );

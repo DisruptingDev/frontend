@@ -3,7 +3,7 @@ import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
 import { useState, useEffect, useCallback } from 'react';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-export default function Planes({ token }) {
+export default function Planes({ token, setCompra }) {
 
     const [openModal, setOpenModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -131,7 +131,7 @@ export default function Planes({ token }) {
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
-                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token}/>
+                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token} setCompra={setCompra}/>
             )}
         </Box>
     );

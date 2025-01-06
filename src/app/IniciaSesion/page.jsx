@@ -42,6 +42,7 @@ export default function Login() {
                     // localStorage.setItem('authToken', result.token);
                     // localStorage.setItem('loginDate', currentDate); // Guarda la fecha del login
                     // Almacena el token dependiendo de "Recuérdame"
+                    sessionStorage.removeItem('newUser');
                     localStorage.setItem('correo', data.usuario);
 
                     // Extraer todo lo antes del '@'
@@ -146,6 +147,9 @@ export default function Login() {
                     <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth type="submit">
                         Iniciar sesión
                     </Button>
+                    <Link href="/AltaUsuarios" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
+                        ¿No tienes una cuenta? Regístrate
+                        </Link>
                 </Box>
             </Box>
         </main>

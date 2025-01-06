@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment, Collapse, Alert } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -50,20 +50,64 @@ const AltaUsuarios = () => {
             if (response.ok) {
                 const result = JSON.parse(text);
 
-                if (result.status==='success') {
-                      setAlert({ open: true, message: 'Registro exitoso', severity: 'success' });
-                    console.log('Login exitoso', result.token)
+                if (result.status === 'success') {
+                    setAlert({ open: true, message: 'Registro exitoso', severity: 'success' });
+                    console.log('Login exitoso', result)
                     //Despues de un tiempo redirige a la pagina de inicio
-                    setTimeout(() => {
-                        router.push('/');
-                    }, 2000);
+                    setTimeout(async () => {
+                        try {
+                             // router.push('/');
+                        const response = await fetch(`${apiUrl}/api/login/Login`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                Email: formData.correo,
+                                Password: formData.password,
+                            }),
+                        });
+                        const text = await response.text();
+                        console.log('Respuesta del servidor:', text);
+                        if (response.ok) {
+                            const result = JSON.parse(text);
+                            console.log('Respuesta del servidor:', result);
+                            if (result.error) {
+                                setAlert({ open: true, message: result.error, severity: 'error' });
+                            } else {
+                                const currentDate = new Date().toISOString(); // Obtiene la fecha actual en formato ISO
+                                localStorage.setItem('correo', formData.correo);
+                                const nombreUsuario = formData.correo.split('@')[0];
+                                localStorage.setItem('usuario', nombreUsuario);
+                                localStorage.setItem('superUser', result.sudo);
 
-                          
+                                localStorage.removeItem("authToken");
+                                localStorage.removeItem("loginDate");
+                                sessionStorage.setItem('authToken', result.token); // Guarda en Session Storage
+
+                                setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
+                                console.log('Login exitoso', result.token, currentDate);
+                                
+                                router.push('/Home');
+                                sessionStorage.setItem('newUser', 'true');
+                            }
+                        }
+                        else{
+                            setAlert({ open: true, message: 'Error en la solicitud', severity: 'error' });
+                            console.error('Error en la solicitud:', response);
+                        }
+                        } catch (error) {
+                            console.error('Error en la solicitud  de login:', error);
+                        }
+                       
+                    }, 1000);
+
+
                 } else {
                     setAlert({ open: true, message: result.error, severity: 'error' });
-                    
-                  
-             
+
+
+
                 }
             } else {
                 setAlert({ open: true, message: 'Error en el registro', severity: 'error' });

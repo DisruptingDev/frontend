@@ -6,7 +6,7 @@ import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar }) {
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa }) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -179,7 +179,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     if(setActualizar)setActualizar(true);
                     setTimeout(() => {
 
-
+                        
                         if (onClose) onClose();
                         if(setActualizar)setActualizar(false);
                     }, 2000);
@@ -238,7 +238,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     if(setActualizar)setActualizar(true);
                     setTimeout(() => {
 
-
+                        if(setRegistroEmpresa) setRegistroEmpresa(true);
                         if (onClose) onClose();
                         if(setActualizar)setActualizar(false);
                     }, 2000);
