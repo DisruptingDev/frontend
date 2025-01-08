@@ -40,10 +40,26 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(value || '');
 
+    // useEffect(() => {
+    //     if(url)
+    //     obtener_opciones(url).then(data => setOpciones(data));
+    // }, [url]);
+
     useEffect(() => {
-        if(url)
-        obtener_opciones(url).then(data => setOpciones(data));
-    }, [url]);
+        if (url) {
+          obtener_opciones(url).then((data) => {
+            setOpciones(data);
+            // Seleccionar la primera opción automáticamente si no hay un valor inicial
+            if (!value && data.length === 0) {
+              setSelectedValue(data[0][id]);
+              if (onChange) {
+                const selectedOption = data[0];
+                onChange({ target: { value: JSON.stringify(selectedOption) } });
+              }
+            }
+          });
+        }
+      }, [url, value, id, onChange]);
 
     useEffect(() => {
 

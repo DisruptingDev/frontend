@@ -7,6 +7,10 @@ import {
 import { set } from 'date-fns';
 import { includes } from 'valibot';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import CheckoutButton from './BotonMercadoPago';
+import { initMercadoPago } from '@mercadopago/sdk-react';
+
+initMercadoPago('APP_USR-b8869ba5-ccd0-4d4b-9a25-8ba73e433482');
 
 const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [empresa, setEmpresa] = useState('');
@@ -17,7 +21,31 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [beneficios, setBeneficios] = useState([]); // Beneficios 
     const [tipo, setTipo] = useState(''); // Tipo de compra
     const [disabled, setDisabled] = useState(false);
+    const [deviceId, setDeviceId] = useState('');
+    const [preferenceId, setPreferenceId] = useState('');
 
+
+    useEffect(() => {
+        const script = document.createElement("script");
+        script.src = "https://www.mercadopago.com/v2/security.js";
+        script.setAttribute("view", "checkout");
+        document.body.appendChild(script);
+
+        script.onload = () => {
+            // Accede al Device ID generado automáticamente
+            const deviceId = window.MP_DEVICE_SESSION_ID;
+            console.log("Device ID:", deviceId);
+            setDeviceId(deviceId);
+
+            // Enviar el Device ID al backend (opcional)
+            // sendDeviceIdToBackend(deviceId);
+        };
+
+        return () => {
+            // Limpieza del script cuando el componente se desmonta
+            document.body.removeChild(script);
+        };
+    }, []);
 
     useEffect(() => {
         console.log('Opción seleccionada:', opcion);
@@ -29,7 +57,7 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
             ]);
             setTipo('Paquete');
         }
-        else {  
+        else {
             console.log('Es un plan');
             setBeneficios([
                 'Renovable mensualmente',
@@ -84,7 +112,7 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 // archivo,
                 PaqueteID: opcion.ID,
             }
-            URL = `${apiUrl}/api/compratimbres/GenerarOrdenPaquete`
+            URL = `${apiUrl}/api/compratimbres/GenerarOrdenPaquete?deviceID=${deviceId}`
         }
         setDisabled(true);
 
@@ -107,19 +135,22 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 console.log('Data:', data);
                 const linkPago = data.link;
                 console.log('Link de pago:', linkPago);
+                if (data.pref_id) {
+                    setPreferenceId(data.pref_id);
+                }
 
                 setAlertMessage('Orden realizado con éxito.'); // Mensaje de éxito
                 setSeverity('success'); // Cambiar severidad a éxito
                 // Cerrar el modal después de confirmar
-                setTimeout(() => {
+                // setTimeout(() => {
 
-                    onClose();
-                    if(linkPago){
-                        window.open(linkPago, '_blank');
-                        if(setCompra)setCompra(true);
-                    }
+                //     onClose();
+                //     if(linkPago){
+                //         window.open(linkPago, '_blank');
+                //         if(setCompra)setCompra(true);
+                //     }
 
-                }, 1500);
+                // }, 1500);
             } else {
                 console.error('Error en el pago:', response);
                 setAlertMessage('Error al realizar el pago. Por favor, intente de nuevo.'); // Mensaje de error
@@ -268,10 +299,17 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                     )}
                 </Box> */}
             </DialogContent>
-            <DialogActions>
+            <DialogActions sx={{ flexDirection: 'column' }}>
+
+
+                {preferenceId ? (<CheckoutButton preferenceId={preferenceId} />) : 
                 <Button disabled={disabled} variant="contained" color="primary" fullWidth onClick={handleConfirmPago} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
-                    Confirmar Orden
-                </Button>
+                    Generar orden
+                </Button>}
+                {preferenceId ? <Button  variant="contained" color="primary" fullWidth onClick={onClose} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
+                    Cerrar
+                </Button> : null}
+
             </DialogActions>
 
             {/* Snackbar para mostrar mensajes de error */}
