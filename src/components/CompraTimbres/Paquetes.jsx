@@ -10,6 +10,7 @@ export default function Paquetes({token, setCompra}) {
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [paquetes, setPaquetes] = useState([]);
 
+
       // Función para formatear como moneda
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -18,6 +19,8 @@ export default function Paquetes({token, setCompra}) {
       minimumFractionDigits: 2,
     }).format(value);
   }
+
+
     // const paquetes = [
     //     {
     //         titulo: "Paquete Pequeño",

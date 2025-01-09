@@ -50,7 +50,7 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
           obtener_opciones(url).then((data) => {
             setOpciones(data);
             // Seleccionar la primera opción automáticamente si no hay un valor inicial
-            if (!value && data.length === 0) {
+            if (!value && data.length === 1) {
               setSelectedValue(data[0][id]);
               if (onChange) {
                 const selectedOption = data[0];

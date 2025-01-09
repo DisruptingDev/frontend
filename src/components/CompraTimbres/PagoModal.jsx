@@ -20,32 +20,57 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [severity, setSeverity] = useState('error'); // Severidad del mensaje
     const [beneficios, setBeneficios] = useState([]); // Beneficios 
     const [tipo, setTipo] = useState(''); // Tipo de compra
-    const [disabled, setDisabled] = useState(false);
-    const [deviceId, setDeviceId] = useState('');
+    const [disabled, setDisabled] = useState(true);
+
     const [preferenceId, setPreferenceId] = useState('');
 
-
+    const [deviceId, setDeviceId] = useState(null);
+    const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+    const [retryCount, setRetryCount] = useState(0); // Contador de reintentos
+    const maxRetries = 5; // Máximo número de reintentos permitidos
+    const retryInterval = 1000; // Intervalo entre reintentos (en milisegundos)
+  
     useEffect(() => {
+      if (typeof window !== "undefined") {
         const script = document.createElement("script");
         script.src = "https://www.mercadopago.com/v2/security.js";
         script.setAttribute("view", "checkout");
         document.body.appendChild(script);
-
+  
         script.onload = () => {
-            // Accede al Device ID generado automáticamente
-            const deviceId = window.MP_DEVICE_SESSION_ID;
-            console.log("Device ID:", deviceId);
-            setDeviceId(deviceId);
-
-            // Enviar el Device ID al backend (opcional)
-            // sendDeviceIdToBackend(deviceId);
+          console.log("Script de Mercado Pago cargado");
+          setIsScriptLoaded(true);
         };
-
+  
         return () => {
-            // Limpieza del script cuando el componente se desmonta
-            document.body.removeChild(script);
+          document.body.removeChild(script);
         };
+      }
     }, []);
+  
+    useEffect(() => {
+      if (isScriptLoaded) {
+        const interval = setInterval(() => {
+          if (window.MP_DEVICE_SESSION_ID) {
+            console.log("Device ID obtenido:", window.MP_DEVICE_SESSION_ID);
+            setDeviceId(window.MP_DEVICE_SESSION_ID);
+            clearInterval(interval); // Detiene los reintentos al obtener el Device ID
+            setDisabled(false); // Deshabilita el botón de pago hasta obtener el Device ID
+          } else {
+            console.log("Reintentando obtener el Device ID...");
+            setRetryCount((prevCount) => prevCount + 1);
+          }
+  
+          // Detener reintentos si se supera el límite
+          if (retryCount >= maxRetries) {
+            console.error("No se pudo obtener el Device ID después de varios intentos.");
+            clearInterval(interval);
+          }
+        }, retryInterval);
+  
+        return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
+      }
+    }, [isScriptLoaded, retryCount]);
 
     useEffect(() => {
         console.log('Opción seleccionada:', opcion);
@@ -114,7 +139,8 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
             }
             URL = `${apiUrl}/api/compratimbres/GenerarOrdenPaquete?deviceID=${deviceId}`
         }
-        setDisabled(true);
+        // setDisabled(true);
+        console.log('URL',URL)
 
         console.log('Datos a enviar:', formData);
         try {
