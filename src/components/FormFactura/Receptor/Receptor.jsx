@@ -16,6 +16,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [hiddeInfoGlobal, setHiddeInfoGlobal] = useState(false);
     const [domicilioFiscal, setDomicilioFiscal] = useState("");
     const [regimenFiscal, setRegimenFiscal] = useState("");
+    const [regimenFiscalText, setRegimenFiscalText] = useState("");
     const [usoCFDIURL, setUsoCFDIURL] = useState("");
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
@@ -178,7 +179,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     
                   const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
                   if (opcionSeleccionada) {
-                   setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                //    setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                setRegimenFiscalText(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                // setRegimenFiscal(opcionSeleccionada.Clave);
                 }
                     
                   
@@ -265,7 +268,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <TextField
                     label="Regimen Fiscal"
                     {...register("RegimenFiscal", { required: "Este campo es obligatorio." })}
-                    value={regimenFiscal}
+                    value={regimenFiscalText}
                     fullWidth
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -437,7 +440,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <AltaCliente register={register} onClose={handleCloseModal} />
                 </DialogContent>
             </Dialog>
-            {/* <pre> {JSON.stringify(getValues("FormaPago"),null,2)}</pre>  */}
+            {/* <pre> {JSON.stringify(usoCFDIURL,null,2)}</pre>   */}
+             {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
         </Box>
          
     );
