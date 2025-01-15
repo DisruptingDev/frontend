@@ -13,6 +13,7 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
+// import { JSONParser } from "formidable/parsers";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -40,6 +41,7 @@ export default function CrearFactura() {
     }, [router]);
 
     const onSubmit = (data) => {
+        console.log("Datos del formulario", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
@@ -195,6 +197,7 @@ export default function CrearFactura() {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+         
         </div>
     );
 }
