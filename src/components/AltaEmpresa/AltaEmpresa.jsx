@@ -245,6 +245,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
 
                 }
             } catch (error) {
+                console.error('Error al guardar los datos:', error);
                 setSnackbarMessage('Ocurrió un error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
