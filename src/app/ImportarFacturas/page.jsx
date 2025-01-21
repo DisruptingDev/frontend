@@ -6,13 +6,17 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import { Box, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
+import modal from "@/components/FacturasMasivas/Modal";
+import ModalError from "@/components/Home/Modales/modalError";
 import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
-export default function ImportarFacturas(){
+export default function ImportarFacturas() {
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [openModal, setOpenModal] = useState(false);
+    const [openModalError, setOpenModalError] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState("");
     const [facturas, setFacturas] = useState([]);
 
     const [token, setToken] = useState("");
@@ -31,12 +35,57 @@ export default function ImportarFacturas(){
     const handleCloseModal = () => {
         setOpenModal(false);
     };
-    
+    const handleCloseModalError = () => {
+        setOpenModalError(false);
+    };
+
+    const hadleGuardarFacturas = () => {
+        console.log(facturas);
+
+        // Función para validar si un objeto contiene errores
+        const hasError = (obj) => {
+            return Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
+        };
+
+        // Validar cuántas facturas tienen errores
+        const facturasConErrores = facturas.filter((factura) => {
+            return (
+                hasError(factura.Concepto) ||
+                hasError(factura.Emisor) ||
+                hasError(factura.Impuesto) ||
+                hasError(factura.Receptor)
+            );
+        });
+        // Validar cuántas facturas no tienen errores
+        const facturasSinErrores = facturas.filter((factura) => {
+            return!hasError(factura.Concepto) &&!hasError(factura.Emisor) &&!hasError(factura.Impuesto) &&!hasError(factura.Receptor);
+        });
+        console.log(facturasConErrores);
+        console.log(facturasSinErrores);
+        if(facturasConErrores.length === facturas.length){
+            console.log("Todas las facturas contienen errores");
+            setOpenModalError(true);
+            setConfirmationMessage("Todas las facturas contienen errores");
+            // Mostrar modal con un mensaje de error
+           
+        }
+        else{
+            if (facturasConErrores.length > 0){
+                console.log("Hay facturas con errores");
+                // Mostrar modal con las facturas con errores
+                
+            }
+        }
+
+        // Aquí podrías llamar a tu API para subir las facturas con errores y sin errores
+
+    };
+
     return (
         <div>
             <Header />
             <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-            <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
                     <Button
                         variant="contained"
                         sx={{
@@ -47,13 +96,39 @@ export default function ImportarFacturas(){
 
                         }}
                         onClick={handleOpenModal}
-                        
+
                     >
                         Importar Facturas
                     </Button>
+                    <Button
+                        variant="contained"
+                        sx={{
+                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+
+                        }}
+                    >
+                        Descargar Plantilla
+                    </Button>
                 </Box>
-                <VistaFacturasImportadas facturasRecuperadas={facturas} token={token}/>
-                <ModalCSV token={token} open={openModal}  handleClose={handleCloseModal} handleUpload={setFacturas} />
+                <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} />
+                <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
+                <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
+                {facturas.length > 0 &&
+                    <Box display="flex" justifyContent="center" mt={4}>
+                        <Button
+                            variant="contained"
+                            sx={{
+                                backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                            }}
+                            onClick={hadleGuardarFacturas}
+                        >
+                            Importar
+                        </Button>
+                    </Box>
+                }
             </Box>
 
         </div>
