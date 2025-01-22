@@ -22,6 +22,8 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
     const [menuRow, setMenuRow] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [emisor, setEmisor] = useState({});
+    const [concepto, setConcepto] = useState({});
+    const [impuesto, setImpuesto] = useState({});
     const [receptor, setReceptor] = useState({});
 
     useEffect(() => {
@@ -52,6 +54,13 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
         console.log("Emisor:", emisor); 
         const receptor = menuRow.Receptor;
         console.log("Receptor:", receptor);
+        const concepto = menuRow.Concepto;
+        console.log("Concepto:", concepto);
+        const impuesto = menuRow.Impuesto;
+        console.log("Impuesto:", impuesto);
+
+        setConcepto(concepto);
+        setImpuesto(impuesto);
         setReceptor(receptor);
         setEmisor(emisor);
         // setMenuRow(null);
@@ -252,7 +261,7 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <ModalEdicion  open={openModal} handleClose={handleCloseModal} emisor={emisor} receptor={receptor} token={token} />
+            <ModalEdicion  open={openModal} handleClose={handleCloseModal} emisor={emisor} receptor={receptor} concepto={concepto} impuesto={impuesto} token={token} />
         </div>
     );
 };

@@ -14,21 +14,31 @@ export default function Receptor({ register, trigger, datosReceptor, setValue, g
     useEffect(() => {
         if (datosReceptor) {
             console.log('Receptor', datosReceptor);
-            setReceptor(datosReceptor);
+            // setReceptor(datosReceptor);
+            setValue("MetodoPago", datosReceptor.MetodoPago);
             setValue("Receptor", datosReceptor.ID);
+            setValue("ReceptorID", datosReceptor.ID);
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${datosReceptor.RegimenFiscal}`);
+            setValue("UsoCFDI", datosReceptor.UsoCFDI)
+            setValue("FormaPago", datosReceptor.FormaPago);
 
+            trigger("ReceptorID")
+            trigger("MetodoPago")
             trigger("Receptor");
+            console.log("Valor ReceptorID:", getValues("ReceptorID"));
+console.log("Valor MetodoPago:", getValues("MetodoPago"));
 
         }
     }, [datosReceptor, setValue, trigger]);
 
     useEffect(() => {
-        if (receptor) {
+        if (Object.keys(receptor).length !== 0) {
             console.log('Receptor', receptor);
             setValue("Receptor", receptor.ID);
             setValue("ReceptorID", receptor.ID);
             setRegimenFiscal(receptor.RegimenFiscalReceptor);
             setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${receptor.RegimenFiscalReceptor}`);
+ 
             trigger("Receptor");
 
         }
@@ -79,7 +89,7 @@ export default function Receptor({ register, trigger, datosReceptor, setValue, g
                     // onChange={(e) => {
                     //     setMetodoPago(e.target.value);
                     // }}
-                // value={getValues("MetodoPago") || ""}
+                    value={getValues("MetodoPago") || ""}
 
                 />
 
@@ -90,8 +100,8 @@ export default function Receptor({ register, trigger, datosReceptor, setValue, g
                     clave="Clave"
                     descripcion="Descripcion"
 
-                    // onChange={(e) => setFormaPago(e.target.value)}
-                // value={getValues("FormaPago") || ""}
+                // onChange={(e) => setFormaPago(e.target.value)}
+                value={getValues("FormaPago") || ""}
 
                 />
                 <Select
@@ -101,16 +111,17 @@ export default function Receptor({ register, trigger, datosReceptor, setValue, g
                     url={usoCFDIURL}
                     clave="Clave"
                     descripcion="Descripcion"
-                   
+
                     // onChange={(e) => setUsoCFDI(e.target.value)}
                     value={getValues("UsoCFDI") || ""}
                 />
 
 
 
-              
+
             </Box>
-            {/* <pre>{JSON.stringify(usoCFDIURL || "No hay valor", null, 2)}</pre> */}
+            <pre>{JSON.stringify(usoCFDIURL || "No hay valor", null, 2)}</pre>
+            <pre>{JSON.stringify(getValues("MetodoPago") || "No hay valor", null, 2)}</pre>
         </Box>
     )
 }

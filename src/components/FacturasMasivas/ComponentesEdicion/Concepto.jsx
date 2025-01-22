@@ -5,7 +5,7 @@ import Select from "@/components/Select/Select.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Concepto({ setValue, register, getValues, token }) {
+export default function Concepto({datosConcepto, datosImpuesto, setValue, register, getValues, token }) {
     const [conceptoOptions, setConceptoOptions] = useState([]);
     const [claveProdServOptions, setClaveProdServOptions] = useState([]);
     const [claveUnidadOptions, setClaveUnidadOptions] = useState([]);
@@ -17,6 +17,66 @@ export default function Concepto({ setValue, register, getValues, token }) {
     const [selectedClaveUnidad, setSelectedClaveUnidad] = useState(null);
 
 
+    useEffect(() => {
+        if (datosConcepto) {
+            console.log('Concepto', datosConcepto);
+            setValue("DescripcionConcepto", datosConcepto.Descripcion);
+            setValue("ClaveProdServ", datosConcepto.ClaveProductoServicio);
+            setValue("ClaveUnidad", datosConcepto.ClaveUnidad);
+            setValue("Cantidad", datosConcepto.Cantidad);
+            setValue("PrecioUnitario", datosConcepto.PrecioUnitario);
+            setValue("Descuento", datosConcepto.Descuento);
+            if (!claveProdServOptions.some(opt => opt.Clave === datosConcepto.ClaveProductoServicio)) {
+                console.log(`Consultando opciones de ClaveProdServ para: ${datosConcepto.ClaveProductoServicio}`);
+                fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveProdServ?query=${datosConcepto.ClaveProductoServicio}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Opciones recibidas de ClaveProdServ:", data);
+                        setClaveProdServOptions(prevOptions => [...prevOptions, ...data]);
+                        const selectedProdServ = data.find(opt => opt.Clave == datosConcepto.ClaveProductoServicio);
+                        console.log("ClaveProdServ seleccionada tras la consulta:", selectedProdServ);
+                        setSelectedClaveProdServ(selectedProdServ || null);
+                    })
+                    .catch(error => console.error('Error al buscar ClaveProdServ:', error));
+            } else {
+                console.log("Opciones ClaveProdServ ya disponibles:", claveProdServOptions);
+                const selectedProdServ = claveProdServOptions.find(opt => opt.Clave == datosConcepto.ClaveProductoServicio);
+                console.log("ClaveProdServ seleccionada:", selectedProdServ);
+                setSelectedClaveProdServ(selectedProdServ || null);
+            }
+            if (!claveUnidadOptions.some(opt => opt.Clave === datosConcepto.ClaveUnidad)) {
+                console.log(`Consultando opciones de ClaveUnidad para: ${datosConcepto.ClaveUnidad}`);
+                fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveUnidad?query=${datosConcepto.ClaveUnidad}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Opciones recibidas de ClaveUnidad:", data);
+                        setClaveUnidadOptions(prevOptions => [...prevOptions, ...data]);
+                        const selectedUnidad = data.find(opt => opt.Clave == datosConcepto.ClaveUnidad);
+                        console.log("ClaveUnidad seleccionada tras la consulta:", selectedUnidad);
+                        setSelectedClaveUnidad(selectedUnidad || null);
+                    })
+                    .catch(error => console.error('Error al buscar ClaveUnidad:', error));
+            } else {
+                console.log("Opciones ClaveUnidad ya disponibles:", claveUnidadOptions);
+                const selectedUnidad = claveUnidadOptions.find(opt => opt.Clave == datosConcepto.ClaveUnidad);
+                console.log("ClaveUnidad seleccionada:", selectedUnidad);
+                setSelectedClaveUnidad(selectedUnidad || null);
+            }
+        }
+    }, [datosConcepto]);
+
+    useEffect(() => {
+        if (datosImpuesto) {
+            console.log('Impuesto', datosImpuesto);
+        }
+    }, [datosImpuesto]);
+    
     const fetchOptions = async () => {
         if (!token) return;
 
@@ -62,15 +122,15 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     gridTemplateColumns: {
                         xs: '1fr',
                         sm: 'repeat(2, 1fr)',
-                        md: 'repeat(3, 1fr)',
-                        lg: '1fr  '
+                        md: '1fr ',
+                        lg: '1fr '
                     }
                 }}>
 
                 <TextField
 
                     label="Descripcion"
-                    {...register("Descripcion")}
+                    {...register("DescripcionConcepto")}
                     // value={getValues("Descripcion")}
                     multiline
                     rows={4} // Ajusta el número de líneas visibles
@@ -97,7 +157,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     onChange={(event, value) => {
                         setSelectedClaveProdServ(value);
                         setValue('ClaveProdServ', value?.Clave || '');
-                        setClaveProdServError(false);
+                       
                     }}
                     renderInput={(params) => (
                         <TextField
@@ -135,7 +195,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     label="Cantidad"
                     {...register("Cantidad")}
                     type="number"
-                    // value={getValues("Cantidad")}
+                    value={getValues("Cantidad")}
                     fullWidth
                     InputProps={{
                         min: 1,
@@ -147,7 +207,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     label="Precio Unitario"
                     type="number"
                     {...register("PrecioUnitario")}
-                    // value={getValues("PrecioUnitario")}
+                    value={getValues("PrecioUnitario")}
                     fullWidth
                     InputProps={{
                         min: 0,
@@ -159,7 +219,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     label="Descuento"
                     type="number"
                     {...register("Descuento")}
-                    // value={getValues("Descuento")}
+                    value={getValues("Descuento")}
                     fullWidth
                     InputProps={{
                         min: 0,
@@ -207,7 +267,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     clave='Clave'
                     id='ID'
                     descripcion='Descripcion'
-                    nombre={'Impuesto'}
+                    nombre='Impuesto'
                     label='Impuesto'
                     url={`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`}
                 // onChange={handleImpuestoChange}
@@ -231,6 +291,7 @@ export default function Concepto({ setValue, register, getValues, token }) {
                     />
 
             </Box>
+            <pre>{JSON.stringify(getValues("Impuesto") || "No hay valors de impuesto", null, 2)}</pre>
 
 
         </Box>

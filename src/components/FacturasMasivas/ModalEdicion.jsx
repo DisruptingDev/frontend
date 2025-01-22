@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 
 
 
-const ModalEdicion = ({ open, handleClose, emisor, receptor, handleChange, handleSave, token}) => {
+const ModalEdicion = ({ open, handleClose, emisor, receptor, concepto, impuesto, handleChange, handleSave, token}) => {
       const { register, watch, handleSubmit, setValue, getValues, trigger, reset, formState: { errors } } = useForm();
     const onSubmit = (data) => {
         console.log("Datos del formulario", data);
@@ -51,7 +51,7 @@ const ModalEdicion = ({ open, handleClose, emisor, receptor, handleChange, handl
                 <Emisor datosEmisor={emisor} register={register} getValues={getValues}  setValue={setValue} trigger={trigger} />
              
                 <Receptor datosReceptor={receptor} register={register} trigger={trigger} setValue={setValue} getValues={getValues} />
-                <Concepto setValue={setValue} register={register} getValues={getValues} token={token} />
+                <Concepto setValue={setValue} register={register} getValues={getValues} token={token} datosConcepto={concepto} datosImpuesto={impuesto} />
                 </form>
                 <pre>{JSON.stringify(watch("Emisor") || "No hay valor", null, 2)}</pre>
                 <pre>{JSON.stringify(watch("Serie") || "No hay valor", null, 2)}</pre>
