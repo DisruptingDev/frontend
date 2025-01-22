@@ -39,7 +39,31 @@ export default function ImportarFacturas() {
         setOpenModalError(false);
     };
 
-    const hadleGuardarFacturas = () => {
+    const handleDescargarPlantilla = async () => {
+        try {
+            const response = await fetch(`${apiUrl}/api/cargamasivafacturas/DescargarCSV`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+             
+            });
+            if (response.ok){
+                const blob = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = "Plantilla_Factura_Masiva.csv";
+                link.click();
+            }
+
+        } catch (error) {
+            console.error(error);
+            
+        }
+    };
+
+    const handleGuardarFacturas = () => {
         console.log(facturas);
 
         // Función para validar si un objeto contiene errores
@@ -109,6 +133,7 @@ export default function ImportarFacturas() {
                             alignItems: 'center',
 
                         }}
+                        onClick={handleDescargarPlantilla}
                     >
                         Descargar Plantilla
                     </Button>
@@ -123,7 +148,7 @@ export default function ImportarFacturas() {
                             sx={{
                                 backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
                             }}
-                            onClick={hadleGuardarFacturas}
+                            onClick={handleGuardarFacturas}
                         >
                             Importar
                         </Button>
