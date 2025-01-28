@@ -7,10 +7,10 @@ export default function HomePage() {
     return (
         <div className="flex flex-col items-center justify-between h-screen bg-primary-dark-total">
             {/* Barra de navegación */}
-            <AppBar position="static" sx={{ backgroundColor: '#0b2135', paddingRight: 15, paddingLeft: 15 }}>
+            <AppBar position="static" sx={{ backgroundColor: '#063F53', paddingRight: 15, paddingLeft: 15 }}>
                 <Toolbar>
                     <Box sx={{ flexGrow: 1, padding: "0.4em" }}>
-                        <Image src="/images/logo.png" alt="Descripción de la imagen" width={200} height={50} />
+                        <Image src="/images/Log_blanco_wise_factura.png" alt="Descripción de la imagen" width={200} height={50} />
                     </Box>
                     {/* <Button color="inherit">Características</Button>
           <Button color="inherit">Precios</Button>
@@ -23,7 +23,7 @@ export default function HomePage() {
                             borderColor: '#ffffff', // Color del borde
                             color: '#ffffff', // Color del texto
                             '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)', // Fondo semi-transparente en hover
+                                backgroundColor: 'rgba(16, 150, 138, 1)', // Fondo semi-transparente en hover
                                 borderColor: '#ffffff', // Mantener el borde blanco en hover
                             },
                         }}
@@ -32,7 +32,7 @@ export default function HomePage() {
                         Iniciar Sesión
                     </Button>
                     <Button variant="contained" sx={{
-                        backgroundColor: '#04b2ca', ml: 2, '&:hover': {
+                        backgroundColor: '#10968A', ml: 2, '&:hover': {
                             backgroundColor: '#0398a6', // Color al hacer hover
                         },
                     }}
@@ -54,7 +54,7 @@ export default function HomePage() {
                             Simplifica tu proceso de facturación CFDI con nuestra plataforma intuitiva y eficiente. Olvídate de los procedimientos complicados y disfruta de una solución rápida y segura.
                         </Typography>
                         <Button variant="contained" size="large" sx={{
-                            backgroundColor: '#05b2cc', '&:hover': {
+                            backgroundColor: '#10968A', '&:hover': {
                                 backgroundColor: '#0398a6', // Color al hacer hover
                             },
                         }}
@@ -87,7 +87,7 @@ export default function HomePage() {
             {/* Footer */}
             <Box sx={{ backgroundColor: '#0b2135', py: 2, mt: 5, width: "100%" }}>
                 <Typography variant="body2" color="white" align="center">
-                    © 2024 CFDITotal. Todos los derechos reservados.
+                    © 2025 Wise Factura Todos los derechos reservados.
                 </Typography>
             </Box>
         </div>

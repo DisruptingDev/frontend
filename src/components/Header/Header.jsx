@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import Image from "next/image";
 import UserMenu from "./UserMenu";
 import { useState, useRef } from "react";
 import { Menu, MenuItem } from "@mui/material";
 
 // Configuración de la fuente Inter
-const inter = Inter({
+const inter = DM_Sans({
   subsets: ["latin"],
   variable: "--font-inter",
 });

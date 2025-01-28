@@ -142,7 +142,7 @@ const AltaUsuarios = () => {
                     display="flex"
                     justifyContent="center"
                 >
-                    <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
+                    <Image src="/images/Logo_wise_factura.png" alt="Descripción de la imagen" width={300} height={64} />
                 </Box>
                 <Collapse in={alert.open}>
                     <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, open: false })}>
@@ -219,7 +219,7 @@ const AltaUsuarios = () => {
                         }}
                     /> */}
                     <Button sx={{
-                        backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
+                        backgroundColor: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))',
                     }} variant="contained" fullWidth type="submit">
                         Registrar
                     </Button>

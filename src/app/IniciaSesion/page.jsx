@@ -104,7 +104,7 @@ export default function Login() {
                     display="flex"
                     justifyContent="center"
                 >
-                    <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
+                    <Image src="/images/Logo_wise_factura.png" alt="Descripción de la imagen" width={300} height={64} />
                 </Box>
 
                 <Collapse in={alert.open}>
@@ -144,7 +144,7 @@ export default function Login() {
                     <Link href="#" variant="body2" sx={{ display: 'block', marginBottom: 2, textAlign: 'initial' }}>
                         ¿Olvidaste tu contraseña?
                     </Link> */}
-                    <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth type="submit">
+                    <Button sx={{ backgroundColor: '#10968A', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth type="submit">
                         Iniciar sesión
                     </Button>
                     <Link href="/AltaUsuarios" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
