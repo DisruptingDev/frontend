@@ -13,6 +13,7 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 // import { JSONParser } from "formidable/parsers";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -128,6 +129,8 @@ export default function CrearFactura() {
     return (
         <div>
             <Header />
+            <SideBarMenu />
+            <Box sx={{ width: 'calc(100%  - 250px)', marginLeft: 'auto', padding: '.8rem', paddingTop: '0rem' }}>
             <form onSubmit={handleSubmit(onSubmit)} method="post">
                 <Emisor
                     register={register}
@@ -197,7 +200,7 @@ export default function CrearFactura() {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-         
+            </Box>
         </div>
     );
 }

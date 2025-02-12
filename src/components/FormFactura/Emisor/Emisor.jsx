@@ -3,6 +3,7 @@ import React, { useState, useEffect, use } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
+import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false }) {
@@ -142,7 +143,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     }
 
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
+        sx={{   padding: '1rem', margin:'auto', marginButtom:'1rem'}}>
             <Typography variant="h6" mb={4}>Datos del Emisor</Typography>
             <Box
                 display="grid"

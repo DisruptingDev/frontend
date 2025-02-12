@@ -50,7 +50,7 @@ export default function Header() {
   };
 
   return (
-    <header className="flex m-2 bg-primary-dark-total items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-md">
+    <header className="flex m-2 bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-lg">
       {/* Logo de la aplicación */}
       <Link
         href="/Home"
@@ -58,7 +58,7 @@ export default function Header() {
         prefetch={false}
       >
         <Image
-          src="/images/logo.png"
+          src="/images/Log_blanco_wise_factura.png"
           alt="Descripción del logo"
           width={203}
           height={64}

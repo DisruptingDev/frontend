@@ -481,6 +481,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             mx={modalAgregarConcepto ? 0 : 4}
             boxShadow={modalAgregarConcepto ? 0 : 3}
             borderRadius={modalAgregarConcepto ? 0 : 2}
+            sx={{   padding: '1rem', margin:'auto', marginTop:'1rem'}}
         >
             <Typography variant="h6" mb={4}>Conceptos</Typography>
             {modalAgregarConcepto === true ?

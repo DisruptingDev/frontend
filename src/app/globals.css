@@ -183,6 +183,9 @@ input[type="file"]::file-selector-button:hover {
 .bg-primary-dark-total{
   background-color: #063F53;
 }
+.bg-gradient-wise{
+  background: linear-gradient(90deg, #10968A 0%, #063F53 100%);
+}
 /* & .MuiPaper-root{
   boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
 } */

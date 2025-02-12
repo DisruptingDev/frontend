@@ -111,7 +111,7 @@ export default function SearchFilter({ setFiltro }) {
     return (
         <Box
             sx={{
-                backgroundColor: "#1d394d",
+                backgroundColor: "#063F53",
                 padding: "16px",
                 borderRadius: "8px",
                 boxShadow: 1,
@@ -185,9 +185,9 @@ export default function SearchFilter({ setFiltro }) {
                             type="button"
                             variant="contained"
                             sx={{
-                                background: "#04b2ca",
+                                background: "#10968A",
                                 color: "white",
-                                "&:hover": { backgroundColor: "#ffffff", color: "#04b2ca" },
+                                "&:hover": { backgroundColor: "#ffffff", color: "#10968A" },
                                 marginRight: "10px",
                             }}
                             onClick={onSubmit}
@@ -201,8 +201,8 @@ export default function SearchFilter({ setFiltro }) {
                             variant="contained"
                             sx={{
                                 background: "#ffffff",
-                                color: "#10232f",
-                                "&:hover": { backgroundColor: "#10232f", color: "#ffffff" },
+                                color: "#10968A",
+                                "&:hover": { backgroundColor: "#10968A", color: "#ffffff" },
                             }}
                             onClick={Limpiar}
                         >

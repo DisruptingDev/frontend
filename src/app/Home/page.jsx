@@ -3,9 +3,11 @@
 // Importación de hooks y utilidades
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import LayoutContent from "@/@layouts/components/vertical/LayoutContent";
 // Importación de componentes personalizados
 import Header from "@/components/Header/Header.jsx";
+
+import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
 import Tabla from "@/components/Home/Tabla/Tabla.jsx";
 import ModalWizard from "@/components/Home/Modales/modalWizard";
@@ -44,6 +46,7 @@ export default function Home() {
             
 
         }
+        
     }, [router]); // Se ejecuta cada vez que cambia el router
 
 
@@ -66,19 +69,22 @@ export default function Home() {
 
     // Renderizado del componente
     return (
-        <Box>
-
+        
+        <Box sx={{ backgroundColor: '#f3f4f6', height:'98vh' }}>
                
              <ModalWizard  open={open} handleClose={() => setOpen(false)} token={token} />
    
             {/* Componente del encabezado */}
-            <Header />  
+            <Header />          
+            <SideBarMenu />
+            <Box sx={{ width: 'calc(100%  - 250px)', marginLeft: 'auto', padding: '1.5rem'}}>
             
-            {/* Componente para búsqueda y filtros */}
-            <SearchFilter setFiltro={setFiltro} />
+                {/* Componente para búsqueda y filtros */}
+                <SearchFilter setFiltro={setFiltro} />
 
-            {/* Componente de la tabla, recibe el token y el filtro como props */}
-            <Tabla token={token} filtro={filtro} />
+                {/* Componente de la tabla, recibe el token y el filtro como props */}
+                <Tabla token={token} filtro={filtro} />
+           </Box>
         </Box>
     );
 }

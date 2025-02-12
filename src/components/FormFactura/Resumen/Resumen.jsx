@@ -3,13 +3,16 @@ import Input from "@/components/Input/Input.jsx";
 import { Select, SelectNoLabel } from "@/components/Select/Select.jsx";
 import { CalculosFinales } from "./Calculos/Calculo.js";
 import textAlign from "tailwindcss-logical/plugins/textAlign.js";
+import { TextField, Box, Typography } from '@mui/material';
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
     let finales = CalculosFinales(conceptos);
     console.log("Conceptos Rsumen", conceptos);
 
     return (
-        <div className="bg-white mx-4 p-4 shadow-xl rounded-md m-100">
+        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
+        sx={{ padding: '1rem', margin:'auto', marginTop:'1rem'}}>
+        
             <h3 className="card-title mb-6">Resumen</h3>
             <div className="grid grid-cols-1 gap-6">
                 <table className="table table-md">
@@ -64,6 +67,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                 </table>
             </div>
             {children}
-        </div>
+     
+       </Box>
     );
 }

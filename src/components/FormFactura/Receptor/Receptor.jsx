@@ -205,7 +205,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     };
 
     return (
-        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
+        sx={{   padding: '1rem', margin:'auto', marginTop:'1rem', marginBottom:'1rem', }}>
             <Typography variant="h6" mb={4}>Datos del Receptor</Typography>
 
             <Box

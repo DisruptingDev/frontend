@@ -5,10 +5,10 @@ export const metadata = {
   description: 'Descripción de mi aplicación',
 };
 
-export default function RootLayout({ children }) {
+export default function VerticalLayout({ children }) {
   return (
-    <html lang="es" data-theme = "light">
-      <body className = "bg-gray-200">
+    <html lang="es" >
+      <body >
         {children}
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import Header from '@/components/Header/Header';
 import { Box, Typography } from '@mui/material';
- import VistaUsuarios from '@/components/VistaUsuarios/VistaUsuarios';
+import VistaUsuarios from '@/components/VistaUsuarios/VistaUsuarios';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/utils/authRedirect";

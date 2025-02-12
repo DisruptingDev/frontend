@@ -219,7 +219,9 @@ const AltaUsuarios = () => {
                         }}
                     /> */}
                     <Button sx={{
-                        backgroundColor: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))',
+                        backgroundColor: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))','&:hover': {
+                            backgroundColor: '#0398a6', // Color al hacer hover
+                        },
                     }} variant="contained" fullWidth type="submit">
                         Registrar
                     </Button>

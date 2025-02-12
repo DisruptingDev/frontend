@@ -469,7 +469,7 @@ export default function DataTable({ token, filtro }) {
         <TableContainer align='center'>
           <Table sx={{ minWidth: 650 }} aria-label="customized table">
             <TableHead>
-              <TableRow sx={{ backgroundColor: '#04b2ca' }}>
+              <TableRow sx={{ backgroundColor: '#10968A' }}>
                 <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
                 <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Folio</TableCell>
