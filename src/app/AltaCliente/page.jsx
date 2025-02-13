@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente";
 import VistaClientes from "@/components/ViastaClientes/VistaClientes";
-import { Box, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -75,30 +76,31 @@ export default function RegistroClientes() {
 
     return (
         <div>
-            {/* Encabezado */}
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                {/* Botón para abrir el modal de alta */}
-                <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-
-                        }}
-                        onClick={handleOpenModal}
-                    >
-                        Agregar Cliente
-                    </Button>
-                </Box>
-                {/* Componente para listar clientes */}
-                <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
-
-            </Box>
-            {/* Modal para alta o edición de cliente */}
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                onClick={handleOpenModal}
+                            >
+                                Agregar Cliente
+                            </Button>
+                        </Box>
+                        <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
+                    </Box>
+                </Grid>
+            </Grid>
             <Dialog
                 open={openModal}
                 onClose={handleCloseModal}

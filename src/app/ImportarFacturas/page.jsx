@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import { isAuthenticated } from "@/utils/authRedirect";
-import { Box, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
 import modal from "@/components/FacturasMasivas/Modal";
 import ModalError from "@/components/Home/Modales/modalError";
 import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 export default function ImportarFacturas() {
     const router = useRouter();
 
@@ -47,9 +48,9 @@ export default function ImportarFacturas() {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-             
+
             });
-            if (response.ok){
+            if (response.ok) {
                 const blob = await response.blob();
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
@@ -59,7 +60,7 @@ export default function ImportarFacturas() {
 
         } catch (error) {
             console.error(error);
-            
+
         }
     };
 
@@ -82,22 +83,22 @@ export default function ImportarFacturas() {
         });
         // Validar cuántas facturas no tienen errores
         const facturasSinErrores = facturas.filter((factura) => {
-            return!hasError(factura.Concepto) &&!hasError(factura.Emisor) &&!hasError(factura.Impuesto) &&!hasError(factura.Receptor);
+            return !hasError(factura.Concepto) && !hasError(factura.Emisor) && !hasError(factura.Impuesto) && !hasError(factura.Receptor);
         });
         console.log(facturasConErrores);
         console.log(facturasSinErrores);
-        if(facturasConErrores.length === facturas.length){
+        if (facturasConErrores.length === facturas.length) {
             console.log("Todas las facturas contienen errores");
             setOpenModalError(true);
             setConfirmationMessage("Todas las facturas contienen errores");
             // Mostrar modal con un mensaje de error
-           
+
         }
-        else{
-            if (facturasConErrores.length > 0){
+        else {
+            if (facturasConErrores.length > 0) {
                 console.log("Hay facturas con errores");
                 // Mostrar modal con las facturas con errores
-                
+
             }
         }
 
@@ -108,54 +109,60 @@ export default function ImportarFacturas() {
     return (
         <div>
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
 
-                        }}
-                        onClick={handleOpenModal}
+                                }}
+                                onClick={handleOpenModal}
 
-                    >
-                        Importar Facturas
-                    </Button>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
+                            >
+                                Importar Facturas
+                            </Button>
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
 
-                        }}
-                        onClick={handleDescargarPlantilla}
-                    >
-                        Descargar Plantilla
-                    </Button>
-                </Box>
-                <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} />
-                <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
-                <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
-                {facturas.length > 0 &&
-                    <Box display="flex" justifyContent="center" mt={4}>
-                        <Button
-                            variant="contained"
-                            sx={{
-                                backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                            }}
-                            onClick={handleGuardarFacturas}
-                        >
-                            Importar
-                        </Button>
+                                }}
+                                onClick={handleDescargarPlantilla}
+                            >
+                                Descargar Plantilla
+                            </Button>
+                        </Box>
+                        <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} />
+                        <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
+                        <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
+                        {facturas.length > 0 &&
+                            <Box display="flex" justifyContent="center" mt={4}>
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    }}
+                                    onClick={handleGuardarFacturas}
+                                >
+                                    Importar
+                                </Button>
+                            </Box>
+                        }
                     </Box>
-                }
-            </Box>
-
+                </Grid>
+            </Grid>
         </div>
     )
 }

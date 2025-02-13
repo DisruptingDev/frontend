@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import VistaConceptos from "@/components/VistaConceptos/VistoConceptos";
-import { Box, Button, Dialog, DialogTitle, DialogContent, Snackbar, Alert } from "@mui/material";
+import { Box, Button, Dialog, DialogTitle, DialogContent, Snackbar, Alert, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos";
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ModuloConceptos() {
@@ -84,7 +85,7 @@ export default function ModuloConceptos() {
                 console.log('Concepto Prueba:', data);
                 console.log('Response:', response);
 
-                if (data.status ==='OK') {
+                if (data.status === 'OK') {
 
                     console.log('Concepto Agregado:', data);
                     setConceptos([]);
@@ -111,74 +112,82 @@ export default function ModuloConceptos() {
                 setTipoAlert('error');
             }
         }
-    
-        
-    
+
+
+
 
         fetchData();
-    console.log('Conceptos Principal:', conceptos);
-}, [conceptos, token]);
+        console.log('Conceptos Principal:', conceptos);
+    }, [conceptos, token]);
 
 
-const handleOpenModal = () => {
-    setOpenModal(true);
-};
+    const handleOpenModal = () => {
+        setOpenModal(true);
+    };
 
-const handleCloseModal = () => {
+    const handleCloseModal = () => {
 
-    setOpenModal(false);
-    // setIsModalClosed(true);
+        setOpenModal(false);
+        // setIsModalClosed(true);
 
-};
-
-
-return (
-    <div>
-        <Header />
-        <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-            <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                <Button
-                    variant="contained"
-                    sx={{
-                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-
-                    }}
-                    onClick={handleOpenModal}
-                >
-                    Agregar Concepto
-                </Button>
-            </Box>
-            <VistaConceptos token={token} actualizar={actualizar} setActualizar={setActualizar}/>
-        </Box>
-        <Dialog
-            open={openModal}
-            onClose={handleCloseModal}
-            fullWidth
-            maxWidth={false}
-        // PaperProps={{
-        //     sx: {
-        //         width: '80%',
-        //         margin: 'auto',
-        //     }
-        // }}
-        >
-            {/* <DialogTitle>Alta de Cliente</DialogTitle> */}
-
-            <Conceptos token={token} editIndex={null} modalAgregarConcepto={true} onClose={handleCloseModal} setConceptos={setConceptos} />
-
-        </Dialog>
-        <Snackbar open={openAlert} autoHideDuration={6000} onClose={() => setOpenAlert(false)}  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-            <Alert onClose={() => setOpenAlert(false)} severity={tipoAlert} sx={{ width: '100%' }} variant="filled">
-                {mensaje}
-            </Alert>
-        </Snackbar>
+    };
 
 
-    </div>
-);
+    return (
+        <div>
+            <Header />
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+
+                                }}
+                                onClick={handleOpenModal}
+                            >
+                                Agregar Concepto
+                            </Button>
+                        </Box>
+                        <VistaConceptos token={token} actualizar={actualizar} setActualizar={setActualizar} />
+                    </Box>
+
+                </Grid>
+            </Grid>
+            <Dialog
+                open={openModal}
+                onClose={handleCloseModal}
+                fullWidth
+                maxWidth={false}
+            // PaperProps={{
+            //     sx: {
+            //         width: '80%',
+            //         margin: 'auto',
+            //     }
+            // }}
+            >
+                {/* <DialogTitle>Alta de Cliente</DialogTitle> */}
+
+                <Conceptos token={token} editIndex={null} modalAgregarConcepto={true} onClose={handleCloseModal} setConceptos={setConceptos} />
+
+            </Dialog>
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={() => setOpenAlert(false)} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                <Alert onClose={() => setOpenAlert(false)} severity={tipoAlert} sx={{ width: '100%' }} variant="filled">
+                    {mensaje}
+                </Alert>
+            </Snackbar>
+
+
+        </div>
+    );
 }
 
 

@@ -3,9 +3,10 @@
 import AdministrarTimbres from "@/components/AdministraTimbres/AdministrarTimbres";
 import Header from "@/components/Header/Header";
 import { isAuthenticated } from "@/utils/authRedirect";
-import { Button, Snackbar, Alert, Modal, Box } from "@mui/material";
+import { Button, Snackbar, Alert, Modal, Box, Grid } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 
 
 
@@ -19,16 +20,23 @@ export default function Timbres() {
             // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
-        else{
+        else {
             setToken(token);
         }
     }, [router]);
-    return(
+    return (
         <div>
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                <AdministrarTimbres token={token} />
-            </Box>
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                        <AdministrarTimbres token={token} />
+                    </Box>
+                </Grid>
+            </Grid>
         </div>
     )
 }

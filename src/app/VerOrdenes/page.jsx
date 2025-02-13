@@ -1,11 +1,12 @@
 "use client";
 
 import Header from '@/components/Header/Header';
-import { Box, Tabs, Tab, Typography, Button } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Grid } from '@mui/material';
 import VistaOrdenes from '@/components/VistaOrdenes/VistaOrdenes';
 import VistaPaquetes from '@/components/VistaOrdenes/VistaPaquetes';
 import VistaPlanes from '@/components/VistaOrdenes/VistaPlanes';
 import ModalComprobante from '@/components/VistaOrdenes/ModalComprobante';
+import SideBarMenu from '@/components/Dashborard/SideBarMenu';
 
 
 import React, { use, useCallback, useEffect, useState } from 'react';
@@ -123,7 +124,7 @@ export default function VerOrdenes() {
   useEffect(() => {
     fetchPaquetes();
     fetchPlanes();
-   
+
     // setOrdenes(...paquetes, ...planes);
   }, [fetchPaquetes, fetchPlanes, token]);
 
@@ -132,7 +133,7 @@ export default function VerOrdenes() {
 
       fetchPaquetes();
       fetchPlanes();
-     
+
       setActualizar(false);
       setSelectedRows([]);
     }
@@ -223,47 +224,54 @@ export default function VerOrdenes() {
     else {
       setOrdenes(planes);
     }
-   
+
     setSelectedRows([]);
   };
 
   return (
     <div>
       <Header />
-      <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
-        <Tabs
-          value={valorTab}
-          onChange={manejarCambioTab}
+      <Grid container>
+        <Grid item>
+          <SideBarMenu />
+        </Grid>
+        <Grid item sx={{ flexGrow: 1 }}>
+          <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
+            <Tabs
+              value={valorTab}
+              onChange={manejarCambioTab}
 
-          textColor="#1b384a"
-          centered
-          sx={{
-            marginBottom: '0.5rem',
+              textColor="#1b384a"
+              centered
+              sx={{
+                marginBottom: '0.5rem',
 
-            '& .MuiTabs-indicator': {
-              backgroundColor: '#1b384a', // Cambiar el color del indicador aquí
-            },
-          }}
-        >
-          <Tab label="Paquetes" />
-          <Tab label="Planes" />
-        </Tabs>
+                '& .MuiTabs-indicator': {
+                  backgroundColor: '#1b384a', // Cambiar el color del indicador aquí
+                },
+              }}
+            >
+              <Tab label="Paquetes" />
+              <Tab label="Planes" />
+            </Tabs>
 
-        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-          <Button
-            variant="contained"
-            disabled={selectedRows.length === 0}
-            sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
-            onClick={handleOpenModal}
-          >
-            Subir Comprobante
-          </Button>
-        </Box>
+            <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+              <Button
+                variant="contained"
+                disabled={selectedRows.length === 0}
+                sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                onClick={handleOpenModal}
+              >
+                Subir Comprobante
+              </Button>
+            </Box>
 
-        {/* Mostrar el componente correspondiente */}
-        {valorTab === 0 ? <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} /> :
-          <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} />}
-      </Box>
+            {/* Mostrar el componente correspondiente */}
+            {valorTab === 0 ? <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} /> :
+              <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} />}
+          </Box>
+        </Grid>
+      </Grid>
       {/* Modal para mostrar el resumen */}
       <ModalComprobante
         open={openModal}

@@ -66,7 +66,7 @@ export default function Header() {
       </Link>
 
       {/* Navegación principal */}
-      <nav className="flex gap-4 sm:gap-6 text-sm font-medium relative">
+      {/* <nav className="flex gap-4 sm:gap-6 text-sm font-medium relative">
         {links.map(({ href, label }) =>
           label === "Facturación" ? (
             <div
@@ -124,7 +124,7 @@ export default function Header() {
             </Link>
           )
         )}
-      </nav>
+      </nav> */}
 
       {/* Menú de usuario */}
       <UserMenu />

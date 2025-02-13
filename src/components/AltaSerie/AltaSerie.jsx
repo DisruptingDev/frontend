@@ -118,7 +118,7 @@ export default function AltaSerie({ token }) {
                     <TextField
                         label="Nombre"
                         fullWidth
-                        placeholder="F"
+                        placeholder="Ingresa el nombre"
                         margin="normal"
                         required
                         error={!!errors.Nombre}
