@@ -15,7 +15,7 @@ import { usePathname } from 'next/navigation';
 
 const SideBarMenu = () => {
   const [openSubMenu, setOpenSubMenu] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 

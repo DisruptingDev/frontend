@@ -59,13 +59,13 @@ export default function AltaSerie({ token }) {
         }
     };
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box bgcolor="white" my={0} mx={2} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={4}>Alta de Serie</Typography>
             <form>
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="2fr 2fr 1fr 1fr 2fr"
+                    gridTemplateColumns="1fr 1fr 1fr 1fr"
                     gap={3}
                     alignItems="start"
                 >
@@ -155,7 +155,7 @@ export default function AltaSerie({ token }) {
 
 
                 <Box
-                    my={4}
+                    my={1}
                     mx={0}
                     display="flex"
                     justifyContent="flex-end"

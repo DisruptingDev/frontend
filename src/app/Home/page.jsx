@@ -13,10 +13,10 @@ import Tabla from "@/components/Home/Tabla/Tabla.jsx";
 import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
-import { isAuthenticated } from "@/utils/authRedirect"; 
+import { isAuthenticated } from "@/utils/authRedirect";
 
 // Componente de diseño de Material-UI
-import { Box } from "@mui/material"; 
+import { Box, Grid } from "@mui/material";
 
 // Componente principal de la página Home
 export default function Home() {
@@ -43,10 +43,10 @@ export default function Home() {
         } else {
             // Guarda el token en el estado
             setToken(token);
-            
+
 
         }
-        
+
     }, [router]); // Se ejecuta cada vez que cambia el router
 
 
@@ -54,37 +54,39 @@ export default function Home() {
         // Solo se ejecuta en el cliente
         const storedNewUser = sessionStorage.getItem('newUser');
         setNewUser(storedNewUser);
-      }, []);
+    }, []);
     useEffect(() => {
-      console.log('newUser', newUser);
-       if (newUser === "true"){
-         setOpen(true);
-         sessionStorage.setItem('newUser', "false");
-       }
-      
+        console.log('newUser', newUser);
+        if (newUser === "true") {
+            setOpen(true);
+            sessionStorage.setItem('newUser', "false");
+        }
+
 
     }
-    , [newUser]);
+        , [newUser]);
 
 
     // Renderizado del componente
     return (
-        
-        <Box sx={{ backgroundColor: '#f3f4f6', height:'98vh' }}>
-               
-             <ModalWizard  open={open} handleClose={() => setOpen(false)} token={token} />
-   
+        <div>
             {/* Componente del encabezado */}
-            <Header />          
-            <SideBarMenu />
-            <Box sx={{ width: 'calc(100%  - 250px)', marginLeft: 'auto', padding: '1.5rem'}}>
-            
-                {/* Componente para búsqueda y filtros */}
-                <SearchFilter setFiltro={setFiltro} />
+            < Header />
+            <Grid container>
+                <Grid item xs={2}>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item xs={10}>
+                    <Box sbgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
 
-                {/* Componente de la tabla, recibe el token y el filtro como props */}
-                <Tabla token={token} filtro={filtro} />
-           </Box>
-        </Box>
+                        {/* Componente para búsqueda y filtros */}
+                        <SearchFilter setFiltro={setFiltro} />
+
+                        {/* Componente de la tabla, recibe el token y el filtro como props */}
+                        <Tabla token={token} filtro={filtro} />
+                    </Box>
+                </Grid>
+            </Grid>
+        </div>
     );
 }
