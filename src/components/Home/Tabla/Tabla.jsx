@@ -177,6 +177,39 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
+  // Función para enviar múltiples facturas por correo
+  const handleEnviarCorreo = async (ids) => {
+    console.log('Enviando facturas por correo:', ids);
+    setLoading(true);
+    setOpenModal(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/enviarCorreo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ids),
+      });
+      if (response.ok) {
+        console.log('Data received from API (correo):', response);
+        setLoading(false);
+        setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
+        setOpenModalSuccess(true);
+      } else {
+        throw new Error('Error al enviar las facturas por correo');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setConfirmationMessage('Error al enviar las facturas por correo.');
+      setOpenModalError(true);
+    } finally {
+      setLoading(false);
+      setOpenModal(false); // Ocultar el modal de espera
+    }
+  };
+
 
 
   // Función para timbrar múltiples facturas
@@ -443,9 +476,9 @@ export default function DataTable({ token, filtro }) {
   };
 
   return (
-    <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
+    <Box bgcolor="white" mx={4} p={4}>
       <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-      <Button
+        <Button
           variant="contained"
           disabled={selectedRows.length === 0}
           onClick={() => handleEnviarCorreo(selectedRows)}

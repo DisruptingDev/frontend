@@ -161,7 +161,7 @@ export default function CrearFactura() {
                                 setConceptos={setConceptos}
                                 conceptos={conceptos}
                                 editIndex={editIndex}
-                                setEditIndex={setEditIndex}
+                                setEditIndex={setEditIndex} 
                                 token={token}
                             />
                             <Resumen

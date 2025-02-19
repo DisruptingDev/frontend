@@ -15,6 +15,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
 
     // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
+        console.log("Cliente recibido para editar:", cliente);
         if (cliente && Object.keys(cliente).length > 0) {
             setEditar(true);
             setValue('Nombre', cliente.Nombre);
@@ -27,7 +28,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setValue('Colonia', cliente.Colonia);
             setValue('Municipio', cliente.Municipio);
             setValue('Estado', cliente.Estado);
-            setValue('Correo', cliente.Correo);
+            setValue('Email', cliente.Email);
         }
     }, [cliente, setValue]);
 
@@ -63,7 +64,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 Colonia: data.Colonia,
                 Municipio: data.Municipio,
                 Estado: data.Estado,
-                Correo: data.Correo,
+                Email: data.Email,
             }
             : { // Datos para registrar nuevo cliente
                 Receptor: {
@@ -77,7 +78,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                     Colonia: data.Colonia,
                     Municipio: data.Municipio,
                     Estado: data.Estado,
-                    Correo: data.Correo,
+                    Email: data.Email,
                 }
             };
 
@@ -99,6 +100,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
 
             if (response.ok) {
                 const result = await response.json();
+                console.log("JSON obtenido para editar:", JSON.stringify(result, null, 2));
                 setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                 if (setActualizar) setActualizar(true);
                 setTimeout(() => {
@@ -116,6 +118,8 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setLoading(false);
         }
     };
+
+
 
     return (
         <Box bgcolor="white">
@@ -181,7 +185,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.7fr "
+                    gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr "
                     gap={3}
                     alignItems="end"
                 >
@@ -246,13 +250,13 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                     <TextField
-                        label="Correo electrónico"
+                        label="Correo electrónico *"
                         fullWidth
                         placeholder="mail@mail.com"
                         margin="normal"
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Correo", { required: false })}
+                        {...register("Email", { required: true })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                 </Box>
@@ -260,7 +264,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}}
+                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
                         type="button"
                         onClick={handleCancelar}
                     >

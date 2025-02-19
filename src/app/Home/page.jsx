@@ -70,23 +70,19 @@ export default function Home() {
     // Renderizado del componente
     return (
         <div>
-            {/* Componente del encabezado */}
-            < Header />
-            <Grid container>
-                <Grid item xs={2}>
+            <Header />
+            <Grid container sx={{ height: '100vh' }}>
+                <Grid >
                     <SideBarMenu />
                 </Grid>
-                <Grid item xs={10}>
-                    <Box sbgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
-
-                        {/* Componente para búsqueda y filtros */}
+                <Grid sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2} flexGrow={1}>
                         <SearchFilter setFiltro={setFiltro} />
-
-                        {/* Componente de la tabla, recibe el token y el filtro como props */}
                         <Tabla token={token} filtro={filtro} />
                     </Box>
                 </Grid>
             </Grid>
         </div>
+
     );
 }
