@@ -16,7 +16,8 @@ import ModalWizard from "@/components/Home/Modales/modalWizard";
 import { isAuthenticated } from "@/utils/authRedirect";
 
 // Componente de diseño de Material-UI
-import { Box, Grid } from "@mui/material";
+import { Box } from "@mui/material";
+import Grid from '@mui/material/Unstable_Grid2';
 
 // Componente principal de la página Home
 export default function Home() {
@@ -67,22 +68,32 @@ export default function Home() {
         , [newUser]);
 
 
+
     // Renderizado del componente
     return (
         <div>
             <Header />
-            <Grid container sx={{ height: '100vh' }}>
-                <Grid >
+            <Grid container>
+                {/* SideBarMenu con ancho fijo */}
+                <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2} flexGrow={1}>
+
+                {/* Contenedor principal que ocupa el espacio restante */}
+                <Grid sx={{ flexGrow: 1 }}>
+                    <Box
+                        bgcolor="white"
+                        mx={4}
+                        p={4}
+                        boxShadow={3}
+                        borderRadius={2}
+                        zIndex={1000}
+                    >
                         <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} />
                     </Box>
                 </Grid>
             </Grid>
         </div>
-
     );
 }

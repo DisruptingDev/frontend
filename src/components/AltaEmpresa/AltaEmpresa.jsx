@@ -176,12 +176,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     setSnackbarMessage('Empresa guardada correctamente.');
                     setSnackbarSeverity('success');
                     setOpenSnackbar(true);
-                    if(setActualizar)setActualizar(true);
+                    if (setActualizar) setActualizar(true);
                     setTimeout(() => {
 
-                        
+
                         if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
+                        if (setActualizar) setActualizar(false);
                     }, 2000);
                 }
             } catch (error) {
@@ -235,12 +235,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     setSnackbarMessage('Empresa guardada correctamente.');
                     setSnackbarSeverity('success');
                     setOpenSnackbar(true);
-                    if(setActualizar)setActualizar(true);
+                    if (setActualizar) setActualizar(true);
                     setTimeout(() => {
 
-                        if(setRegistroEmpresa) setRegistroEmpresa(true);
+                        if (setRegistroEmpresa) setRegistroEmpresa(true);
                         if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
+                        if (setActualizar) setActualizar(false);
                     }, 2000);
 
                 }
@@ -275,21 +275,11 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
-                        // onChange={(e) => setValue("Nombre", e.target.value)}
-                        // value={watch("Nombre", issuerName)}
+                        value={watch("Nombre", issuerName)}
+                        InputLabelProps={{ shrink: true }}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
-                    {/* <TextField
-                        label="Nombre del Cliente"
-                        fullWidth
-                        placeholder=""
-                        margin="normal"
-                        required
-                        error={!!errors.Nombre}
-                        helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
-                        {...register("Nombre", { required: true })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    /> */}
+
                     <TextField
                         label="R.F.C."
                         fullWidth
@@ -298,11 +288,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         disabled
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
-                        {...register("Rfc", { required: "El RFC es obligatorio" })} // Añadir validación requerida
-                        // onChange={(e) => setValue("Rfc", e.target.value)}
-                        // value={watch("Rfc", issuerRfc)}
+                        {...register("Rfc", { required: "El RFC es obligatorio" })}
+                        value={watch("Rfc", issuerRfc)}
+                        InputLabelProps={{ shrink: true }}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
+
                     <Select
                         nombre="RegimenFiscal"
                         label={"Régimen Fiscal*"}
@@ -382,7 +373,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
-                        label="Municipio"
+                        label="Municipio / Alcaldía"
                         fullWidth
                         placeholder="Ej: Benito Juárez"
                         margin="normal"
