@@ -133,7 +133,7 @@ export default function CrearFactura() {
                     <SideBarMenu />
                 </Grid>
                 <Grid item sx={{ flexGrow: 1 }}>
-                    <Box sx={{ padding: '.8rem', paddingTop: '0rem' }}>
+                    <Box sx={{ padding: '.8rem', paddingTop: '0rem', xs: 4, md: 8, lg: 8, xl: 8  }}>
                         <form onSubmit={handleSubmit(onSubmit)} method="post">
                             <Emisor
                                 register={register}
