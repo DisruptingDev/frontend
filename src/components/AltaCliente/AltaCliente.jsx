@@ -27,6 +27,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setValue('Colonia', cliente.Colonia);
             setValue('Municipio', cliente.Municipio);
             setValue('Estado', cliente.Estado);
+            setValue('Correo', cliente.Correo);
         }
     }, [cliente, setValue]);
 
@@ -62,6 +63,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 Colonia: data.Colonia,
                 Municipio: data.Municipio,
                 Estado: data.Estado,
+                Correo: data.Correo,
             }
             : { // Datos para registrar nuevo cliente
                 Receptor: {
@@ -70,11 +72,12 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                     RegimenFiscalReceptor: data.RegimenFiscal,
                     DomicilioFiscalReceptor: data.DomicilioFiscal,
                     Calle: data.Calle,
-                    NumeroExterior: parseInt(data.NumeroExterior, 10),
-                    NumeroInterior: parseInt(data.NumeroInterior, 10),
+                    NumeroExterior: data.NumeroExterior,
+                    NumeroInterior: data.NumeroInterior,
                     Colonia: data.Colonia,
                     Municipio: data.Municipio,
                     Estado: data.Estado,
+                    Correo: data.Correo,
                 }
             };
 
@@ -240,6 +243,16 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
                         {...register("Estado", { required: false })}
+                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                    />
+                    <TextField
+                        label="Correo electrónico"
+                        fullWidth
+                        placeholder="mail@mail.com"
+                        margin="normal"
+                        error={!!errors.Estado}
+                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
+                        {...register("Correo", { required: false })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                 </Box>

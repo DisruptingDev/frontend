@@ -445,6 +445,14 @@ export default function DataTable({ token, filtro }) {
   return (
     <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
       <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+      <Button
+          variant="contained"
+          disabled={selectedRows.length === 0}
+          onClick={() => handleEnviarCorreo(selectedRows)}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+        >
+          Enviar por correo
+        </Button>
         <Button
           variant="contained"
           disabled={selectedRows.length === 0}
