@@ -87,8 +87,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                     <td style={{width: '120px'}}>$ {finales.TotalFinal}</td>
                                 </tr>
                             </tbody>
-                        </table>
-                    
+                        </table>  
                 </Grid>
             </Grid>
             {children}

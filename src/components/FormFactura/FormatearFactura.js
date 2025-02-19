@@ -1,3 +1,4 @@
+import float from "tailwindcss-logical/plugins/float";
 import Conceptos from "./Conceptos/Conceptos";
 import Emisor from "./Emisor/Emisor";
 import Receptor from "./Receptor/Receptor";
@@ -187,7 +188,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                         })) : [],
                         Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                             NombreImpuesto: traslado.NombreImpuesto,
-                            Base: traslado.BaseImpuesto,
+                            Base: float( traslado.BaseImpuesto),
                             ImpuestoClave: String(traslado.Impuesto),
                             TipoFactor: traslado.Tipo,
                             TasaOCuota: traslado.Tasa,
