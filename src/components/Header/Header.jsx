@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { DM_Sans } from "next/font/google";
 import Image from "next/image";
 import UserMenu from "./UserMenu";
+import FacturasPPD from "./FacturasPPD"
 import { useState, useRef } from "react";
 import { Menu, MenuItem } from "@mui/material";
 
@@ -13,15 +14,6 @@ const inter = DM_Sans({
   variable: "--font-inter",
 });
 
-// Configuración dinámica de enlaces
-const links = [
-  { href: "/CrearFactura", label: "Facturación" },
-  { href: "/AltaCliente", label: "Clientes +" },
-  { href: "/Empresas", label: "Empresas +" },
-  { href: "/AltaSerie", label: "Series +" },
-  { href: "/Timbres", label: "Timbres +" },
-  { href: "/Conceptos", label: "Conceptos +" },
-];
 
 // Opciones del dropdown para "Facturación"
 const facturacionOptions = [
@@ -127,7 +119,10 @@ export default function Header() {
       </nav> */}
 
       {/* Menú de usuario */}
-      <UserMenu />
+      <div className="ml-auto flex items-center">
+        <FacturasPPD />
+        <UserMenu />
+      </div>
     </header>
   );
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from 'react';
 import { styled, alpha } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -11,10 +13,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-
 import Link from "next/link";
 import Image from "next/image";
-
+import { useRouter } from 'next/navigation';
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
   display: 'flex',
@@ -34,6 +35,7 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
 
 export default function AppAppBar() {
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
 
   const toggleDrawer = (newOpen) => () => {
     setOpen(newOpen);
@@ -53,21 +55,19 @@ export default function AppAppBar() {
     >
       <Container maxWidth="lg">
         <StyledToolbar variant="dense" disableGutters>
-        <Link
-        href="/Home"
-        className="flex items-center justify-center mr-6 pr-8"
-        prefetch={false}
-        >
+          <Link
+            href="#"
+            className="flex items-center justify-center mr-6 pr-8"
+            prefetch={false}
+          >
             <Image
-            src="/images/Log_blanco_wise_factura.png"
-            alt="Descripción del logo"
-            width={203}
-            height={64}
+              src="/images/Log_blanco_wise_factura.png"
+              alt="Wise Factura Logo"
+              width={203}
+              height={64}
             />
-        </Link>
+          </Link>
           <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', px: 0 }}>
-          
-            
           </Box>
           <Box
             sx={{
@@ -76,34 +76,37 @@ export default function AppAppBar() {
               alignItems: 'center',
             }}
           >
-             <Button
-                        variant="outlined"
-                        color="inherit"
-                        sx={{
-                            ml: 2, // Margen izquierdo
-                            borderColor: '#ffffff', // Color del borde
-                            color: '#ffffff', // Color del texto
-                           '&:hover': {
-                                backgroundColor: 'rgba(16, 150, 138, 1)', // Fondo semi-transparente en hover
-                                 borderColor: '#ffffff', // Mantener el borde blanco en hover
-                             },
-                         }}
-                         onClick={() => router.push('/IniciaSesion')}
-                     >
-                         Iniciar Sesión
-                     </Button>
-                     <Button variant="contained" sx={{
-                         backgroundColor: '#10968A', ml: 2, '&:hover': {
-                             backgroundColor: '#0398a6', // Color al hacer hover
-                         },
-                     }}
-                     onClick={() => router.push('/AltaUsuarios')}>
-                         Registrarse
-                     </Button>
-          
+            <Button
+              variant="outlined"
+              color="inherit"
+              sx={{
+                ml: 2,
+                borderColor: '#ffffff',
+                color: '#ffffff',
+                '&:hover': {
+                  backgroundColor: 'rgba(16, 150, 138, 1)',
+                  borderColor: '#ffffff',
+                },
+              }}
+              onClick={() => router.push('/IniciaSesion')}
+            >
+              Iniciar Sesión
+            </Button>
+            <Button
+              variant="contained"
+              sx={{
+                backgroundColor: '#10968A',
+                ml: 2,
+                '&:hover': {
+                  backgroundColor: '#0398a6',
+                },
+              }}
+              onClick={() => router.push('/AltaUsuarios')}
+            >
+              Registrarse
+            </Button>
           </Box>
           <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1 }}>
-            
             <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
               <MenuIcon />
             </IconButton>
@@ -130,37 +133,41 @@ export default function AppAppBar() {
                 </Box>
                 <Divider sx={{ my: 3 }} />
                 <MenuItem>
-                    <Button variant="contained" sx={{
-                            backgroundColor: '#10968A', ml: 2, '&:hover': {
-                            backgroundColor: '#0398a6', // Color al hacer hover
-                         },
-                     }}
-                     onClick={() => router.push('/AltaUsuarios')}>
-                         Registrarse
-                     </Button>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      backgroundColor: '#10968A',
+                      ml: 2,
+                      '&:hover': {
+                        backgroundColor: '#0398a6',
+                      },
+                    }}
+                    onClick={() => router.push('/AltaUsuarios')}
+                  >
+                    Registrarse
+                  </Button>
                 </MenuItem>
                 <MenuItem>
-                    <Button
-                        variant="outlined"
-                        color="inherit"
-                        sx={{
-                            ml: 2, // Margen izquierdo
-                            borderColor: '#ffffff', // Color del borde
-                            color: '#ffffff', // Color del texto
-                           '&:hover': {
-                                backgroundColor: 'rgba(16, 150, 138, 1)', // Fondo semi-transparente en hover
-                                 borderColor: '#ffffff', // Mantener el borde blanco en hover
-                             },
-                         }}
-                         onClick={() => router.push('/IniciaSesion')}
-                     >
-                         Iniciar Sesión
-                     </Button>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    sx={{
+                      ml: 2,
+                      borderColor: '#ffffff',
+                      color: '#ffffff',
+                      '&:hover': {
+                        backgroundColor: 'rgba(16, 150, 138, 1)',
+                        borderColor: '#ffffff',
+                      },
+                    }}
+                    onClick={() => router.push('/IniciaSesion')}
+                  >
+                    Iniciar Sesión
+                  </Button>
                 </MenuItem>
               </Box>
             </Drawer>
           </Box>
-          
         </StyledToolbar>
       </Container>
     </AppBar>
