@@ -184,7 +184,7 @@ export default function DataTable({ token, filtro }) {
     setOpenModal(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/enviarCorreo`, {
+      const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

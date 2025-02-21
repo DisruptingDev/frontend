@@ -75,19 +75,18 @@ export default function Home() {
             <Header />
             <Grid container>
                 {/* SideBarMenu con ancho fijo */}
-                <Grid>
+                <Grid item xs={1}>
                     <SideBarMenu />
                 </Grid>
 
                 {/* Contenedor principal que ocupa el espacio restante */}
-                <Grid sx={{ flexGrow: 1 }}>
+                <Grid item xs={11} sx={{ flexGrow: 1 }}>
                     <Box
                         bgcolor="white"
                         mx={4}
-                        p={4}
+                        p={2}
                         boxShadow={3}
                         borderRadius={2}
-                        zIndex={1000}
                     >
                         <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} />

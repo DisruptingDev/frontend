@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Menu, MenuItem, IconButton, ListItemIcon, Typography, Divider, Box } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { offSuplantar } from '@/utils/desactivarSuplantar';
-import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import NotificationsIcon from '@mui/icons-material/Notifications'
 import ReceiptIcon from '@mui/icons-material/Receipt'; 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -82,7 +82,7 @@ export default function UserMenu() {
   return (
     <>
       <IconButton onClick={handleMenuOpen} sx={{ marginLeft: "auto" }}>
-        <ReceiptIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
+        <NotificationsIcon  fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
       </IconButton>
 
       <Menu

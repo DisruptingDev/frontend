@@ -12,6 +12,7 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
+import Tooltip from '@mui/material/Tooltip';
 
 const SideBarMenu = () => {
   const [openSubMenu, setOpenSubMenu] = useState(null);
@@ -35,22 +36,22 @@ const SideBarMenu = () => {
       sx={{
         width: drawerOpen ? 240 : 60,
         flexShrink: 0,
-        marginLeft: "4px", // Agrega un margen a la izquierda
+        marginLeft: "4px",
         '& .MuiDrawer-paper': {
           width: drawerOpen ? 240 : 60,
           transition: 'width 0.3s',
           overflowX: 'hidden',
           position: 'relative',
-          zIndex: 1300, 
+          zIndex: 1300,
           height: '100vh',
-          marginLeft: "4px", // Agrega un margen a la izquierda
+          marginLeft: "4px",
         }
       }}
     >
       <Toolbar sx={{
         display: 'flex',
-        justifyContent: 'center', // Centra el contenido horizontalmente
-        alignItems: 'center', // Asegura que también esté centrado verticalmente
+        justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 1300,
         position: 'relative',
       }}>
@@ -59,14 +60,16 @@ const SideBarMenu = () => {
         </IconButton>
       </Toolbar>
       <List>
-        <ListItemButton
-          selected={pathname.startsWith('/CrearFactura') || pathname.startsWith('/ImportarFacturas')}
-          onClick={() => handleSubMenuClick("Facturacion")}
-        >
-          <ListItemIcon><FacturacionIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Facturación" />}
-          {drawerOpen && (openSubMenu === "Facturacion" ? <ExpandLess /> : <ExpandMore />)}
-        </ListItemButton>
+        <Tooltip title="Facturación" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname.startsWith('/CrearFactura') || pathname.startsWith('/ImportarFacturas')}
+            onClick={() => handleSubMenuClick("Facturacion")}
+          >
+            <ListItemIcon><FacturacionIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Facturación" />}
+            {drawerOpen && (openSubMenu === "Facturacion" ? <ExpandLess /> : <ExpandMore />)}
+          </ListItemButton>
+        </Tooltip>
         <Collapse in={openSubMenu === "Facturacion" && drawerOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             <ListItemButton
@@ -85,41 +88,51 @@ const SideBarMenu = () => {
             </ListItemButton>
           </List>
         </Collapse>
-        <ListItemButton
-          selected={pathname === "/AltaCliente"}
-          onClick={() => handleNavigation("/AltaCliente")}
-        >
-          <ListItemIcon><ClientesIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Clientes" />}
-        </ListItemButton>
-        <ListItemButton
-          selected={pathname === "/Empresas"}
-          onClick={() => handleNavigation("/Empresas")}
-        >
-          <ListItemIcon><EmpresasIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Empresas" />}
-        </ListItemButton>
-        <ListItemButton
-          selected={pathname === "/AltaSerie"}
-          onClick={() => handleNavigation("/AltaSerie")}
-        >
-          <ListItemIcon><SeriesIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Series" />}
-        </ListItemButton>
-        <ListItemButton
-          selected={pathname === "/Timbres"}
-          onClick={() => handleNavigation("/Timbres")}
-        >
-          <ListItemIcon><TimbresIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Timbres" />}
-        </ListItemButton>
-        <ListItemButton
-          selected={pathname === "/Conceptos"}
-          onClick={() => handleNavigation("/Conceptos")}
-        >
-          <ListItemIcon><ConceptosIcon /></ListItemIcon>
-          {drawerOpen && <ListItemText primary="Conceptos" />}
-        </ListItemButton>
+        <Tooltip title="Clientes" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/AltaCliente"}
+            onClick={() => handleNavigation("/AltaCliente")}
+          >
+            <ListItemIcon><ClientesIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Clientes" />}
+          </ListItemButton>
+        </Tooltip>
+        <Tooltip title="Empresas" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/Empresas"}
+            onClick={() => handleNavigation("/Empresas")}
+          >
+            <ListItemIcon><EmpresasIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Empresas" />}
+          </ListItemButton>
+        </Tooltip>
+        <Tooltip title="Series" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/AltaSerie"}
+            onClick={() => handleNavigation("/AltaSerie")}
+          >
+            <ListItemIcon><SeriesIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Series" />}
+          </ListItemButton>
+        </Tooltip>
+        <Tooltip title="Timbres" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/Timbres"}
+            onClick={() => handleNavigation("/Timbres")}
+          >
+            <ListItemIcon><TimbresIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Timbres" />}
+          </ListItemButton>
+        </Tooltip>
+        <Tooltip title="Conceptos" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/Conceptos"}
+            onClick={() => handleNavigation("/Conceptos")}
+          >
+            <ListItemIcon><ConceptosIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Conceptos" />}
+          </ListItemButton>
+        </Tooltip>
       </List>
     </Drawer>
   );

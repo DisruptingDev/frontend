@@ -1,7 +1,7 @@
 "use client"
 
 import { CalculosFinales } from "./Calculos/Calculo.js";
-import { TextField, Box, Typography, Grid } from '@mui/material';
+import { Box, Typography, Table, TableHead, TableBody, TableRow, TableCell, Grid, Button } from '@mui/material';
 
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
@@ -9,85 +9,92 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
     console.log("Conceptos Resumen", conceptos);
 
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
-            sx={{ flexGrow: 1, padding: '1rem', margin: 'auto', marginTop: '1rem' }}>
-            <h3 className="card-title mb-6">Resumen</h3>
+        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
+                sx={{   padding: '1rem', margin:'auto', marginTop:'1rem', marginBottom:'1rem', }}>
+            <Typography variant="h6" mb={4}>Resumen</Typography>
 
-            <Grid container spacing={6} sx={{ gap: '1rem', margin: 'auto', marginTop: '1rem' }}
-                xs={{ flexDirection: 'column' }}>
-                <Grid size={{ width: '100%' }}>
-
-                    <table className="table table-striped  table-hover"
-                        style={{ width: '100%' }}>
-                        <thead className="bg-primary-dark-total text-white h-12">
-                            <tr sx={{ textAlign: 'center' }}>
-                                <th>#</th><th>Clave Prod.</th><th>Clave Unidad.</th><th>Concepto</th><th>Cantidad</th><th>Precio Unitario</th><th>Descuento</th><th>Traslados</th><th>Retenciones</th><th>Monto</th><th sx={{ textAlign: 'center' }}>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            <Grid container spacing={1} sx={{ width: '100%', margin: 'auto' }}>
+                {/* Tabla de conceptos */}
+                <Grid item xs={12} md={8}>
+                    <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                        <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                            <TableRow>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>#</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Prod.</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Unidad</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Concepto</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Cantidad</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Precio Unitario</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Descuento</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Traslados</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Monto</TableCell>
+                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Acciones</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
                             {conceptos.map((concepto, index) => (
-                                <tr key={index}>
-                                    <th>{index + 1}</th>
-                                    <td>{concepto.ClaveProdServ}</td>
-                                    <td>{concepto.ClaveUnidad}</td>
-                                    <td>{concepto.Descripcion}</td>
-                                    <td>{concepto.Cantidad}</td>
-                                    <td>{concepto.ValorUnitario}</td>
-                                    <td>{concepto.Descuento}</td>
-                                    <td>{concepto.TotalTraslados}</td>
-                                    <td>{concepto.TotalRetenciones}</td>
-                                    <td>{concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones}</td>
-                                    <td sx={{ textAlign: 'center' }}>
-                                        <button
-                                            type="button"
+                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
+                                    <TableCell sx={{ textAlign: 'center' }}>{index + 1}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveProdServ}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveUnidad}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Descripcion}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Cantidad}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ValorUnitario}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Descuento}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.TotalTraslados}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.TotalRetenciones}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>
+                                        {concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones}
+                                    </TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>
+                                        <Button
+                                            variant="contained"
+                                            sx={{ backgroundColor: '#ffc107', '&:hover': { backgroundColor: '#e0a800' }, marginRight: 1 }}
                                             onClick={() => handleEditConcepto(index)}
-                                            className="px-3 py-1 text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 rounded-md shadow-sm transition duration-200 ease-in-out"
                                         >
                                             Editar
-                                        </button>
-                                        <button
-                                            type="button"
+                                        </Button>
+                                        <Button
+                                            variant="contained"
+                                            sx={{ backgroundColor: '#dc3545', '&:hover': { backgroundColor: '#c82333' } }}
                                             onClick={() => handleDeleteConcepto(index)}
-                                            className="px-3 py-1 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md shadow-sm transition duration-200 ease-in-out ml-2"
                                         >
                                             Eliminar
-                                        </button>
-                                    </td>
-                                </tr>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </tbody>
-                    </table>
-
+                        </TableBody>
+                    </Table>
                 </Grid>
-                <Grid size={{ xs: 6, md: 4, lg: 4, xl: 4 }}
-                    sx={{
-                        padding: '1rem',
-                        background: '#1b384a', color: 'white', width: '25%'
-                    }}>
-                    <table style={{ width: '100%' }}>
-                        <tbody>
-                            <tr>
-                                <td style={{ width: '110px' }}>Subtotal:</td>
-                                <td style={{ width: '120px' }}>$ {finales.SubTotalFinal}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ width: '110px' }}>Descuento:</td>
-                                <td style={{ width: '120px' }}>$ {finales.DescuentoFinal}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ width: '110px' }}>Retenciones:</td>
-                                <td style={{ width: '120px' }}>$ {finales.RetencionesFinal}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ with: '110px' }}>Traslados:</td>
-                                <td style={{ with: '120px' }}>$ {finales.TrasladosFinal}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ width: '110px' }}>Total:</td>
-                                <td style={{ width: '120px' }}>$ {finales.TotalFinal}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                {/* Tabla de resumen */}
+                <Grid item xs={12} md={4}>
+                    <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Subtotal:</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.SubTotalFinal}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Descuento:</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.DescuentoFinal}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Retenciones:</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.RetencionesFinal}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Traslados:</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.TrasladosFinal}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Total:</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.TotalFinal}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
                 </Grid>
             </Grid>
             {children}
