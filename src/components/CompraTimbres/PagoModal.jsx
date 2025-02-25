@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Select from '../Select/Select';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Grid, Divider, Snackbar,
-    Alert
+    Alert, FormControl, InputLabel, MenuItem
 } from '@mui/material';
 import { set } from 'date-fns';
 import { includes } from 'valibot';
@@ -21,55 +21,54 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [beneficios, setBeneficios] = useState([]); // Beneficios 
     const [tipo, setTipo] = useState(''); // Tipo de compra
     const [disabled, setDisabled] = useState(true);
-
     const [preferenceId, setPreferenceId] = useState('');
-
     const [deviceId, setDeviceId] = useState(null);
     const [isScriptLoaded, setIsScriptLoaded] = useState(false);
     const [retryCount, setRetryCount] = useState(0); // Contador de reintentos
     const maxRetries = 5; // Máximo número de reintentos permitidos
     const retryInterval = 1000; // Intervalo entre reintentos (en milisegundos)
-  
+    const [tipoPago, setTipoPago] = useState('');
+
     useEffect(() => {
-      if (typeof window !== "undefined") {
-        const script = document.createElement("script");
-        script.src = "https://www.mercadopago.com/v2/security.js";
-        script.setAttribute("view", "checkout");
-        document.body.appendChild(script);
-  
-        script.onload = () => {
-          console.log("Script de Mercado Pago cargado");
-          setIsScriptLoaded(true);
-        };
-  
-        return () => {
-          document.body.removeChild(script);
-        };
-      }
+        if (typeof window !== "undefined") {
+            const script = document.createElement("script");
+            script.src = "https://www.mercadopago.com/v2/security.js";
+            script.setAttribute("view", "checkout");
+            document.body.appendChild(script);
+
+            script.onload = () => {
+                console.log("Script de Mercado Pago cargado");
+                setIsScriptLoaded(true);
+            };
+
+            return () => {
+                document.body.removeChild(script);
+            };
+        }
     }, []);
-  
+
     useEffect(() => {
-      if (isScriptLoaded) {
-        const interval = setInterval(() => {
-          if (window.MP_DEVICE_SESSION_ID) {
-            console.log("Device ID obtenido:", window.MP_DEVICE_SESSION_ID);
-            setDeviceId(window.MP_DEVICE_SESSION_ID);
-            clearInterval(interval); // Detiene los reintentos al obtener el Device ID
-            setDisabled(false); // Deshabilita el botón de pago hasta obtener el Device ID
-          } else {
-            console.log("Reintentando obtener el Device ID...");
-            setRetryCount((prevCount) => prevCount + 1);
-          }
-  
-          // Detener reintentos si se supera el límite
-          if (retryCount >= maxRetries) {
-            console.error("No se pudo obtener el Device ID después de varios intentos.");
-            clearInterval(interval);
-          }
-        }, retryInterval);
-  
-        return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
-      }
+        if (isScriptLoaded) {
+            const interval = setInterval(() => {
+                if (window.MP_DEVICE_SESSION_ID) {
+                    console.log("Device ID obtenido:", window.MP_DEVICE_SESSION_ID);
+                    setDeviceId(window.MP_DEVICE_SESSION_ID);
+                    clearInterval(interval); // Detiene los reintentos al obtener el Device ID
+                    setDisabled(false); // Deshabilita el botón de pago hasta obtener el Device ID
+                } else {
+                    console.log("Reintentando obtener el Device ID...");
+                    setRetryCount((prevCount) => prevCount + 1);
+                }
+
+                // Detener reintentos si se supera el límite
+                if (retryCount >= maxRetries) {
+                    console.error("No se pudo obtener el Device ID después de varios intentos.");
+                    clearInterval(interval);
+                }
+            }, retryInterval);
+
+            return () => clearInterval(interval); // Limpia el intervalo al desmontar el componente
+        }
     }, [isScriptLoaded, retryCount]);
 
     useEffect(() => {
@@ -140,7 +139,7 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
             URL = `${apiUrl}/api/compratimbres/GenerarOrdenPaquete?deviceID=${deviceId}`
         }
         // setDisabled(true);
-        console.log('URL',URL)
+        console.log('URL', URL)
 
         console.log('Datos a enviar:', formData);
         try {
@@ -167,16 +166,6 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
 
                 setAlertMessage('Orden realizado con éxito.'); // Mensaje de éxito
                 setSeverity('success'); // Cambiar severidad a éxito
-                // Cerrar el modal después de confirmar
-                // setTimeout(() => {
-
-                //     onClose();
-                //     if(linkPago){
-                //         window.open(linkPago, '_blank');
-                //         if(setCompra)setCompra(true);
-                //     }
-
-                // }, 1500);
             } else {
                 console.error('Error en el pago:', response);
                 setAlertMessage('Error al realizar el pago. Por favor, intente de nuevo.'); // Mensaje de error
@@ -202,6 +191,11 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
 
     };
 
+    const handleTipoPago = (tipo) => {
+        setTipoPago(tipo);
+        handleConfirmPago(); // Generar la orden automáticamente al seleccionar el tipo de pago
+    };
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
             <DialogTitle sx={{ fontWeight: "600", fontSize: "1.5em" }}>
@@ -214,128 +208,123 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                         <Typography sx={{ fontWeight: "600", fontSize: "1em" }}>
                             Detalles de la compra:
                         </Typography>
-                        <Button size="small" onClick={toggleDetails}>
-                            {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
-                        </Button>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography sx={{ fontWeight: "500", fontSize: "0.9em" }}>{opcion.Nombre}</Typography>
                         <Typography>{formatCurrency(opcion.Costo)}</Typography>
                     </Box>
                     <Typography color="textSecondary">{opcion.CantidadTimbres} Timbres </Typography>
+                    <Box mt={1}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="body2">
+                            <strong>Tipo:</strong> {tipo}
+                        </Typography>
+                        <Typography variant="body2">
+                            <strong>Características:</strong>
+                        </Typography>
+                        <ul style={{ paddingLeft: '16px', marginTop: '2px', marginBottom: '0px', listStyleType: 'disc', fontSize: "0.8em" }}>
+                            {beneficios.map((beneficio, i) => (
+                                <li key={i} style={{ marginBottom: '2px' }}>{beneficio}</li>
+                            ))}
+                        </ul>
+                    </Box>
+                </Box>
 
-                    {showDetails && (
-                        <Box mt={1}>
-                            <Divider sx={{ my: 1 }} />
-                            <Typography variant="body2">
-                                <strong>Tipo:</strong> {tipo}
-                            </Typography>
-                            <Typography variant="body2">
-                                <strong>Características:</strong>
-                            </Typography>
-                            <ul style={{ paddingLeft: '16px', marginTop: '2px', marginBottom: '0px', listStyleType: 'disc', fontSize: "0.8em" }}>
-                                {/* <li style={{ marginBottom: '2px' }}>100 timbres mensuales</li>
-                                <li style={{ marginBottom: '2px' }}>Reinicio mensual a 100 timbres</li>
-                                <li style={{ marginBottom: '2px' }}>Soporte por email</li> */}
-                                {beneficios.map((beneficio, i) => (
-                                    <li key={i} style={{ marginBottom: '2px' }}>{beneficio}</li>
-                                ))}
-                            </ul>
+                <Box mb={2} bgcolor="#f3f4f6" padding="0.4em" borderRadius="0.5em">
+                    <Typography sx={{ fontWeight: "600", fontSize: "1em" }} gutterBottom>
+                        Empresa:
+                    </Typography>
+                    {opcion.Nombre.includes('Paquete') && (
+                        <Select
+                            label="Seleccionar empresa"
+                            url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                            id="ID"
+                            clave=""
+                            onChange={handleEmpresa}
+                            descripcion="Nombre"
+                        />
+                    )}
+                </Box>
+
+                <Box mb={2} bgcolor="#f3f4f6" padding="0.4em" borderRadius="0.5em">
+                    <Typography sx={{ fontWeight: "600", fontSize: "1em" }} gutterBottom>
+                        Tipo de pago:
+                    </Typography>
+                    {opcion.Nombre.includes('Paquete') && (
+                        <Box display="flex" justifyContent="space-between">
+                            <Button
+                                variant={tipoPago === 'transferencia' ? 'contained' : 'outlined'}
+                                color="primary"
+                                onClick={() => handleTipoPago('transferencia')}
+                                sx={{ flex: 1, marginRight: '0.5em' }}
+                            >
+                                Transferencia bancaria
+                            </Button>
+                            <Button
+                                variant={tipoPago === 'mercadopago' ? 'contained' : 'outlined'}
+                                color="primary"
+                                onClick={() => handleTipoPago('mercadopago')}
+                                sx={{ flex: 1, marginLeft: '0.5em' }}
+                            >
+                                Pago en línea
+                            </Button>
                         </Box>
                     )}
                 </Box>
 
                 {/* Datos para transferencia */}
-                <Box mb={2} bgcolor="#f3f4f6" padding="0.4em" borderRadius="0.5em">
-                    <Typography sx={{ fontWeight: "600", fontSize: "1em" }} gutterBottom>
-                        Datos para transferencia:
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                        <Grid container spacing={1} sx={{ fontSize: '0.875rem' }}>
-                            <Grid item xs={5}>
-                                <Typography color="text.secondary">Banco:</Typography>
-                            </Grid>
-                            <Grid item xs={7}>
-                                <Typography color="text.primary" fontWeight="medium">Banco Nacional de México</Typography>
-                            </Grid>
-                            <Grid item xs={5}>
-                                <Typography color="text.secondary">Cuenta:</Typography>
-                            </Grid>
-                            <Grid item xs={7}>
-                                <Typography color="text.primary" fontWeight="medium">1234567890</Typography>
-                            </Grid>
-                            <Grid item xs={5}>
-                                <Typography color="text.secondary">CLABE:</Typography>
-                            </Grid>
-                            <Grid item xs={7}>
-                                <Typography color="text.primary" fontWeight="medium">002123456789012345</Typography>
-                            </Grid>
-                            <Grid item xs={5}>
-                                <Typography color="text.secondary">Beneficiario:</Typography>
-                            </Grid>
-                            <Grid item xs={7}>
-                                <Typography color="text.primary" fontWeight="medium">CFDITotal S.A. de C.V.</Typography>
-                            </Grid>
-                        </Grid>
-                        <Divider sx={{ my: 1 }} />
-                        <Typography>
-                            Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong>
+                {tipoPago === 'transferencia' && (
+                    <Box mb={2} bgcolor="#f3f4f6" padding="0.4em" borderRadius="0.5em">
+                        <Typography sx={{ fontWeight: "600", fontSize: "1em" }} gutterBottom>
+                            Datos para transferencia:
                         </Typography>
-                        {/* <Typography variant="caption" color="text.secondary">
-                            Por favor, realice la transferencia a la cuenta proporcionada y suba el comprobante de pago.
-                        </Typography> */}
-                    </Box>
-                </Box>
-
-                {opcion.Nombre.includes('Paquete') && (
-                    // Seleccionar empresa
-                    <Select
-                        label="Seleccionar empresa"
-                        url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                        id="ID"
-                        clave=""
-                        // value={empresa}
-                        onChange={handleEmpresa}
-                        descripcion="Nombre"
-                    />
-                )}
-
-                {/* Subir comprobante */}
-                {/* <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px', }}>
-                    <Button
-                        variant="outlined"
-                        component="label"
-                        fullWidth
-                        sx={{borderBlockColor: '#1b384a', color:'#1b384a' }}
-                    >
-                        Seleccionar archivo
-                        <input
-                            type="file"
-                            hidden
-                            onChange={handleFileUpload}
-                        />
-                    </Button>
-                    {archivo && (
-                        <Box mt={1}>
-
-                            <Typography mt={1} sx={{ fontWeight: '500', fontSize: '1rem', padding: '0.5em' }}>
-                                Archivo seleccionado: <span style={{ fontWeight: 'bold' }}>{archivo.name}</span>
+                        <Box sx={{ mt: 1 }}>
+                            <Grid container spacing={1} sx={{ fontSize: '0.875rem' }}>
+                                <Grid item xs={5}>
+                                    <Typography color="text.secondary">Banco:</Typography>
+                                </Grid>
+                                <Grid item xs={7}>
+                                    <Typography color="text.primary" fontWeight="medium">Banco Nacional de México</Typography>
+                                </Grid>
+                                <Grid item xs={5}>
+                                    <Typography color="text.secondary">Cuenta:</Typography>
+                                </Grid>
+                                <Grid item xs={7}>
+                                    <Typography color="text.primary" fontWeight="medium">1234567890</Typography>
+                                </Grid>
+                                <Grid item xs={5}>
+                                    <Typography color="text.secondary">CLABE:</Typography>
+                                </Grid>
+                                <Grid item xs={7}>
+                                    <Typography color="text.primary" fontWeight="medium">002123456789012345</Typography>
+                                </Grid>
+                                <Grid item xs={5}>
+                                    <Typography color="text.secondary">Beneficiario:</Typography>
+                                </Grid>
+                                <Grid item xs={7}>
+                                    <Typography color="text.primary" fontWeight="medium">Wise Factura S.A. de C.V.</Typography>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ my: 1 }} />
+                            <Typography>
+                                Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong>
                             </Typography>
                         </Box>
-                    )}
-                </Box> */}
+                    </Box>
+                )}
             </DialogContent>
             <DialogActions sx={{ flexDirection: 'column' }}>
-
-
-                {preferenceId ? (<CheckoutButton preferenceId={preferenceId} />) : 
-                <Button disabled={disabled} variant="contained" color="primary" fullWidth onClick={handleConfirmPago} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
-                    Generar orden
-                </Button>}
-                {preferenceId ? <Button  variant="contained" color="primary" fullWidth onClick={onClose} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
-                    Cerrar
-                </Button> : null}
-
+                {tipoPago === 'mercadopago' && preferenceId ? (
+                    <CheckoutButton preferenceId={preferenceId} />
+                ) : null}
+                {preferenceId ? (
+                    <Button variant="contained" color="primary" fullWidth onClick={onClose} sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>
+                        Cerrar
+                    </Button>
+                ) : null}
+                <Button variant="outlined" color="secondary" fullWidth onClick={onClose} sx={{ marginTop: '0.5em' }}>
+                    Cancelar
+                </Button>
             </DialogActions>
 
             {/* Snackbar para mostrar mensajes de error */}
@@ -351,6 +340,7 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 </Alert>
             </Snackbar>
         </Dialog>
+
     );
 };
 
