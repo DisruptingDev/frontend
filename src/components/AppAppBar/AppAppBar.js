@@ -61,7 +61,7 @@ export default function AppAppBar() {
             prefetch={false}
           >
             <Image
-              src="/images/Log_blanco_wise_factura.png"
+              src="/images/Logo_wise_factura.png"
               alt="Wise Factura Logo"
               width={203}
               height={64}
@@ -81,8 +81,8 @@ export default function AppAppBar() {
               color="inherit"
               sx={{
                 ml: 2,
-                borderColor: '#ffffff',
-                color: '#ffffff',
+                borderColor: '#063F53',
+                color: '#063F53',
                 '&:hover': {
                   backgroundColor: 'rgba(16, 150, 138, 1)',
                   borderColor: '#ffffff',

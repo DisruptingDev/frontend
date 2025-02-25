@@ -22,7 +22,7 @@ const StyledBox = styled("div")(({ theme }) => ({
   border: "1px solid",
   borderColor: (theme.vars || theme).palette.grey[200],
   boxShadow: "0 0 12px 8px hsla(220, 25%, 80%, 0.2)",
-  backgroundImage: `url(${process.env.TEMPLATE_IMAGE_URL || "https://mui.com"}/static/screenshots/material-ui/getting-started/templates/dashboard.jpg)`,
+  backgroundImage: 'url(../../images/cover-img-wiseFacturacion.png)',
   backgroundSize: "cover",
   [theme.breakpoints.up("sm")]: {
     marginTop: theme.spacing(0),
@@ -97,9 +97,7 @@ export default function Hero() {
               width: { sm: "100%", md: "80%" },
             }}
           >
-            Explore our cutting-edge dashboard, delivering high-quality
-            solutions tailored to your needs. Elevate your experience with
-            top-tier features and services.
+             Simplifica tu facturación con una plataforma potente y fácil de usar, ahorra tiempo y enfócate en lo que realmente importa: tu negocio. Además, personaliza tu experiencia con ajustes a la medida y la creación de adendas, adaptando el sistema a tus necesidades específicas.
           </Typography>
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -107,26 +105,14 @@ export default function Hero() {
             useFlexGap
             sx={{ pt: 2, width: { xs: "100%", sm: "350px" } }}
           >
-            <InputLabel htmlFor="email-hero" sx={visuallyHidden}>
-              Email
-            </InputLabel>
-            <TextField
-              id="email-hero"
-              hiddenLabel
-              size="small"
-              variant="outlined"
-              aria-label="Enter your email address"
-              placeholder="Your email address"
-              fullWidth
-              
-            />
+           
             <Button
               variant="contained"
               color="primary"
-              size="small"
-              sx={{ minWidth: "fit-content" }}
+              size="large"
+              sx={{ minWidth: "fit-content",  backgroundColor: '#10968A'}}
             >
-              Start now
+              Encuentra el plan a tu medida.
             </Button>
           </Stack>
           <Typography
@@ -134,13 +120,13 @@ export default function Hero() {
             color="text.secondary"
             sx={{ textAlign: "center", marginBottom: 2 }}
           >
-            By clicking &quot;Start now&quot; you agree to our&nbsp;
+           ya tienes una cuenta?{" "}
             <Link
               href="#"
               color="primary"
               sx={{ marginTop: 1, marginBottom: 1 }}
             >
-              Terms & Conditions
+              inicia sesión
             </Link>
             .
           </Typography>
