@@ -195,7 +195,7 @@ export default function Footer() {
           useFlexGap
           sx={{ justifyContent: "left", color: "text.secondary" }}
         >
-           <IconButton
+           {/* <IconButton
             color="inherit"
             size="small"
             href="https://github.com/mui"
@@ -221,7 +221,7 @@ export default function Footer() {
             sx={{ alignSelf: "center" }}
           >
             <LinkedInIcon />
-          </IconButton> 
+          </IconButton>  */}
         </Stack>
       </Box>
     </Container>
