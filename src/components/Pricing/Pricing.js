@@ -86,7 +86,7 @@ export default function Pricing() {
           Precios
         </Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-        Explora nuestros paquetes populares y encuentra la opción perfecta para ti. ¡No esperes más! Si tienes alguna duda o necesitas un paquete personalizado, contáctanos hoy mismo. Estamos listos para ayudarte a encontrar la solución ideal.
+          Explora nuestros paquetes populares y encuentra la opción perfecta para ti. ¡No esperes más! Si tienes alguna duda o necesitas un paquete personalizado, contáctanos hoy mismo. Estamos listos para ayudarte a encontrar la solución ideal.
         </Typography>
       </Box>
       <Grid
@@ -96,7 +96,10 @@ export default function Pricing() {
       >
         {tiers.map((tier) => (
           <Grid
-            size={{ xs: 12, sm: tier.title === 'Enterprise' ? 12 : 6, md: 4 }}
+            item
+            xs={12}
+            sm={tier.title === 'Enterprise' ? 12 : 6}
+            md={4}
             key={tier.title}
           >
             <Card

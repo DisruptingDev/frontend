@@ -14,37 +14,37 @@ import ThumbUpAltRoundedIcon from '@mui/icons-material/ThumbUpAltRounded';
 
 const items = [
   {
-    icon: <SettingsSuggestRoundedIcon />,
+    //icon: <SettingsSuggestRoundedIcon />,
     title: 'Rendimiento en timbrado',
     description:
       'Olvídate de retrasos y complicaciones. Nuestro sistema optimizado garantiza un timbrado rápido y eficaz, permitiéndote generar tus facturas en cuestión de segundos.',
   },
   {
-    icon: <ConstructionRoundedIcon />,
+    //icon: <ConstructionRoundedIcon />,
     title: 'Desarrollado a la medida',
     description:
       'Sabemos que cada negocio es único. Nuestro servicio se adapta a tus requerimientos específicos, ofreciéndote soluciones personalizadas que se integran perfectamente a tu flujo de trabajo.',
   },
   {
-    icon: <ThumbUpAltRoundedIcon />,
+    //icon: <ThumbUpAltRoundedIcon />,
     title: 'Una expericia unica',
     description:
       ' Navega por una interfaz intuitiva y amigable, diseñada para que la facturación sea un proceso sencillo y placentero.',
   },
   {
-    icon: <AutoFixHighRoundedIcon />,
+    //icon: <AutoFixHighRoundedIcon />,
     title: 'Funcionalidades innovadoras',
     description:
       ' Mantente a la vanguardia con herramientas y características que simplificarán tu día a día, desde la automatización de tareas hasta la gestión avanzada de tus facturas.',
   },
   {
-    icon: <SupportAgentRoundedIcon />,
+    //icon: <SupportAgentRoundedIcon />,
     title: 'Soporte técnico especializado',
     description:
       ' Nuestro equipo de expertos está siempre a tu disposición para resolver cualquier duda o inconveniente, garantizando que tu experiencia sea siempre fluida y sin contratiempos.',
   },
   {
-    icon: <QueryStatsRoundedIcon />,
+    //icon: <QueryStatsRoundedIcon />,
     title: 'Reportes detallados',
     description:
       'Obtén una visión clara y detallada de tu actividad de facturación con nuestros reportes personalizables. Analiza tus datos, toma decisiones informadas y optimiza tu gestión financiera.',

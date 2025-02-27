@@ -5,7 +5,7 @@ import Featured from '@/components/Features/Features';
 import Highlights from '@/components/Highlights/Highlights';
 import Pricing from '@/components/Pricing/Pricing';
 import Footer from '@/components/Footer/Footer';
-import { AppBar, Toolbar, Typography, Button, Box, Grid, Container,  } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, Grid, Container } from '@mui/material';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -16,8 +16,8 @@ export default function HomePage() {
         <AppAppBar/>
         <Hero />
         <Highlights/>
-        <Featured/>
-        <Pricing />
+      {/*   <Featured/>
+       <Pricing /> */}
         <Footer />
         </div>
         // <div className="flex flex-col items-center justify-between h-screen bg-primary-dark-total">
