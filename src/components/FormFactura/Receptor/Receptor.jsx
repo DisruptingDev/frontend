@@ -20,7 +20,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [usoCFDIURL, setUsoCFDIURL] = useState("");
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
-    const [exportacion, setExportacion] = useState("01");
+    const [exportacion, setExportacion] = useState("01"); 
 
     // Reiniciar o recargar los datos del select cuando el modal se cierra
     useEffect(() => {
@@ -313,9 +313,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         '&:hover': {
                             backgroundColor: 'rgba(19, 47, 67, 1)',
                         }
-                    }}
+                    }} 
                     onClick={handleOpenModal}
                     disabled={disabled}
+                    token = {token}
                 >
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
@@ -438,7 +439,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente register={register} onClose={handleCloseModal} />
+                    <AltaCliente register={register} token={token} onClose={handleCloseModal} />
                 </DialogContent>
             </Dialog>
             {/* <pre> {JSON.stringify(usoCFDIURL,null,2)}</pre>   */}

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { get, useForm } from 'react-hook-form';
-import { Snackbar, Alert, Modal, Box,Button } from '@mui/material';
+import { Snackbar, Alert, Modal, Box, Button, Grid } from '@mui/material';
 import { useParams } from 'next/navigation';
 
 import Header from "@/components/Header/Header.jsx";
@@ -15,6 +15,7 @@ import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 // 
@@ -35,7 +36,7 @@ export default function CrearFactura() {
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState("");
-    
+
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente
@@ -52,7 +53,7 @@ export default function CrearFactura() {
 
 
     useEffect(() => {
-       
+
         const fetchFactura = async () => {
             try {
                 // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
@@ -75,7 +76,7 @@ export default function CrearFactura() {
         }
     }, [id, token]);
 
-   
+
 
 
 
@@ -85,22 +86,22 @@ export default function CrearFactura() {
 
 
     useEffect(() => {
-        if(facturaEdit){
+        if (facturaEdit) {
             console.log("Factura editada", facturaEdit);
-        const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
+            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
-        if (Conceptos) {
-            console.log("Conceptos", Conceptos);    
-            setConceptos(Conceptos);
+            if (Conceptos) {
+                console.log("Conceptos", Conceptos);
+                setConceptos(Conceptos);
+            }
+            if (Emisor) {
+                setemisorData(Emisor);
+            }
+            if (Receptor) {
+                setReceptorData(Receptor);
+            }
         }
-        if (Emisor) {
-            setemisorData(Emisor);
-        }
-        if (Receptor) {
-            setReceptorData(Receptor);
-        } 
-        }
-       
+
     }, [facturaEdit]);
 
 
@@ -130,7 +131,7 @@ export default function CrearFactura() {
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
             },
-            {token}
+            { token }
         );
     };
 
@@ -168,75 +169,84 @@ export default function CrearFactura() {
     return (
         <div>
             <Header />
-            <form onSubmit={handleSubmit(onSubmit)} method="post">
-                <Emisor
-                    register={register}
-                    setLugarExpedicion={setLugarExpedicion}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    errors={errors}
-                    emisorData={emisorData}  // Usa emisorData aquí
-                />
-                <Receptor
-                    register={register}
-                    lugarExpedicion={lugarExpedicion}
-                    errors={errors}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    receptorData={receptorData}
-                    token={token}
-                />
+            <Grid container>
+                <Grid item sx={{ minHeight: '100vh', bgcolor: 'background.paper', position: 'relative', flexGrow: 0, ml: 1, padding: "2px" }}>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <Box sx={{ padding: '.8rem', paddingTop: '0rem', xs: 4, md: 8, lg: 8, xl: 8 }}>
+                        <form onSubmit={handleSubmit(onSubmit)} method="post">
+                            <Emisor
+                                register={register}
+                                setLugarExpedicion={setLugarExpedicion}
+                                setValue={setValue}
+                                getValues={getValues}
+                                trigger={trigger}
+                                errors={errors}
+                                emisorData={emisorData}  // Usa emisorData aquí
+                            />
+                            <Receptor
+                                register={register}
+                                lugarExpedicion={lugarExpedicion}
+                                errors={errors}
+                                setValue={setValue}
+                                getValues={getValues}
+                                trigger={trigger}
+                                receptorData={receptorData}
+                                token={token}
+                            />
 
-                <Conceptos
-                    trigger={trigger}
-                    register={register}
-                    watch={watch}
-                    setValue={setValue}
-                    getValues={getValues}
-                    setConceptos={setConceptos}
-                    conceptos={conceptos}
-                    editIndex={editIndex}
-                    setEditIndex={setEditIndex}
-                    token={token}
-                />
-                <Resumen
-                    conceptos={conceptos}
-                    subTotal={watch("Subtotal")}
-                    handleEditConcepto={handleEditConcepto}
-                    handleDeleteConcepto={handleDeleteConcepto}
-                >
-                    <div className="flex justify-end w-full space-x-2 mt-10">
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}} onClick={() => router.push("/Home")}>Cancelar</Button>
-                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}} onClick={handlePreview}>Vista previa</Button>
-                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
-                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
-                    </div>
-                </Resumen>
-            </form>
-            <Modal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                aria-labelledby="modal-vista-previa"
-                aria-describedby="vista-previa-factura"
-            >
-                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
-                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
-                </Box>
-            </Modal>
-            <Snackbar
-                open={openSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-        </div>
+                            <Conceptos
+                                trigger={trigger}
+                                register={register}
+                                watch={watch}
+                                setValue={setValue}
+                                getValues={getValues}
+                                setConceptos={setConceptos}
+                                conceptos={conceptos}
+                                editIndex={editIndex}
+                                setEditIndex={setEditIndex}
+                                token={token}
+                            />
+                            <Resumen
+                                conceptos={conceptos}
+                                subTotal={watch("Subtotal")}
+                                handleEditConcepto={handleEditConcepto}
+                                handleDeleteConcepto={handleDeleteConcepto}
+                            >
+                                <div className="flex justify-end w-full space-x-2 mt-10">
+                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
+                                    {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
+                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
+                                    {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
+                                    <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                                    {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
+                                </div>
+                            </Resumen>
+                        </form>
+                        <Modal
+                            open={openModal}
+                            onClose={() => setOpenModal(false)}
+                            aria-labelledby="modal-vista-previa"
+                            aria-describedby="vista-previa-factura"
+                        >
+                            <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                                <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                            </Box>
+                        </Modal>
+                        <Snackbar
+                            open={openSnackbar}
+                            autoHideDuration={3000}
+                            onClose={() => setOpenSnackbar(false)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        >
+                            <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
+                                {snackbarMessage}
+                            </Alert>
+                        </Snackbar>
+                    </Box>
+                </Grid>
+            </Grid>
+        </div >
     );
 }

@@ -188,7 +188,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                         })) : [],
                         Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                             NombreImpuesto: traslado.NombreImpuesto,
-                            Base: float( traslado.BaseImpuesto),
+                            Base: parseFloat(traslado.BaseImpuesto),
                             ImpuestoClave: String(traslado.Impuesto),
                             TipoFactor: traslado.Tipo,
                             TasaOCuota: traslado.Tasa,

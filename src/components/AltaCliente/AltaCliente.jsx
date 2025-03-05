@@ -15,7 +15,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
 
     // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
-        console.log("Cliente recibido para editar:", cliente);
+        //console.log("Cliente recibido para editar:", cliente);
         if (cliente && Object.keys(cliente).length > 0) {
             setEditar(true);
             setValue('Nombre', cliente.Nombre);
@@ -83,6 +83,9 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             };
 
         try {
+            console.log("Token:", token);
+            console.log("Cliente Data:", clienteData);
+
             const url = editar
                 ? `${apiUrl}/api/gestores/EditarReceptor`
                 : `${apiUrl}/api/gestores/RegistroReceptor`;

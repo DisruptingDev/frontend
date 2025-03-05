@@ -300,7 +300,7 @@ const generarVistaPrevia = async (factura) => {
     console.log('Ejecutando generatePDF con la factura:', factura);  // Agrega este log
     try {
         let filledTemplate;
-        const template = await loadTemplate('/plantillas/plantilla-prueba.html');
+        const template = await loadTemplate('/plantillas/plantilla.html');
         // const template = await loadTemplate('/plantillas/cancelado.html');
         if (!template) {
             throw new Error('No se pudo cargar la plantilla para la vista previa.');
