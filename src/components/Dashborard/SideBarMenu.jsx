@@ -10,6 +10,7 @@ import TimbresIcon from '@mui/icons-material/Assignment';
 import ConceptosIcon from '@mui/icons-material/Category';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import Tooltip from '@mui/material/Tooltip';
@@ -88,6 +89,15 @@ const SideBarMenu = () => {
             </ListItemButton>
           </List>
         </Collapse>
+        <Tooltip title="Nóminas" placement="right" disableHoverListener={drawerOpen}>
+          <ListItemButton
+            selected={pathname === "/AltaNomina"}
+            onClick={() => handleNavigation("/AltaNomina")}
+          >
+            <ListItemIcon><AttachMoneyIcon /></ListItemIcon>
+            {drawerOpen && <ListItemText primary="Nóminas" />}
+          </ListItemButton>
+        </Tooltip>
         <Tooltip title="Clientes" placement="right" disableHoverListener={drawerOpen}>
           <ListItemButton
             selected={pathname === "/AltaCliente"}

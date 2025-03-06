@@ -1,7 +1,7 @@
 import './globals.css'; // Importa tus estilos globales
 
 export const metadata = {
-  title: 'Mi Aplicación',
+  title: 'Wise Factura | Inicio',
   description: 'Descripción de mi aplicación',
 };
 

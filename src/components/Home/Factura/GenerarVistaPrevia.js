@@ -100,18 +100,18 @@ const fillTemplate = async (template, data) => {
         `).join('');
 
         return `
-            <tr>
-                <td>${concepto.Cantidad}</td>
+            <tr>              
                 <td>${concepto.ClaveUnidad}</td>
+                <td>${concepto.ClaveProdServ}</td>
                 <td>
                     ${concepto.Descripcion}
                     <br>
-                    <small>CLAVE SAT: <span>${concepto.ClaveProdServ}</span></small>
                     <small>No. IDENTIFICACIÓN: <span>${concepto.NoIdentificacion || 'N/A'}</span></small>
                     <br>
                     ${retencionesHTML}
                     ${trasladosHTML}
                 </td>
+                <td>${concepto.Cantidad}</td>
                 <td>${concepto.ValorUnitario.toFixed(2)}</td>
                 <td>${concepto.Importe.toFixed(2)}</td>
             </tr>
@@ -242,44 +242,26 @@ const fillTemplate = async (template, data) => {
         .replace('{{rfcReceptor}}', factura.Receptor.Rfc)
         .replace('{{direccionReceptor}}', factura.ReceptorDireccion || direccionReceptor || "")
         // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
-
-
-
         .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
         .replace('{{impuestos}}', impuestos)
         .replace('{{total}}', factura.Total.toFixed(2))
         .replace('{{totalLetra}}', numeroALetras(factura.Total, 'pesos'))
-
         .replace('{{version}}', factura.Version)
         .replace('{{serie}}', factura.Serie)
         .replace('{{folio}}', factura.Folio)
         .replace('{{fecha}}', new Date(factura.Fecha).toLocaleString())
-
-
-
         .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
         .replace('{{conceptos}}', conceptosHTML)
-
         // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
-
-
         .replace('{{divisa}}', factura.Moneda)
-
-
-
         .replace('{{selloCFDI}}', factura.Sello || "<br><br>")
         .replace('{{selloSAT}}', factura.selloSAT || "<br><br>")
         .replace('{{cadenaSAT}}', factura.cadenaOriginalSAT || "<br><br>")
         .replace('{{serieCertificadoSAT}}', factura.NoCertificado || "<br><br>")
         .replace('{{fechaCertificacion}}', factura.fechaTimbrado || "<br><br>")
-
-
         .replace('{{formaPago}}', formaPago)
-
         .replace('{{metodoPago}}', metodoPago)
-
         .replace('{{regimenFiscal}}', RegimenFiscalReceptor)
-
         .replace('{{usoCFDI}}', usoCFDI);
 
 
@@ -319,9 +301,6 @@ const generarVistaPrevia = async (factura) => {
     filledTemplate = await fillTemplate(template, factura);
 
         // }
-
-        
-      
 // console.log('filledTemplate', filledTemplate);
         return filledTemplate;
     } catch (error) {
