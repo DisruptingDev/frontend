@@ -1,7 +1,7 @@
 "use client";
 import React, { use, useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { Container, Box, Button, Typography, TextField, IconButton, InputAdornment, Collapse, Alert } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useParams } from 'next/navigation';
@@ -16,11 +16,11 @@ const AltaUsuarios = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
     const router = useRouter();
-    
+
 
     const decodedCorreo = decodeURIComponent(encodedCorreo);
 
-  const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState({
         nombre: '',
         correo: decodedCorreo || '',
         contraseña: '',
@@ -43,7 +43,7 @@ const AltaUsuarios = () => {
     const handleClickShowConfirmPassword = () => {
         setShowConfirmPassword(!showConfirmPassword);
     };
- 
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         // Handle form submission logic here
@@ -53,7 +53,7 @@ const AltaUsuarios = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                
+
                 },
                 body: JSON.stringify({
                     Nombre: formData.nombre,
@@ -68,20 +68,20 @@ const AltaUsuarios = () => {
             if (response.ok) {
                 const result = JSON.parse(text);
 
-                if (result.status==='success') {
-                      setAlert({ open: true, message: 'Registro exitoso', severity: 'success' });
+                if (result.status === 'success') {
+                    setAlert({ open: true, message: 'Registro exitoso', severity: 'success' });
                     // console.log('Login exitoso', result.token)
                     //Despues de un tiempo redirige a la pagina de inicio
                     setTimeout(() => {
                         router.push('/');
                     }, 2000);
 
-                          
+
                 } else {
                     setAlert({ open: true, message: result.error, severity: 'error' });
-                    
-                  
-             
+
+
+
                 }
             } else {
                 setAlert({ open: true, message: 'Error en el registro', severity: 'error' });
@@ -116,7 +116,7 @@ const AltaUsuarios = () => {
                     display="flex"
                     justifyContent="center"
                 >
-                    <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
+                    <Image src="/images/Logo_wise_factura.png" alt="Descripción de la imagen" width={300} height={64} />
                 </Box>
                 <Collapse in={alert.open}>
                     <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, open: false })}>
@@ -194,7 +194,10 @@ const AltaUsuarios = () => {
                         }}
                     /> */}
                     <Button sx={{
-                        backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
+                        mt: 2,
+                        backgroundColor: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))', '&:hover': {
+                            backgroundColor: '#0398a6', // Color al hacer hover
+                        },
                     }} variant="contained" fullWidth type="submit">
                         Registrar
                     </Button>

@@ -1,21 +1,38 @@
-// components/InviteModal.js
 import React, { useState } from 'react';
-import { Modal, Box, Typography, TextField, Button, List, ListItem, ListItemText, IconButton, Tooltip } from '@mui/material';
+import { Modal, Box, Typography, TextField, Button, List, ListItem, ListItemText, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { isAuthenticated } from '@/utils/authRedirect';
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const ModalCorreos = ({ open, onClose, setOpen}) => {
+const ModalCorreos = ({ open, onClose, setOpen }) => {
     const [emailAddresses, setEmailAddresses] = useState('');
     const [invitationLinks, setInvitationLinks] = useState([]);
     const [resultModalOpen, setResultModalOpen] = useState(false);
+    const [toast, setToast] = useState({
+        open: false,
+        message: '',
+        severity: 'success',
+    });
 
     const token = isAuthenticated();
+
+    const showToast = (message, severity) => {
+        setToast({
+            open: true,
+            message: message,
+            severity: severity,
+        });
+    };
+
+    const handleCloseToast = () => {
+        setToast({ ...toast, open: false });
+    };
 
     const handleSendInvitations = async () => {
         const emailsArray = emailAddresses.split(',').map(email => email.trim());
         try {
-            const response = await fetch(`${apiUrl}/api/invitacioncolaboradores/InvitacionColaboradores/Invitar`, {
+            const response = await fetch(`${apiUrl}/api/invitacioncolaboradores/Invitar`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -27,25 +44,42 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
             if (response.ok) {
                 const data = await response.json();
                 console.log("Invitaciones enviadas:", data);
-                setInvitationLinks(data);
+
+                // Mostrar toast de éxito
+                const emailCount = Object.keys(data).length;
+                const message = emailCount === 1
+                    ? 'Correo enviado correctamente'
+                    : `${emailCount} correos enviados correctamente`;
+                showToast(message, 'success');
+
+                // Convertir el objeto en un array
+                const invitationsArray = Object.keys(data).map(email => ({
+                    email: email,
+                    status: data[email]
+                }));
+
+                setInvitationLinks(invitationsArray); // Guardar el array en el estado
                 setResultModalOpen(true);
                 setOpen(false);
             } else {
                 const errorData = await response.json();
                 console.error("Error al enviar invitaciones:", errorData);
-                alert("Hubo un error al enviar las invitaciones.");
+
+                // Mostrar toast de error
+                showToast('Hubo un error al enviar las invitaciones', 'error');
             }
         } catch (error) {
             console.error("Error en la solicitud:", error);
-            alert("No se pudo enviar la solicitud. Inténtalo de nuevo.");
+
+            // Mostrar toast de error
+            showToast('No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
         }
     };
 
-    const handleCopyLink = (link) => {
-        navigator.clipboard.writeText(link);
-        alert("Enlace copiado al portapapeles");
+    const handleCopyLink = (text) => {
+        navigator.clipboard.writeText(text);
+        alert("Copiado al portapapeles: " + text);
     };
-
     return (
         <>
             {/* Modal principal para enviar invitaciones */}
@@ -92,7 +126,7 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
             </Modal>
 
             {/* Modal para mostrar los resultados */}
-            <Modal open={resultModalOpen} onClose={() => setResultModalOpen(false)}>
+            {/* <Modal open={resultModalOpen} onClose={() => setResultModalOpen(false)}>
                 <Box
                     sx={{
                         position: 'absolute',
@@ -109,10 +143,10 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
                     }}
                 >
                     <Typography variant="h6" gutterBottom>
-                        Enlaces de Invitación Generados
+                        Resultados de las Invitaciones
                     </Typography>
                     <List>
-                        {invitationLinks.map((link, index) => (
+                        {invitationLinks.map((invitation, index) => (
                             <ListItem
                                 key={index}
                                 sx={{
@@ -128,15 +162,15 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
                                     mb: 1,
                                 }}
                             >
-                                <Tooltip title={link}>
+                                <Tooltip title={`${invitation.email}: ${invitation.status}`}>
                                     <ListItemText
-                                        primary={link}
+                                        primary={`${invitation.email}: ${invitation.status}`}
                                         primaryTypographyProps={{
                                             sx: { maxWidth: '95%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
                                         }}
                                     />
                                 </Tooltip>
-                                <IconButton onClick={() => handleCopyLink(link)} sx={{ ml: 1 }}>
+                                <IconButton onClick={() => handleCopyLink(invitation.email)} sx={{ ml: 1 }}>
                                     <ContentCopyIcon />
                                 </IconButton>
                             </ListItem>
@@ -151,7 +185,18 @@ const ModalCorreos = ({ open, onClose, setOpen}) => {
                         Cerrar
                     </Button>
                 </Box>
-            </Modal>
+            </Modal> */}
+            {/* Toast de notificación */}
+            <Snackbar
+                open={toast.open}
+                autoHideDuration={6000} // Duración en milisegundos
+                onClose={handleCloseToast}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Posición del toast
+            >
+                <Alert onClose={handleCloseToast} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
+                    {toast.message}
+                </Alert>
+            </Snackbar>
         </>
     );
 };
