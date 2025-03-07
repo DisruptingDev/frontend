@@ -50,9 +50,9 @@ const VistaUsuarios = ({ token }) => {
 
     const fetchUsuarios = useCallback(async () => {
         if (token) {
-            console.log('Fetching usuarios', token);
+            console.log('Fetching usuarios:', token);
             try {
-                const response = await fetch(`${apiUrl}/api/gestionusuarios/Usuarios/ListarUsuarios`, {
+                const response = await fetch(`${apiUrl}/api/gestionusuarios/ListarUsuarios`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -106,7 +106,7 @@ const VistaUsuarios = ({ token }) => {
         const Nombre = menuRow.Nombre;
         console.log('Suplantando usuario:', ID);
         try {
-            const response = await fetch(`${apiUrl}/api/gestionusuarios/Usuarios/SuplantarUsuario/${ID}`, {
+            const response = await fetch(`${apiUrl}/api/gestionusuarios/SuplantarUsuario/${ID}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -135,7 +135,7 @@ const VistaUsuarios = ({ token }) => {
             else {
                 console.error('Error suplantando usuario:', data);
             }
-        }  
+        }
         catch (error) {
             console.error('Error suplantando usuario:', error);
         }
@@ -148,7 +148,7 @@ const VistaUsuarios = ({ token }) => {
             <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
                 {/* <Typography variant="h4">Usuarios</Typography> */}
                 <Button variant="contained"
-                    disabled={selectedRows.length === 0}
+                    // disabled={selectedRows.length === 0}
                     color="primary"
                     sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
                 >Agregar Usuario</Button>
@@ -192,7 +192,7 @@ const VistaUsuarios = ({ token }) => {
                                         onClose={handleMenuClose}
                                         sx={{
                                             "& .MuiPaper-root": {
-                                            
+
                                               boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
                                             },
                                           }}

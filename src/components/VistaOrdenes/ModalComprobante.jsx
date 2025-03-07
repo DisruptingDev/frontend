@@ -47,7 +47,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             formData.append('ordenesID', JSON.stringify(ordenesID));
             console.log('Subiendo comprobante', formData);
             try {
-                const response = await fetch(`${apiUrl}/api/compratimbres/CompraTimbres/SubirComprobante`, {
+                const response = await fetch(`${apiUrl}/api/compratimbres/SubirComprobante`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

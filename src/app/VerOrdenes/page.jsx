@@ -196,7 +196,7 @@ export default function VerOrdenes() {
   const handleVerComprobante = async (ID) => {
     console.log('Ver comprobante', ID);
     try {
-      const response = await fetch(`${apiUrl}/api/activacionordenes/ActivacionOrdenes/ComprobanteFile/${ID}`, {
+      const response = await fetch(`${apiUrl}/api/activacionordenes/ComprobanteFile/${ID}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
