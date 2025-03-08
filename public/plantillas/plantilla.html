@@ -131,13 +131,13 @@
             <h3>Emisor</h3>
             <p><strong>{{nombreEmisor}}</strong></p>
             <p>RFC: {{rfcEmisor}}</p>
-            <p>{{regimenFiscalEmisor}}</p>
-            <p>{{direccionEmisor}}</p>
+            <p>Régimen Fiscal: {{regimenFiscalEmisor}}</p>
+            <p>Dirección: {{direccionEmisor}}</p>
           </div>
 
           <!-- Logo -->
           <div style="text-align: center">
-            <img src="{{logo}}" alt="Logo" />
+            {{logo}}
           </div>
 
           <!-- Receptor -->
@@ -176,7 +176,7 @@
       </div>
 
       <div class="pago">
-        <img src="{{qrCode}}" alt="Código QR" />
+        {{qrCode}}
         <div>
           <p>Forma de Pago: {{formaPago}}</p>
           <p>Moneda: {{divisa}}</p>

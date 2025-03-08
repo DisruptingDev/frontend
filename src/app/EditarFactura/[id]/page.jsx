@@ -230,7 +230,33 @@ export default function EditarFactura() {
                             aria-labelledby="modal-vista-previa"
                             aria-describedby="vista-previa-factura"
                         >
-                            <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                            <Box
+                                sx={{
+                                    maxHeight: '100vh',
+                                    overflowY: 'auto',
+                                    p: 4,
+                                    bgcolor: 'background.paper',
+                                    margin: 'auto',
+                                    width: '100%',
+                                    maxWidth: '850px',
+                                    position: 'relative',
+                                }}
+                            >
+                                <button
+                                    onClick={() => setOpenModal(false)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '10px',
+                                        right: '10px',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#000',
+                                        fontSize: '16px',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    ✖
+                                </button>
                                 <div dangerouslySetInnerHTML={{ __html: previewContent }} />
                             </Box>
                         </Modal>
