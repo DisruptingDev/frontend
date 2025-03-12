@@ -48,7 +48,7 @@ const ModalCSV = ({ token, open, handleClose, handleUpload }) => {
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>Subir Archivo CSV</DialogTitle>
+            <DialogTitle>Subir Archivo</DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px' }}>
                     <Button

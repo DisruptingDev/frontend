@@ -15,7 +15,38 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
     const [tipo, setTipo] = useState('');
     const [preferenceId, setPreferenceId] = useState('');
     const [tipoPago, setTipoPago] = useState('');
-    const [linkPago, setLinkPago] = useState(''); // Estado para almacenar la URL de pago de OpenPay
+    const [linkPago, setLinkPago] = useState('');
+    const [empresas, setEmpresas] = useState([]); // Estado para almacenar la lista de empresas
+
+    // Obtener la lista de empresas al cargar el componente
+    useEffect(() => {
+        const fetchEmpresas = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setEmpresas(data);
+
+                    // Si solo hay una empresa, seleccionarla automáticamente
+                    if (data.length === 1) {
+                        setEmpresa(data[0].ID);
+                    }
+                } else {
+                    console.error('Error al obtener la lista de empresas');
+                }
+            } catch (error) {
+                console.error('Error al obtener la lista de empresas:', error);
+            }
+        };
+
+        if (open && opcion.Nombre.includes('Paquete')) {
+            fetchEmpresas();
+        }
+    }, [open, opcion, token]);
 
     useEffect(() => {
         console.log('Opción seleccionada:', opcion);
@@ -74,6 +105,7 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 setLinkPago(data.link); // Almacena la URL de pago de OpenPay
                 setAlertMessage('Orden realizado con éxito.');
                 setSeverity('success');
+                return data.link; // Retorna el link de pago
             } else {
                 setAlertMessage('Error al realizar el pago. Por favor, intente de nuevo.');
             }
@@ -94,17 +126,11 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
 
     const handleTipoPago = async (tipo) => {
         setTipoPago(tipo);
-        await handleConfirmPago(); // Generar la orden en ambos casos (transferencia y OpenPay)
+        const link = await handleConfirmPago(); // Generar la orden y obtener el link de pago
     
         // Redirigir solo si el tipo de pago es OpenPay y hay un link de pago
-        if (tipo === 'openpay' && linkPago) {
-            window.location.href = linkPago;
-        }
-    };
-
-    const handleOpenPayRedirect = () => {
-        if (linkPago) {
-            window.location.href = linkPago; // Redirige al usuario a la URL de pago de OpenPay
+        if (tipo === 'openpay' && link) {
+            window.open(link, '_blank'); // Abre el link de pago en una nueva pestaña
         }
     };
 
@@ -137,14 +163,20 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 <Box mb={2} bgcolor="#f3f4f6" padding="0.4em" borderRadius="0.5em">
                     <Typography sx={{ fontWeight: "600", fontSize: "1em" }} gutterBottom>Empresa:</Typography>
                     {opcion.Nombre.includes('Paquete') && (
-                        <Select
-                            label="Seleccionar empresa"
-                            url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                            id="ID"
-                            clave=""
-                            onChange={handleEmpresa}
-                            descripcion="Nombre"
-                        />
+                        empresas.length > 1 ? (
+                            <Select
+                                label="Seleccionar empresa"
+                                url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                                id="ID"
+                                clave=""
+                                onChange={handleEmpresa}
+                                descripcion="Nombre"
+                            />
+                        ) : (
+                            <Typography sx={{ fontWeight: "500", fontSize: "0.9em" }}>
+                                {empresas.length === 1 ? empresas[0].Nombre : 'No hay empresas disponibles'}
+                            </Typography>
+                        )
                     )}
                 </Box>
 
@@ -194,17 +226,6 @@ const ModalPago = ({ open, onClose, opcion, token, setCompra }) => {
                 )}
             </DialogContent>
             <DialogActions sx={{ flexDirection: 'column' }}>
-                {tipoPago === 'openpay' && linkPago && (
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        onClick={handleOpenPayRedirect}
-                        sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
-                    >
-                        Pagar con OpenPay
-                    </Button>
-                )}
                 <Button variant="outlined" color="secondary" fullWidth onClick={onClose} sx={{ marginTop: '0.5em' }}>
                     Cancelar
                 </Button>

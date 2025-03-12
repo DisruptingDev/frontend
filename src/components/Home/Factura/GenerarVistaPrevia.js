@@ -1,5 +1,5 @@
 "use client";
-import { PagesOutlined } from "@mui/icons-material";
+import { ConstructionOutlined, PagesOutlined } from "@mui/icons-material";
 // import html2pdf from 'html2pdf.js';
 import QRCode from "qrcode";
 
@@ -120,11 +120,13 @@ const loadTemplate = async (path) => {
 // Función para reemplazar los placeholders en la plantilla con los datos de factura
 const fillTemplate = async (template, data) => {
   let factura;
-
+  
   if (data.factura) {
     factura = data.factura;
+    //console.log("Factura contenido:",factura);
   } else {
     factura = data;
+    //console.log("Factura contenido:",factura);
   }
   // Generar HTML para conceptos
   const conceptosHTML = factura.Conceptos.ListaConceptos.map((concepto) => {
@@ -208,7 +210,7 @@ const fillTemplate = async (template, data) => {
     }
   }
 
-  console.log("direccionEmisor", direccionEmisor);
+  //console.log("direccionEmisor", direccionEmisor);
 
   let direccionReceptor = "";
   console.log("factura.Receptor", factura.Receptor);
@@ -230,7 +232,7 @@ const fillTemplate = async (template, data) => {
       direccionReceptor += ", " + factura.Receptor.Estado;
     }
   }
-  console.log("direccionReceptor", direccionReceptor);
+  //console.log("direccionReceptor", direccionReceptor);
 
   if (direccionEmisor.includes("undefined")) {
     direccionEmisor = "";
@@ -348,7 +350,7 @@ const fillTemplate = async (template, data) => {
 // };
 // Función para generar el PDF usando html2pdf
 const generarVistaPrevia = async (factura) => {
-  console.log("Ejecutando generatePDF con la factura:", factura); // Agrega este log
+  //console.log("Ejecutando generatePDF con la factura:", factura); // Agrega este log
   try {
     let filledTemplate;
     const template = await loadTemplate("/plantillas/plantilla.html");

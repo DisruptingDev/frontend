@@ -1,4 +1,5 @@
-"use client";
+"use client" // Indica que es un componente del lado del cliente
+import React, { useState, useEffect } from 'react'; // Importa React y los hooks useState y useEffect
 import {
     Table,
     TableBody,
@@ -10,70 +11,73 @@ import {
     IconButton,
     Menu,
     MenuItem,
-} from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { useState, useEffect } from "react";
-import ModalEdicion from "./ModalEdicion";
+} from "@mui/material"; // Importa componentes de Material-UI para la tabla y la interfaz
+import MoreVertIcon from "@mui/icons-material/MoreVert"; // Importa el icono para las acciones de la tabla
+import ModalEdicion from "./ModalEdicion"; // Importa el modal para editar facturas
 
-const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
-    const [facturas, setFacturas] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [menuRow, setMenuRow] = useState(null);
-    const [openModal, setOpenModal] = useState(false);
-    const [emisor, setEmisor] = useState({});
-    const [concepto, setConcepto] = useState({});
-    const [impuesto, setImpuesto] = useState({});
-    const [receptor, setReceptor] = useState({});
+const VistaFacturasImportadas = ({
+    facturasRecuperadas, // Lista de facturas recuperadas del Excel
+    token,  // Token de autenticación
+    actualizarFacturas // Función para actualizar las facturas
+}) => {
+    const [facturas, setFacturas] = useState([]); // Estado para almacenar las facturas
+    const [loading, setLoading] = useState(true); // Estado de carga inicial
+    const [anchorEl, setAnchorEl] = useState(null); // Estado para manejar el menú de opciones
+    const [menuRow, setMenuRow] = useState(null); // Estado para identificar la fila seleccionada en el menú
+    const [openModal, setOpenModal] = useState(false); // Estado para controlar la apertura del modal
+    const [indexFacturaEditar, setIndexFacturaEditar] = useState(null); // Estado para almacenar el índice de la factura a editar
+    const [facturaEditar, setFacturaEditar] = useState(null); // Estado para almacenar la factura a editar
 
+
+    // Efecto para actualizar las facturas cuando cambia facturasRecuperadas
     useEffect(() => {
-        setFacturas(facturasRecuperadas);
+        setFacturas(facturasRecuperadas); // Actualiza las facturas
         setLoading(false);
     }, [facturasRecuperadas]);
+
+    // Maneja la apertura del modal de edición
     const handleOpenModal = () => {
         setOpenModal(true);
     };
+    
+    // Maneja el cierre del modal de edición
     const handleCloseModal = () => {
         setOpenModal(false);
     };
-    
 
-    const handleMenuClick = (event, row) => {
+    // Maneja la apertura del menú de opciones en una fila específica
+    const handleMenuClick = (event, row, index) => {
         setAnchorEl(event.currentTarget);
-        setMenuRow(row);
+        setMenuRow({ row, index });
     };
 
+    // Cierra el menú de opciones
     const handleMenuClose = () => {
         setAnchorEl(null);
         setMenuRow(null);
     };
 
+    // Maneja la acción de editar una factura
     const handleEditar = () => {
-        console.log("Editar factura:", menuRow);
-        const emisor = menuRow.Emisor;
-        console.log("Emisor:", emisor); 
-        const receptor = menuRow.Receptor;
-        console.log("Receptor:", receptor);
-        const concepto = menuRow.Concepto;
-        console.log("Concepto:", concepto);
-        const impuesto = menuRow.Impuesto;
-        console.log("Impuesto:", impuesto);
-
-        setConcepto(concepto);
-        setImpuesto(impuesto);
-        setReceptor(receptor);
-        setEmisor(emisor);
-        // setMenuRow(null);
-        handleOpenModal(true);
+        setFacturaEditar(menuRow.row); // Guarda la factura a editar
+        setIndexFacturaEditar(menuRow.index); // Guarda el índice de la factura a editar
+        handleOpenModal(); // Abre el modal de edición
+        setMenuRow(null); // Resetea la fila seleccionada
+        setAnchorEl(null); // Cierra el menú de opciones
     };
 
-    const handleEliminar = (index) => {
-        console.log("Eliminar factura en índice:", index);
-        setMenuRow(null);
+    // Actualiza la factura editada en la lista
+    const ActualizarFactura = (factura) => {
+        const nuevasFacturas = facturas.map((f, i) => i === indexFacturaEditar ? factura : f); // Reemplaza la factura editada
+        setFacturas(nuevasFacturas); // Actualiza la lista de facturas
+        actualizarFacturas(nuevasFacturas); // Actualiza las facturas en el componente padre
+    };
 
-        // Lógica para eliminar factura del estado
-        const nuevasFacturas = facturas.filter((_, i) => i !== index);
-        setFacturas(nuevasFacturas);
+    // Maneja la acción de eliminar una factura
+    const handleEliminar = () => {
+        const nuevasFacturas = facturas.filter((_, i) => i !== menuRow.index); // Filtra las facturas excluyendo la seleccionada
+        setFacturas(nuevasFacturas); // Actualiza la lista de facturas
+        actualizarFacturas(nuevasFacturas); // Actualiza las facturas en el componente padre
     };
 
     return (
@@ -197,44 +201,45 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
+                        {/*Mapea las facturas, mostrando los errores*/}
                         {facturas.map((factura, index) => (
                             <TableRow key={index}>
                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                 {factura.Emisor.Error === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>Emisor no encontrado</TableCell>
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>Emisor no encontrado</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Emisor.Nombre || factura.Emisor.RFC}
                                 </TableCell>)}
                                 {factura.Receptor.Error === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>Receptor no encontrado</TableCell>
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>Receptor no encontrado</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Receptor.Nombre || factura.Receptor.RFC}
                                 </TableCell>)}
-                                
-                              
+
+
                                 <TableCell sx={{ textAlign: "center" }}>
                                     {factura.Concepto.Descripcion}
                                 </TableCell>
                                 {factura.Concepto['Error-ClaveProductoServicio'] === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>Clave incorrecta</TableCell>
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>Clave incorrecta</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Concepto.ClaveProductoServicio}
                                 </TableCell>
                                 )}
                                 {factura.Impuesto['Error-ObjetoImpuesto'] === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>ObjetoImpuesto incorrecto</TableCell>
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>ObjetoImpuesto incorrecto</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Impuesto.ObjetoImpuesto}
                                 </TableCell>
                                 )}
-                               {factura.Impuesto['Error-ClaveImpuesto'] === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>ClaveImpuesto incorrecto</TableCell>
+                                {factura.Impuesto['Error-ClaveImpuesto'] === 'record not found' ? (
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>ClaveImpuesto incorrecto</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Impuesto.ClaveImpuesto}
                                 </TableCell>
                                 )}
                                 {factura.Impuesto['Error-TasaOCuota'] === 'record not found' ? (
-                                    <TableCell sx={{ textAlign: "center", color:"red"}}>TasaOCuota incorrecta</TableCell>
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>TasaOCuota incorrecta</TableCell>
                                 ) : (<TableCell sx={{ textAlign: "center" }}>
                                     {factura.Impuesto.TasaOCuota}
                                 </TableCell>
@@ -244,7 +249,7 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
                                     {factura.Impuesto.Monto + factura.Impuesto.BaseImpuesto}
                                 </TableCell>
                                 <TableCell sx={{ textAlign: "center" }}>
-                                    <IconButton onClick={(event) => handleMenuClick(event, factura)}>
+                                    <IconButton onClick={(event) => handleMenuClick(event, factura, index)}>
                                         <MoreVertIcon />
                                     </IconButton>
                                     <Menu
@@ -252,8 +257,9 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
                                         open={Boolean(anchorEl)}
                                         onClose={handleMenuClose}
                                     >
+
                                         <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                        <MenuItem onClick={() => handleEliminar(index)}>Eliminar</MenuItem>
+                                        <MenuItem onClick={handleEliminar}>Eliminar</MenuItem>
                                     </Menu>
                                 </TableCell>
                             </TableRow>
@@ -261,7 +267,8 @@ const VistaFacturasImportadas = ({ facturasRecuperadas, token }) => {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <ModalEdicion  open={openModal} handleClose={handleCloseModal} emisor={emisor} receptor={receptor} concepto={concepto} impuesto={impuesto} token={token} />
+            {/*Modal de edición de facturas*/}
+            <ModalEdicion open={openModal} handleClose={handleCloseModal} facturaEditar={facturaEditar} actualizarFactura={ActualizarFactura} token={token} />
         </div>
     );
 };

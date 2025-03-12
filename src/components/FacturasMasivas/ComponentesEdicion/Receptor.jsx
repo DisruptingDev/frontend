@@ -13,7 +13,7 @@ export default function Receptor({ register, trigger, datosReceptor, setValue, g
 
     useEffect(() => {
         if (datosReceptor) {
-            console.log('Receptor', datosReceptor);
+            //console.log('Receptor', datosReceptor);
             // setReceptor(datosReceptor);
             setValue("MetodoPago", datosReceptor.MetodoPago);
             setValue("Receptor", datosReceptor.ID);
@@ -33,12 +33,11 @@ console.log("Valor MetodoPago:", getValues("MetodoPago"));
 
     useEffect(() => {
         if (Object.keys(receptor).length !== 0) {
-            console.log('Receptor', receptor);
+            console.log('Receptor completo:', receptor);
             setValue("Receptor", receptor.ID);
             setValue("ReceptorID", receptor.ID);
             setRegimenFiscal(receptor.RegimenFiscalReceptor);
             setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${receptor.RegimenFiscalReceptor}`);
- 
             trigger("Receptor");
 
         }
@@ -120,8 +119,8 @@ console.log("Valor MetodoPago:", getValues("MetodoPago"));
 
 
             </Box>
-            <pre>{JSON.stringify(usoCFDIURL || "No hay valor", null, 2)}</pre>
-            <pre>{JSON.stringify(getValues("MetodoPago") || "No hay valor", null, 2)}</pre>
+            {/* <pre>{JSON.stringify(usoCFDIURL || "No hay valor", null, 2)}</pre>
+            <pre>{JSON.stringify(getValues("MetodoPago") || "No hay valor", null, 2)}</pre> */}
         </Box>
     )
 }

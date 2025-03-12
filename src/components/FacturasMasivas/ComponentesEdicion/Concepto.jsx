@@ -19,13 +19,14 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
 
     useEffect(() => {
         if (datosConcepto) {
-            console.log('Concepto', datosConcepto);
+            console.log('Concepto datos: ', datosConcepto);
             setValue("DescripcionConcepto", datosConcepto.Descripcion);
             setValue("ClaveProdServ", datosConcepto.ClaveProductoServicio);
             setValue("ClaveUnidad", datosConcepto.ClaveUnidad);
             setValue("Cantidad", datosConcepto.Cantidad);
             setValue("PrecioUnitario", datosConcepto.PrecioUnitario);
             setValue("Descuento", datosConcepto.Descuento);
+            setValue("Total", datosConcepto.PrecioUnitario * datosConcepto.Cantidad - datosConcepto.Descuento);
             if (!claveProdServOptions.some(opt => opt.Clave === datosConcepto.ClaveProductoServicio)) {
                 console.log(`Consultando opciones de ClaveProdServ para: ${datosConcepto.ClaveProductoServicio}`);
                 fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveProdServ?query=${datosConcepto.ClaveProductoServicio}`, {
@@ -42,13 +43,13 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     })
                     .catch(error => console.error('Error al buscar ClaveProdServ:', error));
             } else {
-                console.log("Opciones ClaveProdServ ya disponibles:", claveProdServOptions);
+                //console.log("Opciones ClaveProdServ ya disponibles:", claveProdServOptions);
                 const selectedProdServ = claveProdServOptions.find(opt => opt.Clave == datosConcepto.ClaveProductoServicio);
-                console.log("ClaveProdServ seleccionada:", selectedProdServ);
+                //console.log("ClaveProdServ seleccionada:", selectedProdServ);
                 setSelectedClaveProdServ(selectedProdServ || null);
             }
             if (!claveUnidadOptions.some(opt => opt.Clave === datosConcepto.ClaveUnidad)) {
-                console.log(`Consultando opciones de ClaveUnidad para: ${datosConcepto.ClaveUnidad}`);
+                //console.log(`Consultando opciones de ClaveUnidad para: ${datosConcepto.ClaveUnidad}`);
                 fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveUnidad?query=${datosConcepto.ClaveUnidad}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -73,9 +74,17 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
 
     useEffect(() => {
         if (datosImpuesto) {
-            console.log('Impuesto', datosImpuesto);
+            console.log('Datos de Impuesto:', datosImpuesto);
+            // Asegúrate de que los campos existan en datosImpuesto
+            setValue("ImpuestoClaveID", datosImpuesto.ImpuestoClaveID);
+            setValue("ClaveImpuesto", datosImpuesto.ClaveImpuesto);
+            setValue("Impuesto", datosImpuesto.Impuesto);
+            setValue("BaseImpuesto", datosImpuesto.BaseImpuesto);
+            setValue("Monto", datosImpuesto.Monto);
+        }else{
+            console.log("No hay datos de impuestos")
         }
-    }, [datosImpuesto]);
+    }, [datosImpuesto, setValue]);
     
     const fetchOptions = async () => {
         if (!token) return;
@@ -101,7 +110,7 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
 
     useEffect(() => {
         if (selectedClaveUnidad) {
-            console.log("Seleccion", selectedClaveUnidad.Descripcion);
+            //console.log("Seleccion", selectedClaveUnidad.Descripcion);
 
             setValue("Unidad", selectedClaveUnidad.Descripcion);
 
@@ -109,12 +118,12 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
 
     }, [selectedClaveUnidad, setValue])
     useEffect(() => {
-        console.log("Entre a la funcion");
+        //console.log("Entre a la funcion");
         fetchOptions();
     }, [queryProdServ, queryUnidad, token]);
     return (
-        <Box>
-            <Typography variant="h6" >Concepto</Typography>
+        <Box mt={4}>
+            <Typography variant="h6">Concepto</Typography>
             <Box
                 display="grid"
                 gap={3}
@@ -128,7 +137,6 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                 }}>
 
                 <TextField
-
                     label="Descripcion"
                     {...register("DescripcionConcepto")}
                     // value={getValues("Descripcion")}
@@ -231,7 +239,7 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     label="Total"
                     type="number"
                     {...register("Total")}
-                    // value={getValues("Total")}
+                    value={getValues("Total")}
                     fullWidth
                     InputProps={{
                         readOnly: true,
@@ -239,7 +247,7 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     disabled
                 />
             </Box>
-            <Box>
+            <Box mt={4}>
                 <Typography variant="h6" mb={2}>Impuestos</Typography>
                 <Select
                     register={register}
@@ -261,7 +269,8 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr  '
                 }}
                 gap={3}
-                mt={4}>
+                mt={4}
+                aria-hidden={false}>
                 <Select
                     register={register}
                     clave='Clave'
@@ -270,8 +279,8 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     nombre='Impuesto'
                     label='Impuesto'
                     url={`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`}
+                    value={getValues("ImpuestoClaveID") || "1"}
                 // onChange={handleImpuestoChange}
-
                 />
                 <TextField
                         label="Base Impuesto"
@@ -291,9 +300,7 @@ export default function Concepto({datosConcepto, datosImpuesto, setValue, regist
                     />
 
             </Box>
-            <pre>{JSON.stringify(getValues("Impuesto") || "No hay valors de impuesto", null, 2)}</pre>
-
-
+            {/* <pre>{JSON.stringify(getValues("Impuesto") || "No hay valors de impuesto", null, 2)}</pre> */}
         </Box>
     )
 }

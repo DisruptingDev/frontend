@@ -42,7 +42,7 @@
       }
 
       .seccion h2 {
-        font-size: .8em;
+        font-size: 0.8em;
         color: #2a9d8f;
         margin-bottom: 10px;
       }
@@ -72,7 +72,8 @@
 
       .resultado {
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: flex-end;
         margin-top: 20px;
       }
 
@@ -136,15 +137,14 @@
           </div>
 
           <!-- Logo -->
-          <div style="text-align: center">
-            {{logo}}
-          </div>
+          <div style="text-align: center">{{logo}}</div>
 
           <!-- Receptor -->
           <div>
             <h3>Receptor</h3>
             <p><strong>{{nombreReceptor}}</strong></p>
             <p>RFC: {{rfcReceptor}}</p>
+            <p>Domicilio Fiscal: {{CPReceptor}}</p>
             <p>Dirección: {{direccionReceptor}}</p>
             <p>Uso CFDI: {{usoCFDI}}</p>
           </div>
@@ -172,6 +172,9 @@
 
       <div class="resultado">
         <p>Subtotal: ${{subtotal}}</p>
+        <p>Descuento: ${{descuento}}</p>
+        <p>Retenciones: ${{retenciones}}</p>
+        <p>Traslados: ${{traslados}}</p>
         <p>Total: <strong>${{total}}</strong></p>
       </div>
 
@@ -184,7 +187,7 @@
         </div>
       </div>
 
-      <div class="certificado" style="font-size: 8px;">
+      <div class="certificado" style="font-size: 8px">
         <p><strong>Sello Digital del CFDI:</strong> {{selloCFDI}}</p>
         <p><strong>Sello del SAT:</strong> {{selloSAT}}</p>
         <p><strong>Certificado SAT:</strong> {{serieCertificadoSAT}}</p>

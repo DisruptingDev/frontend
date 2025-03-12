@@ -74,15 +74,6 @@ export default function EditarFactura() {
         }
     }, [id, token]);
 
-
-
-
-
-
-
-
-
-
     useEffect(() => {
         if (facturaEdit) {
             console.log("Factura editada", facturaEdit);

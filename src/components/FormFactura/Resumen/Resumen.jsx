@@ -6,7 +6,7 @@ import { Box, Typography, Table, TableHead, TableBody, TableRow, TableCell, Grid
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
     let finales = CalculosFinales(conceptos);
-    console.log("Conceptos Resumen", conceptos);
+    //console.log("Conceptos Resumen", conceptos);
 
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}

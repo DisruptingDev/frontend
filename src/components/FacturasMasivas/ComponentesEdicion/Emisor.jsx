@@ -10,24 +10,25 @@ export default function Emisor({ datosEmisor, register, getValues, setValue, tri
     const [emisor, setEmisor] = useState({});
     const [serieUrl, setSerieUrl] = useState('');
     useEffect(() => {
-        
+
         if (datosEmisor) {
             if (datosEmisor.Error) {
-                console.log('Emisor Error', datosEmisor.Error);
+                //console.log('Emisor Error', datosEmisor.Error);
             }
             else {
                 setEmisor(datosEmisor);
-                console.log('Emisor', datosEmisor.ID);
+                //console.log('Emisor', datosEmisor.ID);
                 setValue("EmisorID", datosEmisor.ID);
                 setValue("Emisor", datosEmisor.ID);
+                setValue("Nombre", datosEmisor.Nombre);
                 trigger("EmisorID", "Emisor");
 
 
                 setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${datosEmisor.ID}`);
                 if (datosEmisor["Serie-Error"]) {
-                    console.log(datosEmisor["Serie-Error"]);
+                    //console.log(datosEmisor["Serie-Error"]);
                 } else {
-                    console.log("Serie", datosEmisor.Serie);
+                    //console.log("Serie", datosEmisor.Serie);
                     setValue("Serie", datosEmisor.Serie);
                     trigger("Serie");
                 }
@@ -40,9 +41,7 @@ export default function Emisor({ datosEmisor, register, getValues, setValue, tri
         try {
             const data = JSON.parse(e.target.value);
             setEmisor(data);
-
-            console.log(data);
-
+            //console.log(data);
         } catch (error) {
 
         }
@@ -51,7 +50,7 @@ export default function Emisor({ datosEmisor, register, getValues, setValue, tri
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
-            console.log("SERie", data);
+            //console.log("SERie", data);
             setValue("TipoComprobante", data.TipoComprobante);
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
@@ -90,7 +89,7 @@ export default function Emisor({ datosEmisor, register, getValues, setValue, tri
                     clave=""
                     descripcion="Nombre"
                     onChange={handleEmisorChange}
-                    value={getValues("Emisor") || ''}
+                    value={getValues("Nombre") || ''}
                 />
                 <Select
                     register={register}
@@ -99,22 +98,11 @@ export default function Emisor({ datosEmisor, register, getValues, setValue, tri
                     id="Clave"
                     clave='Clave'
                     descripcion="TimbresDisponibles"
-                 
+
                     value={getValues("Serie") || ""}
                     onChange={handleSerieChange}
-
-
                 />
-
-
-
-
             </Box>
-            
-            {/* <pre> {JSON.stringify(datosEmisor || "No hay valor", null, 2)}</pre>
-            <pre> {JSON.stringify(emisor || "No hay valor", null, 2)}</pre>
-            <pre> {JSON.stringify(serieUrl|| "No hay valor", null, 2)}</pre> */}
-
         </Box>
     )
 }
