@@ -39,7 +39,7 @@ const VistaFacturasImportadas = ({
     const handleOpenModal = () => {
         setOpenModal(true);
     };
-    
+
     // Maneja el cierre del modal de edición
     const handleCloseModal = () => {
         setOpenModal(false);
@@ -244,9 +244,11 @@ const VistaFacturasImportadas = ({
                                     {factura.Impuesto.TasaOCuota}
                                 </TableCell>
                                 )}
-                                <TableCell sx={{ textAlign: "center" }}>{factura.Impuesto.Monto}</TableCell>
                                 <TableCell sx={{ textAlign: "center" }}>
-                                    {factura.Impuesto.Monto + factura.Impuesto.BaseImpuesto}
+                                    {Number(factura.Impuesto.Monto).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                                </TableCell>
+                                <TableCell sx={{ textAlign: "center" }}>
+                                    {(Number(factura.Impuesto.Monto) + Number(factura.Impuesto.BaseImpuesto)).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                                 </TableCell>
                                 <TableCell sx={{ textAlign: "center" }}>
                                     <IconButton onClick={(event) => handleMenuClick(event, factura, index)}>

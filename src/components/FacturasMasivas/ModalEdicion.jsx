@@ -21,7 +21,7 @@ const ModalEdicion = ({
 
 
     // Configuración del formulario con react-hook-form
-    const { register, watch, handleSubmit, setValue, getValues, trigger, reset, formState: { errors }, setError } = useForm();
+    const { control, register, watch, handleSubmit, setValue, getValues, trigger, reset, formState: { errors }, setError } = useForm();
 
     // Efecto para cargar los datos de la factura a editar
     useEffect(() => {
@@ -173,6 +173,7 @@ const ModalEdicion = ({
                         errors={errors}
                     />
                     <Concepto
+                        control={control}
                         register={register}
                         getValues={getValues}
                         setValue={setValue}
