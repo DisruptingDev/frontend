@@ -29,16 +29,31 @@ export default function Concepto({
     const cantidad = useWatch({ control, name: "Cantidad" });
     const precioUnitario = useWatch({ control, name: "PrecioUnitario" });
     const descuento = useWatch({ control, name: "Descuento" });
+    const tasaOCuota = useWatch({ control, name: "TasaOCuota" }); // Observa la tasa o cuota
 
-    // Efecto para calcular el total cuando cambian cantidad, precio unitario o descuento
+    // Efecto para calcular el total y la base impuesto
     useEffect(() => {
         const cantidadNum = parseFloat(cantidad) || 0;
         const precioUnitarioNum = parseFloat(precioUnitario) || 0;
         const descuentoNum = parseFloat(descuento) || 0;
 
+        // Calcula el total
         const total = cantidadNum * precioUnitarioNum - descuentoNum;
         setValue("Total", total);
+
+        // La base impuesto es igual al total
+        setValue("BaseImpuesto", total);
     }, [cantidad, precioUnitario, descuento, setValue]);
+
+    // Efecto para calcular el monto (base impuesto * tasa o cuota)
+    useEffect(() => {
+        const baseImpuestoNum = parseFloat(getValues("BaseImpuesto")) || 0;
+        const tasaOCuotaNum = parseFloat(tasaOCuota) || 0;
+
+        // Calcula el monto
+        const monto = baseImpuestoNum * tasaOCuotaNum;
+        setValue("Monto", monto);
+    }, [tasaOCuota, getValues("BaseImpuesto"), setValue]);
 
     // Efecto para rellenar los valores del formulario cuando se va a editar 
     useEffect(() => {
@@ -406,7 +421,11 @@ export default function Concepto({
                         {...register(`BaseImpuesto`, {
                             required: "La base impuesto es obligatoria"
                         })}
+                        value={getValues("BaseImpuesto")}
                         fullWidth
+                        InputProps={{
+                            readOnly: true
+                        }}
                         error={!!errors.BaseImpuesto}
                         helperText={errors.BaseImpuesto ? "Este campo es obligatorio" : ""}
                     />
@@ -416,7 +435,11 @@ export default function Concepto({
                         {...register(`Monto`, {
                             required: "El monto es obligatorio"
                         })}
+                        value={getValues("Monto")}
                         fullWidth
+                        InputProps={{
+                            readOnly: true
+                        }}
                         error={!!errors.Monto}
                         helperText={errors.Monto ? "Este campo es obligatorio" : ""}
                         inputProps={{ step: "any" }}

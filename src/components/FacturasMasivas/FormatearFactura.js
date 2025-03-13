@@ -5,10 +5,14 @@ export default function FormatearFactura(data) {
         const concepto = item.Concepto || {};
         const impuestos = item.Impuesto || {};
 
+        // Convertir TasaOCuota y Monto a cadenas y manejar valores undefined/null
+        const tasaOCuota = String(impuestos.TasaOCuota || "0").replace(",", ".");
+        const monto = String(impuestos.Monto || "0").replace(",", ".");
+
         return {
             ClaveProdServ: String(concepto.ClaveProductoServicio),
             NoIdentificacion: concepto.NoIdentificacion || "",
-            Cantidad: parseInt(concepto.Cantidad,10),
+            Cantidad: parseInt(concepto.Cantidad, 10),
             ClaveUnidad: String(concepto.ClaveUnidad),
             Unidad: concepto.Unidad || "",
             Descripcion: concepto.Descripcion,
@@ -23,9 +27,9 @@ export default function FormatearFactura(data) {
                         ImpuestoCatalogoID: impuestos.ImpuestoClaveID,
                         ImpuestoClave: String(impuestos.ClaveImpuesto),
                         TipoFactor: "Tasa",
-                        TasaOCuota: parseFloat(impuestos.TasaOCuota.replace(",", ".")),
+                        TasaOCuota: parseFloat(tasaOCuota), // Usar la tasaOCuota formateada
                         TasaCatalogoID: impuestos.TasaOCuotaID,
-                        Importe: parseFloat(impuestos.Monto.replace(",", "."))
+                        Importe: parseFloat(monto) // Usar el monto formateado
                     }
                 ] : [],
                 Traslados: impuestos.Tipo === "Traslado" ? [
@@ -34,15 +38,15 @@ export default function FormatearFactura(data) {
                         ImpuestoCatalogoID: impuestos.ImpuestoClaveID,
                         ImpuestoClave: String(impuestos.ClaveImpuesto),
                         TipoFactor: "Tasa",
-                        TasaOCuota: parseFloat(impuestos.TasaOCuota.replace(",", ".")),
+                        TasaOCuota: parseFloat(tasaOCuota), // Usar la tasaOCuota formateada
                         TasaCatalogoID: impuestos.TasaOCuotaID,
-                        Importe: parseFloat(impuestos.Monto.replace(",", "."))
+                        Importe: parseFloat(monto) // Usar el monto formateado
                     }
                 ] : []
             }
         };
     });
-    
+
     const TotalTraslados = conceptos.reduce((acc, c) =>
         acc + c.Impuestos.Traslados.reduce((a, r) => a + r.Importe, 0), 0);
 
@@ -55,21 +59,17 @@ export default function FormatearFactura(data) {
     const emisor = data[0].Emisor || {};
     const receptor = data[0].Receptor || {};
 
-  
     const factura = {
-        
         Version: "4.0",
         Fecha: new Date().toISOString(), // Cambia esto por la fecha real si está disponible
         FormaPago: receptor.FormaPago,
         Serie: emisor.Serie,
-        // SubTotal: conceptos.reduce((acc, c) => acc + c.Importe, 0),
         SubTotal: subtotal,
         CondicionesDePago: "Condiciones De Pago",
         TipoDeComprobante: emisor.TipoComprobante || "I",
         Descripcion: "",
         Moneda: emisor.Divisa || "MXN",
         TipoCambio: "1",
-        // Total: conceptos.reduce((acc, c) => acc + (c.Importe - c.Descuento), 0),
         Total: total,
         Exportacion: "01",
         MetodoPago: receptor.MetodoPago,

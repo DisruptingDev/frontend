@@ -116,10 +116,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("Municipio", data["Municipio"]);
             setValue("Estado", data["Estado"]);
 
-
-            
-
-
             console.log("RFCReceptor", data["Rfc"]);
             // Dispara la validación de estos campos
             trigger("RFCReceptor");
@@ -136,7 +132,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             console.log("Forma de pago", data["Clave"]);
             if(data["Clave"]==="PPD"){
                 console.log("Forma de pago", data["Clave"]);
-                setValue("FormaPago", 99);
+                setValue("FormaPago", "99");
                 trigger("FormaPago");
             }
            

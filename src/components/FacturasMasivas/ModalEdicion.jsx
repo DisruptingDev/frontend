@@ -61,7 +61,7 @@ const ModalEdicion = ({
     // Maneja la actualización de la factura
     const onSubmit = (data) => {
         //console.log("Entro a onSubmit");
-        //console.log("Datos del formulario", data);
+        console.log("Datos del formulario", data);
 
         // Creación del objeto emisor
         const emisor = {
@@ -75,13 +75,13 @@ const ModalEdicion = ({
         // Creación del objeto receptor
         const receptor = {
             ID: data.ReceptorID,
-            Nombre: data.Nombre,
-            RFC: data.Rfc,
+            Nombre: data.ReceptorNombre,
+            RFC: data.ReceptorRFC,
             MetodoPago: data.MetodoPago,
             UsoCFDI: data.UsoCFDI,
             UsoCFDIID: data.UsoCFDIID,
             FormaPago: data.FormaPago,
-            RegimenFiscal: data.RegimenFiscal,
+            RegimenFiscal: data.ReceptorRegimenFiscal,
         }
         console.log("Receptor", receptor);
         // Creación del objeto concepto

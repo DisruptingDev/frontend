@@ -48,7 +48,7 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos ante de crear", conceptos);
+        console.log("Conceptos antes de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Factura");
         console.log('Factura creada:', factura);
         GuardarFactura(
