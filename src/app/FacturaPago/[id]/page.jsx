@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { get, useForm } from 'react-hook-form';
-import { Snackbar, Alert, Modal, Box, Button } from '@mui/material';
+import { Snackbar, Alert, Modal, Box, Button, Grid } from '@mui/material';
 import { useParams } from 'next/navigation';
 
 import Header from "@/components/Header/Header.jsx";
@@ -17,6 +17,7 @@ import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 // 
@@ -68,7 +69,7 @@ export default function FacturaPago() {
                 const data = await response.json();
                 setFacturaEdit(data);
                 console.log("Factura", data);
-        
+
             } catch (error) {
                 console.error('Error fetching factura:', error);
             }
@@ -91,7 +92,7 @@ export default function FacturaPago() {
                     saldo: ultimoPago.ImpSaldoInsoluto,
                 };
                 setPagos(pagos);
-                
+
 
             } catch (error) {
                 console.error('Error fetching docto relacionado:', error);
@@ -134,7 +135,7 @@ export default function FacturaPago() {
             //       0,
             //   };
             // console.log("Pagos", pagos);
-            
+
             // setValue("SaldoAnterior", pagos.saldo);
             // setValue("Folio", facturaEdit.factura.Folio);
             // setPagos(pagos);
@@ -151,7 +152,7 @@ export default function FacturaPago() {
             setOpenSnackbar(true);
             return;
         }
-        console.log("Data", data);  
+        console.log("Data", data);
         console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Pago");
         console.log('Factura creada:', factura);
@@ -209,50 +210,55 @@ export default function FacturaPago() {
     return (
         <div>
             <Header />
-            <form onSubmit={handleSubmit(onSubmit)} method="post">
-                <Emisor
-                    register={register}
-                    setLugarExpedicion={setLugarExpedicion}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    errors={errors}
-                    emisorData={emisorData}  // Usa emisorData aquí
-                    disabled={facturaEdit ? true : false}
-                />
-                <Receptor
-                    register={register}
-                    lugarExpedicion={lugarExpedicion}
-                    errors={errors}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    receptorData={receptorData}
-                    token={token}
-                    disabled={facturaEdit ? true : false}   
-                />
-                <Pagos 
-                emisorID={emisorData.ID}
-                conceptos={conceptos}
-                pagos={pagos}
-                register={register}
-                errors={errors}
-                getValues={getValues}
-                setValue={setValue}
-                token={token}
-                  >
-                     <div className="flex justify-end w-full space-x-2 mt-10">
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
-                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
-                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
-                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
-                    </div>
-                    </Pagos>
+            <Grid container sx={{ display: 'flex' }}>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    <form onSubmit={handleSubmit(onSubmit)} method="post">
+                        <Emisor
+                            register={register}
+                            setLugarExpedicion={setLugarExpedicion}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            errors={errors}
+                            emisorData={emisorData}  // Usa emisorData aquí
+                            disabled={facturaEdit ? true : false}
+                        />
+                        <Receptor
+                            register={register}
+                            lugarExpedicion={lugarExpedicion}
+                            errors={errors}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            receptorData={receptorData}
+                            token={token}
+                            disabled={facturaEdit ? true : false}
+                        />
+                        <Pagos
+                            emisorID={emisorData.ID}
+                            conceptos={conceptos}
+                            pagos={pagos}
+                            register={register}
+                            errors={errors}
+                            getValues={getValues}
+                            setValue={setValue}
+                            token={token}
+                        >
+                            <div className="flex justify-end w-full space-x-2 mt-10">
+                                <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
+                                {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
+                                <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
+                                {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
+                                <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                                {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
+                            </div>
+                        </Pagos>
 
 
-                {/* <Conceptos
+                        {/* <Conceptos
                     trigger={trigger}
                     register={register}
                     watch={watch}
@@ -264,8 +270,8 @@ export default function FacturaPago() {
                     setEditIndex={setEditIndex}
                     token={token}
                 /> */}
-                
-                {/* <Resumen
+
+                        {/* <Resumen
                     conceptos={conceptos}
                     subTotal={watch("Subtotal")}
                     handleEditConcepto={handleEditConcepto}
@@ -274,27 +280,29 @@ export default function FacturaPago() {
                    
                 </Resumen> */}
 
-            </form>
-            <Modal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                aria-labelledby="modal-vista-previa"
-                aria-describedby="vista-previa-factura"
-            >
-                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
-                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
-                </Box>
-            </Modal>
-            <Snackbar
-                open={openSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
+                    </form>
+                    <Modal
+                        open={openModal}
+                        onClose={() => setOpenModal(false)}
+                        aria-labelledby="modal-vista-previa"
+                        aria-describedby="vista-previa-factura"
+                    >
+                        <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                            <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                        </Box>
+                    </Modal>
+                    <Snackbar
+                        open={openSnackbar}
+                        autoHideDuration={3000}
+                        onClose={() => setOpenSnackbar(false)}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    >
+                        <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
+                            {snackbarMessage}
+                        </Alert>
+                    </Snackbar>
+                </Grid>
+            </Grid>
         </div>
     );
 }
