@@ -185,13 +185,13 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
   };
 
   return (
-    <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+    <Box bgcolor="white" my={2}  p={2} boxShadow={3} borderRadius={2}>
       <Typography variant="h6" mb={4}>
         Pagos
       </Typography>
       <Box display="grid"
-        gap={2}
-        mt={4}
+        gap={3}
+        mt={2}
         sx={{
           gridTemplateColumns: {
             xs: '1fr',

@@ -254,9 +254,6 @@ const fillTemplate = async (template, data) => {
         .replace('{{serie}}', factura.Serie)
         .replace('{{folio}}', factura.Folio)
         .replace('{{fecha}}', new Date(factura.Fecha).toLocaleString())
-
-
-
         .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
         // .replace('{{conceptos}}', conceptosHTML)
 
@@ -287,9 +284,6 @@ const fillTemplate = async (template, data) => {
         .replace('{{regimenFiscal}}', RegimenFiscalReceptor)
 
         .replace('{{usoCFDI}}', usoCFDI);
-
-
-
 };
 
 

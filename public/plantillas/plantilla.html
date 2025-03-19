@@ -12,7 +12,7 @@
       }
 
       body {
-        background-color: #f4f7f6;
+        background-color: #ffffff;
         color: #333;
         padding: 20px;
         font-size: 12px !important;
@@ -116,6 +116,12 @@
         height: auto;
         object-fit: contain;
       }
+
+      .letra {
+        background-color: #e0f2f1;
+        color: #333;
+        padding: 8px;
+      }
     </style>
   </head>
   <body>
@@ -125,9 +131,19 @@
       </p>
 
       <div class="seccion">
+        <h3>{{CFDI}}</h3>
+        <p>{{Serie}}</p>
+        <p>{{Folio}}</p>
+        <p>{{Fecha}}</p>
+        <p>{{UUID}}</p>
+        <p>{{TipoComprobante}}</p>
+        <p>{{Exportacion}}</p>
+      </div>
+
+      <div class="seccion">
         <h2>Datos Fiscales</h2>
         <div class="emisor-receptor">
-          <!-- Emisor -->
+          <!-- Nodo Emisor -->
           <div>
             <h3>Emisor</h3>
             <p><strong>{{nombreEmisor}}</strong></p>
@@ -139,14 +155,15 @@
           <!-- Logo -->
           <div style="text-align: center">{{logo}}</div>
 
-          <!-- Receptor -->
+          <!-- Nodo Receptor -->
           <div>
             <h3>Receptor</h3>
             <p><strong>{{nombreReceptor}}</strong></p>
             <p>RFC: {{rfcReceptor}}</p>
-            <p>Domicilio Fiscal: {{CPReceptor}}</p>
-            <p>Dirección: {{direccionReceptor}}</p>
             <p>Uso CFDI: {{usoCFDI}}</p>
+            <p>Régimen Fiscal: {{regimenFiscalReceptor}}</p>
+            <p>Dirección: {{direccionReceptor}}</p>
+            <p>Domicilio Fiscal: {{CPReceptor}}</p>
           </div>
         </div>
       </div>
@@ -156,12 +173,18 @@
         <table>
           <thead>
             <tr>
-              <th>CLAVE UNIDAD</th>
-              <th>CLAVE SAT</th>
-              <th>DESCRIPCIÓN</th>
+              <th>
+                CLAVE PRODUCTO <br />
+                SERVICIO
+              </th>
+              <th>NO. IDENTIFICACIÓN</th>
               <th>CANTIDAD</th>
+              <th>CLAVE UNIDAD</th>
+              <th>UNIDAD</th>
+              <th>DESCRIPCIÓN</th>
               <th>P. UNITARIO</th>
               <th>IMPORTE</th>
+              <th>DESCUENTO</th>
             </tr>
           </thead>
           <tbody>
@@ -178,12 +201,20 @@
         <p>Total: <strong>${{total}}</strong></p>
       </div>
 
+      <div class="seccion">
+        <div class="letra">
+          <h3>CANTIDAD CON LETRA</h3>
+          <p>{{cantidadLetra}}</p>
+        </div>
+      </div>
+
       <div class="pago">
         {{qrCode}}
         <div>
           <p>Forma de Pago: {{formaPago}}</p>
           <p>Moneda: {{divisa}}</p>
           <p>Método de Pago: {{metodoPago}}</p>
+          <p>Condiciones de Pago: {{condicionesPago}}</p>
         </div>
       </div>
 

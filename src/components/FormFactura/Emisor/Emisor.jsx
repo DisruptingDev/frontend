@@ -15,7 +15,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     useEffect(() => {
         const today = new Date();
         const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(today.getDate() - 3);
+        threeDaysAgo.setDate(today.getDate() - 4);
 
         const formatDate = (date) => {
             const year = date.getFullYear();

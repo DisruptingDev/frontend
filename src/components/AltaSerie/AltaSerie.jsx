@@ -19,10 +19,7 @@ export default function AltaSerie({ token }) {
         setToast({ ...toast, open: false });
     };
 
-
     const onSubmit = async (data) => {
-        // Construir el objeto de datos como lo espera la API
-        console.log(data);
         const datos = {
             Clave: data.Nombre,
             Descripcion: "Serie " + data.Nombre,
@@ -30,9 +27,8 @@ export default function AltaSerie({ token }) {
             TipoComprobante: data.TipoComprobante,
             TimbresDisponibles: 0,
             EmisorID: data.Empresa
-        }
-        console.log("Formateo", datos);
-
+        };
+    
         try {
             const response = await fetch(`${apiUrl}/api/series/CrearSerie`, {
                 method: 'POST',
@@ -42,22 +38,34 @@ export default function AltaSerie({ token }) {
                 },
                 body: JSON.stringify(datos),
             });
-
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Error al guardar:', errorData);
-                setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
+                setToast({ 
+                    open: true, 
+                    message: errorData.error || 'Error al guardar los datos', 
+                    severity: 'error' 
+                });
             } else {
                 const result = await response.json();
                 console.log('Guardado exitoso:', result);
-                setToast({ open: true, message: 'Serie guardada exitosamente', severity: 'success' });
-
+                setToast({ 
+                    open: true, 
+                    message: 'Serie guardada exitosamente', 
+                    severity: 'success' 
+                });
             }
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
+            setToast({ 
+                open: true, 
+                message: 'Ocurrió un error al guardar los datos', 
+                severity: 'error' 
+            });
         }
-    };
+    };    
+    
     return (
         <Box bgcolor="white" my={0} mx={2} p={4} boxShadow={3} borderRadius={2}>
             <Typography variant="h6" mb={4}>Alta de Serie</Typography>
@@ -96,25 +104,6 @@ export default function AltaSerie({ token }) {
                         error={!!errors.TipoComprobante}
                         helperText={errors.TipoComprobante ? "Campo requerido" : ""}
                     />
-                    {/*                     
-                    <FormControl fullWidth>
-                        <InputLabel id="demo-simple-select-label">Tipo de Comprobante</InputLabel>
-                        <MuiSelect
-                        {...register("TipoComprobante", {
-                            required: "Este campo es obligatorio",
-                            onChange: handleChange 
-                        })}
-                            labelId="demo-simple-select-label"
-                            id="demo-simple-select"
-                            value={selectedValue}
-                            label="Tipo de Comprobante"
-                            onChange={handleChange}
-                        >
-                            <MenuItem value={"I"}>Ingreso</MenuItem>
-                            
-                        </MuiSelect>
-                    </FormControl> */}
-
                     <TextField
                         label="Nombre"
                         fullWidth
@@ -150,10 +139,6 @@ export default function AltaSerie({ token }) {
                         }} // Elimina caracteres no numéricos
                     />
                 </Box>
-
-
-
-
                 <Box
                     my={1}
                     mx={0}
@@ -181,7 +166,6 @@ export default function AltaSerie({ token }) {
                         }}
                         type="button"
                         onClick={handleSubmit(onSubmit)}
-
                     >
                         Guardar
                     </Button>
@@ -191,14 +175,12 @@ export default function AltaSerie({ token }) {
                 open={toast.open}
                 autoHideDuration={6000}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 <Alert onClose={handleClose} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
                     {toast.message}
                 </Alert>
             </Snackbar>
-
-
         </Box>
     );
 }

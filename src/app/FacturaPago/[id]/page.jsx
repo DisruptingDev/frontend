@@ -210,11 +210,11 @@ export default function FacturaPago() {
     return (
         <div>
             <Header />
-            <Grid container sx={{ display: 'flex' }}>
-                <Grid item>
+            <Grid container sx={{ display: 'flex', height: '100vh' }}>
+                <Grid item sx={{ width: '70px' }}>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
+                <Grid item sx={{ flexGrow: 1, padding: '16px' }}>
                     <form onSubmit={handleSubmit(onSubmit)} method="post">
                         <Emisor
                             register={register}
