@@ -15,7 +15,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     useEffect(() => {
         const today = new Date();
         const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(today.getDate() - 4);
+        threeDaysAgo.setDate(today.getDate() - 3);
 
         const formatDate = (date) => {
             const year = date.getFullYear();
@@ -26,7 +26,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
         setMinDate(formatDate(threeDaysAgo));
         setMaxDate(formatDate(today));
-        // console.logh
 
     }, []);
     useEffect(() => {
@@ -233,7 +232,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                                     const currentDate = new Date();
                                     const inputDate = new Date(value);
                                     const threeDaysAgo = new Date();
-                                    threeDaysAgo.setDate(currentDate.getDate() - 4);
+                                    threeDaysAgo.setDate(currentDate.getDate() - 3);
                                     return inputDate >= threeDaysAgo || "Fecha invalida";
                                 },
                             }
