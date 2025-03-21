@@ -3,106 +3,64 @@ import { ConstructionOutlined, PagesOutlined } from "@mui/icons-material";
 // import html2pdf from 'html2pdf.js';
 import QRCode from "qrcode";
 
-function numeroALetras(num, moneda) {
-  const unidades = [
-    "cero",
-    "uno",
-    "dos",
-    "tres",
-    "cuatro",
-    "cinco",
-    "seis",
-    "siete",
-    "ocho",
-    "nueve",
-  ];
-  const especiales = [
-    "diez",
-    "once",
-    "doce",
-    "trece",
-    "catorce",
-    "quince",
-    "dieciséis",
-    "diecisiete",
-    "dieciocho",
-    "diecinueve",
-  ];
-  const decenas = [
-    "",
-    "",
-    "veinte",
-    "treinta",
-    "cuarenta",
-    "cincuenta",
-    "sesenta",
-    "setenta",
-    "ochenta",
-    "noventa",
-  ];
-  const centenas = [
-    "",
-    "cien",
-    "doscientos",
-    "trescientos",
-    "cuatrocientos",
-    "quinientos",
-    "seiscientos",
-    "setecientos",
-    "ochocientos",
-    "novecientos",
-  ];
+function numeroALetras(num, moneda = 'pesos') {
+  const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+  const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
+  const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+  const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
 
   function convertirDecenas(num) {
-    if (num < 10) return unidades[num];
-    else if (num >= 10 && num < 20) return especiales[num - 10];
-    else {
+      if (num < 10) return unidades[num];
+      if (num >= 10 && num < 20) return especiales[num - 10];
       const dec = Math.floor(num / 10);
       const unidad = num % 10;
-      return `${decenas[dec]}${unidad ? " y " + unidades[unidad] : ""}`;
-    }
+      return `${decenas[dec]}${unidad ? ' y ' + unidades[unidad] : ''}`;
   }
 
   function convertirCentenas(num) {
-    const cen = Math.floor(num / 100);
-    const dec = num % 100;
-    if (cen === 1 && dec === 0) return "cien";
-    return `${centenas[cen]}${dec ? " " + convertirDecenas(dec) : ""}`;
+      const cen = Math.floor(num / 100);
+      const dec = num % 100;
+      if (cen === 1 && dec === 0) return 'cien';
+      if (cen === 1) return `ciento ${convertirDecenas(dec)}`; // Cambio aquí
+      return `${centenas[cen]}${dec ? ' ' + convertirDecenas(dec) : ''}`;
   }
 
   function convertirMiles(num) {
-    const mil = Math.floor(num / 1000);
-    const resto = num % 1000;
-    if (mil === 1) return `mil ${convertirCentenas(resto)}`;
-    return `${convertirCentenas(mil)} mil ${convertirCentenas(resto)}`;
+      const mil = Math.floor(num / 1000);
+      const resto = num % 1000;
+      if (mil === 1) return `mil ${convertirCentenas(resto)}`;
+      return `${convertirCentenas(mil)} mil ${convertirCentenas(resto)}`;
   }
 
   function convertirMillones(num) {
-    const millon = Math.floor(num / 1000000);
-    const resto = num % 1000000;
-    if (millon === 1) return `un millón ${convertirMiles(resto)}`;
-    return `${convertirCentenas(millon)} millones ${convertirMiles(resto)}`;
+      const millon = Math.floor(num / 1000000);
+      const resto = num % 1000000;
+      if (millon === 1) return `un millón ${convertirMiles(resto)}`;
+      return `${convertirCentenas(millon)} millones ${convertirMiles(resto)}`;
   }
 
   function convertirNumero(num) {
-    if (num < 100) return convertirDecenas(num);
-    else if (num < 1000) return convertirCentenas(num);
-    else if (num < 1000000) return convertirMiles(num);
-    else return convertirMillones(num);
+      if (num < 100) return convertirDecenas(num);
+      if (num < 1000) return convertirCentenas(num);
+      if (num < 1000000) return convertirMiles(num);
+      return convertirMillones(num);
   }
 
   // Dividir la parte entera y decimal
-  const partes = num.toFixed(2).split(".");
+  const partes = num.toFixed(2).split('.');
   const parteEntera = parseInt(partes[0], 10);
   const parteDecimal = parseInt(partes[1], 10);
 
-  let monedaLetra = `${convertirNumero(parteEntera)} ${moneda || "pesos"}`;
+  let monedaLetra = `${convertirNumero(parteEntera)} ${moneda}`;
   if (parteDecimal > 0) {
-    monedaLetra += ` con ${convertirNumero(parteDecimal)} centavos`;
+      monedaLetra += ` con ${convertirNumero(parteDecimal)} centavos`;
   }
 
-  return monedaLetra;
+  return monedaLetra.toUpperCase();
 }
+
+// Prueba
+//console.log(numeroALetras(171.68)); // Debería imprimir "CIENTO SETENTA Y UN PESOS CON SESENTA Y OCHO CENTAVOS"
 // Función para cargar la plantilla HTML desde un archivo
 const loadTemplate = async (path) => {
   try {
@@ -120,7 +78,7 @@ const loadTemplate = async (path) => {
 // Función para reemplazar los placeholders en la plantilla con los datos de factura
 const fillTemplate = async (template, data) => {
   let factura;
-  
+
   if (data.factura) {
     factura = data.factura;
     //console.log("Factura contenido:",factura);
@@ -150,19 +108,15 @@ const fillTemplate = async (template, data) => {
 
     return `
             <tr>              
-                <td>${concepto.ClaveUnidad}</td>
                 <td>${concepto.ClaveProdServ}</td>
-                <td>
-                    ${concepto.Descripcion}
-                    <br>
-                    <small>No. IDENTIFICACIÓN: <span>${concepto.NoIdentificacion || "N/A"}</span></small>
-                    <br>
-                    ${retencionesHTML}
-                    ${trasladosHTML}
-                </td>
+                <td>${concepto.NoIdentificacion || "N/A"}</td>
                 <td>${concepto.Cantidad}</td>
+                <td>${concepto.ClaveUnidad}</td>
+                <td>${concepto.Unidad}</td>
+                <td>${concepto.Descripcion}</td>
                 <td>${concepto.ValorUnitario.toFixed(2)}</td>
                 <td>${concepto.Importe.toFixed(2)}</td>
+                <td>${concepto.Descuento.toFixed(2)}</td>
             </tr>
         `;
   }).join("");
@@ -304,19 +258,35 @@ const fillTemplate = async (template, data) => {
       .replace("{{regimenFiscalEmisor}}", regimenFiscalEmisor)
 
       .replace("{{folioFactura}}", factura.Folio || "")
-      .replace("{{folioFiscal}}", factura.uuid || "")
+      .replace("{{folioFiscal}}", factura.uuid || "No Aplica")
       .replace("{{serieCSD}}", factura.NoCertificado || "")
       .replace("{{fechaEmision}}", factura.Fecha || "")
+      .replace("{{TipoComprobante}}", factura.TipoDeComprobante || "")
+      .replace("{{Exportacion}}", factura.Exportacion || "")
 
       .replace("{{nombreReceptor}}", factura.Receptor.Nombre)
       .replace("{{rfcReceptor}}", factura.Receptor.Rfc)
+      .replace("{{regimenFiscalReceptor}}", factura.Receptor.RegimenFiscal)
       .replace(
         "{{direccionReceptor}}",
-        factura.ReceptorDireccion || direccionReceptor || "Sin dato"
+        factura.ReceptorDireccion || direccionReceptor || ""
       )
+      .replace(
+        "{{CPReceptor}}",
+        factura.Receptor.DomicilioFiscalReceptor || direccionReceptor || "Sin dato"
+      )
+
       // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
       .replace("{{subtotal}}", factura.SubTotal.toFixed(2))
-      .replace("{{impuestos}}", impuestos)
+      .replace("{{descuento}}", factura.Conceptos.TotalDescuento.toFixed(2))
+      .replace(
+        "{{retenciones}}",
+        factura.Conceptos.TotalImpuestosRetenidos.toFixed(2)
+      )
+      .replace(
+        "{{traslados}}",
+        factura.Conceptos.TotalImpuestosTrasladados.toFixed(2)
+      )
       .replace("{{total}}", factura.Total.toFixed(2))
       .replace("{{totalLetra}}", numeroALetras(factura.Total, "pesos"))
       .replace("{{version}}", factura.Version)
@@ -334,6 +304,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{fechaCertificacion}}", factura.fechaTimbrado || "<br><br>")
       .replace("{{formaPago}}", formaPago)
       .replace("{{metodoPago}}", metodoPago)
+      .replace("{{condicionesPago}}", factura.CondicionesDePago)
       .replace("{{regimenFiscal}}", RegimenFiscalReceptor)
       .replace("{{usoCFDI}}", usoCFDI)
   );

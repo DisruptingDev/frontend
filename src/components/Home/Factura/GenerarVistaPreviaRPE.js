@@ -3,7 +3,7 @@ import { PagesOutlined } from '@mui/icons-material';
 // import html2pdf from 'html2pdf.js';
 import QRCode from 'qrcode';
 
-function numeroALetras(num, moneda) {
+function numeroALetras(num, moneda = 'pesos') {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
     const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
     const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
@@ -11,12 +11,10 @@ function numeroALetras(num, moneda) {
 
     function convertirDecenas(num) {
         if (num < 10) return unidades[num];
-        else if (num >= 10 && num < 20) return especiales[num - 10];
-        else {
-            const dec = Math.floor(num / 10);
-            const unidad = num % 10;
-            return `${decenas[dec]}${unidad ? ' y ' + unidades[unidad] : ''}`;
-        }
+        if (num >= 10 && num < 20) return especiales[num - 10];
+        const dec = Math.floor(num / 10);
+        const unidad = num % 10;
+        return `${decenas[dec]}${unidad ? ' y ' + unidades[unidad] : ''}`;
     }
 
     function convertirCentenas(num) {
@@ -42,9 +40,9 @@ function numeroALetras(num, moneda) {
 
     function convertirNumero(num) {
         if (num < 100) return convertirDecenas(num);
-        else if (num < 1000) return convertirCentenas(num);
-        else if (num < 1000000) return convertirMiles(num);
-        else return convertirMillones(num);
+        if (num < 1000) return convertirCentenas(num);
+        if (num < 1000000) return convertirMiles(num);
+        return convertirMillones(num);
     }
 
     // Dividir la parte entera y decimal
@@ -52,13 +50,14 @@ function numeroALetras(num, moneda) {
     const parteEntera = parseInt(partes[0], 10);
     const parteDecimal = parseInt(partes[1], 10);
 
-    let monedaLetra = `${convertirNumero(parteEntera)} ${moneda || 'pesos'}`;
+    let monedaLetra = `${convertirNumero(parteEntera)} ${moneda}`;
     if (parteDecimal > 0) {
         monedaLetra += ` con ${convertirNumero(parteDecimal)} centavos`;
     }
 
     return monedaLetra;
 }
+
 // Función para cargar la plantilla HTML desde un archivo
 const loadTemplate = async (path) => {
     try {
@@ -79,9 +78,11 @@ const fillTemplate = async (template, data) => {
 
     if (data.factura) {
         factura = data.factura;
+        console.log("datos:", factura);
     }
     else {
         factura = data;
+        console.log("datos:", factura);
     }
     // // Generar HTML para conceptos
     // const conceptosHTML = factura.Conceptos.ListaConceptos.map(concepto => {
@@ -208,7 +209,7 @@ const fillTemplate = async (template, data) => {
         formaPago = data.forma_pago.Clave + ' ' + data.forma_pago.Descripcion;
         metodoPago = data.metodo_pago.Clave + ' ' + data.metodo_pago.Descripcion;
         regimenFiscalEmisor = data.regimen_fiscal_emisor.Clave + ' ' + data.regimen_fiscal_emisor.Descripcion;
-        RegimenFiscalReceptor = data.regimen_fiscal_receptor.Clave + ' ' + data.regimen_fiscal_receptor.Descripcion;
+        regimenFiscalReceptor = data.regimen_fiscal_receptor.Clave + ' ' + data.regimen_fiscal_receptor.Descripcion;
         usoCFDI = data.uso_cfdi.Clave + ' ' + data.uso_cfdi.Descripcion;
     }
     else {
@@ -237,16 +238,22 @@ const fillTemplate = async (template, data) => {
         .replace('{{folioFiscal}}', factura.uuid || "")
         .replace('{{serieCSD}}', factura.NoCertificado || "")
         .replace('{{fechaEmision}}', factura.Fecha || "")
+        .replace('{{TipoComprobante}}', factura.TipoDeComprobante || "")
+        .replace('{{Exportacion}}', factura.Exportacion || "")
+
 
         .replace('{{nombreReceptor}}', factura.Receptor.Nombre)
         .replace('{{rfcReceptor}}', factura.Receptor.Rfc)
         .replace('{{direccionReceptor}}', factura.ReceptorDireccion || direccionReceptor || "")
+        .replace('{{regimenFiscalReceptor}}', factura.Receptor.RegimenFiscal)    
         // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
 
 
 
         .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
-        // .replace('{{impuestos}}', impuestos)
+        .replace('{{descuento}}', descuento || 0.00)
+        .replace('{{retenciones}}', factura.Conceptos.TotalImpuestosRetenidos)
+        .replace('{{traslados}}', TotalImpuestosTrasladados)
         .replace('{{total}}', factura.Total.toFixed(2))
         .replace('{{totalLetra}}', numeroALetras(factura.Total, 'pesos'))
 
@@ -278,18 +285,17 @@ const fillTemplate = async (template, data) => {
 
 
         .replace('{{formaPago}}', formaPago)
-
         .replace('{{metodoPago}}', metodoPago)
-
         .replace('{{regimenFiscal}}', RegimenFiscalReceptor)
+        .replace('{{usoCFDI}}', usoCFDI)
+        .replace('{{condicionesPago}}', factura.CondicionesDePago || "Sin dato");
 
-        .replace('{{usoCFDI}}', usoCFDI);
 };
 
 
 // Función para generar el PDF usando html2pdf
 const generarVistaPrevia = async (factura) => {
-    console.log('Ejecutando generatePDF con la factura:', factura);  // Agrega este log
+    //console.log('Ejecutando generatePDF con la factura:', factura);
     try {
         let filledTemplate;
         const template = await loadTemplate('/plantillas/plantilla-rpe.html');

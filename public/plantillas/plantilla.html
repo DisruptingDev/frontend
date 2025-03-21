@@ -14,7 +14,7 @@
       body {
         background-color: #ffffff;
         color: #333;
-        padding: 20px;
+        padding: 10px;
         font-size: 12px !important;
       }
 
@@ -23,8 +23,8 @@
         max-width: 800px;
         margin: auto;
         padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        /* border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
       }
 
       .titulo {
@@ -50,6 +50,7 @@
       .datos {
         display: flex;
         justify-content: space-between;
+        gap: 20px;
       }
 
       .tabla-conceptos table {
@@ -70,28 +71,37 @@
         color: #333;
       }
 
+      .seccion-pago-resultado {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 20px;
+      }
+
+      .pago {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex: 1;
+        max-width: 60%;
+      }
+
+      .pago img {
+        width: 100px;
+      }
+
       .resultado {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        margin-top: 20px;
+        flex: 1;
+        max-width: 35%;
       }
 
       .resultado p {
         font-size: 0.8rem;
         font-weight: bold;
         color: #2a9d8f;
-      }
-
-      .pago {
-        display: flex;
-        align-items: center;
-        margin-top: 20px;
-      }
-
-      .pago img {
-        width: 100px;
-        margin-right: 20px;
       }
 
       .certificado {
@@ -104,7 +114,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 20px; /* Espaciado entre columnas */
+        gap: 20px;
       }
 
       .emisor-receptor > div {
@@ -121,6 +131,7 @@
         background-color: #e0f2f1;
         color: #333;
         padding: 8px;
+        font-size: 8px !important;
       }
     </style>
   </head>
@@ -131,13 +142,19 @@
       </p>
 
       <div class="seccion">
-        <h3>{{CFDI}}</h3>
-        <p>{{Serie}}</p>
-        <p>{{Folio}}</p>
-        <p>{{Fecha}}</p>
-        <p>{{UUID}}</p>
-        <p>{{TipoComprobante}}</p>
-        <p>{{Exportacion}}</p>
+        <div class="datos">
+          <div>
+            <h3>CFDI: {{version}}</h3>
+            <p>Serie: {{serie}}</p>
+            <p>{{folioFactura}}</p>
+          </div>
+          <div>
+            <p>Fecha: {{fechaEmision}}</p>
+            <p>Folio Fiscal: {{folioFiscal}}</p>
+            <p>Tipo de Comprobante: {{TipoComprobante}}</p>
+            <p>Exportación: {{Exportacion}}</p>
+          </div>
+        </div>
       </div>
 
       <div class="seccion">
@@ -173,10 +190,7 @@
         <table>
           <thead>
             <tr>
-              <th>
-                CLAVE PRODUCTO <br />
-                SERVICIO
-              </th>
+              <th>CLAVE PRODUCTO <br /> SERVICIO</th>
               <th>NO. IDENTIFICACIÓN</th>
               <th>CANTIDAD</th>
               <th>CLAVE UNIDAD</th>
@@ -193,28 +207,30 @@
         </table>
       </div>
 
-      <div class="resultado">
-        <p>Subtotal: ${{subtotal}}</p>
-        <p>Descuento: ${{descuento}}</p>
-        <p>Retenciones: ${{retenciones}}</p>
-        <p>Traslados: ${{traslados}}</p>
-        <p>Total: <strong>${{total}}</strong></p>
+      <div class="seccion-pago-resultado">
+        <div class="pago">
+          {{qrCode}}
+          <div>
+            <p>Forma de Pago: {{formaPago}}</p>
+            <p>Moneda: {{divisa}}</p>
+            <p>Método de Pago: {{metodoPago}}</p>
+            <p>Condiciones de Pago: {{condicionesPago}}</p>
+          </div>
+        </div>
+
+        <div class="resultado">
+          <p>Subtotal: ${{subtotal}}</p>
+          <p>Descuento: ${{descuento}}</p>
+          <p>Retenciones: ${{retenciones}}</p>
+          <p>Traslados: ${{traslados}}</p>
+          <p>Total: <strong>${{total}}</strong></p>
+        </div>
       </div>
 
       <div class="seccion">
         <div class="letra">
           <h3>CANTIDAD CON LETRA</h3>
-          <p>{{cantidadLetra}}</p>
-        </div>
-      </div>
-
-      <div class="pago">
-        {{qrCode}}
-        <div>
-          <p>Forma de Pago: {{formaPago}}</p>
-          <p>Moneda: {{divisa}}</p>
-          <p>Método de Pago: {{metodoPago}}</p>
-          <p>Condiciones de Pago: {{condicionesPago}}</p>
+          <p>{{totalLetra}}</p>
         </div>
       </div>
 

@@ -76,7 +76,7 @@ export default function EditarFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            console.log("Factura editada", facturaEdit);
+            //console.log("Factura editada", facturaEdit);
             const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
@@ -134,6 +134,8 @@ export default function EditarFactura() {
             setOpenSnackbar(true);
             return;
         }
+        //console.log("Data", data);
+        //console.log("Conceptos antes de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);

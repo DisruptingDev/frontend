@@ -4,18 +4,21 @@ import Emisor from "./Emisor/Emisor";
 import Receptor from "./Receptor/Receptor";
 
 export default function FormatearFactura(emisor, receptor, conceptos, id, modo) {
+    //console.log("Conceptos antes de reduce: ",conceptos);
     const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
     const TotalTraslados = conceptos.reduce((acc, c) => acc + c.TotalTraslados, 0);
     const TotalRetenciones = conceptos.reduce((acc, c) => acc + c.TotalRetenciones, 0);
-    console.log("TotalTraslados", TotalTraslados);
-    console.log("TotalRetenciones", TotalRetenciones);
-    const total = subtotal + TotalTraslados - TotalRetenciones;
-    console.log("Total", total);
+    const TotalDescuento = conceptos.reduce((acc, c) => acc + c.Descuento, 0);
+    //console.log("TotalTraslados", TotalTraslados);
+    //console.log("TotalRetenciones", TotalRetenciones);
+    //console.log("TotalDescuento", TotalDescuento);
+    const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento;
+    //console.log("Total", total);
     const now = new Date();
     const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
     const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-    //console.log("Emisor", emisor);
-    //console.log("Receptor", receptor);
+    console.log("Emisor", emisor);
+    console.log("Receptor", receptor);
     //console.log("Conceptos", conceptos);
 
     const formatter = new Intl.NumberFormat('es-MX', {
@@ -30,7 +33,6 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             ...(id && { ID: parseInt(id, 10) }),
             Version: "4.0",
             Fecha: fechaFormateada,
-
             FormaPago: receptor.FormaPago,
             Serie: emisor.Serie,
             SubTotal: subtotal,
@@ -40,10 +42,8 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             Moneda: emisor.Divisa || "MXN",
             TipoCambio: "1",
             Total: total,
-
             Exportacion: "01",
             MetodoPago: receptor.MetodoPago,
-
             LugarExpedicion: emisor.LugarExpedicion,
             Confirmacion: "",
             //Checar
@@ -124,7 +124,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             InformacionGlobal: {
                 Periodicidad: "01",
                 Meses: "01",
-                Año: "2024"
+                Año: "2025"
             },
             EmisorID: emisor.Emisor,
             Emisor: {
@@ -151,11 +151,13 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 RegimenFiscal: receptor.RegimenFiscal,
                 UsoCFDI: receptor.UsoCFDI,
                 UsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
+                DomicilioFiscalReceptor: receptor.DomicilioFiscalReceptor,
                 Calle: receptor.Calle,
                 NumeroExterior: receptor.NoExterior,
                 Colonia: receptor.Colonia,
                 Municipio: receptor.Municipio,
                 Estado: receptor.Estado,
+
                 // Direccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
             },
             // ReceptorID: receptor.Receptor,
@@ -199,9 +201,11 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 TotalImpuestosTrasladados: TotalTraslados,
                 //Aqui restar
                 TotalImpuestosRetenidos: TotalRetenciones,
+                TotalDescuento: TotalDescuento,
                 GrupoID: 1
             }
         };
+        //console.log("Factura Vista Previa:", factura);
     }
     else if (modo === "Pago") {
         factura = {
@@ -333,7 +337,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             InformacionGlobal: {
                 Periodicidad: "01",
                 Meses: "01",
-                Año: "2024"
+                Año: "2025"
             },
             EmisorID: emisor.Emisor,
             Emisor: {
@@ -471,6 +475,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                 }
             },
         };
+        //console.log("Factura Vista Previa RPE", factura);
     }
     console.log("Resultado de la factura", factura);
     return factura;
