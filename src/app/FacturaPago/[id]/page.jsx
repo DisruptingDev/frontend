@@ -20,16 +20,18 @@ import GuardarFactura from "@/components/FormFactura/Timbrar";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// 
-
 export default function FacturaPago() {
     const { id } = useParams(); // Captura la ID de la URL
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
-    const [pagos, setPagos] = useState([]);
+    const [pagos, setPagos] = useState({
+        numOperacion: 1, // Número de operación inicial
+        totalPagado: 0,  // Total pagado inicial
+        saldo: 0,        // Saldo restante inicial
+    });
     const [conceptos, setConceptos] = useState([]);
-    const [emisorData, setemisorData] = useState([])
-    const [receptorData, setReceptorData] = useState([])
+    const [emisorData, setEmisorData] = useState([]);
+    const [receptorData, setReceptorData] = useState([]);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('error');
@@ -39,27 +41,23 @@ export default function FacturaPago() {
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState("");
+    const [totalPago, setTotalPago] = useState(0);
 
-
+    // Verifica la autenticación al montar el componente
     useEffect(() => {
-        // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
-        }
-        else {
+        } else {
             setToken(token);
             console.log("Token", token);
         }
     }, [router]);
 
-
+    // Obtener la factura y los documentos relacionados
     useEffect(() => {
-
         const fetchFactura = async () => {
             try {
-                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
                 const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -68,7 +66,18 @@ export default function FacturaPago() {
                 });
                 const data = await response.json();
                 setFacturaEdit(data);
-                console.log("Factura", data);
+                //console.log("Factura", data);
+
+                // Extraer el total de la factura
+                const totalFactura = data.factura.Total;
+                //console.log("Total de la factura:", totalFactura);
+                setTotalPago(totalFactura); // Actualiza el totalPago
+
+                // Actualizar el saldo restante
+                setPagos((prevPagos) => ({
+                    ...prevPagos,
+                    saldo: totalFactura, // Inicializa el saldo con el total de la factura
+                }));
 
             } catch (error) {
                 console.error('Error fetching factura:', error);
@@ -85,29 +94,41 @@ export default function FacturaPago() {
                 });
                 const data = await response.json();
                 console.log("Docto Relacionado", data);
-                const ultimoPago = data[data.length - 1];
-                console.log("Ultimo Pago", ultimoPago);
-                const pagos = {
-                    numOperacion: ultimoPago.NumParcialidad,
-                    saldo: ultimoPago.ImpSaldoInsoluto,
-                };
-                setPagos(pagos);
 
+                // Calcular el número de operación
+                const numOperacion = data.length > 0 ? data[data.length - 1].NumParcialidad + 1 : 1;
+
+                // Calcular el total pagado
+                const totalPagado = data.reduce((sum, pago) => sum + pago.ImpPagado, 0);
+
+                // Calcular el saldo restante
+                const saldoRestante = totalPago - totalPagado;
+
+                // Actualizar el estado de pagos
+                setPagos({
+                    numOperacion: numOperacion,
+                    totalPagado: totalPagado,
+                    saldo: saldoRestante,
+                });
+
+                console.log("Pagos calculados:", {
+                    numOperacion: numOperacion,
+                    totalPagado: totalPagado,
+                    saldo: saldoRestante,
+                });
 
             } catch (error) {
                 console.error('Error fetching docto relacionado:', error);
-
             }
         };
 
         if (id && token) {
-            fetchFactura(); // Solo llama a la API si hay una ID
-            fetchDoctosRelacionados(); // Solo llama a la API si hay una ID
+            fetchFactura(); // Obtener la factura
+            fetchDoctosRelacionados(); // Obtener los documentos relacionados
         }
-    }, [id, token]);
+    }, [id, token, totalPago]); // Dependencia de totalPago para recalcular el saldo
 
-
-
+    // Actualizar conceptos, emisor y receptor cuando se obtiene la factura
     useEffect(() => {
         if (facturaEdit) {
             console.log("Factura editada", facturaEdit);
@@ -118,65 +139,63 @@ export default function FacturaPago() {
                 setConceptos(Conceptos);
             }
             if (Emisor) {
-                setemisorData(Emisor);
+                setEmisorData(Emisor);
             }
             if (Receptor) {
                 setReceptorData(Receptor);
             }
             setValue("IdDocumento", facturaEdit.factura.uuid);
-            // console.log("Docto Relacionado", facturaEdit.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados);
-            // console.log("Numero Parcialidad", facturaEdit.factura.Complemento.Pagos.Pagos?.DoctoRelacionados.NumParcialidad);
-            // const pagos = {
-            //     numOperacion:
-            //       facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.NumParcialidad ?? 0,
-            //     saldo:
-            //       facturaEdit?.factura?.Complemento?.Pagos?.Pagos?.[0]?.DoctoRelacionados?.[0]?.ImpSaldoInsoluto ??
-            //       facturaEdit?.factura?.Total ??
-            //       0,
-            //   };
-            // console.log("Pagos", pagos);
-
-            // setValue("SaldoAnterior", pagos.saldo);
-            // setValue("Folio", facturaEdit.factura.Folio);
-            // setPagos(pagos);
         }
-
     }, [facturaEdit, setValue]);
 
-
+    // Enviar el formulario
     const onSubmit = (data) => {
-        // setValue('NumeroOperacion', pagos.numOperacion + 1);    
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
-            setSnackbarSeverity('error'); // Configura el Snackbar como error
+            setSnackbarSeverity('error');
             setOpenSnackbar(true);
             return;
         }
-        console.log("Data", data);
-        console.log("Conceptos ante de crear", conceptos);
+
+        //console.log("Data", data);
+        //console.log("Conceptos antes de crear", conceptos);
+
+        // Calcular el nuevo número de operación y el saldo restante
+        const nuevoNumOperacion = pagos.numOperacion;
+        const nuevoTotalPagado = pagos.totalPagado + parseFloat(data.Monto);
+        const nuevoSaldoRestante = totalPago - nuevoTotalPagado;
+
+        // Actualizar el estado de pagos
+        setPagos({
+            numOperacion: nuevoNumOperacion,
+            totalPagado: nuevoTotalPagado,
+            saldo: nuevoSaldoRestante,
+        });
+
+        // Formatear la factura y guardarla
         const factura = FormatearFactura(data, data, conceptos, "", "Pago");
         console.log('Factura creada:', factura);
+
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito
                 setSnackbarMessage(message);
-                setSnackbarSeverity('success'); // Configura el Snackbar como éxito
+                setSnackbarSeverity('success');
                 setOpenSnackbar(true);
-                // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
                 setTimeout(() => {
-                    router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-                }, 1000); // Espera 3 segundos antes de redirigir
+                    router.push("/Home");
+                }, 1000);
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
-                setSnackbarSeverity('error'); // Configura el Snackbar como error
+                setSnackbarSeverity('error');
                 setOpenSnackbar(true);
             },
             { token }
         );
     };
 
-
+    // Vista previa
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
@@ -190,6 +209,7 @@ export default function FacturaPago() {
         setOpenModal(true);
     });
 
+    // Editar concepto
     const handleEditConcepto = (index) => {
         const conceptoToEdit = conceptos[index];
         setEditIndex(index);
@@ -203,6 +223,7 @@ export default function FacturaPago() {
         setValue('impuestos', conceptoToEdit.Impuestos);
     };
 
+    // Eliminar concepto
     const handleDeleteConcepto = (index) => {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
@@ -241,6 +262,7 @@ export default function FacturaPago() {
                             emisorID={emisorData.ID}
                             conceptos={conceptos}
                             pagos={pagos}
+                            total={totalPago}
                             register={register}
                             errors={errors}
                             getValues={getValues}

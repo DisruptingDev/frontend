@@ -14,7 +14,7 @@ import { format, parse } from "date-fns";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
-export default function Pagos({ emisorID, children, register, conceptos, pagos, errors, getValues, setValue, token }) {
+export default function Pagos({ emisorID, children, register, conceptos, pagos, total, errors, getValues, setValue, token }) {
 
   const [pago, setPago] = useState({});
   const [fechaPago, setFechaPago] = useState(new Date());
@@ -38,7 +38,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
   useEffect(() => {
     async function fetchData() {
       if (emisorID) {
-        console.log("emisorID", emisorID);
+        //console.log("emisorID", emisorID);
         try {
           const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
             headers: {
@@ -48,7 +48,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           });
           if (response.ok) {
             const data = await response.json();
-            console.log('Data received from API:', data);
+            //console.log('Data received from API:', data);
             const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
               .map(opcion => ({
                 ID: opcion.ID,
@@ -64,7 +64,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     }
     fetchData();
   }, [emisorID, token]);
-  
+
 
 
   useEffect(() => {
@@ -162,30 +162,33 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
   useEffect(() => {
     if (pagos) {
-    
+
       setValue("NumeroOperacion", pagos.numOperacion + 1);
       setValue("SaldoAnterior", pagos.saldo);
 
     }
-  },[pagos, setValue]);
+  }, [pagos, setValue]);
 
   const handleMontoChange = (e) => {
     let nuevoMonto = e.target.value;
     nuevoMonto = nuevoMonto.replace(/[^0-9.]/g, "");
-    if((nuevoMonto.match(/\./g) || []).length > 1) {
+    if ((nuevoMonto.match(/\./g) || []).length > 1) {
       nuevoMonto = nuevoMonto.replace(/\.+$/, '');
-  }
+    }
 
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
     setValue("NumeroOperacion", pagos.numOperacion + 1);
-    const saldoInsoluto = parseFloat(pagos.saldo - nuevoMonto).toFixed(2);
+
+    // Calcular el saldo insoluto usando el total de la factura como saldo anterior
+    const saldoAnterior = parseFloat(pagos.saldo);
+    const saldoInsoluto = (saldoAnterior - nuevoMonto).toFixed(2);
     setValue("ImpSaldoInsoluto", saldoInsoluto);
   };
 
   return (
-    <Box bgcolor="white" my={2}  p={2} boxShadow={3} borderRadius={2}>
+    <Box bgcolor="white" my={2} p={2} boxShadow={3} borderRadius={2}>
       <Typography variant="h6" mb={4}>
         Pagos
       </Typography>
@@ -210,13 +213,13 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             // setValue("FechaPago", formattedDate);
           }}
         /> */}
-         <ReactDatePicker
-        selectedDate={fechaPago} // Pasa el estado al componente hijo
-        onChange={(date) => {
-          setFechaPago(date); // Actualiza el estado
-          setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss")); // Actualiza el formulario
-        }}
-      />
+        <ReactDatePicker
+          selectedDate={fechaPago} // Pasa el estado al componente hijo
+          onChange={(date) => {
+            setFechaPago(date); // Actualiza el estado
+            setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss")); // Actualiza el formulario
+          }}
+        />
         <FormControl variant="outlined" fullWidth>
           <InputLabel id="serie-label">Serie</InputLabel>
           <MuiSelect
@@ -250,26 +253,27 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           helperText={errors.FormaPagoComprobante ? "Este campo es obligatorio" : ""}
         />
         <TextField
-          {...register("Monto", { required: "Este campo es obligatorio",
+          {...register("Monto", {
+            required: "Este campo es obligatorio",
             validate: (value) => {
-              if (parseFloat(value) <= 0) {
+              const monto = parseFloat(value);
+              const saldoDisponible = pagos.saldo;
+
+              if (monto <= 0) {
                 return "El monto debe ser mayor a 0";
               }
-              else if (parseFloat(value) > pagos.saldo) {
-                return "El monto no puede ser mayor al saldo";
-              } else {
-                return true;
+              if (monto > saldoDisponible) {
+                return "El monto no puede ser mayor al saldo restante de pago";
               }
-            }
-           })}
+              return true; // Si pasa la validación
+            },
+          })}
           label="Monto"
           name="monto"
-          // value = {getValues("Monto")}
-          onChange={handleMontoChange}
+          onChange={handleMontoChange} // Función para manejar cambios en el monto
           fullWidth
-          error={!!errors.Monto}
-          helperText={errors.Monto?.message}
-          
+          error={!!errors.Monto} // Muestra el error si existe
+          helperText={errors.Monto?.message} // Muestra el mensaje de error
         />
         <TextField
 
@@ -302,30 +306,28 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Número de operación"
           name="numeroOperacion"
-          value={pagos.numOperacion + 1 || ""}
+          value={pagos.numOperacion || "Sin pagos aún"}
           disabled
           fullWidth
         />
         <TextField
           label="Importe del saldo anterior"
           name="saldoAnterior"
-          value={pagos.saldo || ""}
+          value={pagos.saldo || ""} // Usa el saldo restante
           disabled
           fullWidth
-
         />
         <TextField
           label="Importe del saldo Pagado"
           name="saldoPagado"
-          value={pago.monto || ""}
+          value={pagos.totalPagado || ""}
           disabled
           fullWidth
         />
         <TextField
           label="Importe del saldo insoluto"
           name="saldoInsoluto"
-          // value={pagos.saldo - pago.monto || ""}
-          value={getValues("ImpSaldoInsoluto") || ""}
+          value={getValues("ImpSaldoInsoluto") || ""} // Muestra el saldo insoluto calculado
           disabled
           fullWidth
         />
