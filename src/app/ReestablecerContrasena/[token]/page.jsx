@@ -52,7 +52,7 @@ export default function PasswordResetPage({ params }) {
                     message: 'Contraseña actualizada correctamente. Redirigiendo al login...', 
                     severity: 'success' 
                 });
-                setTimeout(() => router.push('/Login'), 3000);
+                setTimeout(() => router.push('/IniciaSesion'), 3000);
             } else {
                 setAlert({ 
                     open: true, 
