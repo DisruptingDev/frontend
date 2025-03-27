@@ -57,8 +57,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         name: 'impuestos',
     });
 
-
-
     const fetchConceptos = useCallback(async () => {
         if (!token) return;
         try {
@@ -67,7 +65,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await response.json();
-            console.log("CONCEPTOS", data);
+            console.log("Conceptos:", data);
             setConceptoOptions(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error al buscar Conceptos:', error);
@@ -109,16 +107,14 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     useEffect(() => {
         if (selectedClaveUnidad) {
-            console.log("Seleccion", selectedClaveUnidad.Descripcion);
-
+            console.log("Selección:", selectedClaveUnidad.Descripcion);
             setValue("Unidad", selectedClaveUnidad.Descripcion);
-
         }
 
     }, [selectedClaveUnidad, setValue])
 
     useEffect(() => {
-        console.log("Entre a la funcion");
+        //console.log("Entre a la funcion");
         fetchOptions();
     }, [queryProdServ, queryUnidad, token]);
 
@@ -145,7 +141,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         if ((editIndex !== null && conceptos[editIndex]) || conceptoSeleccionado) {
             let concepto
             if (conceptoSeleccionado) {
-                console.log("CONCEPTO SELECCIONADO", conceptoSeleccionado);
+                console.log("Concepto seleccionado: ", conceptoSeleccionado);
                 concepto = conceptoSeleccionado;
             } else {
 
@@ -157,18 +153,18 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("Descripcion", concepto.Descripcion || '');
             setValue("ClaveProdServ", concepto.ClaveProdServ || '');
             setValue("ClaveUnidad", concepto.ClaveUnidad || '');
-            setValue("Unidad", concepto.Unidad || '');
+            setValue("Unidad", concepto.Unidad || 'Pieza');
             setValue("Cantidad", concepto.Cantidad || 1);
             setValue("ValorUnitario", concepto.ValorUnitario || 0);
             setValue("Descuento", concepto.Descuento || 0);
             setValue("Subtotal", concepto.Subtotal || 0);
             setValue("ObjetoImpuesto", concepto.ObjetoImpuesto || "02");
             setObjetoImpuesto(concepto.ObjetoImpuesto || "02");
-            console.log('Impuestos:', getValues(`impuestos`));
-            console.log("IMPUESTOS ACT", concepto.Impuestos);
+            //console.log('Impuestos:', getValues(`impuestos`));
+            //console.log("IMPUESTOS ACT", concepto.Impuestos);
 
-            console.log('Concepto editado:', getValues(`impuestos`));
-            console.log('Impuestos editado:', concepto.Impuestos);
+            //console.log('Concepto editado:', getValues(`impuestos`));
+            //console.log('Impuestos editado:', concepto.Impuestos);
             concepto.Impuestos.forEach((impuesto, index) => {
                 // setValue(`impuestos.${index}.ObjetoImpuesto`, impuesto.ObjetoImpuesto || '');
                 setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
@@ -583,6 +579,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     isOptionEqualToValue={(option, value) => option.Clave === value.Clave}
                     onInputChange={(event, newInputValue) => setQueryUnidad(newInputValue)}
                     onChange={(event, value) => {
+                        //console.log("Unidad seleccionada:", value?.Descripcion);
                         setSelectedClaveUnidad(value);
                         setValue('ClaveUnidad', value?.Clave || '');
                         setClaveUnidadError(false);

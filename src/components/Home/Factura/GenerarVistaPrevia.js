@@ -258,7 +258,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{regimenFiscalEmisor}}", regimenFiscalEmisor)
 
       .replace("{{folioFactura}}", factura.Folio || "")
-      .replace("{{folioFiscal}}", factura.uuid || "No Aplica")
+      .replace("{{folioFiscal}}", factura.uuid || "")
       .replace("{{serieCSD}}", factura.NoCertificado || "")
       .replace("{{fechaEmision}}", factura.Fecha || "")
       .replace("{{TipoComprobante}}", factura.TipoDeComprobante || "")

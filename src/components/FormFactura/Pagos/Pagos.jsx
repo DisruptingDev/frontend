@@ -200,7 +200,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(3, 1fr)',
-            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}>
         {/* <DatePickerComponent
@@ -299,7 +299,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(3, 1fr)',
-            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}
       >

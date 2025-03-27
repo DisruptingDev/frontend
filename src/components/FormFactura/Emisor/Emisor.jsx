@@ -153,7 +153,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                         xs: '1fr',
                         sm: 'repeat(2, 1fr)',
                         md: 'repeat(3, 1fr)',
-                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'
                     }
                 }}
             >

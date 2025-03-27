@@ -69,12 +69,12 @@ export default function Login() {
                     console.log('Login exitoso', result.token, currentDate);
 
                     if (isMounted) { // Solo redirige si el componente está montado
-                       if(result.sudo){
+                        if (result.sudo) {
                             router.push('/Dashboard');
                         }
-                        else{
+                        else {
                             router.push('/Home');
-                       }
+                        }
                     }
                 }
             }
@@ -149,7 +149,10 @@ export default function Login() {
                     </Button>
                     <Link href="/AltaUsuarios" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
                         ¿No tienes una cuenta? Regístrate
-                        </Link>
+                    </Link>
+                    <Link href="/RecuperarContrasena" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
+                        ¿Olvidaste tu contraseña? Recupérala
+                    </Link>
                 </Box>
             </Box>
         </main>

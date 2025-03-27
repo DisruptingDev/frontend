@@ -173,10 +173,10 @@ export default function AdministrarTimbres({ token }) {
                                 my={2}
                                 sx={{
                                     gridTemplateColumns: {
-                                        xs: '1fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                                        sm: '1fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                                        md: '1fr 0.5fr 0.5fr 0.5fr 0.5fr',
-                                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr'
+                                        xs: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
+                                        sm: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
+                                        md: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
+                                        lg: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
                                     }
                                 }}
                             >

@@ -53,6 +53,10 @@
         gap: 20px;
       }
 
+      .tabla-conceptos{
+        min-height: 400px;
+      }
+
       .tabla-conceptos table {
         width: 100%;
         border-collapse: collapse;
@@ -104,10 +108,30 @@
         color: #2a9d8f;
       }
 
-      .certificado {
-        font-size: 0.8em;
+      .certificado-qr {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
         margin-top: 20px;
-        color: #555;
+        font-size: 8px;
+      }
+
+      .certificado-qr .certificado {
+        flex: 1; /* Permite que los sellos ocupen el espacio disponible */
+      }
+
+      .certificado-qr .codigo-qr {
+        flex: 1; /* Permite que el código QR ocupe el espacio disponible */
+        text-align: left; /* Alinea el código QR a la izquierda */
+        max-width: 12%; /* Limita el ancho del QR para que no se extienda demasiado */
+      }
+
+      .certificado-qr .certificado p {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        font-size: 8px;
+        max-width: 100%;
+        white-space: normal;
       }
 
       .emisor-receptor {
@@ -190,7 +214,10 @@
         <table>
           <thead>
             <tr>
-              <th>CLAVE PRODUCTO <br /> SERVICIO</th>
+              <th>
+                CLAVE PRODUCTO <br />
+                SERVICIO
+              </th>
               <th>NO. IDENTIFICACIÓN</th>
               <th>CANTIDAD</th>
               <th>CLAVE UNIDAD</th>
@@ -209,7 +236,6 @@
 
       <div class="seccion-pago-resultado">
         <div class="pago">
-          {{qrCode}}
           <div>
             <p>Forma de Pago: {{formaPago}}</p>
             <p>Moneda: {{divisa}}</p>
@@ -234,11 +260,14 @@
         </div>
       </div>
 
-      <div class="certificado" style="font-size: 8px">
-        <p><strong>Sello Digital del CFDI:</strong> {{selloCFDI}}</p>
-        <p><strong>Sello del SAT:</strong> {{selloSAT}}</p>
-        <p><strong>Certificado SAT:</strong> {{serieCertificadoSAT}}</p>
-        <p><strong>Fecha de Certificación:</strong> {{fechaCertificacion}}</p>
+      <div class="certificado-qr">
+        <div class="codigo-qr">{{qrCode}}</div>
+        <div class="certificado">
+          <p><strong>Sello Digital del CFDI:</strong> {{selloCFDI}}</p>
+          <p><strong>Sello del SAT:</strong> {{selloSAT}}</p>
+          <p><strong>Certificado SAT:</strong> {{serieCertificadoSAT}}</p>
+          <p><strong>Fecha de Certificación:</strong> {{fechaCertificacion}}</p>
+        </div>
       </div>
     </div>
   </body>

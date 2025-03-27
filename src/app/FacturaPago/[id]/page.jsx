@@ -35,7 +35,6 @@ export default function FacturaPago() {
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('error');
-    const [editIndex, setEditIndex] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [previewContent, setPreviewContent] = useState('');
     const [facturaEdit, setFacturaEdit] = useState(null); // Estado para almacenar la factura editada
@@ -197,7 +196,7 @@ export default function FacturaPago() {
 
     // Vista previa
     const handlePreview = handleSubmit(async (data) => {
-        if (conceptos.length === 0) {
+        if (pagos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
             setSnackbarSeverity('error');
             setOpenSnackbar(true);
@@ -209,33 +208,14 @@ export default function FacturaPago() {
         setOpenModal(true);
     });
 
-    // Editar concepto
-    const handleEditConcepto = (index) => {
-        const conceptoToEdit = conceptos[index];
-        setEditIndex(index);
-        setValue('Descripcion', conceptoToEdit.Descripcion);
-        setValue('ClaveProdServ', conceptoToEdit.ClaveProdServ);
-        setValue('ClaveUnidad', conceptoToEdit.ClaveUnidad);
-        setValue('Unidad', conceptoToEdit.Unidad);
-        setValue('Cantidad', conceptoToEdit.Cantidad);
-        setValue('ValorUnitario', conceptoToEdit.ValorUnitario);
-        setValue('Descuento', conceptoToEdit.Descuento);
-        setValue('impuestos', conceptoToEdit.Impuestos);
-    };
-
-    // Eliminar concepto
-    const handleDeleteConcepto = (index) => {
-        setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
-    };
-
     return (
         <div>
             <Header />
             <Grid container sx={{ display: 'flex', height: '100vh' }}>
-                <Grid item sx={{ width: '70px' }}>
+                <Grid item sx={{ width: '70px', flexShrink: 0 }}>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1, padding: '16px' }}>
+                <Grid item sx={{ flexGrow: 1, padding: '16px', overflow: 'auto', width: '95%' }}>
                     <form onSubmit={handleSubmit(onSubmit)} method="post">
                         <Emisor
                             register={register}

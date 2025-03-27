@@ -98,6 +98,7 @@ export default function EditarFactura() {
 
 
     const onSubmit = (data) => {
+        console.log("Datos enviados:", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error

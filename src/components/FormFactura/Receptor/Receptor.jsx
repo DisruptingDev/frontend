@@ -7,7 +7,7 @@ import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el co
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled=false }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -20,7 +20,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [usoCFDIURL, setUsoCFDIURL] = useState("");
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
-    const [exportacion, setExportacion] = useState("01"); 
+    const [exportacion, setExportacion] = useState("01");
 
     // Reiniciar o recargar los datos del select cuando el modal se cierra
     useEffect(() => {
@@ -34,7 +34,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (receptorData) {
             console.log("Receptor data", receptorData);
             setValue("ReceptorID", receptorData.ID);
-            setValue("Receptor",receptorData.ID);
+            setValue("Receptor", receptorData.ID);
             setRFC(receptorData.Rfc);
             setValue("RFCReceptor", receptorData.Rfc);
             setValue("NombreReceptor", receptorData.Nombre);
@@ -59,9 +59,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("UsoCFDI", receptorData.UsoCFDI);
             setValue("UsoCFDIDescripcion", receptorData.UsoCFDIDescripcion);
 
-            
+
             if (rfc === "XAXX010101000") {
-                
+
                 setValue("Año", receptorData.InformacionGlobal.Año);
                 setValue("Meses", receptorData.InformacionGlobal.Meses);
                 setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
@@ -72,7 +72,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
-              
+
             } else {
                 setHiddeInfoGlobal(false);
             }
@@ -98,7 +98,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
-                
+
                 setHiddeInfoGlobal(true);
             }
             // setUsoCFDI("");
@@ -130,12 +130,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             let data = JSON.parse(metodoPago);
             setValue("MetodoPagoDescripcion", data["Descripcion"]);
             console.log("Forma de pago", data["Clave"]);
-            if(data["Clave"]==="PPD"){
+            if (data["Clave"] === "PPD") {
                 console.log("Forma de pago", data["Clave"]);
                 setValue("FormaPago", "99");
                 trigger("FormaPago");
             }
-           
+
         }
     }, [metodoPago, setValue, trigger])
 
@@ -143,8 +143,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (formaPago !== undefined) {
             let data = JSON.parse(formaPago);
             setValue("FormaPagoDescripcion", data["Descripcion"]);
-            
-                
+
+
         }
     }, [formaPago, setValue])
 
@@ -168,22 +168,22 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    // console.log("TIPO", impuestoEditor.TipoFactor);
-                    
-                  const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
-                  if (opcionSeleccionada) {
-                //    setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
-                setRegimenFiscalText(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
-                // setRegimenFiscal(opcionSeleccionada.Clave);
-                }
-                    
-                  
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                        // console.log("TIPO", impuestoEditor.TipoFactor);
 
-                  // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
-                })
+                        const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
+                        if (opcionSeleccionada) {
+                            //    setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                            setRegimenFiscalText(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                            // setRegimenFiscal(opcionSeleccionada.Clave);
+                        }
+
+
+
+                        // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
+                    })
 
             }
         }
@@ -197,21 +197,21 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const handleCloseModal = () => {
         setOpenModal(false);
         setIsModalClosed(true);
-        
+
     };
 
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
-        sx={{   padding: '1rem', margin:'auto', marginTop:'1rem', marginBottom:'1rem', }}>
+            sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem', marginBottom: '1rem', }}>
             <Typography variant="h6" mb={4}>Datos del Receptor</Typography>
 
             <Box
                 display="grid"
                 gridTemplateColumns={{
                     xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: '1fr 0.5fr 0.5fr',
-                    lg: '1fr 0.6fr 0.3fr 0.8fr 1.1fr 0.2fr' //4.5
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: '1fr 0.5fr 0.5fr 0.5fr 1.1fr 0.2fr' //4.5
                 }}
                 gap={3}
             >
@@ -293,7 +293,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     }}
                     value={getValues("MetodoPago") || ""}
                     disabled={disabled}
-                    
+
 
                 />
 
@@ -309,10 +309,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         '&:hover': {
                             backgroundColor: 'rgba(19, 47, 67, 1)',
                         }
-                    }} 
+                    }}
                     onClick={handleOpenModal}
                     disabled={disabled}
-                    token = {token}
+                    token={token}
                 >
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
@@ -322,9 +322,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 display="grid"
                 gridTemplateColumns={{
                     xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: '1fr 0.5fr 0.5fr',
-                    lg: '1.1fr 1.3fr 0.7fr 1.8fr'
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: '1fr 1fr 1fr 3fr'
                 }}
                 gap={3}
                 mt={4}
@@ -356,14 +356,14 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     disabled={disabled}
                 />
                 <Select
-                        // register={register}
-                        nombre="Exportación"
-                       url={`${apiUrl}/api/catalogos/Catalogos/Exportaciones`}
-                        clave="Clave"
-                        value={exportacion}
-                        descripcion="Descripcion"
-                        disabled={disabled}
-                    />
+                    // register={register}
+                    nombre="Exportación"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Exportaciones`}
+                    clave="Clave"
+                    value={exportacion}
+                    descripcion="Descripcion"
+                    disabled={disabled}
+                />
             </Box>
             {hiddeInfoGlobal && (
                 <Box
@@ -377,7 +377,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     gap={3}
                     mt={4}
                 >
-                    
+
                     <Typography color="textSecondary" align='center'>Información Global</Typography>
 
                     <Select
@@ -402,7 +402,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         value={getValues("Meses") || ""}
                     />
                     <TextField
-                        
+
                         label="Año"
                         type="number"
                         {...register("Año")}
@@ -439,8 +439,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 </DialogContent>
             </Dialog>
             {/* <pre> {JSON.stringify(usoCFDIURL,null,2)}</pre>   */}
-             {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
+            {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
         </Box>
-         
+
     );
 }

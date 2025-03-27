@@ -226,9 +226,16 @@ const fillTemplate = async (template, data) => {
 
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
-        .replace('{{qrCode}}', qrImageBase64 ? `<img src="${qrImageBase64}" alt="Código QR">` : '<img src="" alt="Código QR">`') // Insertar el QR
+        .replace("{{qrCode}}",
+        qrImageBase64
+          ? `<img src="${qrImageBase64}" alt="Código QR">`
+          : '<img src="/images/qr-code.png" alt="Código QR">') // Insertar el QR
 
-        .replace('{{logo}}', factura.Emisor.LogoPath)
+        .replace("{{logo}}",
+        factura.Emisor.LogoPath
+          ? `<img src="${factura.Emisor.LogoPath}" alt="Logo">`
+          : '<img src="/images/Logo_wise_factura.png" alt="Logo">' // Insertar el logo
+        )
         .replace('{{nombreEmisor}}', factura.Emisor.Nombre)
         .replace('{{rfcEmisor}}', factura.Emisor.Rfc)
         .replace('{{direccionEmisor}}',  direccionEmisor || "")
@@ -251,9 +258,9 @@ const fillTemplate = async (template, data) => {
 
 
         .replace('{{subtotal}}', factura.SubTotal.toFixed(2))
-        .replace('{{descuento}}', descuento || 0.00)
+        .replace('{{descuento}}', factura.descuento || 0.00)
         .replace('{{retenciones}}', factura.Conceptos.TotalImpuestosRetenidos)
-        .replace('{{traslados}}', TotalImpuestosTrasladados)
+        .replace('{{traslados}}', factura.Conceptos.TotalImpuestosTrasladados)
         .replace('{{total}}', factura.Total.toFixed(2))
         .replace('{{totalLetra}}', numeroALetras(factura.Total, 'pesos'))
 
