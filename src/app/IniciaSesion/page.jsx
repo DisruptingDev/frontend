@@ -150,7 +150,7 @@ export default function Login() {
                     <Link href="/AltaUsuarios" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
                         ¿No tienes una cuenta? Regístrate
                     </Link>
-                    <Link href="/RecuperarContrasena" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
+                    <Link href="/ReestablecerContrasena" variant="body2" sx={{ display: 'block', marginTop: 2 }}>
                         ¿Olvidaste tu contraseña? Recupérala
                     </Link>
                 </Box>

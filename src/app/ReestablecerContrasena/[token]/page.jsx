@@ -2,12 +2,12 @@
 import { useState } from "react";
 import { useForm } from 'react-hook-form';
 import { TextField, Button, Alert, Collapse, Box } from "@mui/material";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function PasswordResetPage() {
+export default function PasswordResetPage({ params }) {
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const [alert, setAlert] = useState({ 
         open: false, 
@@ -16,13 +16,13 @@ export default function PasswordResetPage() {
     });
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+    
+    // Captura el token de params en lugar de searchParams
+    const token = params?.token;
 
     const onSubmit = async (data) => {
         setIsLoading(true);
         try {
-            // Validar que las contraseñas coincidan
             if (data.password !== data.confirmPassword) {
                 setAlert({ 
                     open: true, 
@@ -52,8 +52,7 @@ export default function PasswordResetPage() {
                     message: 'Contraseña actualizada correctamente. Redirigiendo al login...', 
                     severity: 'success' 
                 });
-                // Redirigir al login después de 3 segundos
-                setTimeout(() => router.push('/IniciaSesion'), 3000);
+                setTimeout(() => router.push('/Login'), 3000);
             } else {
                 setAlert({ 
                     open: true, 
@@ -107,7 +106,7 @@ export default function PasswordResetPage() {
                     }} 
                     variant="text" 
                     fullWidth 
-                    onClick={() => router.push('/ReestablecerContrasena')}
+                    onClick={() => router.push('/RecuperarContrasena')}
                 >
                     Solicitar nuevo enlace
                 </Button>
@@ -116,73 +115,95 @@ export default function PasswordResetPage() {
     }
 
     return (
-        <>
-            <h2 style={{ marginBottom: '20px', color: '#10968A' }}>
-                Restablecer Contraseña
-            </h2>
-
-            <Collapse in={alert.open}>
-                <Alert 
-                    severity={alert.severity} 
-                    onClose={() => setAlert({ ...alert, open: false })}
-                    sx={{ mb: 2 }}
-                >
-                    {alert.message}
-                </Alert>
-            </Collapse>
-
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
-                <TextField
-                    label="Nueva Contraseña"
-                    type="password"
-                    {...register("password", { 
-                        required: 'Este campo es requerido',
-                        minLength: {
-                            value: 8,
-                            message: 'La contraseña debe tener al menos 8 caracteres'
-                        },
-                        pattern: {
-                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
-                            message: 'Debe contener al menos una mayúscula, una minúscula y un número'
-                        }
-                    })}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.password}
-                    helperText={errors.password?.message}
-                    sx={{ mb: 2 }}
-                />
+        <main className="flex items-center justify-center h-screen bg-primary-dark-total">
+            <Box
+                sx={{
+                    width: 420,
+                    backgroundColor: "white",
+                    padding: 4,
+                    borderRadius: 5,
+                    boxShadow: 3,
+                    textAlign: "center",
+                    margin: 'auto'
+                }}
+            >
+                <Box mb={2} display="flex" justifyContent="center">
+                    <Image 
+                        src="/images/Logo_wise_factura.png" 
+                        alt="Logo Wise Factura" 
+                        width={300} 
+                        height={64} 
+                        priority
+                    />
+                </Box>
                 
-                <TextField
-                    label="Confirmar Contraseña"
-                    type="password"
-                    {...register("confirmPassword", { 
-                        required: 'Este campo es requerido',
-                        validate: value => 
-                            value === watch('password') || 'Las contraseñas no coinciden'
-                    })}
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.confirmPassword}
-                    helperText={errors.confirmPassword?.message}
-                    sx={{ mb: 2 }}
-                />
+                <h2 style={{ marginBottom: '20px', color: '#10968A' }}>
+                    Restablecer Contraseña
+                </h2>
 
-                <Button 
-                    sx={{ 
-                        backgroundColor: '#10968A', 
-                        '&:hover': { backgroundColor: '#10232f' },
-                        marginTop: 2,
-                        marginBottom: 2
-                    }} 
-                    variant="contained" 
-                    fullWidth 
-                    type="submit"
-                    disabled={isLoading}
-                >
-                    {isLoading ? 'Actualizando...' : 'Actualizar Contraseña'}
-                </Button>
-            </form>
-        </>
+                <Collapse in={alert.open}>
+                    <Alert 
+                        severity={alert.severity} 
+                        onClose={() => setAlert({ ...alert, open: false })}
+                        sx={{ mb: 2 }}
+                    >
+                        {alert.message}
+                    </Alert>
+                </Collapse>
+
+                <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+                    <TextField
+                        label="Nueva Contraseña"
+                        type="password"
+                        {...register("password", { 
+                            required: 'Este campo es requerido',
+                            minLength: {
+                                value: 8,
+                                message: 'La contraseña debe tener al menos 8 caracteres'
+                            },
+                            pattern: {
+                                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/,
+                                message: 'Debe contener al menos una mayúscula, una minúscula y un número'
+                            }
+                        })}
+                        fullWidth
+                        margin="normal"
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
+                        sx={{ mb: 2 }}
+                    />
+                    
+                    <TextField
+                        label="Confirmar Contraseña"
+                        type="password"
+                        {...register("confirmPassword", { 
+                            required: 'Este campo es requerido',
+                            validate: value => 
+                                value === watch('password') || 'Las contraseñas no coinciden'
+                        })}
+                        fullWidth
+                        margin="normal"
+                        error={!!errors.confirmPassword}
+                        helperText={errors.confirmPassword?.message}
+                        sx={{ mb: 2 }}
+                    />
+
+                    <Button 
+                        sx={{ 
+                            backgroundColor: '#10968A', 
+                            '&:hover': { backgroundColor: '#10232f' },
+                            marginTop: 2,
+                            marginBottom: 2
+                        }} 
+                        variant="contained" 
+                        fullWidth 
+                        type="submit"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? 'Actualizando...' : 'Actualizar Contraseña'}
+                    </Button>
+                </Box>
+            </Box>
+        </main>
     );
 }
