@@ -107,7 +107,7 @@ export default function PasswordResetPage() {
                     }} 
                     variant="text" 
                     fullWidth 
-                    onClick={() => router.push('/RecuperarContrasena')}
+                    onClick={() => router.push('/ReestablecerContrasena')}
                 >
                     Solicitar nuevo enlace
                 </Button>
