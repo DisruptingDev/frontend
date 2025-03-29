@@ -20,33 +20,11 @@ export default function Paquetes({ token, setCompra }) {
         }).format(value);
     }
 
-
-    // const paquetes = [
-    //     {
-    //         titulo: "Paquete Pequeño",
-    //         timbres: "50 timbres",
-    //         precio: "$299.00",
-    //         beneficios: ["50 timbres ", "Sin caducidad", "Pago único"],
-    //     },
-    //     {
-    //         titulo: "Paquete Mediano",
-    //         timbres: "100 timbres",
-    //         precio: "$349.00",
-    //         beneficios: ["100 timbres ", "Sin caducidad", "Pago único"],
-    //     },
-    //     {
-    //         titulo: "Paquete Grande",
-    //         timbres: "250 timbres",
-    //         precio: "$949.00",
-    //         beneficios: ["250 timbres ", "Sin caducidad", "Pago único"],
-    //     }
-    // ];
-
     const fetchPaquetes = useCallback(async () => {
         if (token != '') {
-            console.log('Fetching paquetes', token);
+            //console.log('Fetching paquetes', token);
             try {
-                console.log('Token:', token);
+                //console.log('Token:', token);
                 const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Paquetes`, {
                     method: 'GET',
                     headers: {
@@ -54,9 +32,9 @@ export default function Paquetes({ token, setCompra }) {
                     },
                 });
                 const data = await response.json();
-                console.log('Data:', data);
+                //console.log('Data:', data);
                 if (response.ok) {
-                    console.log('Paquetes:', data);
+                    //console.log('Paquetes:', data);
                     setPaquetes(data);
                 } else {
                     console.error('Error fetching paquetes:', data);

@@ -25,7 +25,7 @@ export default function CompraTimbres() {
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
-            console.log('Token', token);
+            //console.log('Token', token);
             setToken(token);
         }
     }, [router]);
@@ -43,10 +43,6 @@ export default function CompraTimbres() {
                 </Grid>
                 <Grid item sx={{ flexGrow: 1 }}>
                     <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
-                        {/* Tabs para seleccionar Planes o Paquetes */}
-                        {/* <Typography variant="h4" textAlign="center" gutterBottom sx={{ fontWeight: '600' }}>
-                Compra de Timbres
-            </Typography> */}
                         <Tabs
                             value={valorTab}
                             onChange={manejarCambioTab}
