@@ -98,7 +98,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
       const pagoParcial = monto * proporcion;
 
       const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
-        console.log("Impuesto proporcional", impuesto);
+        //console.log("Impuesto proporcional", impuesto);
         const baseProporcional = (impuesto.BaseImpuesto / totalConcepto) * pagoParcial;
         const montoProporcional = baseProporcional * impuesto.TasaOCuota;
         return {
@@ -179,7 +179,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
-    setValue("NumeroOperacion", pagos.numOperacion + 1);
+    setValue("NumeroOperacion", pagos.numOperacion);
 
     // Calcular el saldo insoluto usando el total de la factura como saldo anterior
     const saldoAnterior = parseFloat(pagos.saldo);
@@ -320,7 +320,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Importe del saldo Pagado"
           name="saldoPagado"
-          value={pagos.totalPagado || ""}
+          value={pagos.totalPagado || "0.00"} // Usa el saldo pagado
           disabled
           fullWidth
         />

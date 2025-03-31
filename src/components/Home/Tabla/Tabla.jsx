@@ -430,6 +430,14 @@ export default function DataTable({ token, filtro }) {
       router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
     }
   };
+
+  const handleDelete = () => {
+    if (menuRow) {
+      console.log(menuRow);
+      router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+    }
+  };
+
   const handleFacturaPago = async () => {
     if (menuRow) {
       console.log(menuRow);
@@ -556,7 +564,7 @@ export default function DataTable({ token, filtro }) {
                     <TableCell sx={{ textAlign: 'center' }}>{new Date(row.Fecha).toLocaleDateString()}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{row.uuid === "" ? "" : new Date(row.fechaTimbrado).toLocaleDateString()}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{row.Serie}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>{row.MetodoPago}</TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>{row.Serie === "P" ? "PUE" : row.MetodoPago}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{row.Estatus ? row.Estatus : row.uuid === "" ? "No timbrada" : "Timbrada"}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.SubTotal)}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{formatCurrency(row.Conceptos?.TotalImpuestosTrasladados || 0)}</TableCell>
@@ -581,12 +589,14 @@ export default function DataTable({ token, filtro }) {
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                           <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
-                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>
+                          <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
+                          <MenuItem key="delete" onClick={handleDelete}>Eliminar</MenuItem>
                           // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
 
                         ]}
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                          <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                         ]}
                         {
                           menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !== "P" && [
@@ -597,7 +607,9 @@ export default function DataTable({ token, filtro }) {
                         }
                         {
                           menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante === "P" && [
-                            <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
+                            <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>,
+                            <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
+                            <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
                           ]
                         }
                         {

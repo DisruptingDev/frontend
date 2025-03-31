@@ -1,6 +1,6 @@
 export const metadata = {
     title: 'Wise Factura',
-    description: 'Facturacion facil y rapida',
+    description: 'Facturación fácil y rápida',
   }
 
 

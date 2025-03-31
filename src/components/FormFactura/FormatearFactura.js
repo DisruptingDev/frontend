@@ -278,37 +278,36 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                                 ImpSaldoInsoluto: parseFloat(emisor.ImpSaldoInsoluto),
                                 ObjetoImpDr: "02",
                             }],
-                            Impuestos: {
+                            // Impuestos: {
 
-                                Retenciones: emisor.ImpuestosPagos
-                                    .filter(retencion => retencion.TipoImpuesto === "Retencion") // Filtrar primero las retenciones
-                                    .map(retencion => ({
-                                        Base: retencion.Base,
-                                        ImpuestoCatalogoID: retencion.ImpuestoCatalogoID,
-                                        ImpuestoClave: retencion.ImpuestoClave,
-                                        TipoFactor: retencion.TipoFactor || "Tasa",
-                                        TasaOCuota: retencion.TasaOCuota,
-                                        Importe: retencion.Importe
-                                    })),
-                                Traslados: emisor.ImpuestosPagos
-                                    .filter(traslado => traslado.TipoImpuesto === "Traslado") // Filtrar primero los traslados
-                                    .map(traslado => ({
-                                        Base: traslado.Base,
-                                        ImpuestoCatalogoID: traslado.ImpuestoCatalogoID,
-                                        ImpuestoClave: traslado.ImpuestoClave,
-                                        TipoFactor: traslado.TipoFactor || "Tasa",
-                                        TasaOCuota: traslado.TasaOCuota,
-                                        Importe: traslado.Importe
-                                    }))
-                            }
+                            //     Retenciones: emisor.ImpuestosPagos
+                            //         .filter(retencion => retencion.TipoImpuesto === "Retencion") // Filtrar primero las retenciones
+                            //         .map(retencion => ({
+                            //             Base: retencion.Base,
+                            //             ImpuestoCatalogoID: retencion.ImpuestoCatalogoID,
+                            //             ImpuestoClave: retencion.ImpuestoClave,
+                            //             TipoFactor: retencion.TipoFactor || "Tasa",
+                            //             TasaOCuota: retencion.TasaOCuota,
+                            //             Importe: retencion.Importe
+                            //         })),
+                            //     Traslados: emisor.ImpuestosPagos
+                            //         .filter(traslado => traslado.TipoImpuesto === "Traslado") // Filtrar primero los traslados
+                            //         .map(traslado => ({
+                            //             Base: traslado.Base,
+                            //             ImpuestoCatalogoID: traslado.ImpuestoCatalogoID,
+                            //             ImpuestoClave: traslado.ImpuestoClave,
+                            //             TipoFactor: traslado.TipoFactor || "Tasa",
+                            //             TasaOCuota: traslado.TasaOCuota,
+                            //             Importe: traslado.Importe
+                            //         }))
+                            // }
 
                         }
                     ]
                 }
             },
-
-
         };
+        console.log("Factura Vista Previa Pago", factura);
 
     }
     else if (modo==="VistaPreviaRPE") {
@@ -477,6 +476,6 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
         };
         //console.log("Factura Vista Previa RPE", factura);
     }
-    console.log("Resultado de la factura", factura);
+    //console.log("Resultado de la factura", factura);
     return factura;
 }

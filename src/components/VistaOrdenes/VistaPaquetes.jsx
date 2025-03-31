@@ -44,7 +44,12 @@ const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerCompr
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.Nombre}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.CantidadTimbres}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Emisor__Nombre}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{paquete.Paquete.Costo}</TableCell>
+                            <TableCell sx={{ textAlign: 'center' }}>
+                                {new Intl.NumberFormat('es-MX', {
+                                    style: 'currency',
+                                    currency: 'MXN',
+                                }).format(paquete.Paquete.Costo)}
+                            </TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>{paquete.Estatus}</TableCell>
                             <TableCell sx={{ textAlign: 'center' }}>
                                 {paquete.ComprobantePath ? (

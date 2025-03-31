@@ -11,8 +11,7 @@ import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Pagos from "@/components/FormFactura/Pagos/Pagos";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
-// import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
-import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPreviaRPE";
+import generarVistaPreviaPago from "@/components/Home/Factura/GenerarVistaPreviaPago";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
@@ -25,7 +24,7 @@ export default function FacturaPago() {
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
     const [pagos, setPagos] = useState({
-        numOperacion: 1, // Número de operación inicial
+        numOperacion: 0, // Número de operación inicial
         totalPagado: 0,  // Total pagado inicial
         saldo: 0,        // Saldo restante inicial
     });
@@ -95,7 +94,7 @@ export default function FacturaPago() {
                 console.log("Docto Relacionado", data);
 
                 // Calcular el número de operación
-                const numOperacion = data.length > 0 ? data[data.length - 1].NumParcialidad + 1 : 1;
+                const numOperacion = data.length === 0 ? 1 : data[data.length - 1].NumParcialidad + 1;
 
                 // Calcular el total pagado
                 const totalPagado = data.reduce((sum, pago) => sum + pago.ImpPagado, 0);
@@ -130,11 +129,11 @@ export default function FacturaPago() {
     // Actualizar conceptos, emisor y receptor cuando se obtiene la factura
     useEffect(() => {
         if (facturaEdit) {
-            console.log("Factura editada", facturaEdit);
+            //console.log("Factura editada", facturaEdit);
             const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
-                console.log("Conceptos", Conceptos);
+                //console.log("Conceptos", Conceptos);
                 setConceptos(Conceptos);
             }
             if (Emisor) {
@@ -171,9 +170,11 @@ export default function FacturaPago() {
             saldo: nuevoSaldoRestante,
         });
 
+        //console.log("Nuevo numero de operación:", nuevoNumOperacion);
+
         // Formatear la factura y guardarla
         const factura = FormatearFactura(data, data, conceptos, "", "Pago");
-        console.log('Factura creada:', factura);
+        //console.log('Factura creada:', factura);
 
         GuardarFactura(
             factura,
@@ -196,16 +197,29 @@ export default function FacturaPago() {
 
     // Vista previa
     const handlePreview = handleSubmit(async (data) => {
-        if (pagos.length === 0) {
-            setSnackbarMessage('Debe agregar al menos un concepto para la vista previa.');
+        try {
+            // Obtener documentos relacionados
+            const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const doctosRelacionados = await response.json();
+
+            // Formatear la factura
+            const factura = FormatearFactura(data, data, conceptos, "", "Pago");
+
+            // Generar vista previa con documentos relacionados
+            const vistaPrevia = await generarVistaPreviaPago(factura, doctosRelacionados);
+            setPreviewContent(vistaPrevia);
+            setOpenModal(true);
+        } catch (error) {
+            console.error('Error al generar vista previa:', error);
+            setSnackbarMessage('Error al generar vista previa');
             setSnackbarSeverity('error');
             setOpenSnackbar(true);
-            return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPreviaRPE");
-        const vistaPrevia = await generarVistaPrevia(factura);
-        setPreviewContent(vistaPrevia);
-        setOpenModal(true);
     });
 
     return (
@@ -258,30 +272,6 @@ export default function FacturaPago() {
                                 {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
                             </div>
                         </Pagos>
-
-
-                        {/* <Conceptos
-                    trigger={trigger}
-                    register={register}
-                    watch={watch}
-                    setValue={setValue}
-                    getValues={getValues}
-                    setConceptos={setConceptos}
-                    conceptos={conceptos}
-                    editIndex={editIndex}
-                    setEditIndex={setEditIndex}
-                    token={token}
-                /> */}
-
-                        {/* <Resumen
-                    conceptos={conceptos}
-                    subTotal={watch("Subtotal")}
-                    handleEditConcepto={handleEditConcepto}
-                    handleDeleteConcepto={handleDeleteConcepto}
-                >
-                   
-                </Resumen> */}
-
                     </form>
                     <Modal
                         open={openModal}
