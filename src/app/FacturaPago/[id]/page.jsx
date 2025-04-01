@@ -11,8 +11,8 @@ import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Pagos from "@/components/FormFactura/Pagos/Pagos";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
-import generarVistaPreviaPago from "@/components/Home/Factura/GenerarVistaPreviaPago";
-import FormatearFactura from "@/components/FormFactura/FormatearFactura";
+import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPreviaPago";
+import FormatearFactura from "@/components/FormFactura/FormatearFacturaPago";
 import { isAuthenticated } from "@/utils/authRedirect";
 import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
@@ -198,22 +198,40 @@ export default function FacturaPago() {
     // Vista previa
     const handlePreview = handleSubmit(async (data) => {
         try {
-            // Obtener documentos relacionados
-            const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+            // Obtener la factura original
+            const responseFactura = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
             });
-            const doctosRelacionados = await response.json();
+            const facturaOriginal = await responseFactura.json();
 
-            // Formatear la factura
-            const factura = FormatearFactura(data, data, conceptos, "", "Pago");
+            console.log("Factura original", facturaOriginal);
 
-            // Generar vista previa con documentos relacionados
-            const vistaPrevia = await generarVistaPreviaPago(factura, doctosRelacionados);
+            // Obtener los documentos relacionados (pagos)
+            const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            const doctosRelacionados = await responsePagos.json();
+
+            console.log("Doctos relacionados", doctosRelacionados);
+
+
+            console.log("Data para vista previa", data);
+            // Formatear la factura incluyendo los pagos relacionados
+            const factura = FormatearFactura(facturaOriginal, data, doctosRelacionados, "", "Pago");
+
+            // Generar vista previa con los datos completos
+            const vistaPrevia = await generarVistaPrevia(factura, doctosRelacionados);
+
+            // Mostrar la vista previa en el modal
             setPreviewContent(vistaPrevia);
             setOpenModal(true);
+
         } catch (error) {
             console.error('Error al generar vista previa:', error);
             setSnackbarMessage('Error al generar vista previa');
@@ -295,6 +313,7 @@ export default function FacturaPago() {
                     </Snackbar>
                 </Grid>
             </Grid>
+            
         </div>
     );
 }

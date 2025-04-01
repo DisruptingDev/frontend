@@ -3,57 +3,101 @@ import { ConstructionOutlined, PagesOutlined } from "@mui/icons-material";
 // import html2pdf from 'html2pdf.js';
 import QRCode from "qrcode";
 
-function numeroALetras(num, moneda = 'pesos') {
-  const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
-  const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
-  const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
-  const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+function numeroALetras(num, moneda = "pesos") {
+  const unidades = [
+    "cero",
+    "uno",
+    "dos",
+    "tres",
+    "cuatro",
+    "cinco",
+    "seis",
+    "siete",
+    "ocho",
+    "nueve",
+  ];
+  const especiales = [
+    "diez",
+    "once",
+    "doce",
+    "trece",
+    "catorce",
+    "quince",
+    "dieciséis",
+    "diecisiete",
+    "dieciocho",
+    "diecinueve",
+  ];
+  const decenas = [
+    "",
+    "",
+    "veinte",
+    "treinta",
+    "cuarenta",
+    "cincuenta",
+    "sesenta",
+    "setenta",
+    "ochenta",
+    "noventa",
+  ];
+  const centenas = [
+    "",
+    "cien",
+    "doscientos",
+    "trescientos",
+    "cuatrocientos",
+    "quinientos",
+    "seiscientos",
+    "setecientos",
+    "ochocientos",
+    "novecientos",
+  ];
 
   function convertirDecenas(num) {
-      if (num < 10) return unidades[num];
-      if (num >= 10 && num < 20) return especiales[num - 10];
-      const dec = Math.floor(num / 10);
-      const unidad = num % 10;
-      return `${decenas[dec]}${unidad ? ' y ' + unidades[unidad] : ''}`;
+    if (num < 10) return unidades[num];
+    if (num >= 10 && num < 20) return especiales[num - 10];
+    const dec = Math.floor(num / 10);
+    const unidad = num % 10;
+    return `${decenas[dec]}${unidad ? " y " + unidades[unidad] : ""}`;
   }
 
   function convertirCentenas(num) {
-      const cen = Math.floor(num / 100);
-      const dec = num % 100;
-      if (cen === 1 && dec === 0) return 'cien';
-      if (cen === 1) return `ciento ${convertirDecenas(dec)}`; // Cambio aquí
-      return `${centenas[cen]}${dec ? ' ' + convertirDecenas(dec) : ''}`;
+    const cen = Math.floor(num / 100);
+    const dec = num % 100;
+    if (cen === 1 && dec === 0) return "cien";
+    if (cen === 1) return `ciento ${convertirDecenas(dec)}`; // Cambio aquí
+    return `${centenas[cen]}${dec ? " " + convertirDecenas(dec) : ""}`;
   }
 
   function convertirMiles(num) {
-      const mil = Math.floor(num / 1000);
-      const resto = num % 1000;
-      if (mil === 1) return `mil ${convertirCentenas(resto)}`;
-      return `${convertirCentenas(mil)} mil ${convertirCentenas(resto)}`;
+    const mil = Math.floor(num / 1000);
+    const resto = num % 1000;
+    if (mil === 1) return `mil ${convertirCentenas(resto)}`;
+    return `${convertirCentenas(mil)} mil ${convertirCentenas(resto)}`;
   }
 
   function convertirMillones(num) {
-      const millon = Math.floor(num / 1000000);
-      const resto = num % 1000000;
-      if (millon === 1) return `un millón ${convertirMiles(resto)}`;
-      return `${convertirCentenas(millon)} millones ${convertirMiles(resto)}`;
+    const millon = Math.floor(num / 1000000);
+    const resto = num % 1000000;
+    if (millon === 1) return `un millón ${convertirMiles(resto)}`;
+    return `${convertirCentenas(millon)} millones ${convertirMiles(resto)}`;
   }
 
   function convertirNumero(num) {
-      if (num < 100) return convertirDecenas(num);
-      if (num < 1000) return convertirCentenas(num);
-      if (num < 1000000) return convertirMiles(num);
-      return convertirMillones(num);
+    if (num < 100) return convertirDecenas(num);
+    if (num < 1000) return convertirCentenas(num);
+    if (num < 1000000) return convertirMiles(num);
+    return convertirMillones(num);
   }
 
   // Dividir la parte entera y decimal
-  const partes = num.toFixed(2).split('.');
+  const partes = num.toFixed(2).split(".");
   const parteEntera = parseInt(partes[0], 10);
   const parteDecimal = parseInt(partes[1], 10);
 
   let monedaLetra = `${convertirNumero(parteEntera)} ${moneda}`;
   if (parteDecimal > 0) {
-      monedaLetra += ` con ${convertirNumero(parteDecimal)} centavos`;
+    monedaLetra += ` con ${convertirNumero(parteDecimal)} centavos`;
   }
 
   return monedaLetra.toUpperCase();
@@ -86,104 +130,43 @@ const fillTemplate = async (template, data) => {
     factura = data;
     //console.log("Factura contenido:",factura);
   }
-  // Generar HTML para conceptos
-  const conceptosHTML = factura.Conceptos.ListaConceptos.map((concepto) => {
-    // Generar HTML para impuestos retenidos
-    const retencionesHTML = concepto.Impuestos.Retenciones.map(
-      (retencion) => `
-            <small>IMPUESTO: <span>${retencion.ImpuestoClave} - Retención</span></small>
-            <small>IMPORTE: <span>$${retencion.Importe.toFixed(2)}</span></small>
-            <br>
-        `
-    ).join("");
-
-    // Generar HTML para impuestos trasladados
-    const trasladosHTML = concepto.Impuestos.Traslados.map(
-      (traslado) => `
-            <small>IMPUESTO: <span>${traslado.ImpuestoClave} - Traslado</span></small>
-            <small>IMPORTE: <span>$${traslado.Importe.toFixed(2)}</span></small>
-            <br>
-        `
-    ).join("");
-
-    return `
-            <tr>              
-                <td>${concepto.ClaveProdServ}</td>
-                <td>${concepto.NoIdentificacion || "N/A"}</td>
-                <td>${concepto.Cantidad}</td>
-                <td>${concepto.ClaveUnidad}</td>
-                <td>${concepto.Unidad}</td>
-                <td>${concepto.Descripcion}</td>
-                <td>${concepto.ValorUnitario.toFixed(2)}</td>
-                <td>${concepto.Importe.toFixed(2)}</td>
-                <td>${concepto.Descuento.toFixed(2)}</td>
-            </tr>
-        `;
-  }).join("");
-
-  // Generar HTML para impuestos adicionales
-  // Generar HTML para impuestos retenidos
-  const retencionesHTML = factura.Conceptos.ListaConceptos.flatMap(
-    (concepto) => concepto.Impuestos.Retenciones
-  )
-    .map(
-      (retencion) => `
-        <p><span>${retencion.NombreImpuesto || retencion.ImpuestoCatalogo?.Impuesto}</span> <span>$</span> <span>${retencion.Importe}</span></p>
-       
-    `
-    )
-    .join("");
-
-  // Generar HTML para impuestos trasladados
-  const trasladosHTML = factura.Conceptos.ListaConceptos.flatMap(
-    (concepto) => concepto.Impuestos.Traslados
-  )
-    .map(
-      (traslado) => `
-      <p><span>${traslado.NombreImpuesto || traslado.ImpuestoCatalogo?.Impuesto}</span> <span>$</span> <span>${traslado.Importe}</span></p>
-    `
-    )
-    .join("");
-
-  const impuestos = retencionesHTML + trasladosHTML;
 
   let direccionEmisor = "";
-  if (factura.Emisor.Calle) {
-    direccionEmisor += factura.Emisor.Calle;
-    if (factura.Emisor.NumeroExterior) {
-      direccionEmisor += ", " + factura.Emisor.NumeroExterior;
+  if (factura.Calle) {
+    direccionEmisor += factura.Calle;
+    if (factura.NumeroExterior) {
+      direccionEmisor += ", " + factura.NumeroExterior;
     }
-    if (factura.Emisor.NumeroInterior) {
-      direccionEmisor += ", " + factura.Emisor.NumeroInterior;
+    if (factura.NumeroInterior) {
+      direccionEmisor += ", " + factura.NumeroInterior;
     }
     if (factura.Emisor.Colonia) {
-      direccionEmisor += ", " + factura.Emisor.Colonia;
+      direccionEmisor += ", " + factura.Colonia;
     }
     if (factura.Emisor.Municipio) {
-      direccionEmisor += ", " + factura.Emisor.Municipio;
+      direccionEmisor += ", " + factura.Municipio;
     }
   }
 
   //console.log("direccionEmisor", direccionEmisor);
 
   let direccionReceptor = "";
-  console.log("factura.Receptor", factura.Receptor);
-  if (factura.Receptor.Calle) {
-    direccionReceptor += factura.Receptor.Calle;
+  if (factura.Calle) {
+    direccionReceptor += factura.Calle;
     if (factura.Receptor.NumeroExterior) {
-      direccionReceptor += ", " + factura.Receptor.NumeroExterior;
+      direccionReceptor += ", " + factura.NumeroExterior;
     }
     if (factura.Receptor.NumeroInterior) {
-      direccionReceptor += ", " + factura.Receptor.NumeroInterior;
+      direccionReceptor += ", " + factura.NumeroInterior;
     }
     if (factura.Receptor.Colonia) {
-      direccionReceptor += ", " + factura.Receptor.Colonia;
+      direccionReceptor += ", " + factura.Colonia;
     }
     if (factura.Receptor.Municipio) {
-      direccionReceptor += ", " + factura.Receptor.Municipio;
+      direccionReceptor += ", " + factura.Municipio;
     }
     if (factura.Receptor.Estado) {
-      direccionReceptor += ", " + factura.Receptor.Estado;
+      direccionReceptor += ", " + factura.Estado;
     }
   }
   //console.log("direccionReceptor", direccionReceptor);
@@ -210,13 +193,18 @@ const fillTemplate = async (template, data) => {
       console.error("Error al generar el código QR:", error);
     }
   }
+  console.log("Data", data);
+
+  console.log("Monto", data.Monto);
+  console.log("TipoCambio", data.TipoCambio);
+
   let formaPago,
     metodoPago,
     regimenFiscalEmisor,
     RegimenFiscalReceptor,
     usoCFDI;
   if (data.forma_pago) {
-    formaPago = data.forma_pago.Clave + " " + data.forma_pago.Descripcion;
+    formaPago = data.forma_pago.Clave + " " + " Pago en una sola exhibición";
     metodoPago = data.metodo_pago.Clave + " " + data.metodo_pago.Descripcion;
     regimenFiscalEmisor =
       data.regimen_fiscal_emisor.Clave +
@@ -226,16 +214,30 @@ const fillTemplate = async (template, data) => {
       data.regimen_fiscal_receptor.Clave +
       " " +
       data.regimen_fiscal_receptor.Descripcion;
-    usoCFDI = data.uso_cfdi.Clave + " " + data.uso_cfdi.Descripcion;
+    usoCFDI = factura.UsoCFDI;
   } else {
     formaPago = factura.FormaPago + " " + factura.FormaPagoDescripcion;
     metodoPago = factura.MetodoPago + " " + factura.MetodoPagoDescripcion;
-    regimenFiscalEmisor = factura.Emisor.RegimenFiscal;
+    regimenFiscalEmisor = factura.regimenFiscalEmisor;
 
-    RegimenFiscalReceptor = factura.Receptor.RegimenFiscal;
-    usoCFDI =
-      factura.Receptor.UsoCFDI + " " + factura.Receptor.UsoCFDIDescripcion;
+    RegimenFiscalReceptor = factura.regimenFiscalEmisor;
+    usoCFDI = factura.UsoCFDI;
   }
+
+  const Base = parseFloat(factura.MontoPago).toFixed(2) - parseFloat(factura.MontoPago).toFixed(2) * 0.16;
+
+  const conceptosHTML = `
+      <tr>
+        <td>84111506</td>
+        <td></td>
+        <td>1</td>
+        <td>ACT</td>
+        <td></td>
+        <td>Pago</td>
+        <td>$ 0.00</td>
+        <td>$ 0.00</td>
+        <td>$ 0.00</td>
+      </tr>`;
 
   // Reemplazar los placeholders en la plantilla con los valores correspondientes
   return (
@@ -248,51 +250,62 @@ const fillTemplate = async (template, data) => {
       )
       .replace(
         "{{logo}}",
-        factura.Emisor.LogoPath
-          ? `<img src="${factura.Emisor.LogoPath}" alt="Logo">`
+        factura.LogoPath
+          ? `<img src="${factura.LogoPath}" alt="Logo">`
           : '<img src="/images/Logo_wise_factura.png" alt="Logo">'
       )
-      .replace("{{nombreEmisor}}", factura.Emisor.Nombre)
-      .replace("{{rfcEmisor}}", factura.Emisor.Rfc)
+      .replace("{{nombreEmisor}}", factura.NombreEmisor || "")
+      .replace("{{rfcEmisor}}", factura.RFCEmisor || "")
       .replace("{{direccionEmisor}}", direccionEmisor || "")
-      .replace("{{regimenFiscalEmisor}}", regimenFiscalEmisor)
+      .replace("{{regimenFiscalEmisor}}", factura.RegimenFiscalEmisor)
 
       .replace("{{folioFactura}}", factura.Folio || "")
       .replace("{{folioFiscal}}", factura.uuid || "")
       .replace("{{serieCSD}}", factura.NoCertificado || "")
-      .replace("{{fechaEmision}}", factura.Fecha || "")
+      .replace("{{fechaEmision}}", data.FechaPago || "")
       .replace("{{TipoComprobante}}", factura.TipoDeComprobante || "")
       .replace("{{Exportacion}}", factura.Exportacion || "")
 
-      .replace("{{nombreReceptor}}", factura.Receptor.Nombre)
-      .replace("{{rfcReceptor}}", factura.Receptor.Rfc)
-      .replace("{{regimenFiscalReceptor}}", factura.Receptor.RegimenFiscal)
+      .replace("{{nombreReceptor}}", factura.NombreReceptor)
+      .replace("{{rfcReceptor}}", factura.RFCReceptor)
+      .replace("{{regimenFiscalReceptor}}", factura.RegimenFiscalReceptor)
       .replace(
         "{{direccionReceptor}}",
         factura.ReceptorDireccion || direccionReceptor || ""
       )
       .replace(
         "{{CPReceptor}}",
-        factura.Receptor.DomicilioFiscalReceptor || direccionReceptor || "Sin dato"
+        factura.DomicilioFiscalReceptor || direccionReceptor || "Sin dato"
       )
 
+      .replace("{{fechaPago}}", data.FechaPago || "")
+      .replace("{{numeroOperacion}}", factura.NumeroOperacion || "")
+      .replace(
+        "{{montoPago}}",
+        new Intl.NumberFormat("es-MX", {
+          style: "currency",
+          currency: "MXN",
+        }).format(factura.MontoPago) || ""
+      )
+      .replace("{{tipoCambioPago}}", data.TipoCambio || "$1.00")
+
       // .replace('{{usoCFDI}}',(factura.Receptor.UsoCFDI  +' ' + factura.Receptor.UsoCFDIDescripcion) || factura.UsoCFDI)
-      .replace("{{subtotal}}", factura.SubTotal.toFixed(2))
-      .replace("{{descuento}}", factura.Conceptos.TotalDescuento.toFixed(2))
-      .replace(
-        "{{retenciones}}",
-        factura.Conceptos.TotalImpuestosRetenidos.toFixed(2)
-      )
-      .replace(
-        "{{traslados}}",
-        factura.Conceptos.TotalImpuestosTrasladados.toFixed(2)
-      )
-      .replace("{{total}}", factura.Total.toFixed(2))
-      .replace("{{totalLetra}}", numeroALetras(factura.Total, "pesos"))
+      .replace("{{subtotal}}", factura.SubTotal || "0.00")
+      .replace("{{descuento}}", factura.Descuentos || "0.00")
+      // .replace(
+      //   "{{retenciones}}",
+      //   factura.Conceptos.TotalImpuestosRetenidos.toFixed(2)
+      // )
+      // .replace(
+      //   "{{traslados}}",
+      //   factura.Conceptos.TotalImpuestosTrasladados.toFixed(2)
+      // )
+      .replace("{{total}}", factura.Total)
+      .replace("{{totalLetra}}", numeroALetras(parseFloat(factura.MontoPago), "pesos"))
       .replace("{{version}}", factura.Version)
       .replace("{{serie}}", factura.Serie)
       .replace("{{folio}}", factura.Folio)
-      .replace("{{fecha}}", new Date(factura.Fecha).toLocaleString())
+      .replace("{{fecha}}", data.FechaPago)
       .replace("{{lugarExpedicion}}", factura.LugarExpedicion)
       .replace("{{conceptos}}", conceptosHTML)
       // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
@@ -302,51 +315,57 @@ const fillTemplate = async (template, data) => {
       .replace("{{cadenaSAT}}", factura.cadenaOriginalSAT || "<br><br>")
       .replace("{{serieCertificadoSAT}}", factura.NoCertificado || "<br><br>")
       .replace("{{fechaCertificacion}}", factura.fechaTimbrado || "<br><br>")
-      .replace("{{formaPago}}", formaPago)
+      .replace(
+        "{{formaPago}}",
+        data.FormaPago || "PUE - Pago en una sola exhibición"
+      )
       .replace("{{metodoPago}}", metodoPago)
-      .replace("{{condicionesPago}}", factura.CondicionesDePago)
+      .replace("{{condicionesPago}}", factura.CondicionesDePago || "")
       .replace("{{regimenFiscal}}", RegimenFiscalReceptor)
       .replace("{{usoCFDI}}", usoCFDI)
+      .replace("{{ImportePago}}", parseFloat(factura.MontoPago).toFixed(2) || "0.00")
+      .replace("{{Base}}", Base || "0.00")
+      .replace("{{ImporteTraslado}}", parseFloat(factura.MontoPago).toFixed(2) * 0.16 || "0.00")
+      .replace("{{ImporteRetenido}}", "0.00")
   );
 };
 
-// const fillDescription = async (template, formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI) => {
-//     console.log('fillDescription', formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI);
-//     return template
-//         .replace('{{formaPago}}', formaPago.Clave + ' ' + formaPago.Descripcion)
-//         .replace('{{metodoPago}}', metodoPago.Clave + ' ' + metodoPago.Descripcion)
-//         // .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor.Clave + ' ' + regimenFiscalEmisor.Descripcion)
-//         .replace('{{regimenFiscal}}', RegimenFiscalReceptor.Clave + ' ' + RegimenFiscalReceptor.Descripcion)
-//         .replace('{{usoCFDI}}', usoCFDI.Clave + ' ' + usoCFDI.Descripcion)
-// };
 // Función para generar el PDF usando html2pdf
-const generarVistaPrevia = async (factura) => {
-  //console.log("Ejecutando generatePDF con la factura:", factura); // Agrega este log
+const generarVistaPrevia = async (factura, doctosRelacionados = []) => {
   try {
-    let filledTemplate;
     const template = await loadTemplate("/plantillas/plantilla-pago.html");
-    // const template = await loadTemplate('/plantillas/cancelado.html');
     if (!template) {
       throw new Error("No se pudo cargar la plantilla para la vista previa.");
     }
-    // if (factura) {
 
-    //     const templateFactura = String(await fillTemplate(template, data));
-    //     if (typeof templateFactura === 'string') {
-    //         // console.log('templateFactura', templateFactura);
-    //            filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
-    //         console.log('filledTemplate .factura', filledTemplate);
-    //         }
+    // Generar HTML para los pagos relacionados
+    const pagosHTML = doctosRelacionados
+      .map(
+        (pago) => `
+      <tr>
+        <td>${pago.IdDocumento || factura.uuid}</td>
+        <td>${"P"}</td>
+        <td>${pago.Folio || ""}</td>
+        <td>${pago.MonedaDR || "MXN"}</td>
+        <td>${pago.NumParcialidad || "1"}</td>
+        <td>$${pago.ImpSaldoAnt?.toFixed(2) || "0.00"}</td>
+        <td>$${pago.ImpPagado?.toFixed(2) || "0.00"}</td>
+        <td>$${pago.ImpSaldoInsoluto?.toFixed(2) || "0.00"}</td>
+        <td>${pago.ObjetoImpDR + "- Sí objeto de impuestos" || "02 - Sí objeto de impuestos"}</td>
+      </tr>
+    `
+      )
+      .join("");
 
-    // }
-    // else {
-    filledTemplate = await fillTemplate(template, factura);
+    let filledTemplate = await fillTemplate(template, factura);
 
-    // }
-    // console.log('filledTemplate', filledTemplate);
+    // Reemplazar el placeholder de pagos en la plantilla
+    filledTemplate = filledTemplate.replace("{{pagos}}", pagosHTML);
+
     return filledTemplate;
   } catch (error) {
     console.error("Error al mostrar la vista previa: ", error);
+    throw error;
   }
 };
 
