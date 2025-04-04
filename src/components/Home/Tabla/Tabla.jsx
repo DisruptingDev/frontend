@@ -29,6 +29,9 @@ import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';
 
 import { formatCurrency } from '@/utils/formatCurrency';
+import JSZip from 'jszip';
+
+import PdfModal from '../Modales/modalPDF';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -71,6 +74,11 @@ export default function DataTable({ token, filtro }) {
   const [expandedIndexes, setExpandedIndexes] = useState({});
   const [actualizar, setActualizar] = useState(false);
   const [mensajeFiltros, setmensajeFiltros] = useState("");
+
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState(null);
 
   // Función para alternar la expansión de una factura específica
   const handleToggleExpand = (index) => {
@@ -176,6 +184,57 @@ export default function DataTable({ token, filtro }) {
       setOpenModal(false); // Ocultar el modal de espera
     }
   };
+
+  const handleViewSingleFile = async (id) => {
+    console.log("Visualizando factura:", id);
+    setLoadingPdf(true);
+    setPdfError(null);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(id),
+      });
+
+      if (!response.ok) throw new Error('Error al obtener el archivo desde el servidor.');
+
+      const zipBlob = await response.blob();
+      const jszip = new JSZip();
+      const zipContent = await jszip.loadAsync(zipBlob);
+
+      const folderName = `Factura_${id}/`;
+      const folderFiles = Object.keys(zipContent.files)
+        .filter(relativePath => relativePath.startsWith(folderName) && !relativePath.endsWith('/'));
+
+      if (folderFiles.length === 0) throw new Error(`No se encontraron archivos en ${folderName}.`);
+
+      const pdfFileName = folderFiles.find(fileName => fileName.toLowerCase().endsWith('.pdf'));
+      if (!pdfFileName) throw new Error('No se encontró un archivo PDF.');
+
+      const pdfFile = zipContent.files[pdfFileName];
+      const pdfBlob = await pdfFile.async('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      
+      setPdfUrl(url);
+      setPdfModalOpen(true);
+
+    } catch (error) {
+      console.error("Error:", error);
+      setPdfError("Error al visualizar la factura: " + error.message);
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  // Función auxiliar para verificar los primeros bytes
+  async function getFirstBytes(blob) {
+    const buffer = await blob.slice(0, 4).arrayBuffer();
+    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16)).join(' ');
+  }
 
   // Función para enviar múltiples facturas por correo
   const handleEnviarCorreo = async (ids) => {
@@ -597,10 +656,12 @@ export default function DataTable({ token, filtro }) {
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="eliminar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Eliminar</MenuItem>,
                         ]}
                         {
                           menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !== "P" && [
                             <MenuItem key="descargar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar</MenuItem>,
+                            <MenuItem key="ver" onClick={() => handleViewSingleFile([menuRow.ID])}>Ver</MenuItem>,
                             <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
                             <MenuItem key="cancelar" onClick={handleCancelar}>Cancelar</MenuItem>
                           ]
@@ -685,6 +746,21 @@ export default function DataTable({ token, filtro }) {
       {/* Cancelar Modal */}
       <ModalCancelar openModalCancelar={openModalCancelar} handleCloseModal={handleCloseModal} facturasRemplazo={facturasRemplazo} IDFacturaCancelada={IDFacturaCancelada} token={token} setResultadoCancelar={setResultadoCancelar} />
 
+      <PdfModal
+        open={pdfModalOpen}
+        onClose={() => {
+          setPdfModalOpen(false);
+          if (pdfUrl) {
+            URL.revokeObjectURL(pdfUrl);
+            setPdfUrl(null);
+          }
+        }}
+        pdfUrl={pdfUrl}
+        loading={loadingPdf}
+        error={pdfError}
+      />
+      
     </Box>
+    
   );
 }

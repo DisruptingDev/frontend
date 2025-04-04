@@ -5,8 +5,11 @@ import { DM_Sans } from "next/font/google";
 import Image from "next/image";
 import UserMenu from "./UserMenu";
 import FacturasPPD from "./FacturasPPD"
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Menu, MenuItem } from "@mui/material";
+import { isAuthenticated } from "@/utils/authRedirect";
+import { useRouter } from 'next/navigation';
+
 
 // Configuración de la fuente Inter
 const inter = DM_Sans({
@@ -25,8 +28,19 @@ export default function Header() {
   const pathname = usePathname();
   const [anchorEl, setAnchorEl] = useState(null);
   const timeoutRef = useRef(null);
-
   const isActive = (path) => pathname === path;
+  const router = useRouter();
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    const token = isAuthenticated();
+    if (!token) {
+      router.push("/IniciaSesion");
+    }
+    else {
+      setToken(token);
+    }
+  }, [router]);
 
   const handleMouseEnter = (event) => {
     if (timeoutRef.current) {
@@ -120,7 +134,7 @@ export default function Header() {
 
       {/* Menú de usuario */}
       <div className="ml-auto flex items-center">
-        <FacturasPPD />
+        <FacturasPPD token={token} />
         <UserMenu />
       </div>
     </header>

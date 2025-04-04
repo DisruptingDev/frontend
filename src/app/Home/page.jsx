@@ -44,8 +44,6 @@ export default function Home() {
         } else {
             // Guarda el token en el estado
             setToken(token);
-
-
         }
 
     }, [router]); // Se ejecuta cada vez que cambia el router
@@ -72,7 +70,7 @@ export default function Home() {
     // Renderizado del componente
     return (
         <div>
-            <Header />
+            <Header token={token}/>
             <Grid container>
                 {/* SideBarMenu con ancho fijo */}
                 <Grid item xs={1}>
