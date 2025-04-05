@@ -149,50 +149,56 @@ export default function FacturaPago() {
     // Enviar el formulario
     const onSubmit = async (data) => {
         try {
-            if (conceptos.length === 0) {
-                throw new Error('Debe agregar al menos un concepto');
-            }
-    
-            // Obtener documentos relacionados
-            const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            let doctosRelacionados = await response.json();
-            console.log("Doctos relacionados a enviar", doctosRelacionados);
-    
-            // Formatear factura
-            const factura = FormatearFactura(
-                data,
-                data, 
-                doctosRelacionados,
-                "",
-                "Pago"
-            );
-    
-            console.log("Datos finales a enviar:", factura);
-    
-            // Guardar factura
-            await GuardarFactura(
-                factura,
-                (message) => {
-                    setSnackbarMessage(message);
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
-                    setTimeout(() => router.push("/Home"), 1000);
-                },
-                (error) => {
-                    throw error;
-                },
-                { token }
-            );
-    
+          if (conceptos.length === 0) {
+            throw new Error('Debe agregar al menos un concepto');
+          }
+      
+          // Obtener factura original
+          const responseFactura = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const facturaOriginal = await responseFactura.json();
+      
+          // Obtener documentos relacionados
+          const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          let doctosRelacionados = await responsePagos.json();
+          console.log("Doctos relacionados a enviar", doctosRelacionados);
+      
+          // Formatear factura (ahora pasamos facturaOriginal también)
+          const factura = FormatearFactura(
+            facturaOriginal, // Pasamos la factura original
+            data, 
+            doctosRelacionados,
+            "",
+            "Pago"
+          );
+      
+          console.log("Datos finales a enviar:", factura);
+      
+          // Guardar factura
+          await GuardarFactura(
+            factura,
+            (message) => {
+              setSnackbarMessage(message);
+              setSnackbarSeverity('success');
+              setOpenSnackbar(true);
+              setTimeout(() => router.push("/Home"), 1000);
+            },
+            (error) => {
+              throw error;
+            },
+            { token }
+          );
+      
         } catch (error) {
-            console.error("Error al guardar:", error);
-            setSnackbarMessage(error.message);
-            setSnackbarSeverity('error');
-            setOpenSnackbar(true);
+          console.error("Error al guardar:", error);
+          setSnackbarMessage(error.message);
+          setSnackbarSeverity('error');
+          setOpenSnackbar(true);
         }
-    };
+      };
 
     // Vista previa
     const handlePreview = handleSubmit(async (data) => {
