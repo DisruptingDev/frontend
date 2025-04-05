@@ -162,10 +162,10 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
   useEffect(() => {
     if (pagos) {
-
-      setValue("NumeroOperacion", pagos.numOperacion + 1);
+      // Asegurarse de que numOperacion sea un entero usando Math.floor()
+      const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
+      setValue("NumeroOperacion", numeroOperacionEntero);
       setValue("SaldoAnterior", pagos.saldo);
-
     }
   }, [pagos, setValue]);
 
@@ -179,9 +179,12 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     setPago({ ...pago, monto: nuevoMonto });
     calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
-    setValue("NumeroOperacion", pagos.numOperacion);
 
-    // Calcular el saldo insoluto usando el total de la factura como saldo anterior
+    // Asegurar que el número de operación sea entero
+    const numeroOperacionEntero = Math.floor(pagos.numOperacion);
+    setValue("NumeroOperacion", numeroOperacionEntero);
+
+    // Calcular el saldo insoluto
     const saldoAnterior = parseFloat(pagos.saldo);
     const saldoInsoluto = (saldoAnterior - nuevoMonto).toFixed(2);
     setValue("ImpSaldoInsoluto", saldoInsoluto);
@@ -306,7 +309,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Número de operación"
           name="numeroOperacion"
-          value={pagos.numOperacion || "Sin pagos aún"}
+          value={Math.floor(pagos.numOperacion) || "Sin pagos aún"} // Asegurar entero aquí
           disabled
           fullWidth
         />

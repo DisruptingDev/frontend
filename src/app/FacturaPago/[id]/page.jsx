@@ -147,52 +147,51 @@ export default function FacturaPago() {
     }, [facturaEdit, setValue]);
 
     // Enviar el formulario
-    const onSubmit = (data) => {
-        if (conceptos.length === 0) {
-            setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
+    const onSubmit = async (data) => {
+        try {
+            if (conceptos.length === 0) {
+                throw new Error('Debe agregar al menos un concepto');
+            }
+    
+            // Obtener documentos relacionados
+            const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            let doctosRelacionados = await response.json();
+            console.log("Doctos relacionados a enviar", doctosRelacionados);
+    
+            // Formatear factura
+            const factura = FormatearFactura(
+                data,
+                data, 
+                doctosRelacionados,
+                "",
+                "Pago"
+            );
+    
+            console.log("Datos finales a enviar:", factura);
+    
+            // Guardar factura
+            await GuardarFactura(
+                factura,
+                (message) => {
+                    setSnackbarMessage(message);
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+                    setTimeout(() => router.push("/Home"), 1000);
+                },
+                (error) => {
+                    throw error;
+                },
+                { token }
+            );
+    
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            setSnackbarMessage(error.message);
             setSnackbarSeverity('error');
             setOpenSnackbar(true);
-            return;
         }
-
-        //console.log("Data", data);
-        //console.log("Conceptos antes de crear", conceptos);
-
-        // Calcular el nuevo número de operación y el saldo restante
-        const nuevoNumOperacion = pagos.numOperacion;
-        const nuevoTotalPagado = pagos.totalPagado + parseFloat(data.Monto);
-        const nuevoSaldoRestante = totalPago - nuevoTotalPagado;
-
-        // Actualizar el estado de pagos
-        setPagos({
-            numOperacion: nuevoNumOperacion,
-            totalPagado: nuevoTotalPagado,
-            saldo: nuevoSaldoRestante,
-        });
-
-        //console.log("Nuevo numero de operación:", nuevoNumOperacion);
-
-        // Formatear la factura y guardarla
-        const factura = FormatearFactura(data, data, conceptos, "", "Pago");
-        //console.log('Factura creada:', factura);
-
-        GuardarFactura(
-            factura,
-            (message) => { // Callback de éxito
-                setSnackbarMessage(message);
-                setSnackbarSeverity('success');
-                setOpenSnackbar(true);
-                setTimeout(() => {
-                    router.push("/Home");
-                }, 1000);
-            },
-            (errorMessage) => { // Callback de error
-                setSnackbarMessage(errorMessage);
-                setSnackbarSeverity('error');
-                setOpenSnackbar(true);
-            },
-            { token }
-        );
     };
 
     // Vista previa

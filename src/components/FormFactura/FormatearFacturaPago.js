@@ -1,30 +1,46 @@
-export default function FormatearFactura(
-  facturaOriginal,
-  data,
-  doctosRelacionados,
-  id,
-  modo
-) {
-  const pagos = doctosRelacionados;
-  console.log("Pagos", pagos);
+export default function FormatearFactura(facturaOriginal, data, doctosRelacionados, id, modo) {
   const formatter = new Intl.NumberFormat("es-MX", {
     style: "decimal",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  // Obtener la fecha actual de la computadora
-  const fechaActual = new Intl.DateTimeFormat("es-MX", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  // Obtener la fecha actual en formato ISO
+  const fechaActual = new Date().toISOString();
 
   let factura;
+  
   if (modo === "Pago") {
+    // Verificar si doctosRelacionados es un array, si no, convertirlo
+    const documentos = Array.isArray(doctosRelacionados) ? doctosRelacionados : [doctosRelacionados];
+    
+    // Crear estructura de complemento de pagos
+    const complementoPagos = {
+      Version: "2.0",
+      Pagos: [{
+        FechaPago: data.FechaPago || fechaActual,
+        FormaDePagoP: data.FormaPagoComprobante || "PUE",
+        Moneda: "MXN",
+        TipoCambioP: "1",
+        Monto: parseFloat(data.Monto) || 0,
+        DoctoRelacionados: documentos.map(doc => ({
+          IdDocumento: doc.IdDocumento || "",
+          Serie: doc.Serie || "",
+          Folio: doc.Folio || "",
+          MonedaDR: doc.MonedaDR || "MXN",
+          NumParcialidad: doc.NumParcialidad || 1,
+          ImpSaldoAnt: parseFloat(doc.ImpSaldoAnt) || 0,
+          ImpPagado: parseFloat(data.Monto) || 0, // Usar el monto del pago actual
+          ImpSaldoInsoluto: parseFloat(data.ImpSaldoInsoluto) || 0,
+          ObjetoImpDR: doc.ObjetoImpDR || "02",
+          EquivalenciaDR: "1"
+        }))
+      }]
+    };
+
     factura = {
       Version: facturaOriginal.Version || "4.0",
-      Serie: "P - Pago",
+      Serie: data.SeriePagos || "P - Pago",
       FechaPago: data.FechaPago || fechaActual,
       Fecha: data.Fecha || fechaActual,
       LugarExpedicion: data.LugarExpedicion || "00000",
@@ -35,6 +51,7 @@ export default function FormatearFactura(
       Municipio: data.Municipio || "",
       Estado: data.Estado || "",
       FormaPago: "PUE",
+      Folio: data.Folio || "",
       Moneda: "MXN",
       TipoDeComprobante: "P - Pago",
       UsoCFDI: "CP01 - Pagos",
@@ -42,7 +59,7 @@ export default function FormatearFactura(
       Descripcion: "",
       Subtotal: facturaOriginal.Subtotal || 0,
       Descuentos: 0,
-      MontoPago: data.Monto || 0,
+      MontoPago: parseFloat(data.Monto) || 0,
       NumeroOperacion: data.NumeroOperacion || "",
       Total: facturaOriginal.Total || 0.00,
       EmisorID: facturaOriginal.EmisorID || "",
@@ -54,51 +71,13 @@ export default function FormatearFactura(
       RegimenFiscalReceptor: data.RegimenFiscal || "",
       ReceptorID: facturaOriginal.ReceptorID,
       DomicilioFiscalReceptor: data.DomicilioFiscalReceptor || "",
-    //   Conceptos: {
-    //     ListaConceptos: conceptos.map((concepto) => ({
-    //       ClaveProdServ: String(concepto.ClaveProdServ),
-    //       NoIdentificacion: concepto.NoIdentificacion || "",
-    //       Cantidad: parseInt(concepto.Cantidad, 10),
-    //       ClaveUnidad: String(concepto.ClaveUnidad),
-    //       Unidad: concepto.Unidad || "",
-    //       Descripcion: concepto.Descripcion,
-    //       ValorUnitario: concepto.ValorUnitario,
-    //       Importe: concepto.Subtotal,
-    //       Descuento: concepto.Descuento,
-    //       ObjetoImp: concepto.ObjetoImpuesto,
-    //     })),
-    //     TotalImpuestosTrasladados: TotalTraslados,
-    //     TotalImpuestosRetenidos: TotalRetenciones,
-    //   },
       Complemento: {
-        Pagos: {
-          Version: "2.0",
-          Pagos: [
-            {
-              FechaPago: data.FechaPago || "2025-10-01T00:00:00",
-              FormaDePagoP: "PUE",
-              Moneda: "MXN",
-              TipoCambioP: "1",
-              
-              DoctoRelacionados: [
-                {
-                  IdDocumento: doctosRelacionados.IdDocumento,
-                  Serie: doctosRelacionados.Serie || "",
-                  Folio: doctosRelacionados.Folio || "",
-                  MonedaDR: doctosRelacionados.MonedaDR || "MXN",
-                  Numparcialidad: doctosRelacionados.NumParcialidad || "1",
-                  ImpSaldoAnt: doctosRelacionados.ImpSaldoAnt || 0,
-                  ImpPagado: parseFloat(doctosRelacionados.ImpPagado),
-                  ImpSaldoInsoluto: parseFloat(doctosRelacionados.ImpSaldoInsoluto) || 0,
-                  ObjetoImpDr: "02",
-                },
-              ],
-            },
-          ],
-        },
-      },
+        Pagos: complementoPagos
+      }
     };
-    console.log("Factura Vista Previa Pago", factura);
+
+    console.log("Factura formateada para Pago:", factura);
   }
+  
   return factura;
 }
