@@ -336,7 +336,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         />
       </Box>
       <Box mt={4}>
-        {/* 
+        
         {totalesImpuestos.length > 0 ? (
           totalesImpuestos.map((impuesto, index) => (
             <Box key={index}>
@@ -381,14 +381,9 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           ))
         ) : (
           ""
-          // <Typography variant="body2">No hay totales de impuestos calculados.</Typography>
-        )} */}
+        )} 
       </Box>
-      {/* <pre> {"Prueba" + JSON.stringify(getValues("SeriePagos"), null, 2)}</pre> */}
-      {/* <pre> {JSON.stringify(totalesImpuestos,null,2)}</pre>
-      <pre> {JSON.stringify(totales,null,2)}</pre> */}
-      {/* <pre> {JSON.stringify(getValues("FechaPago"),null,2)}</pre> */}
-      {/* <pre> {JSON.stringify( parseFloat(pagos.saldo - getValues("Monto")))}</pre> */}
+
       {children}
 
     </Box>

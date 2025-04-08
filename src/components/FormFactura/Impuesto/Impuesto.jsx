@@ -29,7 +29,7 @@ export default function Impuesto({
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
         if (impuestoEditor) {
-            console.log("Impues a editar", impuestoEditor)
+            console.log("Impuestos a editar", impuestoEditor)
             // setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');

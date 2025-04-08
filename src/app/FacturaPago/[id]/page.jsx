@@ -165,10 +165,12 @@ export default function FacturaPago() {
           });
           let doctosRelacionados = await responsePagos.json();
           console.log("Doctos relacionados a enviar", doctosRelacionados);
+          console.log("Datos del formulario", data);
+          console.log("Factura original", facturaOriginal);
       
           // Formatear factura (ahora pasamos facturaOriginal también)
           const factura = FormatearFactura(
-            facturaOriginal, // Pasamos la factura original
+            facturaOriginal,
             data, 
             doctosRelacionados,
             "",
@@ -178,19 +180,19 @@ export default function FacturaPago() {
           console.log("Datos finales a enviar:", factura);
       
           // Guardar factura
-          await GuardarFactura(
-            factura,
-            (message) => {
-              setSnackbarMessage(message);
-              setSnackbarSeverity('success');
-              setOpenSnackbar(true);
-              setTimeout(() => router.push("/Home"), 1000);
-            },
-            (error) => {
-              throw error;
-            },
-            { token }
-          );
+        //   await GuardarFactura(
+        //     factura,
+        //     (message) => {
+        //       setSnackbarMessage(message);
+        //       setSnackbarSeverity('success');
+        //       setOpenSnackbar(true);
+        //       setTimeout(() => router.push("/Home"), 1000);
+        //     },
+        //     (error) => {
+        //       throw error;
+        //     },
+        //     { token }
+        //   );
       
         } catch (error) {
           console.error("Error al guardar:", error);
