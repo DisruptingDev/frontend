@@ -104,6 +104,12 @@ const VistaFacturasImportadas = ({
                                 Receptor
                             </TableCell>
                             <TableCell sx={{ fontSize: "1rem", fontWeight: "bold", color: "white", textAlign: "center" }}>
+                                Serie
+                            </TableCell>
+                            <TableCell sx={{ fontSize: "1rem", fontWeight: "bold", color: "white", textAlign: "center" }}>
+                                Uso CFDI
+                            </TableCell>
+                            <TableCell sx={{ fontSize: "1rem", fontWeight: "bold", color: "white", textAlign: "center" }}>
                                 Concepto
                             </TableCell>
                             <TableCell sx={{ fontSize: "1rem", fontWeight: "bold", color: "white", textAlign: "center" }}>
@@ -146,6 +152,20 @@ const VistaFacturasImportadas = ({
                                 ) : (
                                     <TableCell sx={{ textAlign: "center" }}>
                                         {factura.Receptor.Nombre || factura.Receptor.RFC}
+                                    </TableCell>
+                                )}
+                                {factura.Emisor.Error === "record not found" ? (
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>Serie no encontrada</TableCell>
+                                ) : (
+                                    <TableCell sx={{ textAlign: "center" }}>
+                                        {factura.Emisor.Serie || factura.Receptor.RFC}
+                                    </TableCell>
+                                )}
+                                {factura.Receptor.Error === "record not found" ? (
+                                    <TableCell sx={{ textAlign: "center", color: "red" }}>Receptor no encontrado</TableCell>
+                                ) : (
+                                    <TableCell sx={{ textAlign: "center" }}>
+                                        {factura.Receptor.UsoCFDI || factura.Receptor.RFC}
                                     </TableCell>
                                 )}
                                 <TableCell sx={{ textAlign: "center" }}>{factura.Concepto.Descripcion}</TableCell>
