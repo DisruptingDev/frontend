@@ -177,6 +177,8 @@ export default function FormatearFactura(
       ObjetoImpDR: "02",
       NumeroOperacion: parseInt(data.NumeroOperacion) || "",
       NumParcialidad: parseInt(data.NumeroOperacion) || "",
+      Total: facturaOriginal.Total || 0.00,
+      EmisorID: facturaOriginal.EmisorID || "",
       NombreEmisor: data.NombreEmisor || "",
       RegimenFiscalEmisor: data.RegimenFiscalEmisor || "",
       RFCEmisor: data.RFCEmisor || "",
@@ -184,7 +186,51 @@ export default function FormatearFactura(
       RFCReceptor: data.RFCReceptor || "",
       RegimenFiscalReceptor: data.RegimenFiscal || "",
       DomicilioFiscalReceptor: data.DomicilioFiscalReceptor || "",
-    }
+    //   Conceptos: {
+    //     ListaConceptos: conceptos.map((concepto) => ({
+    //       ClaveProdServ: String(concepto.ClaveProdServ),
+    //       NoIdentificacion: concepto.NoIdentificacion || "",
+    //       Cantidad: parseInt(concepto.Cantidad, 10),
+    //       ClaveUnidad: String(concepto.ClaveUnidad),
+    //       Unidad: concepto.Unidad || "",
+    //       Descripcion: concepto.Descripcion,
+    //       ValorUnitario: concepto.ValorUnitario,
+    //       Importe: concepto.Subtotal,
+    //       Descuento: concepto.Descuento,
+    //       ObjetoImp: concepto.ObjetoImpuesto,
+    //     })),
+    //     TotalImpuestosTrasladados: TotalTraslados,
+    //     TotalImpuestosRetenidos: TotalRetenciones,
+    //   },
+      Complemento: {
+        Pagos: {
+          Version: "2.0",
+          Pagos: [
+            {
+              FechaPago: data.FechaPago || "2025-10-01T00:00:00",
+              FormaDePagoP: "PUE",
+              Moneda: "MXN",
+              TipoCambioP: "1",
+              
+              DoctoRelacionados: [
+                {
+                  IdDocumento: doctosRelacionados.IdDocumento,
+                  Serie: doctosRelacionados.Serie || "",
+                  Folio: doctosRelacionados.Folio || "",
+                  MonedaDR: doctosRelacionados.MonedaDR || "MXN",
+                  Numparcialidad: parseInt(doctosRelacionados.NumParcialidad) || "1",
+                  ImpSaldoAnt: doctosRelacionados.ImpSaldoAnt || 0,
+                  ImpPagado: parseFloat(doctosRelacionados.ImpPagado),
+                  ImpSaldoInsoluto: parseFloat(doctosRelacionados.ImpSaldoInsoluto) || 0,
+                  ObjetoImpDr: "02",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+    console.log("Factura Vista Previa Pago", factura);
   }
   return factura;
 }

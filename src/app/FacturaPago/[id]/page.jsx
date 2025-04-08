@@ -174,7 +174,7 @@ export default function FacturaPago() {
             data, 
             doctosRelacionados,
             "",
-            "Pago"
+            "Factura"
           );
       
           console.log("Datos finales a enviar:", factura);

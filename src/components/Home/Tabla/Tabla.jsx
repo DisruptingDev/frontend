@@ -675,7 +675,7 @@ export default function DataTable({ token, filtro }) {
                         }
                         {
                           menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
-                            <MenuItem key="pago" onClick={handleFacturaPago}>Comprobante de Pago</MenuItem>
+                            <MenuItem key="pago" onClick={handleFacturaPago}>Complemento de Pago</MenuItem>
                           ]
                         }
 
