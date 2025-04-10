@@ -1,229 +1,120 @@
-import * as React from "react";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Container from "@mui/material/Container";
-import IconButton from "@mui/material/IconButton";
-import InputLabel from "@mui/material/InputLabel";
-import Link from "@mui/material/Link";
-import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
-import Typography from "@mui/material/Typography";
-import GitHubIcon from "@mui/icons-material/GitHub";
-import LinkedInIcon from "@mui/icons-material/LinkedIn";
-import TwitterIcon from "@mui/icons-material/Twitter"; // Cambia 'X' a 'Twitter'
-import Image from "next/image";
+'use client';
+import { Box, Container, Grid, Typography, Link, IconButton, useTheme, useMediaQuery } from '@mui/material';
+import { Facebook, Twitter, Instagram, LinkedIn, Email, Phone, LocationOn } from '@mui/icons-material';
 
-function Copyright() {
+const Footer = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   return (
-    <Typography variant="body2" sx={{ color: "text.secondary", mt: 1 }}>
-      {"Copyright © "}
-      <Link color="text.secondary" href="https://mui.com/">
-        Sitemark
-      </Link>
-      &nbsp;
-      {new Date().getFullYear()}
-    </Typography>
-  );
-}
-
-export default function Footer() {
-  return (
-    <Container
+    <Box
+      component="footer"
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: { xs: 4, sm: 8 },
-        py: { xs: 8, sm: 10 },
-        textAlign: { sm: "center", md: "left" },
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        py: 4,
+        mt: 'auto',
+        borderTop: `1px solid ${theme.palette.divider}`
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          width: "100%",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            minWidth: { xs: "100%", sm: "60%" },
-          }}
-        >
-          <Image
-            src="/images/Logo_wise_factura.png"
-            alt="Wise Factura Logo"
-            width={203}
-            height={64}
-          />
-          <Box sx={{ width: { xs: "100%", sm: "60%" } }}>
-            <Typography
-              variant="body2"
-              gutterBottom
-              sx={{ fontWeight: 600, mt: 2 }}
-            >
-              Unete a nuestro newsletter
+      <Container maxWidth="lg">
+        <Grid container spacing={4}>
+          {/* Sección de Información */}
+          <Grid item xs={12} md={4}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              Facturación Electrónica
             </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
-              Recibe informacion mensual en tu correo
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Sistema integral de facturación electrónica y gestión empresarial.
             </Typography>
-            <InputLabel htmlFor="email-newsletter">Correo</InputLabel>
-            <Stack direction="row" spacing={1} useFlexGap>
-              <TextField
-                id="email-newsletter"
-                hiddenLabel
-                size="small"
-                variant="outlined"
-                fullWidth
-                aria-label="Enter your email address"
-                placeholder="Correo electrónico"
-                slotProps={{
-                  htmlInput: {
-                    autoComplete: "off",
-                    "aria-label": "Enter your email address",
-                  },
-                }}
-                sx={{ width: "250px" }}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                sx={{ flexShrink: 0 }}
-              >
-                Subscribe
-              </Button>
-            </Stack>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: { xs: "none", sm: "flex" },
-            flexDirection: "column",
-            gap: 1,
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-            Product
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <IconButton aria-label="Facebook" color="inherit">
+                <Facebook />
+              </IconButton>
+              <IconButton aria-label="Twitter" color="inherit">
+                <Twitter />
+              </IconButton>
+              <IconButton aria-label="Instagram" color="inherit">
+                <Instagram />
+              </IconButton>
+              <IconButton aria-label="LinkedIn" color="inherit">
+                <LinkedIn />
+              </IconButton>
+            </Box>
+          </Grid>
+
+          {/* Enlaces rápidos */}
+          <Grid item xs={6} md={2}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              Enlaces
+            </Typography>
+            <Link href="/Home" color="inherit" underline="hover" display="block" mb={1}>
+              Inicio
+            </Link>
+            <Link href="/CrearFactura" color="inherit" underline="hover" display="block" mb={1}>
+              Facturación
+            </Link>
+            <Link href="/AltaCliente" color="inherit" underline="hover" display="block" mb={1}>
+              Clientes
+            </Link>
+            <Link href="/Empresas" color="inherit" underline="hover" display="block" mb={1}>
+              Empresas
+            </Link>
+          </Grid>
+
+          {/* Soporte */}
+          <Grid item xs={6} md={3}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              Soporte
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Phone fontSize="small" sx={{ mr: 1 }} />
+              <Typography variant="body2">+52 55 1234 5678</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Email fontSize="small" sx={{ mr: 1 }} />
+              <Typography variant="body2">soporte@facturacion.com</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <LocationOn fontSize="small" sx={{ mr: 1 }} />
+              <Typography variant="body2">Ciudad de México, MX</Typography>
+            </Box>
+          </Grid>
+
+          {/* Legal */}
+          <Grid item xs={12} md={3}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              Legal
+            </Typography>
+            <Link href="/terminos" color="inherit" underline="hover" display="block" mb={1}>
+              Términos y condiciones
+            </Link>
+            <Link href="/privacidad" color="inherit" underline="hover" display="block" mb={1}>
+              Política de privacidad
+            </Link>
+            <Link href="/cookies" color="inherit" underline="hover" display="block" mb={1}>
+              Política de cookies
+            </Link>
+          </Grid>
+        </Grid>
+
+        {/* Derechos de autor */}
+        <Box sx={{ 
+          mt: 4, 
+          pt: 2, 
+          borderTop: `1px solid ${theme.palette.primary.light}`,
+          textAlign: 'center'
+        }}>
+          <Typography variant="body2">
+            © {new Date().getFullYear()} Sistema de Facturación Electrónica. Todos los derechos reservados.
           </Typography>
-          <Link color="text.secondary" variant="body2" href="#">
-            Features
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Testimonials
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Highlights
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Pricing
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            FAQs
-          </Link>
-        </Box>
-        <Box
-          sx={{
-            display: { xs: "none", sm: "flex" },
-            flexDirection: "column",
-            gap: 1,
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-            Company
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Versión 1.0.0
           </Typography>
-          <Link color="text.secondary" variant="body2" href="#">
-            About us
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Careers
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Press
-          </Link>
         </Box>
-        <Box
-          sx={{
-            display: { xs: "none", sm: "flex" },
-            flexDirection: "column",
-            gap: 1,
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: "medium" }}>
-            Legal
-          </Typography>
-          <Link color="text.secondary" variant="body2" href="#">
-            Terms
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Privacy
-          </Link>
-          <Link color="text.secondary" variant="body2" href="#">
-            Contact
-          </Link>
-        </Box>
-      </Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          pt: { xs: 4, sm: 8 },
-          width: "100%",
-          borderTop: "1px solid",
-          borderColor: "divider",
-        }}
-      >
-        <div>
-          <Link color="text.secondary" variant="body2" href="#">
-            Privacy Policy
-          </Link>
-          <Typography sx={{ display: "inline", mx: 0.5, opacity: 0.5 }}>
-            &nbsp;•&nbsp;
-          </Typography>
-          <Link color="text.secondary" variant="body2" href="#">
-            Terms of Service
-          </Link>
-          <Copyright />
-        </div>
-        <Stack
-          direction="row"
-          spacing={1}
-          useFlexGap
-          sx={{ justifyContent: "left", color: "text.secondary" }}
-        >
-           {/* <IconButton
-            color="inherit"
-            size="small"
-            href="https://github.com/mui"
-            aria-label="GitHub"
-            sx={{ alignSelf: "center" }}
-          >
-            <GitHubIcon />
-          </IconButton>
-          <IconButton
-            color="inherit"
-            size="small"
-            href="https://twitter.com/MaterialUI"
-            aria-label="Twitter"
-            sx={{ alignSelf: "center" }}
-          >
-            <TwitterIcon />
-          </IconButton>
-          <IconButton
-            color="inherit"
-            size="small"
-            href="https://www.linkedin.com/company/mui/"
-            aria-label="LinkedIn"
-            sx={{ alignSelf: "center" }}
-          >
-            <LinkedInIcon />
-          </IconButton>  */}
-        </Stack>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
-}
+};
+
+export default Footer;

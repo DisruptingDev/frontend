@@ -543,7 +543,7 @@ export default function DataTable({ token, filtro }) {
   };
 
   return (
-    <Box bgcolor="white" mx={4} p={4}>
+    <Box bgcolor="white" my={2}>
       <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
         <Button
           variant="contained"

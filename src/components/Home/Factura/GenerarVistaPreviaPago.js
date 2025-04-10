@@ -180,19 +180,6 @@ const fillTemplate = async (template, data) => {
 
   let qrImageBase64 = "";
 
-  if (factura.uuid) {
-    const firma = factura.Certificado;
-    const ultimos8 = firma.slice(-8);
-    const cadenaQr = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?&id=${factura.uuid}&re=${factura.Emisor.Rfc}&rr=${factura.Receptor.Rfc}&tt=${factura.Total}&fe=${ultimos8}`;
-    // Generar código QR dinámico desde la cadena
-    try {
-      qrImageBase64 = await QRCode.toDataURL(cadenaQr, {
-        errorCorrectionLevel: "H",
-      });
-    } catch (error) {
-      console.error("Error al generar el código QR:", error);
-    }
-  }
   console.log("Data", data);
 
   console.log("Monto", data.Monto);
@@ -309,7 +296,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{lugarExpedicion}}", factura.LugarExpedicion)
       .replace("{{conceptos}}", conceptosHTML)
       // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)
-      .replace("{{divisa}}", factura.Moneda)
+      .replace("{{divisa}}", factura.MonedaDR)
       .replace("{{selloCFDI}}", factura.Sello || "<br><br>")
       .replace("{{selloSAT}}", factura.selloSAT || "<br><br>")
       .replace("{{cadenaSAT}}", factura.cadenaOriginalSAT || "<br><br>")
@@ -322,7 +309,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{metodoPago}}", metodoPago)
       .replace("{{condicionesPago}}", factura.CondicionesDePago || "")
       .replace("{{regimenFiscal}}", RegimenFiscalReceptor)
-      .replace("{{usoCFDI}}", usoCFDI)
+      .replace("{{usoCFDI}}", "PUE")
       .replace("{{ImportePago}}", parseFloat(factura.MontoPago).toFixed(2) || "0.00")
       .replace("{{Base}}", Base || "0.00")
       .replace("{{ImporteTraslado}}", parseFloat(factura.MontoPago).toFixed(2) * 0.16 || "0.00")

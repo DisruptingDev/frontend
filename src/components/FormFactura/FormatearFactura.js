@@ -48,9 +48,9 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             Confirmacion: "",
             //Checar
             InformacionGlobal: {
-                Año: receptor.Año || "",
-                Meses: receptor.Meses || "",
-                Periodicidad: receptor.Periodicidad || "",
+                Anio: receptor.Año || "01",
+                Meses: receptor.Meses || "01",
+                Periodicidad: receptor.Periodicidad || "2025",
 
             },
             EmisorID: emisor.Emisor,

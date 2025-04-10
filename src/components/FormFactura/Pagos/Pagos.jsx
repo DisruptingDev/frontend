@@ -92,15 +92,20 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     );
 
     const nuevoDesglose = conceptos.map((concepto) => {
-
       const totalConcepto = concepto.Subtotal + concepto.TotalTraslados;
       const proporcion = totalConcepto / totalFactura;
       const pagoParcial = monto * proporcion;
 
       const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
-        //console.log("Impuesto proporcional", impuesto);
-        const baseProporcional = (impuesto.BaseImpuesto / totalConcepto) * pagoParcial;
+        // Calcular la proporción del subtotal sin impuestos
+        const proporcionSubtotal = concepto.Subtotal / totalConcepto;
+        const baseProporcional = pagoParcial / (1 + impuesto.TasaOCuota);
         const montoProporcional = baseProporcional * impuesto.TasaOCuota;
+
+        // console.log("BaseProporcional", baseProporcional);
+        // console.log("MontoProporcional", montoProporcional);
+        // console.log("PagoParcial", pagoParcial);
+
         return {
           ImpuestoCatalogoID: impuesto.Impuesto || 0,
           TipoImpuesto: impuesto.TipoImpuesto,
@@ -145,19 +150,18 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         }
       });
     });
-    // Calcular totales globales directamente
+
     const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
       const key = `Total${impuesto.TipoImpuesto}sImpuesto${impuesto.NombreImpuesto}${impuesto.TasaOCuota * 100}`;
       acc[key] = (acc[key] || 0) + parseFloat(impuesto.Importe);
       return acc;
     }, {});
+
     setTotales(nuevosTotales);
     setValue("Totales", nuevosTotales);
-
     setDesglose(nuevoDesglose);
     setTotalesImpuestos(nuevosTotalesImpuestos);
     setValue("ImpuestosPagos", nuevosTotalesImpuestos);
-
   };
 
   useEffect(() => {
@@ -336,7 +340,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         />
       </Box>
       <Box mt={4}>
-        
+
         {totalesImpuestos.length > 0 ? (
           totalesImpuestos.map((impuesto, index) => (
             <Box key={index}>
@@ -381,7 +385,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           ))
         ) : (
           ""
-        )} 
+        )}
       </Box>
 
       {children}

@@ -18,6 +18,7 @@ import { isAuthenticated } from "@/utils/authRedirect";
 // Componente de diseño de Material-UI
 import { Box } from "@mui/material";
 import Grid from '@mui/material/Unstable_Grid2';
+import Footer from "@/components/Footer/Footer";
 
 // Componente principal de la página Home
 export default function Home() {
@@ -65,23 +66,20 @@ export default function Home() {
     }
         , [newUser]);
 
-
-
-    // Renderizado del componente
     return (
         <div>
-            <Header token={token}/>
+            <Header token={token} />
             <Grid container>
-                {/* SideBarMenu con ancho fijo */}
-                <Grid item xs={1}>
+                <Grid>
                     <SideBarMenu />
                 </Grid>
 
                 {/* Contenedor principal que ocupa el espacio restante */}
-                <Grid item xs={11} sx={{ flexGrow: 1 }}>
+                <Grid>
                     <Box
                         bgcolor="white"
-                        mx={4}
+                        ml={10}
+                        mr={1}
                         p={2}
                         boxShadow={3}
                         borderRadius={2}

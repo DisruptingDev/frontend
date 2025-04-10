@@ -112,10 +112,9 @@ export default function SearchFilter({ setFiltro }) {
         <Box
             sx={{
                 backgroundColor: "#063F53",
-                padding: "16px",
-                borderRadius: "8px",
+                padding: "14px",
+                borderRadius: "4px",
                 boxShadow: 1,
-                margin: 1,
                 mt: 1,
             }}
         >

@@ -1,3 +1,5 @@
+import { uuid } from "valibot";
+
 export default function FormatearFactura(
   facturaOriginal,
   data,
@@ -66,24 +68,24 @@ export default function FormatearFactura(
           Impuestos: {
             Traslados: [
               {
-                Base: parseInt(data.Monto) - parseInt(data.Monto) * 0.16 || 0,
-                ImpuestoCatalogoID: 2,
-                ImpuestoClave: "002",
-                TipoFactor: "Tasa",
-                TasaOCuota: 0.16,
-                TasaCatalogoID: 21,
-                Importe: parseInt(data.Monto) * 0.16
+                Base: data.ImpuestosPagos[0].Base,
+                ImpuestoCatalogoID: data.ImpuestosPagos[0].ImpuestoCatalogoID || 0,
+                ImpuestoClave: data.ImpuestosPagos[0].ImpuestoClave || "002",
+                TipoFactor: data.ImpuestosPagos[0].TipoFactoe || "Tasa",
+                TasaOCuota: data.ImpuestosPagos[0].TasaOCuota || 0.16,
+                TasaCatalogoID: data.ImpuestosPagos[0].ImpuestoCatalogoID || 0,
+                Importe: data.ImpuestosPagos[0].Importe || 0,
               }
             ],
             Retenciones: [
               {
-                Base: parseInt(data.Monto) - parseInt(data.Monto) * 0.16 || 0,
-                ImpuestoCatalogoID: 2,
-                ImpuestoClave: "002",
-                TipoFactor: "Tasa",
-                TasaOCuota: 0.16,
-                TasaCatalogoID: 21,
-                Importe: parseInt(data.Monto) * 0.16
+                Base: 0,
+                ImpuestoCatalogoID: 0,
+                ImpuestoClave: "",
+                TipoFactor: "",
+                TasaOCuota: 0,
+                TasaCatalogoID: 0,
+                Importe: 0
               }
             ]
           }
@@ -158,10 +160,15 @@ export default function FormatearFactura(
     console.log("Factura Vista Previa Pago", factura);
   } else if (modo === "VistaPreviaPago") {
     factura = {
+      Version: "4.0",
+      Serie: data.SeriePagos || "P",
       FechaPago: data.FechaPago || fechaActual,
+      uuid: "",
+      TipoDeComprobante: "P",
       Fecha: data.Fecha || fechaActual,
       Calle: data.Calle || "",
       NoExterior: data.NoExterior || "",
+      Exportacion: "01",
       NoInterior: data.NoInterior || "",
       Colonia: data.Colonia || "",
       Municipio: data.Municipio || "",

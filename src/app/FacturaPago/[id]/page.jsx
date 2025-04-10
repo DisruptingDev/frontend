@@ -149,58 +149,58 @@ export default function FacturaPago() {
     // Enviar el formulario
     const onSubmit = async (data) => {
         try {
-          if (conceptos.length === 0) {
-            throw new Error('Debe agregar al menos un concepto');
-          }
-      
-          // Obtener factura original
-          const responseFactura = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const facturaOriginal = await responseFactura.json();
-      
-          // Obtener documentos relacionados
-          const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          let doctosRelacionados = await responsePagos.json();
-          console.log("Doctos relacionados a enviar", doctosRelacionados);
-          console.log("Datos del formulario", data);
-          console.log("Factura original", facturaOriginal);
-      
-          // Formatear factura (ahora pasamos facturaOriginal también)
-          const factura = FormatearFactura(
-            facturaOriginal,
-            data, 
-            doctosRelacionados,
-            "",
-            "Factura"
-          );
-      
-          console.log("Datos finales a enviar:", factura);
-      
-          // Guardar factura
-        //   await GuardarFactura(
-        //     factura,
-        //     (message) => {
-        //       setSnackbarMessage(message);
-        //       setSnackbarSeverity('success');
-        //       setOpenSnackbar(true);
-        //       setTimeout(() => router.push("/Home"), 1000);
-        //     },
-        //     (error) => {
-        //       throw error;
-        //     },
-        //     { token }
-        //   );
-      
+            if (conceptos.length === 0) {
+                throw new Error('Debe agregar al menos un concepto');
+            }
+
+            // Obtener factura original
+            const responseFactura = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const facturaOriginal = await responseFactura.json();
+
+            // Obtener documentos relacionados
+            const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            let doctosRelacionados = await responsePagos.json();
+            console.log("Doctos relacionados a enviar", doctosRelacionados);
+            console.log("Datos del formulario", data);
+            console.log("Factura original", facturaOriginal);
+
+            // Formatear factura (ahora pasamos facturaOriginal también)
+            const factura = FormatearFactura(
+                facturaOriginal,
+                data,
+                doctosRelacionados,
+                "",
+                "Pago"
+            );
+
+            console.log("Datos finales a enviar:", factura);
+
+            // Guardar factura
+            await GuardarFactura(
+                factura,
+                (message) => {
+                    setSnackbarMessage(message);
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+                    setTimeout(() => router.push("/Home"), 1000);
+                },
+                (error) => {
+                    throw error;
+                },
+                { token }
+            );
+
         } catch (error) {
-          console.error("Error al guardar:", error);
-          setSnackbarMessage(error.message);
-          setSnackbarSeverity('error');
-          setOpenSnackbar(true);
+            console.error("Error al guardar:", error);
+            setSnackbarMessage(error.message);
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
         }
-      };
+    };
 
     // Vista previa
     const handlePreview = handleSubmit(async (data) => {
@@ -230,7 +230,7 @@ export default function FacturaPago() {
 
             console.log("Data para vista previa", data);
             // Formatear la factura incluyendo los pagos relacionados
-            const factura = FormatearFactura(facturaOriginal, data, doctosRelacionados, "", "Pago");
+            const factura = FormatearFactura(facturaOriginal, data, doctosRelacionados, "", "VistaPreviaPago");
 
             // Generar vista previa con los datos completos
             const vistaPrevia = await generarVistaPrevia(factura, doctosRelacionados);
@@ -320,7 +320,7 @@ export default function FacturaPago() {
                     </Snackbar>
                 </Grid>
             </Grid>
-            
+
         </div>
     );
 }
