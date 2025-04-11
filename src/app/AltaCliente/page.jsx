@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente";
-import VistaClientes from "@/components/ViastaClientes/VistaClientes";
+import VistaClientes from "@/components/VistaClientes/VistaClientes";
 import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
@@ -81,8 +81,15 @@ export default function RegistroClientes() {
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
                             <Button
                                 variant="contained"

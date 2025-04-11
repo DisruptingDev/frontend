@@ -1,13 +1,13 @@
+"use client"
 import React, { useState, useEffect, useCallback } from 'react';
 import MUIDataTable from "mui-datatables";
 import { ThemeProvider, createTheme, Box, CircularProgress, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import textLabels from "@/components/DataTables/datatablesTextLabels";
-
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
-    const [emisores, setEmisores] = useState([]);
+const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
+    const [receptores, setReceptores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
@@ -23,8 +23,7 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                         },
                         paper: {
                             boxShadow: "none",
-                            overflowX: "auto",
-                            width: "100%"
+                            overflowX: "auto"
                         },
                     },
                 },
@@ -35,17 +34,15 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                             color: "white",
                             fontWeight: "bold",
                             textAlign: "center",
-                            whiteSpace: "nowrap",
-                            padding: "12px"
+                            whiteSpace: "nowrap"
                         },
                     },
                 },
                 MUIDataTableBodyCell: {
                     styleOverrides: {
                         root: {
-                            padding: "12px",
+                            padding: "8px",
                             textAlign: "center",
-                            whiteSpace: "nowrap"
                         },
                     },
                 },
@@ -64,29 +61,28 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
 
     const handleEditar = () => {
         if (menuRow) {
-            setEmpresaIdEditar(menuRow.ID);
+            setClienteIdEditar(menuRow.ID);
             handleMenuClose();
         }
     };
 
-    const fetchEmisores = useCallback(async () => {
+    const fetchReceptores = useCallback(async () => {
         if (token) {
             try {
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
                 });
                 const data = await response.json();
-                
                 if (Array.isArray(data)) {
                     const sortedData = data.sort((a, b) => b.ID - a.ID);
-                    setEmisores(sortedData);
+                    setReceptores(sortedData);
                 } else {
                     console.error('Expected an array but received:', typeof data);
                 }
             } catch (error) {
-                console.error('Error fetching emisores:', error);
+                console.error('Error fetching receptores:', error);
             } finally {
                 setLoading(false);
             }
@@ -94,14 +90,14 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
     }, [token]);
 
     useEffect(() => {
-        fetchEmisores();
-    }, [fetchEmisores, token]);
+        fetchReceptores();
+    }, [fetchReceptores, token]);
 
     useEffect(() => {
         if (actualizar) {
-            fetchEmisores();
+            fetchReceptores();
         }
-    }, [actualizar, fetchEmisores]);
+    }, [actualizar, fetchReceptores]);
 
     // Columnas de la tabla
     const columns = [
@@ -111,16 +107,6 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
             options: {
                 filter: true,
                 sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
-            }
-        },
-        {
-            name: "Nombre",
-            label: "Nombre",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
             }
         },
         {
@@ -129,26 +115,38 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
             options: {
                 filter: true,
                 sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
             }
         },
         {
-            name: "Timbres",
-            label: "Timbres Disponibles",
+            name: "Nombre",
+            label: "Nombre",
             options: {
                 filter: true,
                 sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
             }
         },
         {
-            name: "Estatus",
-            label: "Estatus",
+            name: "RegimenFiscalReceptor",
+            label: "Régimen Fiscal",
             options: {
                 filter: true,
                 sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } }),
-                customBodyRender: () => "Activa"
+            }
+        },
+        {
+            name: "DomicilioFiscalReceptor",
+            label: "Domicilio Fiscal",
+            options: {
+                filter: true,
+                sort: true,
+            }
+        },
+        {
+            name: "UsoCFDI",
+            label: "Uso CFDI",
+            options: {
+                filter: true,
+                sort: true,
             }
         },
         {
@@ -157,37 +155,28 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
             options: {
                 filter: false,
                 sort: false,
-                setCellProps: () => ({ style: { textAlign: 'center' } }),
                 customBodyRender: (value, tableMeta) => {
-                    const emisor = emisores[tableMeta.rowIndex];
+                    const receptor = receptores[tableMeta.rowIndex];
+                    if (receptor.Rfc === 'XAXX010101000') return null;
+                    
                     return (
-                        <div>
-                            <IconButton onClick={(event) => handleMenuClick(event, emisor)}>
+                        <>
+                            <IconButton onClick={(event) => handleMenuClick(event, receptor)}>
                                 <MoreVertIcon />
                             </IconButton>
                             <Menu
                                 anchorEl={anchorEl}
-                                open={Boolean(anchorEl) && menuRow?.ID === emisor.ID}
+                                open={Boolean(anchorEl) && menuRow?.ID === receptor.ID}
                                 onClose={handleMenuClose}
                             >
                                 <MenuItem onClick={handleEditar}>Editar</MenuItem>
                             </Menu>
-                        </div>
+                        </>
                     );
                 }
             }
         }
     ];
-
-    // Preparación de datos para la tabla
-    const tableData = emisores.map(emisor => [
-        emisor.ID,
-        emisor.Nombre,
-        emisor.Rfc,
-        emisor.Grupo?.TimbresDisponiblesPaquetes || 0,
-        "Activa", // Estatus fijo
-        null // Acciones (se renderiza con customBodyRender)
-    ]);
 
     // Opciones de la tabla
     const options = {
@@ -200,35 +189,28 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
         rowsPerPage: 10,
         rowsPerPageOptions: [10, 25, 50],
         textLabels: textLabels,
+        customBodyRender: {
+            noMatch: loading ? <CircularProgress /> : 'No hay clientes registrados'
+        },
         setTableProps: () => ({
             style: {
-                tableLayout: 'fixed',
-                width: '100%'
+                tableLayout: 'fixed'
             }
-        }),
-        onTableInit: (action, state) => {
-            console.log('Tabla inicializada:', state);
-        }
+        })
     };
 
     return (
-        <Box sx={{ width: '100%', overflow: 'hidden', p: 2 }}>
+        <Box sx={{ width: '100%', overflow: 'hidden' }}>
             <ThemeProvider theme={getMuiTheme()}>
-                {loading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="200px">
-                        <CircularProgress />
-                    </Box>
-                ) : (
-                    <MUIDataTable
-                        title={"Lista de Empresas"}
-                        data={tableData}
-                        columns={columns}
-                        options={options}
-                    />
-                )}
+                <MUIDataTable
+                    title={"Lista de Clientes"}
+                    data={receptores}
+                    columns={columns}
+                    options={options}
+                />
             </ThemeProvider>
         </Box>
     );
 };
 
-export default VistaEmpresas;
+export default VistaClientes;

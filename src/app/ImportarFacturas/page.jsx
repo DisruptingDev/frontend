@@ -140,8 +140,15 @@ export default function ImportarFacturas() {
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                <Grid   >
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
                             <Button
                                 variant="contained"
@@ -158,7 +165,7 @@ export default function ImportarFacturas() {
                                 Descargar Plantilla
                             </Button>
                         </Box>
-                        <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} actualizarFacturas={actualizarFacturas}/>
+                        <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} actualizarFacturas={actualizarFacturas} />
                         <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
                         <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
                         {facturas.length > 0 && (

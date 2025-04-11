@@ -86,11 +86,18 @@ export default function AdministraEmpresas() {
         <div>
             <Header />
             <Grid container>
-                <Grid item>
+                <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                <Grid >
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
 
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
                             <Button

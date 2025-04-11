@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import Header from '@/components/Header/Header.jsx';
 import AltaSerie from '@/components/AltaSerie/AltaSerie';
-import { Grid } from '@mui/material';
+import { Grid, Box } from '@mui/material';
 import { isAuthenticated } from '@/utils/authRedirect';
 import SideBarMenu from '@/components/Dashborard/SideBarMenu';
 
@@ -28,11 +28,20 @@ export default function RegistroSeries() {
         <div>
             <Header />
             <Grid container>
-                <Grid item>
+                <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <AltaSerie token={token} />
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
+                        <AltaSerie token={token} />
+                    </Box>
                 </Grid>
             </Grid>
         </div>

@@ -135,7 +135,7 @@ export default function AdministrarTimbres({ token }) {
     };
 
     return (
-        <Box bgcolor="white" my={0} mx={2} p={4} boxShadow={3} borderRadius={2}>
+        <Box>
             <Typography variant="h6" mb={4}>Administrar Timbres</Typography>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Box

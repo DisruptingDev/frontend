@@ -34,8 +34,18 @@ export default function Timbres() {
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <AdministrarTimbres token={token} />
+                <Grid item xs>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                        width={"93%"}
+                    >
+                        <AdministrarTimbres token={token} />
+                    </Box>
                 </Grid>
             </Grid>
         </div>

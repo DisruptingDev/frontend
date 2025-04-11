@@ -67,7 +67,7 @@ export default function AltaSerie({ token }) {
     };    
     
     return (
-        <Box bgcolor="white" my={0} mx={2} p={4} boxShadow={3} borderRadius={2}>
+        <Box>
             <Typography variant="h6" mb={4}>Alta de Serie</Typography>
             <form>
                 <Box
