@@ -84,7 +84,7 @@ export default function Home() {
                         boxShadow={3}
                         borderRadius={2}
                     >
-                        <SearchFilter setFiltro={setFiltro} />
+                        {/* <SearchFilter setFiltro={setFiltro} /> */}
                         <Tabla token={token} filtro={filtro} />
                     </Box>
                 </Grid>
