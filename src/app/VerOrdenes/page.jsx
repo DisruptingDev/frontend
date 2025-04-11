@@ -231,12 +231,19 @@ export default function VerOrdenes() {
   return (
     <div>
       <Header />
-      <Grid container>
-        <Grid item>
+      <Grid >
+        <Grid >
           <SideBarMenu />
         </Grid>
-        <Grid item sx={{ flexGrow: 1 }}>
-          <Box bgcolor="white" my={4} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Grid >
+          <Box
+            bgcolor="white"
+            ml={10}
+            mr={1}
+            p={2}
+            boxShadow={3}
+            borderRadius={2}
+          >
             <Tabs
               value={valorTab}
               onChange={manejarCambioTab}

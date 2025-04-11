@@ -69,12 +69,19 @@ export default function ValidarPPD() {
     return (
         <div>
             <Header />
-            <Grid container>
-                <Grid item>
+            <Grid>
+                <Grid >
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <Box sx={{ padding: "20px" }}>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
                         <MUIDataTable
                             title={"Validación de Facturas PPD"}
                             data={data}
