@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Arial", sans-serif;
+      }
+
+      /* Contenedor principal para la superposición */
+      .contenedor-principal {
+        position: relative;
+        max-width: 800px;
+        margin: auto;
+      }
+      
+      /* Estilo para el sello de CANCELADO */
+      .sello-cancelado {
+        position: absolute;
+        z-index: 100;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-15deg);
+        opacity: 0.6;
+        width: 550px;
+        pointer-events: none;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+      }
+
+      body {
+        background-color: #ffffff;
+        color: #333;
+        padding: 8px;
+        font-size: 11px !important;
+      }
+
+      .contenedor-factura {
+        background: #ffffff;
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        /* border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
+      }
+
+      .titulo {
+        background: #2a9d8f;
+        color: white;
+        text-align: center;
+        padding: 3px;
+        font-size: 1em;
+        border-radius: 8px;
+      }
+
+      .seccion {
+        padding: 15px;
+        border-bottom: 2px solid #2a9d8f;
+      }
+
+      .seccion h2 {
+        font-size: 0.8em;
+        color: #2a9d8f;
+        margin-bottom: 10px;
+      }
+
+      .datos {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .tabla-conceptos,
+      .tabla-pagos {
+        min-height: 100px;
+      }
+
+      .tabla-conceptos table,
+      .tabla-pagos table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .tabla-conceptos th,
+      .tabla-conceptos td,
+      .tabla-pagos th,
+      .tabla-pagos td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        font-size: smaller !important;
+      }
+
+      .tabla-conceptos th,
+      .tabla-pagos th {
+        background-color: #e0f2f1;
+        color: #333;
+      }
+
+      .seccion-pago-resultado {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 20px;
+      }
+
+      .tabla-pago-actual table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .tabla-pago-actual th,
+      .tabla-pago-actual td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+        font-size: smaller !important;
+      }
+
+      .tabla-pago-actual th {
+        background-color: #e0f2f1;
+        color: #333;
+      }
+
+      /* Contenedor principal */
+      .seccion-pago-resultado {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 20px;
+      }
+
+      /* Contenedor de la tabla compacta */
+      .pago table {
+        width: auto; /* Ancho ajustado al contenido */
+        min-width: 450px; /* Ancho mínimo para mantener estructura */
+        border-collapse: collapse;
+        font-size: 9px; /* Tamaño de fuente reducido */
+        margin: 5px 0;
+      }
+
+      /* Celdas compactas */
+      .pago th,
+      .pago td {
+        padding: 3px 4px; /* Padding reducido */
+        border: 1px solid #d1d1d1;
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      /* Encabezados principales */
+      .pago th[colspan="2"],
+      .pago th[colspan="3"] {
+        background-color: #2a9d8f;
+        color: white;
+        padding: 4px;
+        font-size: 9px;
+      }
+
+      /* Subencabezados */
+      .pago th {
+        background-color: #e0f2f1;
+        font-weight: normal; /* Menos prominente */
+      }
+
+      /* Eliminar bordes innecesarios */
+      .pago tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Asegurar que la tabla ocupe el ancho completo */
+      .pago {
+        display: block; /* Cambiado de flex a block para mejor control */
+        width: 80%;
+        max-width: 80%;
+      }
+
+      .resultado {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        flex: 1;
+        max-width: 40%;
+        width: 40%;
+      }
+
+      .resultado p {
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: #2a9d8f;
+      }
+
+      .certificado-qr {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 20px;
+        font-size: 8px;
+      }
+
+      .certificado-qr .certificado {
+        flex: 1; /* Permite que los sellos ocupen el espacio disponible */
+      }
+
+      .certificado-qr .codigo-qr {
+        flex: 1; /* Permite que el código QR ocupe el espacio disponible */
+        text-align: left; /* Alinea el código QR a la izquierda */
+        max-width: 12%; /* Limita el ancho del QR para que no se extienda demasiado */
+      }
+
+      .certificado-qr .certificado p {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        font-size: 8px;
+        max-width: 100%;
+        white-space: normal;
+      }
+
+      .emisor-receptor {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .emisor-receptor > div {
+        flex: 1;
+      }
+
+      .emisor-receptor img {
+        width: 100px;
+        height: auto;
+        object-fit: contain;
+      }
+
+      .letra {
+        background-color: #e0f2f1;
+        color: #333;
+        padding: 8px;
+        font-size: 8px !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="contenedor-principal">
+      <!-- Imagen de CANCELADO superpuesta -->
+      <img src="Cancelada.png" class="sello-cancelado" alt="CANCELADO" />
+      <div class="contenedor-factura">
+        <p class="titulo" style="font-size: 8px">
+          Esto es la representación gráfica de un CFDI
+        </p>
+
+        <div class="seccion">
+          <div class="datos">
+            <div>
+              <h3>CFDI: {{version}}</h3>
+              <p>Serie: {{serie}}</p>
+              <p>{{folioFactura}}</p>
+            </div>
+            <div>
+              <p>Fecha: {{fechaEmision}}</p>
+              <p>Folio Fiscal: {{folioFiscal}}</p>
+              <p>Tipo de Comprobante: {{TipoComprobante}}</p>
+              <p>Exportación: {{Exportacion}}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <h2>Datos Fiscales</h2>
+          <div class="emisor-receptor">
+            <!-- Nodo Emisor -->
+            <div>
+              <h3>Emisor</h3>
+              <p><strong>{{nombreEmisor}}</strong></p>
+              <p>RFC: {{rfcEmisor}}</p>
+              <p>Régimen Fiscal: {{regimenFiscalEmisor}}</p>
+              <p>Dirección: {{direccionEmisor}}</p>
+            </div>
+
+            <!-- Logo -->
+            <div style="text-align: center">{{logo}}</div>
+
+            <!-- Nodo Receptor -->
+            <div>
+              <h3>Receptor</h3>
+              <p><strong>{{nombreReceptor}}</strong></p>
+              <p>RFC: {{rfcReceptor}}</p>
+              <p>Uso CFDI: {{usoCFDI}}</p>
+              <p>Régimen Fiscal: {{regimenFiscalReceptor}}</p>
+              <p>Dirección: {{direccionReceptor}}</p>
+              <p>Domicilio Fiscal: {{CPReceptor}}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="seccion tabla-conceptos">
+          <h2>Conceptos</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  CLAVE PRODUCTO <br />
+                  SERVICIO
+                </th>
+                <th>NO. IDENTIFICACIÓN</th>
+                <th>CANTIDAD</th>
+                <th>CLAVE UNIDAD</th>
+                <th>UNIDAD</th>
+                <th>DESCRIPCIÓN</th>
+                <th>P. UNITARIO</th>
+                <th>IMPORTE</th>
+                <th>DESCUENTO</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{conceptos}}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="seccion tabla-pago-actual">
+          <h2>Información del Pago</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Forma de Pago</th>
+                <th>Moneda de Pago</th>
+                <th>Número de Operación</th>
+                <th>Monto</th>
+                <th>Tipo de Cambio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{fechaPago}}</td>
+                <td>{{formaPago}}</td>
+                <td>{{divisa}}</td>
+                <td>{{numeroOperacion}}</td>
+                <td>{{montoPago}}</td>
+                <td>{{tipoCambioPago}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="seccion tabla-pagos">
+          <h2>Documentos relacionados</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ID DOCUMENTO</th>
+                <th>SERIE</th>
+                <th>FOLIO</th>
+                <th>MONEDA</th>
+                <th>PARCIALIDAD</th>
+                <th>SALDO ANTERIOR</th>
+                <th>PAGADO</th>
+                <th>SALDO INSOLUTO</th>
+                <th>OBJETO IMP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{pagos}}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="seccion-pago-resultado">
+          <div class="pago">
+            <table>
+              <tr>
+                <th>IMPUESTO</th>
+                <th>TIPO</th>
+                <th>TASA O CUOTA</th>
+                <th>BASE</th>
+                <th>IMPORTE</th>
+              </tr>
+              <tr>
+                <td>IVA</td>
+                <td>$0.00</td>
+                <td>IVA 16%</td>
+                <td>${{Base}}</td>
+                <td>${{ImporteTraslado}}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="resultado">
+            <p>Subtotal: ${{subtotal}}</p>
+            <p>Descuento: ${{descuento}}</p>
+            <p>Total: <strong>${{total}}</strong></p>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="letra">
+            <h3>CANTIDAD CON LETRA</h3>
+            <p>{{totalLetra}}</p>
+          </div>
+        </div>
+
+        <div class="certificado-qr">
+          <div class="codigo-qr">{{qrCode}}</div>
+          <div class="certificado">
+            <p><strong>Sello Digital del CFDI:</strong> {{selloCFDI}}</p>
+            <p><strong>Sello del SAT:</strong> {{selloSAT}}</p>
+            <p><strong>Certificado SAT:</strong> {{serieCertificadoSAT}}</p>
+            <p>
+              <strong>Fecha de Certificación:</strong> {{fechaCertificacion}}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

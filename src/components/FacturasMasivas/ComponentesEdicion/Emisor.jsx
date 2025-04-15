@@ -1,124 +1,207 @@
-"use client" // Indica que es un componente del lado del cliente
-import React, { useState, useEffect } from 'react'; // Importa React y los hooks useState y useEffect
-import { TextField, Box, Typography } from '@mui/material'; // Importa componentes de Material-UI para la interfaz
-import Select from "@/components/Select/Select.jsx"; // Importa el componente Select personalizado
-import { format, parseISO } from 'date-fns'; // Importa funciones para formateo de fechas
+"use client";
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText } from '@mui/material';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL; // Obtiene la URL del API desde las variables de entorno
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// Componente para seleccionar el Emisor
 export default function Emisor({
-    datosEmisor, // Datos del emisor a editar
-    register, // Función de registro de react-hook-form
-    getValues, // Función para obtener los valores del formulario
-    setValue, // Función para establecer los valores del formulario
-    trigger, // Función para activar la validación de react-hook-form
-    errors // Función para obtener los errores de react-hook-form
+  datosEmisor,
+  register,
+  getValues,
+  setValue,
+  trigger,
+  errors,
+  emisorId
 }) {
-    const [emisor, setEmisor] = useState(null); // Estado para almacenar la información del emisor seleccionado
-    const [serieUrl, setSerieUrl] = useState(''); // Estado para manejar la URL de consulta de la serie
+  const [emisor, setEmisor] = useState(null);
+  const [emisores, setEmisores] = useState([]);
+  const [series, setSeries] = useState([]);
+  const [loading, setLoading] = useState({
+    emisores: false,
+    series: false
+  });
 
-    // Efecto para rellenar los valores del formulario cuando se va a editar 
-    useEffect(() => {
+  // Cargar emisores y series relacionadas al montar el componente
+  useEffect(() => {
+    const cargarDatosIniciales = async () => {
+      setLoading(prev => ({ ...prev, emisores: true }));
+      
+      try {
+        // 1. Cargar lista de emisores
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        const dataEmisores = await response.json();
+        setEmisores(Array.isArray(dataEmisores) ? dataEmisores : []);
+
+        // 2. Determinar el emisor inicial (prioridad: datosEmisor > emisorId)
+        let emisorInicial = null;
         if (datosEmisor) {
-            console.log('Datos emisor', datosEmisor);
-            //Asignas los valores
-            setValue("EmisorID", datosEmisor.ID);
-            setValue("Emisor", datosEmisor.ID);
-            setValue("EmisorNombre", datosEmisor.Nombre);
-            setValue("EmisorRFC", datosEmisor.RFC);
-            setValue("EmisorLugarExpedicion", datosEmisor.LugarExpedicion);
-            //Lanza la actualización de los valores
-            trigger("EmisorID", "Emisor", "EmisorNombre", "EmisorRFC", "LugarExpedicion");
-
-            setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${datosEmisor.ID}`); // Actualiza la URL de consulta de la serie
-
-            console.log("Serie", datosEmisor.Serie);
-
-            setValue("Serie", datosEmisor.Serie); // Establece la serie seleccionada
-            trigger("Serie"); // Activa la validación de la serie
+          emisorInicial = dataEmisores.find(e => e.ID === datosEmisor.ID);
+        } else if (emisorId) {
+          emisorInicial = dataEmisores.find(e => e.ID === emisorId);
         }
-    }, [datosEmisor, setValue, trigger]);
 
-    // Maneja el cambio del emisor seleccionado
-    const handleEmisorChange = (e) => {
-        try {
-            const data = JSON.parse(e.target.value);
-            setEmisor(data);
-            console.log("Nuevo emisor seleccionado", data);
-        } catch (error) {
-            console.error("Error al parsear el emisor seleccionado", error);
+        if (emisorInicial) {
+          // 3. Establecer el emisor inicial
+          setEmisor(emisorInicial);
+          setValue("Emisor", emisorInicial.ID);
+          setValue("EmisorID", emisorInicial.ID);
+          setValue("EmisorNombre", emisorInicial.Nombre);
+          setValue("EmisorRFC", emisorInicial.Rfc);
+          setValue("EmisorLugarExpedicion", emisorInicial.LugarExpedicion);
+          trigger(["Emisor", "EmisorID", "EmisorNombre", "EmisorRFC", "EmisorLugarExpedicion"]);
+
+          // 4. Cargar series del emisor inicial
+          await cargarSeries(emisorInicial.ID);
+          
+          // Si hay datosEmisor, establecer también la serie
+          if (datosEmisor?.Serie) {
+            setValue("Serie", datosEmisor.Serie);
+            trigger("Serie");
+          }
         }
+      } catch (error) {
+        console.error("Error cargando datos iniciales:", error);
+      } finally {
+        setLoading(prev => ({ ...prev, emisores: false }));
+      }
     };
 
-    // Maneja el cambio de serie seleccionada
-    const handleSerieChange = (e) => {
-        try {
-            const data = JSON.parse(e.target.value);
-            console.log("Nueva serie seleccionada", data);
-            setValue("TipoComprobante", data.TipoComprobante); // Establece el tipo de comprobante
-        } catch (error) {
-            console.error("El valor de la serie no es un JSON válido:", e.target.value);
-        }
-    };
+    cargarDatosIniciales();
+  }, [datosEmisor, emisorId]); // Dependencias del efecto
 
-    // Efecto para actualizar los valores del formulario cuando cambia emisor
-    useEffect(() => {
-        if (emisor) {
-            console.log("Emisor actualizado", emisor);
-            // Recupera y establece los valores del formulario
-            setValue("Emisor", emisor.ID);
-            setValue("EmisorID", emisor.ID);
-            setValue("EmisorNombre", emisor.Nombre);
-            setValue("EmisorRFC", emisor.Rfc);
-            setValue("EmisorLugarExpedicion", emisor.LugarExpedicion);
-            setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisor.ID}`); // Actualiza la URL de consulta de la serie
+  // Función para cargar series de un emisor
+  const cargarSeries = async (emisorID) => {
+    if (!emisorID) return;
+    
+    setLoading(prev => ({ ...prev, series: true }));
+    try {
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         }
-    }, [emisor, setValue]);
+      });
+      const data = await response.json();
+      setSeries(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error cargando series:", error);
+    } finally {
+      setLoading(prev => ({ ...prev, series: false }));
+    }
+  };
 
-    return (
-        <Box>
-            <Typography variant="h6">Emisor</Typography>
-            <Box
-                display="grid"
-                gap={3}
-                sx={{
-                    gridTemplateColumns: {
-                        xs: '1fr',
-                        sm: 'repeat(2, 1fr)',
-                        md: 'repeat(3, 1fr)',
-                        lg: '1fr 1fr '
-                    }
-                }}
-            >
-                {/* Selector de Emisor */}
-                <Select
-                    register={register}
-                    trigger={trigger}
-                    nombre="Emisor"
-                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                    id="ID"
-                    clave=""
-                    descripcion="Nombre"
-                    onChange={handleEmisorChange}
-                    value={getValues("Emisor") || ''}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                />
-                {/* Selector de Serie */}
-                <Select
-                    register={register}
-                    nombre="Serie"
-                    url={serieUrl}
-                    id="Clave"
-                    clave='Clave'
-                    descripcion="TimbresDisponibles"
-                    value={getValues("Serie") || ""}
-                    onChange={handleSerieChange}
-                    error={!!errors.Serie}
-                    helperText={errors.Serie ? "Este campo es obligatorio" : ""}
-                />
-            </Box>
-        </Box>
-    );
+  const handleEmisorChange = async (e) => {
+    const selectedId = e.target.value;
+    const selectedEmisor = emisores.find(e => e.ID === selectedId);
+    
+    if (selectedEmisor) {
+      setEmisor(selectedEmisor);
+      setValue("Emisor", selectedEmisor.ID);
+      setValue("EmisorID", selectedEmisor.ID);
+      setValue("EmisorNombre", selectedEmisor.Nombre);
+      setValue("EmisorRFC", selectedEmisor.Rfc);
+      setValue("EmisorLugarExpedicion", selectedEmisor.LugarExpedicion);
+      trigger(["Emisor", "EmisorID", "EmisorNombre", "EmisorRFC", "EmisorLugarExpedicion"]);
+
+      // Cargar las nuevas series cuando cambia el emisor
+      await cargarSeries(selectedEmisor.ID);
+      
+      // Resetear serie cuando cambia el emisor
+      setValue("Serie", "");
+      setValue("TipoComprobante", "");
+      trigger(["Serie", "TipoComprobante"]);
+    }
+  };
+
+  const handleSerieChange = (e) => {
+    const selectedSerie = series.find(s => s.Clave === e.target.value);
+    
+    if (selectedSerie) {
+      setValue("Serie", selectedSerie.Clave);
+      setValue("TipoComprobante", selectedSerie.TipoComprobante);
+      trigger(["Serie", "TipoComprobante"]);
+    }
+  };
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>Emisor</Typography>
+      <Box
+        display="grid"
+        gap={3}
+        sx={{
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: 'repeat(3, 1fr)',
+            lg: '1fr 1fr'
+          }
+        }}
+      >
+        {/* Selector de Emisor - Campo Requerido */}
+        <FormControl fullWidth error={!!errors.Emisor} required>
+          <InputLabel required>Emisor *</InputLabel>
+          <MuiSelect
+            {...register("Emisor", { 
+              required: "Este campo es obligatorio",
+              onChange: handleEmisorChange
+            })}
+            value={getValues("Emisor") || ''}
+            label="Emisor *"
+            disabled={loading.emisores}
+          >
+            <MenuItem value="" disabled>
+              {loading.emisores ? "Cargando..." : "Seleccione un emisor"}
+            </MenuItem>
+            {emisores.map((item) => (
+              <MenuItem key={item.ID} value={item.ID}>
+                {item.Nombre}
+              </MenuItem>
+            ))}
+          </MuiSelect>
+          <FormHelperText>
+            {errors.Emisor ? errors.Emisor.message : " "}
+          </FormHelperText>
+        </FormControl>
+
+        {/* Selector de Serie - Campo Requerido */}
+        <FormControl fullWidth error={!!errors.Serie} required>
+          <InputLabel required>Serie *</InputLabel>
+          <MuiSelect
+            {...register("Serie", { 
+              required: "Este campo es obligatorio",
+              onChange: handleSerieChange,
+              validate: (value) => {
+                if (!value) return "Debe seleccionar una serie";
+                if (!series.some(s => s.Clave === value)) return "Serie no válida";
+                return true;
+              }
+            })}
+            value={getValues("Serie") || ''}
+            label="Serie *"
+            disabled={loading.series || !emisor}
+          >
+            <MenuItem value="" disabled>
+              {loading.series ? "Cargando..." : emisor ? "Seleccione una serie" : "Seleccione un emisor primero"}
+            </MenuItem>
+            {series.map((item) => (
+              <MenuItem key={item.Clave} value={item.Clave}>
+                {item.Clave} - {item.TimbresDisponibles} disponibles
+              </MenuItem>
+            ))}
+          </MuiSelect>
+          <FormHelperText>
+            {errors.Serie ? errors.Serie.message : " "}
+          </FormHelperText>
+        </FormControl>
+      </Box>
+    </Box>
+  );
 }

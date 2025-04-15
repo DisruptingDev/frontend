@@ -34,7 +34,6 @@ const ModalEdicion = ({
             // Valida los datos de la factura, para que se muestren resaltados
             if (facturaEditar.Emisor.Error) { // Si hay un error en el emisor
                 console.error("Error en emisor", facturaEditar.Emisor.Error);
-
                 setError("Emisor", { // Muestra un mensaje de error
                     type: "manual",
                     message: "El nombre del emisor es obligatorio",
@@ -81,7 +80,7 @@ const ModalEdicion = ({
             UsoCFDI: data.UsoCFDI,
             UsoCFDIID: data.UsoCFDIID,
             FormaPago: data.FormaPago,
-            RegimenFiscal: data.ReceptorRegimenFiscal,
+            RegimenFiscal: data.RegimenFiscal,
         }
         console.log("Receptor", receptor);
         // Creación del objeto concepto

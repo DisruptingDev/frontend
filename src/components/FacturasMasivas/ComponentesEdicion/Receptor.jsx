@@ -1,7 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Box, Typography, TextField } from "@mui/material";
-import Select from "@/components/Select/Select.jsx";
+import {
+    Box,
+    Typography,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormHelperText,
+    CircularProgress
+} from "@mui/material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,130 +21,170 @@ export default function Receptor({
     setValue,
     getValues,
     errors,
+    control
 }) {
     const [receptor, setReceptor] = useState({});
+    const [receptores, setReceptores] = useState([]);
+    const [metodosPago, setMetodosPago] = useState([]);
+    const [formasPago, setFormasPago] = useState([]);
+    const [usosCFDI, setUsosCFDI] = useState([]);
     const [regimenFiscal, setRegimenFiscal] = useState("");
-    const [usoCFDIURL, setUsoCFDIURL] = useState("");
-    const [mostrarRFC, setMostrarRFC] = useState(false);
-    const [usoCFDIValido, setUsoCFDIValido] = useState(true);
+    const [loading, setLoading] = useState({
+        receptores: false,
+        metodosPago: false,
+        formasPago: false,
+        usosCFDI: false
+    });
 
-    // Efecto para rellenar los valores del formulario cuando se va a editar
+    // Cargar datos iniciales
     useEffect(() => {
         if (datosReceptor) {
-            console.log("Receptor", datosReceptor);
-            const regimen = datosReceptor.RegimenFiscal || 601;
-            const urlUsoCFDI = `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimen}`;
-            
+            const regimen = datosReceptor.RegimenFiscal || datosReceptor.RegimenFiscalReceptor || 601;
             setValue("MetodoPago", datosReceptor.MetodoPago);
-            setValue("Receptor", datosReceptor.ID);
             setValue("ReceptorID", datosReceptor.ID);
             setValue("ReceptorNombre", datosReceptor.Nombre);
             setValue("ReceptorRFC", datosReceptor.RFC);
             setValue("RegimenFiscal", regimen);
-            setUsoCFDIURL(urlUsoCFDI);
-
-            // Verificar si el UsoCFDI actual es compatible con el nuevo régimen
-            if (datosReceptor.UsoCFDIID) {
-                verificarUsoCFDIValido(datosReceptor.UsoCFDIID, urlUsoCFDI);
-            }
-
-            setValue("UsoCFDI", datosReceptor.UsoCFDI);
             setValue("UsoCFDIID", datosReceptor.UsoCFDIID);
             setValue("FormaPago", datosReceptor.FormaPago);
-
-            trigger("UsoCFDIID", "ReceptorID", "MetodoPago", "Receptor");
-
-            if (datosReceptor.ID) {
-                setMostrarRFC(true);
-            }
-        }
-    }, [datosReceptor, setValue, trigger]);
-
-    // Efecto para actualizar los valores del formulario cuando cambia receptor
-    useEffect(() => {
-        if (Object.keys(receptor).length !== 0) {
-            const regimen = receptor.RegimenFiscalReceptor || 601;
-            const urlUsoCFDI = `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimen}`;
-            
-            console.log("Receptor seleccionado", receptor);
-            setValue("Receptor", receptor.ID);
-            setValue("ReceptorID", receptor.ID);
-            setValue("ReceptorNombre", receptor.Nombre);
-            setValue("ReceptorRFC", receptor.Rfc || "XAXX010101000");
-            setValue("ReceptorRegimenFiscal", regimen);
             setRegimenFiscal(regimen);
-            setUsoCFDIURL(urlUsoCFDI);
-
-            // Verificar si el UsoCFDI actual es compatible con el nuevo régimen
-            const usoCFDIID = getValues("UsoCFDIID");
-            if (usoCFDIID) {
-                verificarUsoCFDIValido(usoCFDIID, urlUsoCFDI);
-            }
-
-            trigger("Receptor");
-            console.log("Regimen Fiscal Receptor Seleccionado: ", regimen);
-
-            if (receptor.ID) {
-                setMostrarRFC(true);
-            }
         }
-    }, [receptor, setValue, trigger]);
 
-    // Función para verificar si el UsoCFDI seleccionado es válido para el régimen actual
-    const verificarUsoCFDIValido = async (usoCFDIID, url) => {
+        // Cargar catálogos
+        cargarReceptores();
+        cargarMetodosPago();
+        cargarFormasPago();
+    }, [datosReceptor]);
+
+    // Cargar usos CFDI cuando cambia el régimen fiscal
+    useEffect(() => {
+        if (regimenFiscal) {
+            cargarUsosCFDI(regimenFiscal);
+        }
+    }, [regimenFiscal]);
+
+    const cargarReceptores = async () => {
+        setLoading(prev => ({ ...prev, receptores: true }));
         try {
-            const response = await fetch(url, {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`, // Asegúrate de tener acceso al token
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                },
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                const usoValido = data.some(item => item.ID === usoCFDIID);
-                setUsoCFDIValido(usoValido);
-                
-                if (!usoValido) {
-                    // Resetear el UsoCFDI si no es válido
-                    setValue("UsoCFDI", "");
-                    setValue("UsoCFDIID", "");
                 }
-            }
+            });
+            const data = await response.json();
+            setReceptores(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error("Error al verificar UsoCFDI:", error);
+            console.error("Error cargando receptores:", error);
+        } finally {
+            setLoading(prev => ({ ...prev, receptores: false }));
         }
     };
 
-    // Maneja el cambio del receptor seleccionado
+    const cargarMetodosPago = async () => {
+        setLoading(prev => ({ ...prev, metodosPago: true }));
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/MetodoPago`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+            setMetodosPago(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error cargando métodos de pago:", error);
+        } finally {
+            setLoading(prev => ({ ...prev, metodosPago: false }));
+        }
+    };
+
+    const cargarFormasPago = async () => {
+        setLoading(prev => ({ ...prev, formasPago: true }));
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/FormaPago`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+            setFormasPago(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error cargando formas de pago:", error);
+        } finally {
+            setLoading(prev => ({ ...prev, formasPago: false }));
+        }
+    };
+
+    const cargarUsosCFDI = async (regimen) => {
+        setLoading(prev => ({ ...prev, usosCFDI: true }));
+        try {
+            const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimen}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            });
+            const data = await response.json();
+            setUsosCFDI(Array.isArray(data) ? data : []);
+
+            // Validar si el UsoCFDI actual es válido
+            const usoCFDIActual = getValues("UsoCFDIID");
+            if (usoCFDIActual && !data.some(item => item.ID === usoCFDIActual)) {
+                setValue("UsoCFDIID", "");
+                trigger("UsoCFDIID");
+            }
+        } catch (error) {
+            console.error("Error cargando usos CFDI:", error);
+        } finally {
+            setLoading(prev => ({ ...prev, usosCFDI: false }));
+        }
+    };
+
     const handleReceptorChange = (e) => {
-        try {
-            const data = JSON.parse(e.target.value);
-            setReceptor(data);
-            console.log("Nuevo receptor seleccionado", data);
+        const selectedId = e.target.value;
+        const selectedReceptor = receptores.find(r => r.ID === selectedId);
 
-            if (data.ID) {
-                setMostrarRFC(true);
-            } else {
-                setMostrarRFC(false);
-            }
-        } catch (error) {
-            console.error("El valor del receptor no es un JSON válido:", e.target.value);
-            setMostrarRFC(false);
+        if (selectedReceptor) {
+            setReceptor(selectedReceptor);
+            const regimen = selectedReceptor.RegimenFiscalReceptor || 601;
+            setValue("ReceptorID", selectedId);
+            setValue("ReceptorNombre", selectedReceptor.Nombre);
+            setValue("ReceptorRFC", selectedReceptor.Rfc || "XAXX010101000");
+            setValue("RegimenFiscal", regimen);
+            setRegimenFiscal(regimen);
+            trigger("ReceptorID");
         }
     };
 
-    // Maneja el cambio de UsoCFDI seleccionado
-    const handleUsoCDFIChange = (e) => {
-        try {
-            const data = JSON.parse(e.target.value);
-            console.log("UsoCFDI seleccionado", data);
-            setValue("UsoCFDIID", data.ID);
-            setUsoCFDIValido(true); // Asumimos que la selección es válida
-        } catch (error) {
-            console.error("El valor de UsoCFDI no es un JSON válido:", e.target.value);
-            setUsoCFDIValido(false);
+    const handleUsoCFDIChange = (e) => {
+        const selectedId = e.target.value;
+        const selectedUsoCFDI = usosCFDI.find(u => u.ID === selectedId);
+
+        if (selectedUsoCFDI) {
+            setValue("UsoCFDIID", selectedId);
+            setValue("UsoCFDI", selectedUsoCFDI.Clave); // Guardamos la clave
+            setValue("UsoCFDIDescripcion", selectedUsoCFDI.Descripcion); // Opcional: guardar descripción
+        } else {
+            setValue("UsoCFDIID", "");
+            setValue("UsoCFDI", "");
+            setValue("UsoCFDIDescripcion", "");
         }
+        trigger("UsoCFDIID");
+    };
+    const handleMetodoPagoChange = (e) => {
+        setValue("MetodoPago", e.target.value);
+        trigger("MetodoPago");
+    };
+
+    const handleFormaPagoChange = (e) => {
+        setValue("FormaPago", e.target.value);
+        trigger("FormaPago");
     };
 
     return (
@@ -149,77 +198,136 @@ export default function Receptor({
                         xs: "1fr",
                         sm: "repeat(2, 1fr)",
                         md: "repeat(3, 1fr)",
-                        lg: "1fr 1fr ",
+                        lg: "1fr 1fr",
                     },
                 }}
             >
                 {/* Selector de Receptor */}
-                <Select
-                    register={register}
-                    nombre="Receptor"
-                    trigger={trigger}
-                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
-                    id="ID"
-                    descripcion="Nombre"
-                    onChange={handleReceptorChange}
-                    value={getValues("ReceptorID") || ""}
-                    error={!!errors.Receptor}
-                    helperText={errors.Receptor ? "Este campo es obligatorio" : ""}
+                <FormControl fullWidth error={!!errors.ReceptorID}>
+                    <InputLabel>Receptor</InputLabel>
+                    <Select
+                        {...register("ReceptorID", { required: "Seleccione un receptor" })}
+                        value={getValues("ReceptorID") || ""}
+                        label="Receptor"
+                        onChange={handleReceptorChange}
+                        disabled={loading.receptores}
+                    >
+                        <MenuItem value="" disabled>
+                            {loading.receptores ? "Cargando..." : "Seleccione un receptor"}
+                        </MenuItem>
+                        {receptores.map((item) => (
+                            <MenuItem key={item.ID} value={item.ID}>
+                                {item.Nombre}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.ReceptorID && (
+                        <FormHelperText>{errors.ReceptorID.message}</FormHelperText>
+                    )}
+                </FormControl>
+
+                {/* RFC del Receptor */}
+                <TextField
+                    {...register("ReceptorRFC")}
+                    label="RFC del Receptor"
+                    value={getValues("ReceptorRFC") || ""}
+                    fullWidth
+                    disabled
+                    error={!!errors.ReceptorRFC}
+                    helperText={errors.ReceptorRFC?.message || ""}
                 />
 
-                {/* Campo de RFC del Receptor (solo lectura) */}
-                {mostrarRFC && (
-                    <TextField
-                        {...register("ReceptorRFC")}
-                        label="RFC del Receptor"
-                        value={getValues("ReceptorRFC") || ""}
-                        fullWidth
-                        disabled
-                        error={!!errors.ReceptorRFC}
-                        helperText={errors.ReceptorRFC ? "Este campo es obligatorio" : ""}
-                    />
-                )}
-
-                {/* Selector de Método de Pago */}
-                <Select
-                    register={register}
-                    nombre="MetodoPago"
-                    url={`${apiUrl}/api/catalogos/Catalogos/MetodoPago`}
-                    clave="Clave"
-                    descripcion="Descripcion"
-                    value={getValues("MetodoPago") || ""}
-                    error={!!errors.MetodoPago}
-                    helperText={errors.MetodoPago ? "Este campo es obligatorio" : ""}
+                {/* Régimen Fiscal */}
+                <TextField
+                    {...register("RegimenFiscal")}
+                    label="Régimen Fiscal"
+                    value={getValues("RegimenFiscal") || ""}
+                    fullWidth
+                    disabled
+                    error={!!errors.RegimenFiscal}
+                    helperText={errors.RegimenFiscal?.message || ""}
                 />
 
-                {/* Selector de Forma de Pago */}
-                <Select
-                    register={register}
-                    nombre="FormaPago"
-                    url={`${apiUrl}/api/catalogos/Catalogos/FormaPago`}
-                    clave="Clave"
-                    descripcion="Descripcion"
-                    value={getValues("FormaPago") || ""}
-                    error={!!errors.FormaPago}
-                    helperText={errors.FormaPago ? "Este campo es obligatorio" : ""}
-                />
+                {/* Método de Pago */}
+                <FormControl fullWidth error={!!errors.MetodoPago}>
+                    <InputLabel>Método de Pago</InputLabel>
+                    <Select
+                        {...register("MetodoPago", { required: "Seleccione un método de pago" })}
+                        value={getValues("MetodoPago") || ""}
+                        label="Método de Pago"
+                        onChange={handleMetodoPagoChange}
+                        disabled={loading.metodosPago}
+                    >
+                        <MenuItem value="" disabled>
+                            {loading.metodosPago ? "Cargando..." : "Seleccione un método"}
+                        </MenuItem>
+                        {metodosPago.map((item) => (
+                            <MenuItem key={item.Clave} value={item.Clave}>
+                                {item.Clave} - {item.Descripcion}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.MetodoPago && (
+                        <FormHelperText>{errors.MetodoPago.message}</FormHelperText>
+                    )}
+                </FormControl>
 
-                {/* Selector de UsoCFDI */}
-                <Select
-                    register={register}
-                    nombre="UsoCFDI"
-                    url={usoCFDIURL}
-                    clave="Clave"
-                    descripcion="Descripcion"
-                    onChange={handleUsoCDFIChange}
-                    value={getValues("UsoCFDI") || ""}
-                    error={!!errors.UsoCFDI || !usoCFDIValido}
-                    helperText={
-                        errors.UsoCFDI ? "Este campo es obligatorio" : 
-                        !usoCFDIValido ? "El Uso CFDI seleccionado no es válido para este régimen fiscal" : ""
-                    }
-                    disabled={!receptor}
-                />
+                {/* Forma de Pago */}
+                <FormControl fullWidth error={!!errors.FormaPago}>
+                    <InputLabel>Forma de Pago</InputLabel>
+                    <Select
+                        {...register("FormaPago", { required: "Seleccione una forma de pago" })}
+                        value={getValues("FormaPago") || ""}
+                        label="Forma de Pago"
+                        onChange={handleFormaPagoChange}
+                        disabled={loading.formasPago}
+                    >
+                        <MenuItem value="" disabled>
+                            {loading.formasPago ? "Cargando..." : "Seleccione una forma"}
+                        </MenuItem>
+                        {formasPago.map((item) => (
+                            <MenuItem key={item.Clave} value={item.Clave}>
+                                {item.Clave} - {item.Descripcion}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.FormaPago && (
+                        <FormHelperText>{errors.FormaPago.message}</FormHelperText>
+                    )}
+                </FormControl>
+
+                {/* Uso CFDI */}
+                <FormControl fullWidth error={!!errors.UsoCFDIID}>
+                    <InputLabel>Uso CFDI</InputLabel>
+                    <Select
+                        {...register("UsoCFDIID", {
+                            required: "Seleccione un uso CFDI",
+                            validate: (value) => {
+                                if (!value) return "Seleccione un uso CFDI";
+                                if (!usosCFDI.some(item => item.ID === value)) {
+                                    return "Seleccione un uso CFDI válido";
+                                }
+                                return true;
+                            }
+                        })}
+                        value={getValues("UsoCFDIID") || ""}
+                        label="Uso CFDI"
+                        onChange={handleUsoCFDIChange}
+                        disabled={loading.usosCFDI || !receptor}
+                    >
+                        <MenuItem value="" disabled>
+                            {loading.usosCFDI ? "Cargando..." : receptor ? "Seleccione un uso" : "Seleccione un receptor primero"}
+                        </MenuItem>
+                        {usosCFDI.map((item) => (
+                            <MenuItem key={item.ID} value={item.ID}>
+                                {item.Clave} - {item.Descripcion}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                    {errors.UsoCFDIID && (
+                        <FormHelperText>{errors.UsoCFDIID.message}</FormHelperText>
+                    )}
+                </FormControl>
             </Box>
         </Box>
     );

@@ -101,6 +101,7 @@ const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerCompr
       const changedRow = paquetes[rowsSelected[rowsSelected.length - 1]];
       handleSelectRow(changedRow);
     },
+    fixedSelectColumn: true, // Esto asegura que la columna de selección sea fija
     textLabels: {
       body: {
         noMatch: "No se encontraron registros",
@@ -146,7 +147,8 @@ const VistaPaquetes = ({ paquetes, selectedRows, handleSelectRow, handleVerCompr
     filter: true,
     setTableProps: () => ({
       style: {
-        borderCollapse: 'separate',
+        minWidth: '100%',
+        overflowX: 'auto',
       },
     }),
     setHeaderProps: () => ({
