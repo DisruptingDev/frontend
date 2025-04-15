@@ -142,14 +142,6 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
             }
         },
         {
-            name: "UsoCFDI",
-            label: "Uso CFDI",
-            options: {
-                filter: true,
-                sort: true,
-            }
-        },
-        {
             name: "Acciones",
             label: "Acción",
             options: {

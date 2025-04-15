@@ -16,6 +16,11 @@ import {
   Menu,
   MenuItem,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -79,6 +84,8 @@ export default function DataTable({ token, filtro }) {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState(null);
+
+  const [openModalConfirm, setOpenModalConfirm] = useState(false);
 
   // Función para alternar la expansión de una factura específica
   const handleToggleExpand = (index) => {
@@ -218,7 +225,7 @@ export default function DataTable({ token, filtro }) {
       const pdfFile = zipContent.files[pdfFileName];
       const pdfBlob = await pdfFile.async('blob');
       const url = URL.createObjectURL(pdfBlob);
-      
+
       setPdfUrl(url);
       setPdfModalOpen(true);
 
@@ -490,10 +497,40 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (menuRow) {
-      console.log(menuRow);
-      router.push(`/CrearFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+      setConfirmationMessage('¿Estás seguro de que deseas eliminar esta factura?');
+      setOpenModalConfirm(true);
+    }
+  };
+
+  // Función para manejar la confirmación (se ejecuta cuando el usuario acepta en el modal)
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/facturas/${menuRow.ID}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('Factura eliminada exitosamente');
+        setConfirmationMessage('La factura se ha eliminado correctamente.');
+        setOpenModalSuccess(true);
+        setActualizar(true);
+        setOpenModalConfirm(false);
+        handleMenuClose();
+      } else {
+        console.error('Error al eliminar la factura:', response.statusText);
+        setConfirmationMessage('Error al eliminar la factura.');
+        setOpenModalError(true);
+        setOpenModalConfirm(false); 
+      }
+    } catch (error) {
+      console.error('Error en la solicitud DELETE:', error);
+      setOpenModalConfirm(false);
     }
   };
 
@@ -649,14 +686,14 @@ export default function DataTable({ token, filtro }) {
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                           <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
-                          <MenuItem key="delete" onClick={handleDelete}>Eliminar</MenuItem>
+                          <MenuItem key="delete" onClick={() => handleDelete([menuRow.ID])}>Eliminar</MenuItem>
                           // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
 
                         ]}
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
-                          <MenuItem key="eliminar" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Eliminar</MenuItem>,
+                          <MenuItem key="delete" onClick={() => handleDelete([menuRow.ID])}>Eliminar</MenuItem>,
                         ]}
                         {
                           menuRow && menuRow.uuid !== '' && menuRow.TipoDeComprobante !== "P" && [
@@ -746,6 +783,27 @@ export default function DataTable({ token, filtro }) {
       {/* Cancelar Modal */}
       <ModalCancelar openModalCancelar={openModalCancelar} handleCloseModal={handleCloseModal} facturasRemplazo={facturasRemplazo} IDFacturaCancelada={IDFacturaCancelada} token={token} setResultadoCancelar={setResultadoCancelar} />
 
+      {/* Modal para confirmar eliminación */}
+      <Dialog
+        open={openModalConfirm}
+        onClose={() => setOpenModalConfirm(false)}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {confirmationMessage}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenModalConfirm(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirmDelete} color="secondary" autoFocus>
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <PdfModal
         open={pdfModalOpen}
         onClose={() => {
@@ -759,8 +817,8 @@ export default function DataTable({ token, filtro }) {
         loading={loadingPdf}
         error={pdfError}
       />
-      
+
     </Box>
-    
+
   );
 }

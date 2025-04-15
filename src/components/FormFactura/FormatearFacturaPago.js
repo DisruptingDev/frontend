@@ -40,6 +40,8 @@ export default function FormatearFactura(
   if (modo === "Pago") {
     factura = {
       Version: facturaOriginal.Version || "4.0",
+      Fecha: data.FechaPago || new Date().toISOString(),
+      MetodoPago: "PUE",
       Serie: data.SeriePagos || "P",
       FormaPago: data.FormaPagoComprobante || "99 - Por definir",
       CondicionesDePago: "Condiciones De Pago",
@@ -55,7 +57,7 @@ export default function FormatearFactura(
       ReceptorID: data.ReceptorID,
       UsoCFDI: "CP01",
       Conceptos: {
-        ListaConceptos: {
+        ListaConceptos: [{
           ClaveProdServ: "84111506",
           Cantidad: 1,
           ClaveUnidad: "ACT",
@@ -77,19 +79,9 @@ export default function FormatearFactura(
                 Importe: data.ImpuestosPagos[0].Importe || 0,
               }
             ],
-            Retenciones: [
-              {
-                Base: 0,
-                ImpuestoCatalogoID: 0,
-                ImpuestoClave: "",
-                TipoFactor: "",
-                TasaOCuota: 0,
-                TasaCatalogoID: 0,
-                Importe: 0
-              }
-            ]
-          }
-        },
+            Retenciones: []
+        }
+        }],
         TotalImpuestosTrasladados: TotalTraslados || 10,
         TotalImpuestosRetenidos: TotalRetenciones || 0
       },
@@ -121,10 +113,10 @@ export default function FormatearFactura(
                   Serie: data.SeriePagos || "P",
                   Folio: "",
                   MonedaDR: data.Divisa || "MXN",
-                  NumParcialidad: parseInt(doctosRelacionados.NumParcialidad) || 1,
-                  ImpSaldoAnt: parseFloat(doctosRelacionados.ImpSaldoAnt) || 58232,
-                  ImpPagado: parseFloat(doctosRelacionados.ImpPagado) || 58232,
-                  ImpSaldoInsoluto: parseFloat(doctosRelacionados.ImpSaldoInsoluto) || 0,
+                  NumParcialidad: parseInt(data.NumeroOperacion) || 1,
+                  ImpSaldoAnt: parseFloat(data.SaldoAnterior),
+                  ImpPagado: parseFloat(data.Monto),
+                  ImpSaldoInsoluto: parseFloat(data.ImpSaldoInsoluto) || 0,
                   ObjetoImpDR: "02" // Corregido nombre de propiedad
                 }
               ],

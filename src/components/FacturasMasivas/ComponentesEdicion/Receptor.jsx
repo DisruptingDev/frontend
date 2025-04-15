@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Box, Typography, TextField } from "@mui/material"; // Importa TextField
+import { Box, Typography, TextField } from "@mui/material";
 import Select from "@/components/Select/Select.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -16,31 +16,35 @@ export default function Receptor({
     const [receptor, setReceptor] = useState({});
     const [regimenFiscal, setRegimenFiscal] = useState("");
     const [usoCFDIURL, setUsoCFDIURL] = useState("");
-    const [mostrarRFC, setMostrarRFC] = useState(false); // Estado para controlar la visibilidad del RFC
+    const [mostrarRFC, setMostrarRFC] = useState(false);
+    const [usoCFDIValido, setUsoCFDIValido] = useState(true);
 
     // Efecto para rellenar los valores del formulario cuando se va a editar
     useEffect(() => {
         if (datosReceptor) {
             console.log("Receptor", datosReceptor);
+            const regimen = datosReceptor.RegimenFiscal || 601;
+            const urlUsoCFDI = `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimen}`;
+            
             setValue("MetodoPago", datosReceptor.MetodoPago);
             setValue("Receptor", datosReceptor.ID);
             setValue("ReceptorID", datosReceptor.ID);
             setValue("ReceptorNombre", datosReceptor.Nombre);
-            setValue("ReceptorRFC", datosReceptor.RFC); // Establece el RFC del receptor
-            setValue("RegimenFiscal", datosReceptor.RegimenFiscal);
-            setUsoCFDIURL(
-                `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${datosReceptor.RegimenFiscal}`
-            );
+            setValue("ReceptorRFC", datosReceptor.RFC);
+            setValue("RegimenFiscal", regimen);
+            setUsoCFDIURL(urlUsoCFDI);
 
-            // Asegúrate de establecer el valor de UsoCFDI y su ID
+            // Verificar si el UsoCFDI actual es compatible con el nuevo régimen
+            if (datosReceptor.UsoCFDIID) {
+                verificarUsoCFDIValido(datosReceptor.UsoCFDIID, urlUsoCFDI);
+            }
+
             setValue("UsoCFDI", datosReceptor.UsoCFDI);
             setValue("UsoCFDIID", datosReceptor.UsoCFDIID);
             setValue("FormaPago", datosReceptor.FormaPago);
 
-            // Llama a los triggers para actualizar los valores
             trigger("UsoCFDIID", "ReceptorID", "MetodoPago", "Receptor");
 
-            // Muestra el RFC si hay un receptor válido
             if (datosReceptor.ID) {
                 setMostrarRFC(true);
             }
@@ -50,25 +54,58 @@ export default function Receptor({
     // Efecto para actualizar los valores del formulario cuando cambia receptor
     useEffect(() => {
         if (Object.keys(receptor).length !== 0) {
+            const regimen = receptor.RegimenFiscalReceptor || 601;
+            const urlUsoCFDI = `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimen}`;
+            
             console.log("Receptor seleccionado", receptor);
             setValue("Receptor", receptor.ID);
             setValue("ReceptorID", receptor.ID);
             setValue("ReceptorNombre", receptor.Nombre);
-            setValue("ReceptorRFC", receptor.Rfc || "XAXX010101000"); // Establece el RFC del receptor
-            setValue("ReceptorRegimenFiscal", receptor.RegimenFiscalReceptor || 601);
-            setRegimenFiscal(receptor.RegimenFiscalReceptor || "");
-            setUsoCFDIURL(
-                `${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${receptor.RegimenFiscalReceptor}`
-            );
+            setValue("ReceptorRFC", receptor.Rfc || "XAXX010101000");
+            setValue("ReceptorRegimenFiscal", regimen);
+            setRegimenFiscal(regimen);
+            setUsoCFDIURL(urlUsoCFDI);
+
+            // Verificar si el UsoCFDI actual es compatible con el nuevo régimen
+            const usoCFDIID = getValues("UsoCFDIID");
+            if (usoCFDIID) {
+                verificarUsoCFDIValido(usoCFDIID, urlUsoCFDI);
+            }
 
             trigger("Receptor");
+            console.log("Regimen Fiscal Receptor Seleccionado: ", regimen);
 
-            // Muestra el RFC si hay un receptor válido
             if (receptor.ID) {
                 setMostrarRFC(true);
             }
         }
     }, [receptor, setValue, trigger]);
+
+    // Función para verificar si el UsoCFDI seleccionado es válido para el régimen actual
+    const verificarUsoCFDIValido = async (usoCFDIID, url) => {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Asegúrate de tener acceso al token
+                    'Content-Type': 'application/json',
+                },
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const usoValido = data.some(item => item.ID === usoCFDIID);
+                setUsoCFDIValido(usoValido);
+                
+                if (!usoValido) {
+                    // Resetear el UsoCFDI si no es válido
+                    setValue("UsoCFDI", "");
+                    setValue("UsoCFDIID", "");
+                }
+            }
+        } catch (error) {
+            console.error("Error al verificar UsoCFDI:", error);
+        }
+    };
 
     // Maneja el cambio del receptor seleccionado
     const handleReceptorChange = (e) => {
@@ -77,15 +114,14 @@ export default function Receptor({
             setReceptor(data);
             console.log("Nuevo receptor seleccionado", data);
 
-            // Verifica si el receptor seleccionado coincide con el catálogo
-            if (data.ID) { // Si tiene un ID válido, muestra el RFC
+            if (data.ID) {
                 setMostrarRFC(true);
             } else {
-                setMostrarRFC(false); // Oculta el RFC si no hay un receptor válido
+                setMostrarRFC(false);
             }
         } catch (error) {
             console.error("El valor del receptor no es un JSON válido:", e.target.value);
-            setMostrarRFC(false); // Oculta el RFC si hay un error
+            setMostrarRFC(false);
         }
     };
 
@@ -95,8 +131,10 @@ export default function Receptor({
             const data = JSON.parse(e.target.value);
             console.log("UsoCFDI seleccionado", data);
             setValue("UsoCFDIID", data.ID);
+            setUsoCFDIValido(true); // Asumimos que la selección es válida
         } catch (error) {
             console.error("El valor de UsoCFDI no es un JSON válido:", e.target.value);
+            setUsoCFDIValido(false);
         }
     };
 
@@ -130,13 +168,13 @@ export default function Receptor({
                 />
 
                 {/* Campo de RFC del Receptor (solo lectura) */}
-                {mostrarRFC && ( // Muestra el RFC solo si mostrarRFC es true
+                {mostrarRFC && (
                     <TextField
-                        {...register("ReceptorRFC")} // Registra el campo en el formulario
+                        {...register("ReceptorRFC")}
                         label="RFC del Receptor"
-                        value={getValues("ReceptorRFC") || ""} // Obtiene el valor del RFC
+                        value={getValues("ReceptorRFC") || ""}
                         fullWidth
-                        disabled // Hace que el campo sea de solo lectura
+                        disabled
                         error={!!errors.ReceptorRFC}
                         helperText={errors.ReceptorRFC ? "Este campo es obligatorio" : ""}
                     />
@@ -174,12 +212,15 @@ export default function Receptor({
                     clave="Clave"
                     descripcion="Descripcion"
                     onChange={handleUsoCDFIChange}
-                    value={getValues("UsoCFDI") || ""} // Asegúrate de pasar el valor correcto
-                    error={!!errors.UsoCFDI}
-                    helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
-                    disabled={!receptor} // Deshabilita el campo si no hay receptor seleccionado
+                    value={getValues("UsoCFDI") || ""}
+                    error={!!errors.UsoCFDI || !usoCFDIValido}
+                    helperText={
+                        errors.UsoCFDI ? "Este campo es obligatorio" : 
+                        !usoCFDIValido ? "El Uso CFDI seleccionado no es válido para este régimen fiscal" : ""
+                    }
+                    disabled={!receptor}
                 />
             </Box>
         </Box>
     );
-}   
+}

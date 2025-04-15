@@ -22,6 +22,8 @@ const VistaFacturasImportadas = ({
     setFacturas(facturasRecuperadas);
   }, [facturasRecuperadas]);
 
+  console.log("Facturas recuperadas: ",facturasRecuperadas)
+
   // Tema personalizado para la tabla
   const getMuiTheme = () =>
     createTheme({
@@ -140,13 +142,24 @@ const VistaFacturasImportadas = ({
       },
     },
     {
+      name: "Receptor",
+      label: "Regimen Fiscal Receptor",
+      options: {
+        customBodyRender: (value) =>
+          renderCellWithError(
+            value.RegimenFiscal || "Régimen no válido",
+            value.Error === "record not found"
+          ),
+      },
+    },
+    {
       name: "Emisor",
       label: "Serie",
       options: {
         customBodyRender: (value) =>
           renderCellWithError(
-            value.Serie || value.RFC,
-            value.Error === "record not found"
+            value.Serie,
+            value["Error-Serie"] === "record not found"
           ),
       },
     },
@@ -156,8 +169,8 @@ const VistaFacturasImportadas = ({
       options: {
         customBodyRender: (value) =>
           renderCellWithError(
-            value.UsoCFDI || value.RFC,
-            value.Error === "record not found"
+            value.UsoCFDI,
+            value["Error-UsoCFDI"] === "record not found"
           ),
       },
     },

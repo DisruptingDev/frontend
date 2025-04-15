@@ -10,7 +10,7 @@ import Select from "@/components/Select/Select.jsx";
 import ReactDatePicker from "./DatePickerComponent";
 import { get } from "react-hook-form";
 import Impuesto from "../Impuesto/Impuesto";
-import { format, parse } from "date-fns";
+import { format, parse, set } from "date-fns";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -166,10 +166,12 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
   useEffect(() => {
     if (pagos) {
+      console.log("Pagos:",pagos)
       // Asegurarse de que numOperacion sea un entero usando Math.floor()
       const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
       setValue("NumeroOperacion", numeroOperacionEntero);
       setValue("SaldoAnterior", pagos.saldo);
+      setValue("SaldoPagado", pagos.totalPagado);
     }
   }, [pagos, setValue]);
 
