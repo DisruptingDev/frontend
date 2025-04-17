@@ -8,6 +8,10 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
     let finales = CalculosFinales(conceptos);
     //console.log("Conceptos Resumen", conceptos);
 
+    const formatoMoneda = (valor) => {
+        return valor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+    };
+
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
                 sx={{   padding: '1rem', margin:'auto', marginTop:'1rem', marginBottom:'1rem', }}>
@@ -40,12 +44,12 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                     <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveUnidad}</TableCell>
                                     <TableCell sx={{ textAlign: 'center' }}>{concepto.Descripcion}</TableCell>
                                     <TableCell sx={{ textAlign: 'center' }}>{concepto.Cantidad}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ValorUnitario}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Descuento}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.TotalTraslados}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.TotalRetenciones}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.ValorUnitario)}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.Descuento)}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalTraslados)}</TableCell>
+                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalRetenciones)}</TableCell>
                                     <TableCell sx={{ textAlign: 'center' }}>
-                                        {concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones}
+                                        {formatoMoneda(concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones)}
                                     </TableCell>
                                     <TableCell sx={{ textAlign: 'center' }}>
                                         <Button
@@ -75,23 +79,23 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                         <TableBody>
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Subtotal:</TableCell>
-                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.SubTotalFinal}</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.SubTotalFinal)}</TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Descuento:</TableCell>
-                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.DescuentoFinal}</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.DescuentoFinal)}</TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Retenciones:</TableCell>
-                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.RetencionesFinal}</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.RetencionesFinal)}</TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Traslados:</TableCell>
-                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.TrasladosFinal}</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.TrasladosFinal)}</TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Total:</TableCell>
-                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>$ {finales.TotalFinal}</TableCell>
+                                <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.TotalFinal)}</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
