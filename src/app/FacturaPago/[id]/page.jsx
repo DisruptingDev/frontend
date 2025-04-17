@@ -180,19 +180,19 @@ export default function FacturaPago() {
             console.log("Datos finales a enviar:", factura);
 
             // Guardar factura
-            // await GuardarFactura(
-            //     factura,
-            //     (message) => {
-            //         setSnackbarMessage(message);
-            //         setSnackbarSeverity('success');
-            //         setOpenSnackbar(true);
-            //         setTimeout(() => router.push("/Home"), 1000);
-            //     },
-            //     (error) => {
-            //         throw error;
-            //     },
-            //     { token }
-            // );
+            await GuardarFactura(
+                factura,
+                (message) => {
+                    setSnackbarMessage(message);
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
+                    setTimeout(() => router.push("/Home"), 1000);
+                },
+                (error) => {
+                    throw error;
+                },
+                { token }
+            );
 
         } catch (error) {
             console.error("Error al guardar:", error);
