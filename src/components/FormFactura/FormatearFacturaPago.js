@@ -33,8 +33,12 @@ export default function FormatearFactura(
     day: "2-digit",
   }).format(new Date());
 
+  const calculoImpuestosTraslado = 0;
+
   const TotalTraslados = 0;
   const TotalRetenciones = 0;
+
+  console.log("Factura original en Formateo", facturaOriginal);
 
   let factura;
   if (modo === "Pago") {
@@ -88,12 +92,12 @@ export default function FormatearFactura(
       Complemento: {
         Pagos: {
           Version: "2.0",
-          Totales: { // Agregado nodo Totales que faltaba
+          Totales: { 
             TotalRetencionesIVA: 0,
             TotalRetencionesISR: 0,
             TotalRetencionesIEPS: 0,
             TotalTrasladosBaseIVA16: 0,
-            TotalTrasladosImpuestoIVA16: data.TotalTrasladosImpuestoIVA16,
+            TotalTrasladosImpuestoIVA16: data.ImpuestosPagos[0].Importe,
             TotalTrasladosImpuestoBaseIVA8: 0,
             TotalTrasladosImpuestoIVA8: 0,
             TotalTrasladosBaseIVA0: 0,
@@ -117,30 +121,30 @@ export default function FormatearFactura(
                   ImpSaldoAnt: parseFloat(data.SaldoAnterior),
                   ImpPagado: parseFloat(data.Monto),
                   ImpSaldoInsoluto: parseFloat(data.ImpSaldoInsoluto) || 0,
-                  ObjetoImpDR: "02" // Corregido nombre de propiedad
+                  ObjetoImpDR: "02" 
                 }
               ],
               Impuestos: { // Agregado nodo Impuestos que faltaba
                 Traslados: [
                   {
-                    Base: 50200,
-                    ImpuestoCatalogoID: 2,
-                    ImpuestoClave: "002",
+                    Base: data.ImpuestosPagos[0].Base,
+                    ImpuestoCatalogoID: data.ImpuestosPagos[0].ImpuestoCatalogoID,
+                    ImpuestoClave: data.ImpuestosPagos[0].ImpuestoClave,
                     TipoFactor: "Tasa",
-                    TasaOCuota: 0.16,
-                    TasaCatalogoID: 21,
-                    Importe: 8032
+                    TasaOCuota: data.ImpuestosPagos[0].TasaOCuota,
+                    TasaCatalogoID: data.ImpuestosPagos[0].ImpuestoCatalogoID,
+                    Importe: data.ImpuestosPagos[0].Importe
                   }
                 ],
                 Retenciones: [
                   {
-                    Base: 50200,
+                    Base: 0,
                     ImpuestoCatalogoID: 2,
                     ImpuestoClave: "002",
                     TipoFactor: "Tasa",
                     TasaOCuota: 0.16,
                     TasaCatalogoID: 21,
-                    Importe: 8032
+                    Importe: 0
                   }
                 ]
               }
@@ -149,6 +153,7 @@ export default function FormatearFactura(
         }
       }
     };
+    console.log
     console.log("Factura Vista Previa Pago", factura);
   } else if (modo === "VistaPreviaPago") {
     factura = {

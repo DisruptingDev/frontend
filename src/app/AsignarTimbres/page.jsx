@@ -176,32 +176,32 @@ export default function AsignarTimbres() {
     const handleAsignarTimbres = async () => {
         // setLoading(true);
         const formData = selectedRows;
-    
+
         console.log('Asignando timbres', formData);
         try {
-          const response = await fetch(`${apiUrl}/api/activacionordenes/ActivarOrden`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-          });
-          const data = await response.json();
-          console.log(data);
-          if (data) {
-            setOpenModalExito(true);
-            setActualizar(true);
-          } else {
-            throw new Error('Error al asignar timbres');
-          }
+            const response = await fetch(`${apiUrl}/api/activacionordenes/ActivarOrden`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+            const data = await response.json();
+            console.log(data);
+            if (data) {
+                setOpenModalExito(true);
+                setActualizar(true);
+            } else {
+                throw new Error('Error al asignar timbres');
+            }
         }
         catch (error) {
-          console.error('Error asignando timbres:', error);
-          setLoading(false);
-          setOpenModalError(true);
+            console.error('Error asignando timbres:', error);
+            setLoading(false);
+            setOpenModalError(true);
         }
-      }
+    }
 
     const handleVerComprobante = async (ID) => {
         console.log('Ver comprobante', ID);
@@ -282,12 +282,13 @@ export default function AsignarTimbres() {
                 </Box>
 
                 {/* Mostrar el componente correspondiente */}
-                {valorTab === 0 ? <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} /> :
+                {valorTab === 0 ?
+                    <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} /> :
                     <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} />}
 
             </Box>
             <ModalExito openModalSuccess={openModalExito} handleCloseModal={() => setOpenModalExito(false)} confirmationMessage="Timbres asignados correctamente" />
-      <ModalError openModalError={openModalError} handleCloseModal={() => setOpenModalError(false)} confirmationMessage="Error al asignar timbres" />
+            <ModalError openModalError={openModalError} handleCloseModal={() => setOpenModalError(false)} confirmationMessage="Error al asignar timbres" />
         </Box>
 
     );

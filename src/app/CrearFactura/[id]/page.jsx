@@ -169,12 +169,19 @@ export default function CrearFactura() {
     return (
         <div>
             <Header />
-            <Grid container>
-                <Grid item sx={{ minHeight: '100vh', bgcolor: 'background.paper', position: 'relative', flexGrow: 0, ml: 1, padding: "2px" }}>
+            <Grid >
+                <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid item sx={{ flexGrow: 1 }}>
-                    <Box sx={{ padding: '.8rem', paddingTop: '0rem', xs: 4, md: 8, lg: 8, xl: 8 }}>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
                         <form onSubmit={handleSubmit(onSubmit)} method="post">
                             <Emisor
                                 register={register}
