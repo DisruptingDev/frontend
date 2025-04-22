@@ -283,8 +283,8 @@ export default function AsignarTimbres() {
 
                 {/* Mostrar el componente correspondiente */}
                 {valorTab === 0 ?
-                    <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} /> :
-                    <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} />}
+              <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} /> :
+                    <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} origen={'Pagos'} />} 
 
             </Box>
             <ModalExito openModalSuccess={openModalExito} handleCloseModal={() => setOpenModalExito(false)} confirmationMessage="Timbres asignados correctamente" />

@@ -274,7 +274,8 @@ export default function VerOrdenes() {
             </Box>
 
             {/* Mostrar el componente correspondiente */}
-            {valorTab === 0 ? <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} /> :
+            {valorTab === 0 ?
+              <VistaPaquetes paquetes={paquetes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} /> :
               <VistaPlanes planes={planes} selectedRows={selectedRows} handleSelectRow={handleSelectRow} handleVerComprobante={handleVerComprobante} />}
           </Box>
         </Grid>

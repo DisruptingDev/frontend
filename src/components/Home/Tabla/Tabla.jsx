@@ -345,6 +345,103 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
+  // Función para timbrar y enviar facturas
+  const handleTimbrarYEnviar = async (ids) => {
+    setOpenModal(true);
+    setLoading(true);
+    setConfirmationMessage('Procesando timbrado y envío de facturas...');
+
+    try {
+      console.log('Timbrando y enviando facturas:', ids);
+
+      // 1. Primero timbramos las facturas
+      const timbradoResponse = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ Facturas_ID: ids }),
+      });
+
+      if (!timbradoResponse.ok) {
+        throw new Error('Error en el timbrado de facturas');
+      }
+
+      const timbradoData = await timbradoResponse.json();
+      console.log('Resultado timbrado:', timbradoData);
+
+      // Filtrar solo las facturas que se timbraron correctamente
+      const facturasTimbradasExitosas = timbradoData.Facturas.filter(
+        factura => factura.status === 'success'
+      );
+
+      if (facturasTimbradasExitosas.length === 0) {
+        throw new Error('Ninguna factura se timbró correctamente');
+      }
+
+      // 2. Luego enviamos por correo las facturas timbradas
+      const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
+
+      const envioResponse = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(idsTimbrados),
+      });
+
+      if (!envioResponse.ok) {
+        throw new Error('Error al enviar facturas por correo');
+      }
+
+      // Procesar resultados
+      let message = '';
+
+      if (facturasTimbradasExitosas.length === ids.length) {
+        // Todas se timbraron y enviaron
+        message = 'Todas las facturas se timbraron y enviaron correctamente.';
+      } else {
+        // Algunas fallaron
+        const fallidas = ids.length - facturasTimbradasExitosas.length;
+        message = `${facturasTimbradasExitosas.length} facturas timbradas y enviadas correctamente. ${fallidas} facturas no se pudieron procesar.`;
+      }
+
+      // Mostrar detalles si es una sola factura
+      if (ids.length === 1) {
+        if (facturasTimbradasExitosas.length === 1) {
+          message = 'Factura timbrada y enviada correctamente.';
+        } else {
+          const error = timbradoData.Facturas[0].error || 'Error desconocido';
+          message = `Error al timbrar y enviar: ${error}`;
+        }
+      }
+
+      setConfirmationMessage(message);
+      setOpenModalSuccess(true);
+
+      // Si hay resultados mixtos, mostramos el modal de timbrado con detalles
+      if (facturasTimbradasExitosas.length > 0 && facturasTimbradasExitosas.length < ids.length) {
+        setFacturasTimbradas(timbradoData.Facturas.map(factura => ({
+          id: factura.facturaID,
+          status: factura.status,
+          error: factura.error || null,
+        })));
+        setOpenModalTimbrar(true);
+      }
+
+    } catch (error) {
+      console.error('Error en timbrado y envío:', error);
+      setConfirmationMessage(`Error al procesar las facturas: ${error.message}`);
+      setOpenModalError(true);
+    } finally {
+      setLoading(false);
+      setOpenModal(false);
+      setActualizar(true);
+    }
+  };
+
   // Función para cancelar facturas
   const handleCancelar = () => {
     if (menuRow) {
@@ -504,6 +601,13 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
+  const handleTimbrarYEnviarSingle = () => {
+    if (menuRow) {
+      handleTimbrarYEnviar([menuRow.ID]);
+      handleMenuClose();
+    }
+  };
+
   // Función para manejar la confirmación (se ejecuta cuando el usuario acepta en el modal)
   const handleConfirmDelete = async () => {
     try {
@@ -526,7 +630,7 @@ export default function DataTable({ token, filtro }) {
         console.error('Error al eliminar la factura:', response.statusText);
         setConfirmationMessage('Error al eliminar la factura.');
         setOpenModalError(true);
-        setOpenModalConfirm(false); 
+        setOpenModalConfirm(false);
       }
     } catch (error) {
       console.error('Error en la solicitud DELETE:', error);
@@ -600,13 +704,20 @@ export default function DataTable({ token, filtro }) {
         </Button>
         <Button
           variant="contained"
-
           disabled={selectedRows.length === 0}
           onClick={() => handleDownloadSelecteds(selectedRows)}
           // onClick={() => descargarZIPServers(selectedRows)}
           sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
         >
           Descargar Seleccionadas
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => handleTimbrarYEnviar(selectedRows)}
+          disabled={selectedRows.length === 0}
+          sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
+        >
+          Timbrar y Enviar Seleccionadas
         </Button>
       </Box>
 
@@ -683,6 +794,7 @@ export default function DataTable({ token, filtro }) {
                       >
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                          <MenuItem onClick={handleTimbrarYEnviarSingle}>Timbrar y Enviar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                           <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
