@@ -601,13 +601,6 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
-  const handleTimbrarYEnviarSingle = () => {
-    if (menuRow) {
-      handleTimbrarYEnviar([menuRow.ID]);
-      handleMenuClose();
-    }
-  };
-
   // Función para manejar la confirmación (se ejecuta cuando el usuario acepta en el modal)
   const handleConfirmDelete = async () => {
     try {
@@ -704,20 +697,21 @@ export default function DataTable({ token, filtro }) {
         </Button>
         <Button
           variant="contained"
+
           disabled={selectedRows.length === 0}
           onClick={() => handleDownloadSelecteds(selectedRows)}
-          // onClick={() => descargarZIPServers(selectedRows)}
           sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
         >
           Descargar Seleccionadas
         </Button>
         <Button
           variant="contained"
-          onClick={() => handleTimbrarYEnviar(selectedRows)}
+
           disabled={selectedRows.length === 0}
+          onClick={() => handleTimbrarYEnviar(selectedRows)}
           sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f', } }}
         >
-          Timbrar y Enviar Seleccionadas
+          Timbrar y enviar seleccionadas
         </Button>
       </Box>
 
@@ -794,7 +788,7 @@ export default function DataTable({ token, filtro }) {
                       >
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
-                          <MenuItem onClick={handleTimbrarYEnviarSingle}>Timbrar y Enviar</MenuItem>,
+                          <MenuItem key="timbraryenviar" onClick={() => handleTimbrarYEnviar([menuRow.ID])}>Timbrar y Enviar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                           <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
