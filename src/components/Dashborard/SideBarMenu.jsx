@@ -22,6 +22,9 @@ import {
   Assignment as TimbresIcon,
   Category as ConceptosIcon,
   AttachMoney as AttachMoneyIcon,
+  AddBox as AddIcon,
+  FileOpen as ImportarIcon,
+  
   ExpandLess,
   ExpandMore
 } from '@mui/icons-material';
@@ -35,13 +38,16 @@ const menuItems = [
     subItems: null
   },
   {
-    title: "Facturación",
-    icon: <FacturacionIcon />,
-    path: null,
-    subItems: [
-      { title: "Nueva Factura", path: "/CrearFactura" },
-      { title: "Importar Facturas", path: "/ImportarFacturas" }
-    ]
+    title: "Nueva Factura",
+    icon: <AddIcon />,
+    path: "/CrearFactura",
+    subItems: null
+  },
+  {
+    title: "Importar Facturas",
+    icon: <ImportarIcon />,
+    path: "/ImportarFacturas",
+    subItems: null
   },
   {
     title: "Nóminas",
@@ -82,14 +88,9 @@ const menuItems = [
 ];
 
 const SideBarMenu = () => {
-  const [openSubMenu, setOpenSubMenu] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-
-  const handleSubMenuToggle = (menuTitle) => {
-    setOpenSubMenu(prev => prev === menuTitle ? null : menuTitle);
-  };
 
   const handleNavigation = (path) => {
     if (path) router.push(path);
@@ -177,9 +178,7 @@ const SideBarMenu = () => {
                   {drawerOpen && (
                     <>
                       <ListItemText primary={item.title} />
-                      {item.subItems && (
-                        openSubMenu === item.title ? <ExpandLess /> : <ExpandMore />
-                      )}
+                      
                     </>
                   )}
                 </ListItemButton>

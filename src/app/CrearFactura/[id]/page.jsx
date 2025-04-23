@@ -169,19 +169,21 @@ export default function CrearFactura() {
     return (
         <div>
             <Header />
-            <Grid >
-                <Grid>
-                    <SideBarMenu />
-                </Grid>
-                <Grid>
-                    <Box
-                        bgcolor="white"
-                        ml={10}
-                        mr={1}
-                        p={2}
-                        boxShadow={3}
-                        borderRadius={2}
-                    >
+            <Grid container> {/* Añade container para habilitar el sistema de grid */}
+    <Grid item> {/* SideBarMenu en su propia columna */}
+      <SideBarMenu />
+    </Grid>
+    <Grid item xs> {/* Esta columna ocupará todo el espacio restante */}
+      <Box
+        bgcolor="white"
+        ml={1} 
+        mr={1}
+        p={2}
+        boxShadow={3}
+        borderRadius={2}
+        width="calc(100% - 16px)" 
+        maxWidth="none" 
+      >
                         <form onSubmit={handleSubmit(onSubmit)} method="post">
                             <Emisor
                                 register={register}

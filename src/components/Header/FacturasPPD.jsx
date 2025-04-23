@@ -80,7 +80,7 @@ export default function UserMenu({ token }) {
           variant="dot" 
           invisible={pendingInvoices.length === 0 || !shouldFetchData()}
         >
-          <NotificationsIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
+          <ReceiptIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
         </Badge>
       </IconButton>
 
@@ -106,11 +106,6 @@ export default function UserMenu({ token }) {
           },
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '10px' }}>
-          <ReceiptIcon sx={{ fontSize: '3.5em', color: '#333' }} />
-        </Box>
-
-        <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
 
         {/* Mostrar las facturas pendientes */}
         {loading ? (
