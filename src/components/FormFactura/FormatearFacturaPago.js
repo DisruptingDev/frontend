@@ -54,7 +54,7 @@ export default function FormatearFactura(
       Moneda: "MXN",
       TipoCambio: "1",
       Total: facturaOriginal.Total || 0.0,
-      TipoDeComprobante: data.SeriePagos || "P",
+      TipoDeComprobante: "P",
       Exportacion: "01",
       LugarExpedicion: data.LugarExpedicion || "00000",
       EmisorID: data.EmisorID || "",
