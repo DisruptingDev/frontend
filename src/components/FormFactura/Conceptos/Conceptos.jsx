@@ -22,7 +22,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [objetoImpuesto, setObjetoImpuesto] = useState("02");
     const [conceptoSeleccionado, setConceptoSeleccionado] = useState(null);
     // Resto del código para los estados de error y el manejo del formulario
-    const [nombreError, setNombreError] = useState(false);  
+    const [nombreError, setNombreError] = useState(false);
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
@@ -301,7 +301,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         let hasError = false;
         // Validaciones para los campos de Conceptos
 
-        if(modalAgregarConcepto && !getValues('Nombre')){
+        if (modalAgregarConcepto && !getValues('Nombre')) {
             setNombreError(true);
             hasError = true;
         }
@@ -438,7 +438,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Impuestos: impuestos.map(impuesto => ({
                         NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
                         Impuesto: impuesto.ImpuestoCatalogoID,
-                        ImpuestoClave:  formatImpuestoClave(impuesto.ImpuestoClave),
+                        ImpuestoClave: formatImpuestoClave(impuesto.ImpuestoClave),
                         Tasa: impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || value.Subtotal,
@@ -449,8 +449,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 console.log("CONCEPTO", concepto);
                 setConceptoSeleccionado(concepto);
             }
-            else{
-                setValue("Descripcion",'')
+            else {
+                setValue("Descripcion", '')
             }
 
             setSelectedConcepto(null);
@@ -477,7 +477,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             mx={modalAgregarConcepto ? 0 : 4}
             boxShadow={modalAgregarConcepto ? 0 : 3}
             borderRadius={modalAgregarConcepto ? 0 : 2}
-            sx={{   padding: '1rem', margin:'auto', marginTop:'1rem'}}
+            sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem' }}
         >
             <Typography variant="h6" mb={4}>Conceptos</Typography>
             {modalAgregarConcepto === true ?
@@ -514,7 +514,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         options={conceptoOptions}
                         getOptionLabel={(option) => `${option.Nombre} - ${option.Descripcion}`}
                         value={selectedConcepto || null}
-                        inputValue={getValues("Descripcion") || ''} 
+                        inputValue={getValues("Descripcion") || ''}
                         // value={getValues("Descripcion")|| ''}
                         isOptionEqualToValue={(option, value) => option.ID === value.ID}
                         onInputChange={(event, newInputValue) => setQueryConcepto(newInputValue)}
@@ -627,6 +627,12 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                             inputValue = inputValue.replace(/\.+$/, '');
                         }
 
+                        // Limitar a cuatro cifras significativas después del punto decimal
+                        const decimalIndex = inputValue.indexOf('.');
+                        if (decimalIndex !== -1 && inputValue.length - decimalIndex - 1 > 4) {
+                            inputValue = inputValue.substring(0, decimalIndex + 5);
+                        }
+
                         // Establecer el valor solo si es válido
                         setValue('ValorUnitario', inputValue);
                         setValorUnitarioError(false);
@@ -636,6 +642,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     fullWidth
                     inputProps={{
                         inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
+                        step: "0.0001", // Permitir hasta cuatro decimales
                         pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
                     }}
                 />
@@ -667,7 +674,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 <TextField
                     label="Subtotal"
                     type="number"
-                    value={getValues("Subtotal")}
+                    value={(parseFloat(getValues("Subtotal")) || 0).toFixed(2)} // Limita a 2 decimales
                     fullWidth
                     InputProps={{ readOnly: true }}
                     disabled

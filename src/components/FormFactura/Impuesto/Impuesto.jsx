@@ -24,7 +24,7 @@ export default function Impuesto({
     const [monto, setMonto] = useState(0);
     const [tasaUrl, setTasaUrl] = useState('');
 
-   
+
 
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
@@ -49,19 +49,19 @@ export default function Impuesto({
             //     .then(data => {
             //         console.log(data);
             //         console.log("TIPO", impuestoEditor.TipoFactor);
-                    
+
             //       const opcionSeleccionada = data.find(opt => opt.Clave == impuestoEditor.Impuesto && opt.Tipo == impuestoEditor.TipoFactor);
             //       if (opcionSeleccionada) {
             //         setValue(`impuestos[${index}].ImpuestoClave`, opcionSeleccionada.Clave);
             //       }
-                    
+
             //       console.log("opcionSeleccionada",opcionSeleccionada);  
 
             //       // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
             //     })
             // }
-            
-            
+
+
 
             if (impuestoEditor.Tasa) {
                 console.log("TASA", impuestoEditor.Tasa);
@@ -80,7 +80,7 @@ export default function Impuesto({
     // Actualizar URL de tasas y sincronizar valores al cambiar impuesto
     useEffect(() => {
         if (impuesto) {
-            console.log('Entre impuestos',impuesto);
+            console.log('Entre impuestos', impuesto);
             try {
                 const data = JSON.parse(impuesto);
 
@@ -93,17 +93,17 @@ export default function Impuesto({
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
                     setTasaUrl(`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
-                    setValue(`impuestos.${index}.TasaUrl`,`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
+                    setValue(`impuestos.${index}.TasaUrl`, `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
                     // trigger(`impuestos[${index}].TasaUrl`);
                 }
-                
+
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
             }
         }
     }, [impuesto, index, setValue, getValues]);
 
-    
+
 
     // Calcular el monto basado en la tasa y base de impuesto
     useEffect(() => {
@@ -121,18 +121,18 @@ export default function Impuesto({
         if (tasaCuota) {
             console.log("ENTRE A CALCULAR", tasaCuota);
             const resultado = parseFloat(tasaCuota) * baseImpuesto;
-        
+
             // Solución para redondear correctamente cuando hay errores de precisión periódica
             const montoRedondeado = Math.round((resultado + Number.EPSILON) * 100) / 100;
-        
+
             setMonto(montoRedondeado);
             setValue(`impuestos[${index}].Monto`, montoRedondeado);
         } else {
             setMonto(0);
             setValue(`impuestos[${index}].Monto`, 0);
         }
-        
-    }, [tasa, baseImpuesto, setValue, index, getValues,impuestoEditor, watch(`impuestos[${index}].TasaOCuota`)]);
+
+    }, [tasa, baseImpuesto, setValue, index, getValues, impuestoEditor, watch(`impuestos[${index}].TasaOCuota`)]);
 
     // Manejar cambios en ObjetoImpuesto
     const handleObjetoImpuestoChange = (e) => {
@@ -215,7 +215,7 @@ export default function Impuesto({
                         label="Base Impuesto"
                         type="number"
                         {...register(`impuestos[${index}].BaseImpuesto`)}
-                        value={baseImpuesto}
+                        value={(parseFloat(baseImpuesto) || 0).toFixed(2)} // Limita a 2 decimales
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />

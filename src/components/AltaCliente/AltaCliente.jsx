@@ -155,6 +155,8 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
                         {...register("Rfc", { required: true })}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                        onInput={(e) => e.target.value = e.target.value.toUpperCase()} // Convierte a mayúsculas
+                        inputProps={{ maxLength: 13 }} // Limita a 13 caracteres
                     />
                     <Select
                         register={register} // Pasa register como prop

@@ -35,7 +35,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             Fecha: fechaFormateada,
             FormaPago: receptor.FormaPago,
             Serie: emisor.Serie,
-            SubTotal: subtotal,
+            SubTotal: parseFloat(subtotal.toFixed(2)),
             CondicionesDePago: "Condiciones De Pago",
             TipoDeComprobante: emisor.TipoComprobante,
             Descripcion: "",
@@ -65,7 +65,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                     Unidad: concepto.Unidad || "",
                     Descripcion: concepto.Descripcion,
                     ValorUnitario: concepto.ValorUnitario,
-                    Importe: concepto.Subtotal,
+                    Importe: parseFloat(concepto.Subtotal.toFixed(2)),
                     Descuento: concepto.Descuento,
                     ObjetoImp: concepto.ObjetoImpuesto,
                     Impuestos: {
