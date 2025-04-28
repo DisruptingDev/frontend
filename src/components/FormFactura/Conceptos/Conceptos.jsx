@@ -642,7 +642,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     fullWidth
                     inputProps={{
                         inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-                        step: "0.0001", // Permitir hasta cuatro decimales
+                        step: "0.000001", // Permitir hasta cuatro decimales
                         pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
                     }}
                 />
