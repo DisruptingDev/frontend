@@ -44,7 +44,7 @@ export default function FormatearFactura(
   if (modo === "Pago") {
     factura = {
       Version: facturaOriginal.Version || "4.0",
-      Fecha: data.FechaPago || new Date().toISOString(),
+      Fecha: facturaOriginal.Fecha,
       MetodoPago: "PUE",
       Serie: data.SeriePagos || "P",
       FormaPago: data.FormaPagoComprobante || "99 - Por definir",
