@@ -27,11 +27,30 @@ export default function FormatearFactura(
       : facturaOriginal.uuid || facturaOriginal.factura?.uuid || "";
 
   // Obtener la fecha actual de la computadora
-  const fechaActual = new Intl.DateTimeFormat("es-MX", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  function obtenerFechaHoraLocal() {
+    const ahora = new Date();
+
+    // Formatear fecha (YYYY-MM-DD)
+    const fecha = ahora
+      .toLocaleDateString("es-MX", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .replace(/(\d{2})\/(\d{2})\/(\d{4})/, "$3-$2-$1");
+
+    // Formatear hora (HH:MM:SS)
+    const hora = ahora.toLocaleTimeString("es-MX", {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    return `${fecha}T${hora}`;
+  }
+
+  //console.log(obtenerFechaHoraLocal()); // "2025-04-29T13:16:12" (hora local correcta)
 
   const calculoImpuestosTraslado = 0;
 
@@ -44,7 +63,7 @@ export default function FormatearFactura(
   if (modo === "Pago") {
     factura = {
       Version: facturaOriginal.Version || "4.0",
-      Fecha: facturaOriginal.factura.Fecha,
+      Fecha: obtenerFechaHoraLocal(),
       MetodoPago: "PUE",
       Serie: data.SeriePagos || "P",
       FormaPago: data.FormaPagoComprobante || "99 - Por definir",
