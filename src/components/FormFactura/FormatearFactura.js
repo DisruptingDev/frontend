@@ -77,7 +77,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                             TipoFactor: "Tasa",
                             TasaOCuota: retencion.TasaOCuota,
                             TasaCatalogoID: retencion.Tasa,
-                            Importe: retencion.Monto
+                            Importe: parseFloat(retencion.Monto)
                         })) : [],
                         Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
                             Base: parseFloat(traslado.BaseImpuesto.toFixed(2)),
@@ -86,7 +86,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                             TipoFactor: "Tasa",
                             TasaOCuota: traslado.TasaOCuota,
                             TasaCatalogoID: traslado.Tasa,
-                            Importe: traslado.Monto
+                            Importe: parseFloat(traslado.Monto)
                         })) : []
                     }
                 })),
