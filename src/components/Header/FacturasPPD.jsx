@@ -6,6 +6,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import ReceiptIcon from '@mui/icons-material/Receipt'; 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CircleIcon from '@mui/icons-material/Circle';
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function UserMenu({ token }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -30,7 +31,7 @@ export default function UserMenu({ token }) {
       }
 
       try {
-        const response = await fetch('https://api.sandbox.wisefacturacion.com/api/facturas/FacturasPendientes', {
+        const response = await fetch(`${apiUrl}/api/facturas/FacturasPendientes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -66,6 +67,7 @@ export default function UserMenu({ token }) {
 
   const handlePPDInvoicesClick = () => {
     handleMenuClose();
+    localStorage.setItem('authToken', token);
     router.push('/ValidarPPD');
   };
 

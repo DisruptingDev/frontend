@@ -587,6 +587,13 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
+  const handleEditPay = () => {
+    if (menuRow) {
+      console.log(menuRow);
+      router.push(`/EditarComplementoPago/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+    }
+  };
+
   const handleClone = () => {
     if (menuRow) {
       console.log(menuRow);
@@ -798,6 +805,7 @@ export default function DataTable({ token, filtro }) {
                         ]}
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
+                          <MenuItem key="editar" onClick={handleEditPay}>Editar</MenuItem>,
                           <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
                           <MenuItem key="delete" onClick={() => handleDelete([menuRow.ID])}>Eliminar</MenuItem>,
                         ]}

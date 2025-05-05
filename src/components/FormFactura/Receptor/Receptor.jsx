@@ -78,9 +78,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             }
             setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
-            trigger("RFCReceptor");
-            trigger("DomicilioFiscalReceptor");
-            trigger("RegimenFiscal");
+            trigger(["RFCReceptor","DomicilioFiscalReceptor","RegimenFiscalReceptor"]);
         }
     }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion]);
 
@@ -264,7 +262,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 />
                 <TextField
                     label="Regimen Fiscal"
-                    {...register("RegimenFiscal", { required: "Este campo es obligatorio." })}
+                    {...register("RegimenFiscal" || "616", { required: "Este campo es obligatorio." })}
                     value={regimenFiscalText}
                     fullWidth
                     sx={{

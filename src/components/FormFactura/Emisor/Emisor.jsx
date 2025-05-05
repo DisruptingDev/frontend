@@ -80,7 +80,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
             setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
-            trigger(["Emisor", "RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
+            trigger(["Emisor", "RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha", "TipoCambio"]);
         }
     }, [emisorData, setValue, trigger, getValues]);
 
@@ -134,7 +134,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
-            console.log("SERie", data);
+            //console.log("Serie:", data);
             setValue("TipoComprobante", data.TipoComprobante);
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
@@ -270,7 +270,9 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
                 <TextField
                     label="Tipo de cambio"
+                    {...register("TipoCambio", { required: "Campo obligatorio" })}
                     fullWidth
+                    defaultValue="1"
                     disabled
                     error={!!errors.TipoCambio}
                     helperText={errors.TipoCambio && errors.TipoCambio.message}
