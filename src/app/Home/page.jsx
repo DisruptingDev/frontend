@@ -77,6 +77,7 @@ export default function Home() {
                         p={2}
                         boxShadow={3}
                         borderRadius={2}
+                        mb={6}
                     >
                         <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} />
