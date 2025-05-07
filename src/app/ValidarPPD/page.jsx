@@ -13,7 +13,6 @@ export default function ValidarPPD() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [token, setToken] = useState("");
     const router = useRouter();
 
     // Definimos fetchData primero para que esté disponible
@@ -84,7 +83,7 @@ export default function ValidarPPD() {
             label: "Saldo Insoluto",
             options: {
                 filter: true,
-                customBodyRender: (value) => 
+                customBodyRender: (value) =>
                     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value || 0),
             }
         },
@@ -103,16 +102,19 @@ export default function ValidarPPD() {
             }
         },
         {
-            name: "acciones",
+            name: "ID",
             label: "Acciones",
             options: {
                 filter: false,
                 sort: false,
                 customBodyRender: (value, tableMeta) => {
                     const rowData = tableMeta.rowData; // Acceso a todos los datos de la fila
+                    console.log("Row data:", rowData); // Verifica los datos de la fila
+                    const facturaID = tableMeta.rowData[5]; // Recuperar el ID de la factura
+                    console.log("Factura ID:", facturaID); // Verifica el ID de la factura
                     return (
                         <button
-                            onClick={() => handleGenerarCP(rowData)}
+                            onClick={() => handleGenerarCP(rowData, facturaID)}
                             style={{ cursor: "pointer", background: "none", border: "none", color: "#007bff" }}
                         >
                             Generar CP
@@ -123,10 +125,37 @@ export default function ValidarPPD() {
         },
     ];
 
+
+
     // Función para manejar el click en "Generar CP"
-    const handleGenerarCP = (rowData) => {
+    const handleGenerarCP = async (rowData, facturaID) => {
+        console.log("ID de la factura:", facturaID);
         console.log("Generar CP para:", rowData);
-        // Aquí puedes implementar tu lógica para abrir un modal o redirigir
+        console.log("Emisor ID", rowData[1].ID);
+        const token = localStorage.getItem('authToken');
+        try {
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${rowData[1].ID}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Datos recibidos de la API:', data);
+                const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
+                console.log('Opciones:', opciones);
+                if (opciones.length > 0) {
+                    router.push(`/FacturaPago/${facturaID}`); // Redirige a la página de edición con el ID de la factura
+                }
+                else {
+                    setConfirmationMessage('No existe serie de pago, validar');
+                    setOpenModalError(true);
+                }
+            }
+        } catch (error) {
+            console.error('Error obteniendo la serie:', error);
+        }
     };
 
     const options = {

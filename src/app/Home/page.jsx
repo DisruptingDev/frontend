@@ -3,14 +3,13 @@
 // Importación de hooks y utilidades
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import LayoutContent from "@/@layouts/components/vertical/LayoutContent";
 // Importación de componentes personalizados
 import Header from "@/components/Header/Header.jsx";
 
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
 import Tabla from "@/components/Home/Tabla/Tabla.jsx";
-import ModalWizard from "@/components/Home/Modales/modalWizard";
+//import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
 import { isAuthenticated } from "@/utils/authRedirect";
@@ -18,7 +17,6 @@ import { isAuthenticated } from "@/utils/authRedirect";
 // Componente de diseño de Material-UI
 import { Box } from "@mui/material";
 import Grid from '@mui/material/Unstable_Grid2';
-import Footer from "@/components/Footer/Footer";
 
 // Componente principal de la página Home
 export default function Home() {
@@ -28,8 +26,7 @@ export default function Home() {
 
     //Nuevo usuario
     const [newUser, setNewUser] = useState(null);
-    // const [newUser, setNewUser] = useState("true");
-    const [open, setOpen] = useState(false);
+    const [setOpen] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
@@ -61,10 +58,7 @@ export default function Home() {
             setOpen(true);
             sessionStorage.setItem('newUser', "false");
         }
-
-
-    }
-        , [newUser]);
+    }, [newUser]);
 
     return (
         <div>
