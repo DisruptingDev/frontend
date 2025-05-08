@@ -140,6 +140,7 @@ export default function CrearFactura() {
                         p={2}
                         boxShadow={3}
                         borderRadius={2}
+                        mb={6}
                     >
                         <form onSubmit={handleSubmit(onSubmit)} method="post">
                             <Emisor

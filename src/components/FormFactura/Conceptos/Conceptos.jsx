@@ -466,6 +466,42 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         }
         return value; // Si no es un número, devuelve el valor tal cual
     };
+
+    const formatCurrency = (value) => {
+        if (!value) return '$';
+
+        // Convertir a string y limpiar (por si acaso)
+        const numStr = value.toString().replace(/[^0-9.]/g, '');
+
+        // Separar parte entera y decimal
+        const parts = numStr.split('.');
+        let integerPart = parts[0];
+        const decimalPart = parts.length > 1 ? `.${parts[1]}` : '';
+
+        // Formatear parte entera con separadores de miles
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        return `$${integerPart}${decimalPart}`;
+    };
+
+    const format2Currency = (value) => {
+        if (value === undefined || value === null || value === "") return "$0.00";
+
+        // Limpiar caracteres no numéricos
+        const numStr = value.toString().replace(/[^0-9.]/g, '');
+
+        // Separar parte entera y decimal
+        const [integerPart, decimalPart = "00"] = numStr.split('.');
+
+        // Formatear parte entera con separadores de miles
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        // Asegurar 2 decimales (rellena con 0 si es necesario)
+        const formattedDecimal = decimalPart.padEnd(2, '0').slice(0, 2);
+
+        return `$${formattedInteger}.${formattedDecimal}`;
+    };
+
     return (
 
         // <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
@@ -481,7 +517,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         >
             <Typography variant="h6" mb={4}>Conceptos</Typography>
             {modalAgregarConcepto === true ?
-                <Box display="grid" gridTemplateColumns="8fr">
+                <Box display="grid" gridTemplateColumns="10fr">
                     <TextField
                         sx={{ marginBottom: 2 }}
                         label='Nombre del Concepto'
@@ -507,7 +543,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 </Box>
 
                 :
-                <Box display="grid" gridTemplateColumns="8fr" >
+                <Box display="grid" gridTemplateColumns="10fr" >
                     <Autocomplete
                         freeSolo
                         // options={[{ ID: "Nuevo", Nombre: "Nuevo Concepto" }, ...conceptoOptions]}
@@ -546,7 +582,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr  '
+                    lg: '1.5fr 1.5fr 1fr 1fr 1fr 1fr  '
                 }}
                 gap={3}
                 mt={4}>
@@ -613,27 +649,27 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 />
                 <TextField
                     label="Precio Unitario"
-                    type="number"
-                    value={getValues("ValorUnitario")}
+                    type="text" // Mantenemos como 'text' para manejar el formato
+                    value={formatCurrency(getValues("ValorUnitario"))}
                     onChange={(e) => {
-                        // Captura el valor introducido
-                        let inputValue = e.target.value;
+                        // Eliminar el símbolo $ y cualquier formato existente
+                        const rawValue = e.target.value.replace(/[^0-9.]/g, '');
 
-                        // Permitir solo números y un solo punto decimal
-                        inputValue = inputValue.replace(/[^0-9.]/g, '');
+                        // Validaciones como antes
+                        let inputValue = rawValue;
 
                         // Asegurar que solo haya un punto decimal
                         if ((inputValue.match(/\./g) || []).length > 1) {
                             inputValue = inputValue.replace(/\.+$/, '');
                         }
 
-                        // Limitar a cuatro cifras significativas después del punto decimal
+                        // Limitar decimales
                         const decimalIndex = inputValue.indexOf('.');
                         if (decimalIndex !== -1 && inputValue.length - decimalIndex - 1 > 4) {
                             inputValue = inputValue.substring(0, decimalIndex + 5);
                         }
 
-                        // Establecer el valor solo si es válido
+                        // Guardar el valor numérico (sin formato)
                         setValue('ValorUnitario', inputValue);
                         setValorUnitarioError(false);
                     }}
@@ -641,40 +677,44 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     helperText={valorUnitarioError && "Campo obligatorio."}
                     fullWidth
                     inputProps={{
-                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-                        step: "0.000001", // Permitir hasta cuatro decimales
-                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                        inputMode: 'decimal',
                     }}
                 />
                 <TextField
                     label="Descuento"
-                    type="number"
-                    value={getValues("Descuento")}
+                    type="text"  // Cambiado a "text" para permitir el formato
+                    value={formatCurrency(getValues("Descuento"))}
                     onChange={(e) => {
-                        // Captura el valor introducido
-                        let inputValue = e.target.value;
-                        // Permitir solo números y un solo punto decimal
-                        inputValue = inputValue.replace(/[^0-9.]/g, '');
-                        // Asegurar que solo haya un punto decimal
+                        // Capturar el valor y eliminar símbolos de formato ($ y comas)
+                        let inputValue = e.target.value.replace(/[^0-9.]/g, '');
+
+                        // Validaciones:
+                        // 1. Solo un punto decimal
                         if ((inputValue.match(/\./g) || []).length > 1) {
                             inputValue = inputValue.replace(/\.+$/, '');
                         }
-                        // Establecer el valor solo si es válido
-                        setValue('Descuento', inputValue);
+
+                        // 2. Limitar a 2 decimales (opcional, ajusta según necesidad)
+                        const decimalIndex = inputValue.indexOf('.');
+                        if (decimalIndex !== -1 && inputValue.length - decimalIndex - 1 > 2) {
+                            inputValue = inputValue.substring(0, decimalIndex + 3);
+                        }
+
+                        // Guardar el valor numérico (sin formato)
+                        setValue('Descuento', inputValue === "" ? "" : inputValue); // Evita "0" al borrar
                     }}
                     error={descuentoError}
                     helperText={descuentoError && descuentoErrorMesage}
                     fullWidth
                     inputProps={{
-                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                        inputMode: 'decimal',
                     }}
                 />
 
                 <TextField
                     label="Subtotal"
-                    type="number"
-                    value={(parseFloat(getValues("Subtotal")) || 0).toFixed(2)} // Limita a 2 decimales
+                    type="text"
+                    value={format2Currency(getValues("Subtotal"))}
                     fullWidth
                     InputProps={{ readOnly: true }}
                     disabled

@@ -35,31 +35,7 @@ export default function Impuesto({
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
             setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
-            // // Solo buscar opciones de impuestos si el nombre de impuesto está vacío
-            // if (impuestoEditor.NombreImpuesto === "") {
-            //     const token = localStorage.getItem('authToken');
-            //     fetch(`${apiUrl}/Catalogos/ImpuestoClave`, {
-            //         method: 'GET',
-            //         headers: {
-            //             'Authorization': `Bearer ${token}`,
-            //             'Content-Type': 'application/json'
-            //         }
-            //     })
-            //     .then(response => response.json())
-            //     .then(data => {
-            //         console.log(data);
-            //         console.log("TIPO", impuestoEditor.TipoFactor);
 
-            //       const opcionSeleccionada = data.find(opt => opt.Clave == impuestoEditor.Impuesto && opt.Tipo == impuestoEditor.TipoFactor);
-            //       if (opcionSeleccionada) {
-            //         setValue(`impuestos[${index}].ImpuestoClave`, opcionSeleccionada.Clave);
-            //       }
-
-            //       console.log("opcionSeleccionada",opcionSeleccionada);  
-
-            //       // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
-            //     })
-            // }
 
 
 
@@ -119,7 +95,7 @@ export default function Impuesto({
         //     setValue(`impuestos[${index}].Monto`, 0);
         // }
         if (tasaCuota) {
-            console.log("ENTRE A CALCULAR", tasaCuota);
+            //console.log("ENTRE A CALCULAR", tasaCuota);
             const resultado = parseFloat(tasaCuota) * baseImpuesto;
 
             // Solución para redondear correctamente cuando hay errores de precisión periódica
@@ -158,6 +134,23 @@ export default function Impuesto({
         } catch (error) {
             console.error("Error al manejar el cambio de tasa:", error);
         }
+    };
+
+    const formatCurrency = (value) => {
+        if (!value) return '$';
+
+        // Convertir a string y limpiar (por si acaso)
+        const numStr = value.toString().replace(/[^0-9.]/g, '');
+
+        // Separar parte entera y decimal
+        const parts = numStr.split('.');
+        let integerPart = parts[0];
+        const decimalPart = parts.length > 1 ? `.${parts[1]}` : '';
+
+        // Formatear parte entera con separadores de miles
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        return `$${integerPart}${decimalPart}`;
     };
 
     return (
@@ -213,20 +206,22 @@ export default function Impuesto({
                 <Box flex={1}>
                     <TextField
                         label="Base Impuesto"
-                        type="number"
-                        {...register(`impuestos[${index}].BaseImpuesto`)}
-                        value={(parseFloat(baseImpuesto) || 0).toFixed(2)} // Limita a 2 decimales
+                        type="text"  // Cambiamos a "text" para mostrar el formato
+                        {...register(`impuestos[${index}].BaseImpuesto`)} // Mantenemos el registro de React Hook Form
+                        value={formatCurrency(baseImpuesto || "0")} // Aseguramos que no sea undefined
                         fullWidth
-                        InputProps={{ readOnly: true }}
+                        InputProps={{
+                            readOnly: true,
+                        }}
                     />
                 </Box>
 
                 <Box flex={1}>
                     <TextField
                         label="Monto"
-                        type="number"
+                        type="text"
                         {...register(`impuestos[${index}].Monto`)}
-                        value={monto}
+                        value={formatCurrency(monto)}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
