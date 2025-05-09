@@ -25,21 +25,27 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     const [impuestos, setImpuestos] = useState(factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || []);
     const monto = watch("Monto");
 
-    // Función para recalcular impuestos
+    // Función para recalcular impuestos correctamente
     const recalcularImpuestos = (nuevoMonto) => {
         if (!impuestos.length || !nuevoMonto) return;
 
         const montoNumerico = parseFloat(nuevoMonto) || 0;
-        const totalImpuestosOriginal = impuestos.reduce((sum, imp) => sum + parseFloat(imp.Importe), 0);
-        const factor = totalImpuestosOriginal > 0 ? montoNumerico / (parseFloat(factura.Complemento.Pagos.Pagos[0].Monto) - totalImpuestosOriginal) : 0;
+
+        // Calculamos la base gravable (monto sin IVA)
+        // Para IVA del 16%: base = monto / 1.16
+        const baseGravable = montoNumerico / 1.16;
+        const importeIVA = montoNumerico - baseGravable;
 
         const nuevosImpuestos = impuestos.map(impuesto => {
-            const nuevoImporte = parseFloat(impuesto.Importe) * factor;
-            return {
-                ...impuesto,
-                Base: (nuevoImporte / parseFloat(impuesto.TasaOCuota)).toFixed(2),
-                Importe: nuevoImporte.toFixed(2)
-            };
+            // Solo aplicamos el cálculo para IVA (002)
+            if (impuesto.ImpuestoClave === "002") {
+                return {
+                    ...impuesto,
+                    Base: baseGravable.toFixed(2),
+                    Importe: importeIVA.toFixed(2)
+                };
+            }
+            return impuesto;
         });
 
         setImpuestos(nuevosImpuestos);
@@ -48,7 +54,8 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     // Efecto que se dispara cuando cambia el monto
     useEffect(() => {
         recalcularImpuestos(monto);
-    }, [monto]);
+        // Añadimos impuestos como dependencia para evitar warnings
+    }, [monto, impuestos.length]); // Solo se ejecuta cuando monto o la longitud de impuestos cambia
 
     const handleMontoChange = (e) => {
         const value = e.target.value.replace(/[^0-9.]/g, "");
@@ -129,7 +136,10 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("SeriePagos")}
                             label="Serie"
-                            value={getValues("SeriePagos")}
+                            value={watch("SeriePagos")}  // Usar watch en lugar de getValues
+                            onChange={(e) => {
+                                setValue("SeriePagos", e.target.value, { shouldValidate: true });
+                            }}
                         >
                             {opcionesSerie.map((opcion) => (
                                 <MenuItem key={opcion.ID} value={opcion.Clave}>{opcion.Clave}</MenuItem>
@@ -142,7 +152,10 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("FormaPagoComprobante")}
                             label="Forma de Pago"
-                            value={getValues("FormaPagoComprobante")}
+                            value={watch("FormaPagoComprobante")}  // Usar watch
+                            onChange={(e) => {
+                                setValue("FormaPagoComprobante", e.target.value, { shouldValidate: true });
+                            }}
                         >
                             {opcionesFormaPago.map((data) => (
                                 <MenuItem key={data.Clave} value={data.Clave}>{data.Descripcion}</MenuItem>
@@ -211,21 +224,48 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         InputProps={{ readOnly: true }}
                     />
                 </Box>
-                {impuestos.map((impuesto, index) => (
-                    console.log("Impuesto antes:", impuesto),
-                    <ImpuestoPago
-                        key={index}
-                        impuesto={impuesto}
-                        index={index}
-                        register={register}
-                        setValue={setValue}
-                        getValues={getValues}
-                        watch={watch}
-                        readOnly={true} // O false si quieres permitir edición
-                        mt={2} // Espaciado entre impuestos
-                    />
-                ))}
-
+                <Box mt={4}>
+                    <Typography variant="h6">Impuestos</Typography>
+                    {impuestos.map((impuesto) => (
+                        <Box
+                            key={impuesto.NombreImpuesto}
+                            display="grid"
+                            gridTemplateColumns="repeat(4, 1fr)"
+                            gap={2}
+                            alignItems="center"
+                            my={2}
+                        >
+                            <TextField
+                                label="Impuesto"
+                                value={impuesto.ImpuestoClave === "002" ? "IVA" : impuesto.ImpuestoClave} // Asigna visualmente "IVA" si cumple la condición
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                                disabled
+                            />
+                            <TextField
+                                label="Tasa o Cuota"
+                                value={impuesto.TasaOCuota}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                                disabled
+                            />
+                            <TextField
+                                label="Base Gravada"
+                                value={impuesto.Base}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                                disabled
+                            />
+                            <TextField
+                                label="Importe"
+                                value={impuesto.Importe}
+                                fullWidth
+                                InputProps={{ readOnly: true }}
+                                disabled
+                            />
+                        </Box>
+                    ))}
+                </Box>
                 <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
                     <Button variant="outlined" onClick={onCancel}>
                         Cancelar
