@@ -1,10 +1,14 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert, FormControl, InputLabel, MenuItem, Select as MUISelect, FormHelperText } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+// Definir los regímenes para cada tipo de contribuyente como Sets
+const REGIMENES_FISICOS = new Set(["605", "606", "607", "608", "610", "611", "612", "614", "615", "616", "621", "625", "626"]);
+const REGIMENES_MORALES = new Set(["601", "603", "610", "620", "622", "623", "624", "626"]);
 
 export default function AltaCliente({ onClose, cliente, setActualizar, token }) {
     const { register, reset, handleSubmit, setValue, watch, formState: { errors } } = useForm();
@@ -13,10 +17,8 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
     const [editar, setEditar] = useState(false);
     const [regimenesFiltrados, setRegimenesFiltrados] = useState([]);
     const [catalogoCompleto, setCatalogoCompleto] = useState([]);
-
-    // Definir los regímenes para cada tipo de contribuyente
-    const regimenesFisicos = ["605", "606", "607", "608", "610", "611", "612", "614", "615", "616", "621", "625", "626"];
-    const regimenesMorales = ["601", "603", "610", "620", "622", "623", "624", "626"];
+    const effectRunCount = useRef(0); // Para depuración
+    const selectedRegimen = watch("RegimenFiscal");
 
     // Observar cambios en el RFC
     const rfcValue = watch("Rfc", "");
@@ -37,7 +39,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
 
                 const data = await response.json();
-                setCatalogoCompleto(data.regimenFiscal || []);
+                setCatalogoCompleto(data || []); // Ajuste aquí para el formato de respuesta
             } catch (error) {
                 console.error("Error al cargar el catálogo:", error);
                 setToast({
@@ -51,38 +53,63 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
         cargarCatalogo();
     }, [token]);
 
-    // Filtrar regímenes cuando cambia el RFC o el catálogo
-    useEffect(() => {
-        if (!catalogoCompleto.length) return;
-
-        const tipoContribuyente = obtenerTipoContribuyente(rfcValue);
-        let filtrados = [];
-
-        if (tipoContribuyente === "F") {
-            filtrados = catalogoCompleto.filter(regimen =>
-                regimenesFisicos.includes(regimen.Clave)
-            );
-        } else if (tipoContribuyente === "M") {
-            filtrados = catalogoCompleto.filter(regimen =>
-                regimenesMorales.includes(regimen.Clave)
-            );
-        }
-
-        setRegimenesFiltrados(filtrados);
-
-        // Resetear el valor seleccionado si los filtrados no lo contienen
-        if (cliente?.RegimenFiscalReceptor && !filtrados.some(r => r.Clave === cliente.RegimenFiscalReceptor)) {
-            setValue("RegimenFiscal", "");
-        }
-    }, [rfcValue, catalogoCompleto, cliente, setValue]);
-
+    // Función mejorada para obtener tipo de contribuyente
     const obtenerTipoContribuyente = (rfc) => {
         if (!rfc) return null;
         const rfcLimpio = rfc.trim().toUpperCase();
-        if (rfcLimpio.length === 13) return "F"; // Persona Física
-        if (rfcLimpio.length === 12) return "M"; // Persona Moral
+
+        // Validación más estricta del RFC
+        const regexFisica = /^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/;
+        const regexMoral = /^[A-ZÑ&]{3}\d{6}[A-Z0-9]{3}$/;
+
+        if (regexFisica.test(rfcLimpio)) return "F";
+        if (regexMoral.test(rfcLimpio)) return "M";
+
         return null;
     };
+
+    // Efecto para filtrar regímenes cuando cambia el RFC o el catálogo
+    useEffect(() => {
+        effectRunCount.current += 1;
+        // console.log(`🔄 Efecto de filtrado ejecutado (${effectRunCount.current} veces)`);
+        // console.log("📌 Dependencias - RFC:", rfcValue, "Catálogo:", catalogoCompleto.length > 0);
+
+        if (!catalogoCompleto || catalogoCompleto.length === 0) {
+            // console.log("⛔ Catálogo vacío - no se puede filtrar");
+            setRegimenesFiltrados([]);
+            return;
+        }
+
+        const tipoContribuyente = obtenerTipoContribuyente(rfcValue);
+        // console.log("🔍 Tipo de contribuyente:", tipoContribuyente);
+
+        let filtrados = [];
+        const rfcValido = tipoContribuyente !== null;
+
+        if (rfcValido) {
+            const regimenesPermitidos = tipoContribuyente === "F" ? REGIMENES_FISICOS : REGIMENES_MORALES;
+            // console.log("📋 Regímenes permitidos:", Array.from(regimenesPermitidos));
+
+            filtrados = catalogoCompleto.filter(regimen => {
+                const clave = regimen.Clave.toString(); // Asegurar que es string
+                const incluido = regimenesPermitidos.has(clave);
+                // if (!incluido) {
+                //     console.log(`❌ Régimen excluido: ${clave} - ${regimen.Descripcion}`);
+                // }
+                return incluido;
+            });
+        }
+
+        // console.log("✅ Regímenes filtrados:", filtrados);
+        setRegimenesFiltrados(filtrados);
+
+        // Resetear valor si es necesario
+        const regimenActual = watch("RegimenFiscal");
+        if (regimenActual && !filtrados.some(r => r.Clave.toString() === regimenActual.toString())) {
+            console.log("🔄 Reseteando régimen fiscal seleccionado");
+            setValue("RegimenFiscal", "");
+        }
+    }, [rfcValue, catalogoCompleto, setValue, watch]);
 
     // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
@@ -226,7 +253,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                             required: "Este campo es obligatorio",
                             validate: (value) => {
                                 const rfc = value?.trim().toUpperCase() || '';
-                                return rfc.length === 12 || rfc.length === 13 || "RFC debe tener 12 (moral) o 13 (física) caracteres";
+                                return rfc.length === 12 || rfc.length === 13 || "RFC debe tener al menos 12 caracteres";
                             }
                         })}
                         error={!!errors.Rfc}
@@ -240,27 +267,26 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
 
-                    <Select
-                        label="Régimen Fiscal*"
-                        name="RegimenFiscal"
-                        error={!!errors.RegimenFiscal}
-                        helperText={errors.RegimenFiscal?.message || (
-                            !rfcValue || rfcValue.length < 12 ?
-                                "Ingrese un RFC válido primero" :
-                                regimenesFiltrados.length === 0 ?
-                                    "No hay regímenes disponibles para este tipo de RFC" :
-                                    ""
-                        )}
-                        disabled={!rfcValue || rfcValue.length < 12 || regimenesFiltrados.length === 0}
-                        {...register("RegimenFiscal", { required: "Seleccione un régimen fiscal" })}
-                    >
-                        <option value="">Seleccione un régimen</option>
-                        {regimenesFiltrados.map(regimen => (
-                            <option key={regimen.Clave} value={regimen.Clave}>
-                                {regimen.Clave} - {regimen.Descripcion}
-                            </option>
-                        ))}
-                    </Select>
+                    <FormControl fullWidth margin="normal" error={!!errors.RegimenFiscal} disabled={!rfcValue || rfcValue.length < 12 || regimenesFiltrados.length === 0} sx={{ alignSelf: 'start', marginTop: '0px' }}>
+                        <InputLabel id="regimen-label">Régimen Fiscal*</InputLabel>
+                        <MUISelect
+                            labelId="regimen-label"
+                            id="RegimenFiscal"
+                            value={selectedRegimen || ""}
+                            label="Régimen Fiscal*"
+                            onChange={(e) => setValue("RegimenFiscal", e.target.value)}
+                            name="RegimenFiscal"
+                        >
+                            <MenuItem value="">Seleccione un régimen</MenuItem>
+                            {regimenesFiltrados.map(regimen => (
+                                <MenuItem key={regimen.Clave} value={regimen.Clave}>
+                                    {`${regimen.Clave} - ${regimen.Descripcion}`}
+                                </MenuItem>
+                            ))}
+                        </MUISelect>
+                        {errors.RegimenFiscal && <FormHelperText>Este campo es obligatorio</FormHelperText>}
+                    </FormControl>
+
                     <TextField
                         label="Domicilio Fiscal"
                         fullWidth
