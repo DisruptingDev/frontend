@@ -57,27 +57,52 @@ export default function EditarComplementoPago() {
 
     const handleSave = async (editedPago) => {
         try {
-            const payload = {
-                ...editedPago,
-                // Asegurar los tipos de datos correctos
-                Monto: parseFloat(editedPago.Monto),
-                FechaPago: new Date(editedPago.FechaPago).toISOString(),
-                DoctoRelacionados: [{
-                    ...facturaData.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0],
-                    ImpPagado: parseFloat(editedPago.Monto),
-                    ImpSaldoInsoluto: parseFloat(editedPago.ImpSaldoInsoluto)
-                }]
+            const updatedFactura = {
+                ...facturaData.factura,
+                Serie: editedPago.SeriePagos,
+                Fecha: editedPago.FechaPago,
+                Complemento: {
+                    ...facturaData.factura.Complemento,
+                    Pagos: {
+                        ...facturaData.factura.Complemento.Pagos,
+                        Pagos: [{
+                            ...facturaData.factura.Complemento.Pagos.Pagos[0],
+                            FechaPago: editedPago.FechaPago,
+                            FormaDePagoP: editedPago.FormaPagoComprobante,
+                            Monto: parseFloat(editedPago.Monto),
+                            DoctoRelacionados: [{
+                                ...facturaData.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0],
+                                ImpPagado: parseFloat(editedPago.Monto),
+                                ImpSaldoInsoluto: parseFloat(editedPago.ImpSaldoInsoluto)
+                            }],
+                            Impuestos: {
+                                ...facturaData.factura.Complemento.Pagos.Pagos[0].Impuestos,
+                                Traslados: facturaData.factura.Complemento.Pagos.Pagos[0].Impuestos.Traslados.map(t => ({
+                                    ...t,
+                                    Base: parseFloat(editedPago.Monto) / 1.16,
+                                    Importe: parseFloat(editedPago.Monto) - (parseFloat(editedPago.Monto) / 1.16)
+                                }))
+                            }
+                        }],
+                        Totales: {
+                            ...facturaData.factura.Complemento.Pagos.Totales,
+                            TotalTrasladosBaseIVA16: parseFloat(editedPago.Monto) / 1.16,
+                            TotalTrasladosImpuestoIVA16: parseFloat(editedPago.Monto) - (parseFloat(editedPago.Monto) / 1.16),
+                            MontoTotalPagos: parseFloat(editedPago.Monto)
+                        }
+                    }
+                }
             };
 
-            console.log("Payload a enviar:", payload);
+            console.log("Factura actualizada:", updatedFactura);
 
-            const response = await fetch(`${apiUrl}/api/facturas/ActualizarComplementoPago/${id}`, {
+            const response = await fetch(`${apiUrl}/api/facturas/EditarFactura`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(updatedFactura)
             });
 
             if (!response.ok) {
@@ -91,7 +116,7 @@ export default function EditarComplementoPago() {
 
         } catch (error) {
             console.error("Error al guardar:", error);
-            setSnackbarMessage(error.message);
+            setSnackbarMessage(error.message || 'Error al actualizar el pago');
             setOpenSnackbar(true);
         }
     };

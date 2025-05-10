@@ -3,13 +3,13 @@ import React, { useState, useEffect, useMemo, use } from "react";
 import { TextField, Box, Typography, FormControl, InputLabel, MenuItem, Button, Select as MuiSelect } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import ImpuestoPago from "./ImpuestosPago";
 import ReactDatePicker from "./DatePickerComponent";
+import { ConstructionOutlined } from "@mui/icons-material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function EditarPago({ factura, token, onSave, onCancel }) {
-    const { register, handleSubmit, setValue, getValues, watch, formState: { errors } } = useForm({
+    const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
             FechaPago: format(new Date(factura.Complemento.Pagos.Pagos[0].FechaPago), "yyyy-MM-dd'T'HH:mm:ss"),
             FormaPagoComprobante: factura.Complemento.Pagos.Pagos[0].FormaDePagoP,
@@ -98,15 +98,24 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     }, [token]);
 
     const onSubmit = (data) => {
+        const baseGravable = parseFloat(data.Monto) / 1.16;
+        const importeIVA = parseFloat(data.Monto) - baseGravable;
+    
         const payload = {
             ...data,
-            Impuestos: impuestos,
-            DoctoRelacionado: {
-                ...factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0],
-                ImpPagado: data.Monto,
-                ImpSaldoInsoluto: data.ImpSaldoInsoluto
+            FechaPago: format(fechaPago, "yyyy-MM-dd'T'HH:mm:ss"),
+            Impuestos: impuestos.map(impuesto => ({
+                ...impuesto,
+                Base: baseGravable.toFixed(2),
+                Importe: importeIVA.toFixed(2)
+            })),
+            Totales: {
+                TotalTrasladosBaseIVA16: baseGravable.toFixed(2),
+                TotalTrasladosImpuestoIVA16: importeIVA.toFixed(2),
+                MontoTotalPagos: data.Monto
             }
         };
+    
         onSave(payload);
     };
 
@@ -120,7 +129,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         xs: '1fr',
                         sm: 'repeat(2, 1fr)',
                         md: 'repeat(3, 1fr)',
-                        lg: 'repeat(6, 2fr)'
+                        lg: 'repeat(6, 1fr)'
                     }
                 }}>
                     <ReactDatePicker
@@ -203,6 +212,12 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         lg: 'repeat(4, 1fr)'
                     }
                 }}>
+                    <TextField
+                        label="Numero de Operacion"
+                        value={factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].NumParcialidad}
+                        fullWidth
+                        InputProps={{ readOnly: true }}
+                    />
                     <TextField
                         label="Saldo Anterior"
                         value={factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt}

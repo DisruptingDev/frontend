@@ -198,36 +198,36 @@ export default function DataTable({ token, filtro }) {
     setPdfError(null);
 
     try {
-      const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
-        method: 'POST',
+      const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(id),
       });
 
-      if (!response.ok) throw new Error('Error al obtener el archivo desde el servidor.');
+      if (!response.ok) {
+        throw new Error('Error al obtener el PDF desde el servidor.');
+      }
 
-      const zipBlob = await response.blob();
-      const jszip = new JSZip();
-      const zipContent = await jszip.loadAsync(zipBlob);
+      // Verificar el tipo de contenido
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        // Opcional: Ver los primeros bytes para diagnóstico
+        const blob = await response.blob();
+        const firstBytes = await getFirstBytes(blob);
+        console.log("Primeros bytes del archivo:", firstBytes);
+        throw new Error('El archivo recibido no es un PDF válido.');
+      }
 
-      const folderName = `Factura_${id}/`;
-      const folderFiles = Object.keys(zipContent.files)
-        .filter(relativePath => relativePath.startsWith(folderName) && !relativePath.endsWith('/'));
+      const pdfBlob = await response.blob();
+      const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      if (folderFiles.length === 0) throw new Error(`No se encontraron archivos en ${folderName}.`);
+      // Opción 1: Mostrar en modal
+      // setPdfUrl(pdfUrl);
+      // setPdfModalOpen(true);
 
-      const pdfFileName = folderFiles.find(fileName => fileName.toLowerCase().endsWith('.pdf'));
-      if (!pdfFileName) throw new Error('No se encontró un archivo PDF.');
-
-      const pdfFile = zipContent.files[pdfFileName];
-      const pdfBlob = await pdfFile.async('blob');
-      const url = URL.createObjectURL(pdfBlob);
-
-      setPdfUrl(url);
-      setPdfModalOpen(true);
+      // Opción 2: Abrir en nueva pestaña
+      window.open(pdfUrl, '_blank');
 
     } catch (error) {
       console.error("Error:", error);
@@ -236,12 +236,6 @@ export default function DataTable({ token, filtro }) {
       setLoadingPdf(false);
     }
   };
-
-  // Función auxiliar para verificar los primeros bytes
-  async function getFirstBytes(blob) {
-    const buffer = await blob.slice(0, 4).arrayBuffer();
-    return Array.from(new Uint8Array(buffer)).map(b => b.toString(16)).join(' ');
-  }
 
   // Función para enviar múltiples facturas por correo
   const handleEnviarCorreo = async (ids) => {
