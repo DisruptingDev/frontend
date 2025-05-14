@@ -11,14 +11,14 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
     const TotalDescuento = conceptos.reduce((acc, c) => acc + c.Descuento, 0);
     //console.log("TotalTraslados", TotalTraslados);
     //console.log("TotalRetenciones", TotalRetenciones);
-    //console.log("TotalDescuento", TotalDescuento);
+    console.log("TotalDescuento", TotalDescuento);
     const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento;
     //console.log("Total", total);
     const now = new Date();
     const horaActual = now.toTimeString().split(' ')[0]; // Obtiene solo "HH:MM:SS"
     const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-    console.log("Emisor", emisor);
-    console.log("Receptor", receptor);
+    // console.log("Emisor", emisor);
+    // console.log("Receptor", receptor);
     //console.log("Conceptos", conceptos);
 
     const formatter = new Intl.NumberFormat('es-MX', {
@@ -34,8 +34,9 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
             Version: "4.0",
             Fecha: fechaFormateada,
             FormaPago: receptor.FormaPago,
+            Descuento: TotalDescuento,
             Serie: emisor.Serie,
-            SubTotal: subtotal,
+            SubTotal: parseFloat(subtotal.toFixed(2)),
             CondicionesDePago: "Condiciones De Pago",
             TipoDeComprobante: emisor.TipoComprobante,
             Descripcion: "",
@@ -65,7 +66,7 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                     Unidad: concepto.Unidad || "",
                     Descripcion: concepto.Descripcion,
                     ValorUnitario: concepto.ValorUnitario,
-                    Importe: concepto.Subtotal,
+                    Importe: parseFloat(concepto.Subtotal.toFixed(2)),
                     Descuento: concepto.Descuento,
                     ObjetoImp: concepto.ObjetoImpuesto,
                     Impuestos: {
@@ -76,16 +77,16 @@ export default function FormatearFactura(emisor, receptor, conceptos, id, modo) 
                             TipoFactor: "Tasa",
                             TasaOCuota: retencion.TasaOCuota,
                             TasaCatalogoID: retencion.Tasa,
-                            Importe: retencion.Monto
+                            Importe: parseFloat(retencion.Monto)
                         })) : [],
                         Traslados: concepto.Traslados ? concepto.Traslados.map(traslado => ({
-                            Base: traslado.BaseImpuesto,
+                            Base: parseFloat(traslado.BaseImpuesto.toFixed(2)),
                             ImpuestoCatalogoID: traslado.Impuesto,
                             ImpuestoClave: String(traslado.ImpuestoClave),
                             TipoFactor: "Tasa",
                             TasaOCuota: traslado.TasaOCuota,
                             TasaCatalogoID: traslado.Tasa,
-                            Importe: traslado.Monto
+                            Importe: parseFloat(traslado.Monto)
                         })) : []
                     }
                 })),

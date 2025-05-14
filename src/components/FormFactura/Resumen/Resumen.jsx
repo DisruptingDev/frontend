@@ -2,6 +2,9 @@
 
 import { CalculosFinales } from "./Calculos/Calculo.js";
 import { Box, Typography, Table, TableHead, TableBody, TableRow, TableCell, Grid, Button } from '@mui/material';
+import { 
+    Edit, Delete
+  } from '@mui/icons-material';
 
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
@@ -18,62 +21,61 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
             <Typography variant="h6" mb={4}>Resumen</Typography>
 
             <Grid container spacing={1} sx={{ width: '100%', margin: 'auto' }}>
-                {/* Tabla de conceptos */}
-                <Grid item xs={12} md={8}>
-                    <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
-                        <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                            <TableRow>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>#</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Prod.</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Unidad</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Concepto</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Cantidad</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Precio Unitario</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Descuento</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Traslados</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Monto</TableCell>
-                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Acciones</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {conceptos.map((concepto, index) => (
-                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
-                                    <TableCell sx={{ textAlign: 'center' }}>{index + 1}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveProdServ}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveUnidad}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Descripcion}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Cantidad}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.ValorUnitario)}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.Descuento)}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalTraslados)}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalRetenciones)}</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>
-                                        {formatoMoneda(concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones)}
-                                    </TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>
-                                        <Button
-                                            variant="contained"
-                                            sx={{ backgroundColor: '#ffc107', '&:hover': { backgroundColor: '#e0a800' }, marginRight: 1 }}
-                                            onClick={() => handleEditConcepto(index)}
-                                        >
-                                            Editar
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            sx={{ backgroundColor: '#dc3545', '&:hover': { backgroundColor: '#c82333' } }}
-                                            onClick={() => handleDeleteConcepto(index)}
-                                        >
-                                            Eliminar
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </Grid>
+                                <Grid item xs={12} md={8}>
+                                    <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+                                        <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                                            <TableRow>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>#</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Prod.</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Clave Unidad</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Concepto</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Cantidad</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Precio Unitario</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Descuento</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Traslados</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Monto</TableCell>
+                                                <TableCell sx={{ color: 'white', textAlign: 'center' }}>Acciones</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {conceptos.map((concepto, index) => (
+                                                <TableRow key={index} sx={{ '&:hover': { backgroundColor: '#f5f5f5' } }}>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{index + 1}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveProdServ}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.ClaveUnidad}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Descripcion}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{concepto.Cantidad}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.ValorUnitario)}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.Descuento)}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalTraslados)}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>{formatoMoneda(concepto.TotalRetenciones)}</TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>
+                                                        {formatoMoneda(concepto.Subtotal + concepto.TotalTraslados - concepto.TotalRetenciones)}
+                                                    </TableCell>
+                                                    <TableCell sx={{ textAlign: 'center' }}>
+                                                        <Button
+                                                            variant="contained"
+                                                            sx={{ backgroundColor: '#ffc107', '&:hover': { backgroundColor: '#e0a800' }, marginRight: 1 }}
+                                                            onClick={() => handleEditConcepto(index)}
+                                                        >
+                                                            <Edit />
+                                                        </Button>
+                                                        <Button
+                                                            variant="contained"
+                                                            sx={{ backgroundColor: '#dc3545', '&:hover': { backgroundColor: '#c82333' } }}
+                                                            onClick={() => handleDeleteConcepto(index)}
+                                                        >
+                                                            <Delete />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </Grid>
 
-                {/* Tabla de resumen */}
+                                {/* Tabla de resumen */}
                 <Grid item xs={12} md={4}>
                     <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
                         <TableBody>

@@ -1,84 +1,221 @@
 "use client";
 
-import React from "react";
-import { Box, Typography, Grid } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, Grid, CircularProgress, Alert } from "@mui/material";
 import MUIDataTable from "mui-datatables";
 import Header from "@/components/Header/Header.jsx";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 import textLabels from "@/components/DataTables/datatablesTextLabels";
+import { useRouter } from "next/navigation";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ValidarPPD() {
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const router = useRouter();
+
+    // Definimos fetchData primero para que esté disponible
+    const fetchData = async (token) => {
+        try {
+            const response = await fetch(`${apiUrl}/api/facturas/ListarFacturas?ppd=true`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    router.push('/IniciaSesion');
+                    return;
+                }
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log("Datos recibidos:", result);
+            setData(result);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            router.push('/IniciaSesion');
+            return;
+        }
+        fetchData(token); // Ahora fetchData está definida
+    }, []);
+
     const columns = [
-        { name: "folio", label: "Folio" },
-        { name: "emisor", label: "Emisor" },
-        { name: "receptor", label: "Receptor" },
         {
-            name: "saldoInsoluto",
+            name: "Folio",
+            label: "Folio",
+            options: {
+                filter: true,
+                sort: true,
+            }
+        },
+        {
+            name: "Emisor",
+            label: "Emisor",
+            options: {
+                filter: true,
+                customBodyRender: (value) => value?.Nombre || "N/A",
+            }
+        },
+        {
+            name: "Receptor",
+            label: "Receptor",
+            options: {
+                filter: true,
+                customBodyRender: (value) => value?.Nombre || "N/A",
+            }
+        },
+        {
+            name: "Total",
             label: "Saldo Insoluto",
             options: {
-                customBodyRender: (value) => `$${value.toFixed(2)}`, // Formatea como moneda
-            },
+                filter: true,
+                customBodyRender: (value) =>
+                    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value || 0),
+            }
         },
-        { name: "fechaTimbrado", label: "Fecha de Timbrado" },
         {
-            name: "acciones",
+            name: "fechaTimbrado",
+            label: "Fecha de Timbrado",
+            options: {
+                filter: true,
+                customBodyRender: (value) => new Date(value).toLocaleDateString('es-MX', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }),
+            }
+        },
+        {
+            name: "ID",
             label: "Acciones",
             options: {
-                customBodyRender: () => (
-                    <button style={{ cursor: "pointer", background: "none", border: "none", color: "#007bff" }}>
-                        Generar CP
-                        {/* Aquí puedes agregar la lógica para abrir un modal o redirigir a otra página */}
-                    </button>
-                ),
-            },
+                filter: false,
+                sort: false,
+                customBodyRender: (value, tableMeta) => {
+                    const rowData = tableMeta.rowData; // Acceso a todos los datos de la fila
+                    console.log("Row data:", rowData); // Verifica los datos de la fila
+                    const facturaID = tableMeta.rowData[5]; // Recuperar el ID de la factura
+                    console.log("Factura ID:", facturaID); // Verifica el ID de la factura
+                    return (
+                        <button
+                            onClick={() => handleGenerarCP(rowData, facturaID)}
+                            style={{ cursor: "pointer", background: "none", border: "none", color: "#007bff" }}
+                        >
+                            Generar CP
+                        </button>
+                    );
+                },
+            }
         },
     ];
 
-    const data = [
-        { folio: "F001", emisor: "Empresa A", receptor: "Cliente X", saldoInsoluto: 1500.00, fechaTimbrado: "2023-10-01" },
-        { folio: "F002", emisor: "Empresa B", receptor: "Cliente Y", saldoInsoluto: 2500.50, fechaTimbrado: "2023-10-02" },
-        { folio: "F003", emisor: "Empresa C", receptor: "Cliente Z", saldoInsoluto: 0.00, fechaTimbrado: "2023-10-03" },
-        { folio: "F004", emisor: "Empresa D", receptor: "Cliente W", saldoInsoluto: 980.75, fechaTimbrado: "2023-10-04" },
-        { folio: "F005", emisor: "Empresa E", receptor: "Cliente V", saldoInsoluto: 1250.00, fechaTimbrado: "2023-10-05" },
-        { folio: "F006", emisor: "Empresa F", receptor: "Cliente U", saldoInsoluto: 3200.90, fechaTimbrado: "2023-10-06" },
-        { folio: "F007", emisor: "Empresa G", receptor: "Cliente T", saldoInsoluto: 150.00, fechaTimbrado: "2023-10-07" },
-        { folio: "F008", emisor: "Empresa H", receptor: "Cliente S", saldoInsoluto: 800.45, fechaTimbrado: "2023-10-08" },
-        { folio: "F009", emisor: "Empresa I", receptor: "Cliente R", saldoInsoluto: 1000.00, fechaTimbrado: "2023-10-09" },
-        { folio: "F010", emisor: "Empresa J", receptor: "Cliente Q", saldoInsoluto: 4000.00, fechaTimbrado: "2023-10-10" },
-        { folio: "F011", emisor: "Empresa K", receptor: "Cliente P", saldoInsoluto: 650.50, fechaTimbrado: "2023-10-11" },
-        { folio: "F012", emisor: "Empresa L", receptor: "Cliente O", saldoInsoluto: 2250.75, fechaTimbrado: "2023-10-12" },
-        { folio: "F013", emisor: "Empresa M", receptor: "Cliente N", saldoInsoluto: 1750.00, fechaTimbrado: "2023-10-13" },
-        { folio: "F014", emisor: "Empresa N", receptor: "Cliente M", saldoInsoluto: 500.00, fechaTimbrado: "2023-10-14" },
-        { folio: "F015", emisor: "Empresa O", receptor: "Cliente L", saldoInsoluto: 3000.00, fechaTimbrado: "2023-10-15" },
-        { folio: "F016", emisor: "Empresa P", receptor: "Cliente K", saldoInsoluto: 400.75, fechaTimbrado: "2023-10-16" },
-        { folio: "F017", emisor: "Empresa Q", receptor: "Cliente J", saldoInsoluto: 1150.00, fechaTimbrado: "2023-10-17" },
-        { folio: "F018", emisor: "Empresa R", receptor: "Cliente I", saldoInsoluto: 2500.00, fechaTimbrado: "2023-10-18" },
-        { folio: "F019", emisor: "Empresa S", receptor: "Cliente H", saldoInsoluto: 950.00, fechaTimbrado: "2023-10-19" },
-        { folio: "F020", emisor: "Empresa T", receptor: "Cliente G", saldoInsoluto: 3100.00, fechaTimbrado: "2023-10-20" },
-    ];
+
+
+    // Función para manejar el click en "Generar CP"
+    const handleGenerarCP = async (rowData, facturaID) => {
+        console.log("ID de la factura:", facturaID);
+        console.log("Generar CP para:", rowData);
+        console.log("Emisor ID", rowData[1].ID);
+        const token = localStorage.getItem('authToken');
+        try {
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${rowData[1].ID}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Datos recibidos de la API:', data);
+                const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
+                console.log('Opciones:', opciones);
+                if (opciones.length > 0) {
+                    router.push(`/FacturaPago/${facturaID}`); // Redirige a la página de edición con el ID de la factura
+                }
+                else {
+                    setConfirmationMessage('No existe serie de pago, validar');
+                    setOpenModalError(true);
+                }
+            }
+        } catch (error) {
+            console.error('Error obteniendo la serie:', error);
+        }
+    };
 
     const options = {
         filter: true,
         search: true,
         pagination: true,
-        selectableRows: "none", // Deshabilita selección de filas
+        selectableRows: "none",
         responsive: "standard",
-        textLabels: textLabels, // Importa la configuración global de etiquetas
+        textLabels: textLabels,
     };
+
+    if (loading) {
+        return (
+            <div>
+                <Header />
+                <Grid container>
+                    <Grid item>
+                        <SideBarMenu />
+                    </Grid>
+                    <Grid item xs>
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+                            <CircularProgress />
+                        </Box>
+                    </Grid>
+                </Grid>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div>
+                <Header />
+                <Grid container>
+                    <Grid item>
+                        <SideBarMenu />
+                    </Grid>
+                    <Grid item xs>
+                        <Box m={3}>
+                            <Alert severity="error">Error al cargar los datos: {error}</Alert>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </div>
+        );
+    }
 
     return (
         <div>
             <Header />
-            <Grid>
-                <Grid >
+            <Grid container>
+                <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid>
+                <Grid item xs>
                     <Box
                         bgcolor="white"
                         ml={10}
                         mr={1}
-                        
+                        mt={2}
                         boxShadow={3}
                         borderRadius={2}
                     >

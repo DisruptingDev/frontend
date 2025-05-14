@@ -22,7 +22,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [objetoImpuesto, setObjetoImpuesto] = useState("02");
     const [conceptoSeleccionado, setConceptoSeleccionado] = useState(null);
     // Resto del código para los estados de error y el manejo del formulario
-    const [nombreError, setNombreError] = useState(false);  
+    const [nombreError, setNombreError] = useState(false);
     const [descripcionError, setDescripcionError] = useState(false);
     const [claveProdServError, setClaveProdServError] = useState(false);
     const [claveUnidadError, setClaveUnidadError] = useState(false);
@@ -301,7 +301,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         let hasError = false;
         // Validaciones para los campos de Conceptos
 
-        if(modalAgregarConcepto && !getValues('Nombre')){
+        if (modalAgregarConcepto && !getValues('Nombre')) {
             setNombreError(true);
             hasError = true;
         }
@@ -438,7 +438,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Impuestos: impuestos.map(impuesto => ({
                         NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
                         Impuesto: impuesto.ImpuestoCatalogoID,
-                        ImpuestoClave:  formatImpuestoClave(impuesto.ImpuestoClave),
+                        ImpuestoClave: formatImpuestoClave(impuesto.ImpuestoClave),
                         Tasa: impuesto.TasaCatalogoID,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || value.Subtotal,
@@ -449,8 +449,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 console.log("CONCEPTO", concepto);
                 setConceptoSeleccionado(concepto);
             }
-            else{
-                setValue("Descripcion",'')
+            else {
+                setValue("Descripcion", '')
             }
 
             setSelectedConcepto(null);
@@ -466,6 +466,42 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         }
         return value; // Si no es un número, devuelve el valor tal cual
     };
+
+    const formatCurrency = (value) => {
+        if (!value) return '$';
+
+        // Convertir a string y limpiar (por si acaso)
+        const numStr = value.toString().replace(/[^0-9.]/g, '');
+
+        // Separar parte entera y decimal
+        const parts = numStr.split('.');
+        let integerPart = parts[0];
+        const decimalPart = parts.length > 1 ? `.${parts[1]}` : '';
+
+        // Formatear parte entera con separadores de miles
+        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        return `$${integerPart}${decimalPart}`;
+    };
+
+    const format2Currency = (value) => {
+        if (value === undefined || value === null || value === "") return "$0.00";
+
+        // Limpiar caracteres no numéricos
+        const numStr = value.toString().replace(/[^0-9.]/g, '');
+
+        // Separar parte entera y decimal
+        const [integerPart, decimalPart = "00"] = numStr.split('.');
+
+        // Formatear parte entera con separadores de miles
+        const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        // Asegurar 2 decimales (rellena con 0 si es necesario)
+        const formattedDecimal = decimalPart.padEnd(2, '0').slice(0, 2);
+
+        return `$${formattedInteger}.${formattedDecimal}`;
+    };
+
     return (
 
         // <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
@@ -477,11 +513,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             mx={modalAgregarConcepto ? 0 : 4}
             boxShadow={modalAgregarConcepto ? 0 : 3}
             borderRadius={modalAgregarConcepto ? 0 : 2}
-            sx={{   padding: '1rem', margin:'auto', marginTop:'1rem'}}
+            sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem' }}
         >
             <Typography variant="h6" mb={4}>Conceptos</Typography>
             {modalAgregarConcepto === true ?
-                <Box display="grid" gridTemplateColumns="8fr">
+                <Box display="grid" gridTemplateColumns="10fr">
                     <TextField
                         sx={{ marginBottom: 2 }}
                         label='Nombre del Concepto'
@@ -507,14 +543,14 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 </Box>
 
                 :
-                <Box display="grid" gridTemplateColumns="8fr" >
+                <Box display="grid" gridTemplateColumns="10fr" >
                     <Autocomplete
                         freeSolo
                         // options={[{ ID: "Nuevo", Nombre: "Nuevo Concepto" }, ...conceptoOptions]}
                         options={conceptoOptions}
                         getOptionLabel={(option) => `${option.Nombre} - ${option.Descripcion}`}
                         value={selectedConcepto || null}
-                        inputValue={getValues("Descripcion") || ''} 
+                        inputValue={getValues("Descripcion") || ''}
                         // value={getValues("Descripcion")|| ''}
                         isOptionEqualToValue={(option, value) => option.ID === value.ID}
                         onInputChange={(event, newInputValue) => setQueryConcepto(newInputValue)}
@@ -546,7 +582,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     xs: '1fr',
                     sm: '1fr 1fr',
                     md: '1fr 0.5fr 0.5fr',
-                    lg: '1.5fr 2.5fr 0.5fr 0.5fr 0.5fr 0.5fr  '
+                    lg: '1.5fr 1.5fr 1fr 1fr 1fr 1fr  '
                 }}
                 gap={3}
                 mt={4}>
@@ -613,21 +649,27 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 />
                 <TextField
                     label="Precio Unitario"
-                    type="number"
-                    value={getValues("ValorUnitario")}
+                    type="text" // Mantenemos como 'text' para manejar el formato
+                    value={formatCurrency(getValues("ValorUnitario"))}
                     onChange={(e) => {
-                        // Captura el valor introducido
-                        let inputValue = e.target.value;
+                        // Eliminar el símbolo $ y cualquier formato existente
+                        const rawValue = e.target.value.replace(/[^0-9.]/g, '');
 
-                        // Permitir solo números y un solo punto decimal
-                        inputValue = inputValue.replace(/[^0-9.]/g, '');
+                        // Validaciones como antes
+                        let inputValue = rawValue;
 
                         // Asegurar que solo haya un punto decimal
                         if ((inputValue.match(/\./g) || []).length > 1) {
                             inputValue = inputValue.replace(/\.+$/, '');
                         }
 
-                        // Establecer el valor solo si es válido
+                        // Limitar decimales
+                        const decimalIndex = inputValue.indexOf('.');
+                        if (decimalIndex !== -1 && inputValue.length - decimalIndex - 1 > 4) {
+                            inputValue = inputValue.substring(0, decimalIndex + 5);
+                        }
+
+                        // Guardar el valor numérico (sin formato)
                         setValue('ValorUnitario', inputValue);
                         setValorUnitarioError(false);
                     }}
@@ -635,39 +677,44 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     helperText={valorUnitarioError && "Campo obligatorio."}
                     fullWidth
                     inputProps={{
-                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                        inputMode: 'decimal',
                     }}
                 />
                 <TextField
                     label="Descuento"
-                    type="number"
-                    value={getValues("Descuento")}
+                    type="text"  // Cambiado a "text" para permitir el formato
+                    value={formatCurrency(getValues("Descuento"))}
                     onChange={(e) => {
-                        // Captura el valor introducido
-                        let inputValue = e.target.value;
-                        // Permitir solo números y un solo punto decimal
-                        inputValue = inputValue.replace(/[^0-9.]/g, '');
-                        // Asegurar que solo haya un punto decimal
+                        // Capturar el valor y eliminar símbolos de formato ($ y comas)
+                        let inputValue = e.target.value.replace(/[^0-9.]/g, '');
+
+                        // Validaciones:
+                        // 1. Solo un punto decimal
                         if ((inputValue.match(/\./g) || []).length > 1) {
                             inputValue = inputValue.replace(/\.+$/, '');
                         }
-                        // Establecer el valor solo si es válido
-                        setValue('Descuento', inputValue);
+
+                        // 2. Limitar a 2 decimales (opcional, ajusta según necesidad)
+                        const decimalIndex = inputValue.indexOf('.');
+                        if (decimalIndex !== -1 && inputValue.length - decimalIndex - 1 > 2) {
+                            inputValue = inputValue.substring(0, decimalIndex + 3);
+                        }
+
+                        // Guardar el valor numérico (sin formato)
+                        setValue('Descuento', inputValue === "" ? "" : inputValue); // Evita "0" al borrar
                     }}
                     error={descuentoError}
                     helperText={descuentoError && descuentoErrorMesage}
                     fullWidth
                     inputProps={{
-                        inputMode: 'decimal', // Permitir el punto decimal en teclados móviles
-                        pattern: '[0-9]*[.]?[0-9]*' // Permitir números decimales
+                        inputMode: 'decimal',
                     }}
                 />
 
                 <TextField
                     label="Subtotal"
-                    type="number"
-                    value={getValues("Subtotal")}
+                    type="text"
+                    value={format2Currency(getValues("Subtotal"))}
                     fullWidth
                     InputProps={{ readOnly: true }}
                     disabled

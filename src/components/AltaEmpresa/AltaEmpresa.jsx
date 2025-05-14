@@ -31,6 +31,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('RegimenFiscal', empresa.RegimenFiscal);
             setRegimenFiscal(empresa.RegimenFiscal);
             setValue('LugarExpedicion', empresa.LugarExpedicion);
+            setValue('Email', empresa.Email);
             setValue('Calle', empresa.Calle);
             setValue('NumeroExterior', empresa.NumeroExterior);
             setValue('NumeroInterior', empresa.NumeroInterior);
@@ -72,6 +73,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         setValue("RegimenFiscal", "");
         setRegimenFiscal("");
         setValue("LugarExpedicion", "");
+        setValue("Email", "");
         setValue("Calle", "");
         setValue("NumeroExterior", "");
         setValue("NumeroInterior", "");
@@ -144,6 +146,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 ID: empresa.ID,
                 RegimenFiscal: data.RegimenFiscal,
                 LugarExpedicion: data.LugarExpedicion,
+                Email: data.Email,
                 LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
                 Calle: data.Calle || "",
                 NumeroExterior: data.NumeroExterior || "",
@@ -305,7 +308,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         value={regimenFiscal}
                         error={!!errors.RegimenFiscal}
                         helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                        register={register} // Pasa register como prop
+                        // Pasa register como prop
                         onChange={handleRegimenFiscalChange}
                         sx={{ alignSelf: 'start' }}
                     />
@@ -323,6 +326,23 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         onInput={(e) => {
                             e.target.value = e.target.value.replace(/[^0-9]/g, '');
                         }} // Elimina caracteres no numéricos
+                    />
+                    <TextField
+                        label="Email"
+                        fullWidth
+                        placeholder="Ej: ejemplo@correo.com"
+                        margin="normal"
+                        required
+                        error={!!errors.Email}
+                        helperText={errors.Email ? "Este campo es obligatorio" : ""}
+                        {...register("Email", {
+                            required: "El email es obligatorio",
+                            pattern: {
+                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                message: "Formato de email inválido"
+                            }
+                        })}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                 </Box>
                 <Box

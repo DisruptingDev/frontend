@@ -1,17 +1,115 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert, FormControl, InputLabel, MenuItem, Select as MUISelect, FormHelperText } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
-import { set } from 'date-fns';
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+// Definir los regímenes para cada tipo de contribuyente como Sets
+const REGIMENES_FISICOS = new Set(["605", "606", "607", "608", "610", "611", "612", "614", "615", "616", "621", "625", "626"]);
+const REGIMENES_MORALES = new Set(["601", "603", "610", "620", "622", "623", "624", "626"]);
+
 export default function AltaCliente({ onClose, cliente, setActualizar, token }) {
-    const { register, getValues, reset, handleSubmit, setValue, formState: { errors } } = useForm();
+    const { register, reset, handleSubmit, setValue, watch, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
     const [editar, setEditar] = useState(false);
+    const [regimenesFiltrados, setRegimenesFiltrados] = useState([]);
+    const [catalogoCompleto, setCatalogoCompleto] = useState([]);
+    const effectRunCount = useRef(0); // Para depuración
+    const selectedRegimen = watch("RegimenFiscal");
 
+    // Observar cambios en el RFC
+    const rfcValue = watch("Rfc", "");
+
+    // Cargar catálogo completo al montar el componente
+    useEffect(() => {
+        const cargarCatalogo = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "application/json"
+                    }
+                });
+
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
+                const data = await response.json();
+                setCatalogoCompleto(data || []); // Ajuste aquí para el formato de respuesta
+            } catch (error) {
+                console.error("Error al cargar el catálogo:", error);
+                setToast({
+                    open: true,
+                    message: "Error al cargar los regímenes fiscales",
+                    severity: "error"
+                });
+            }
+        };
+
+        cargarCatalogo();
+    }, [token]);
+
+    // Función mejorada para obtener tipo de contribuyente
+    const obtenerTipoContribuyente = (rfc) => {
+        if (!rfc) return null;
+        const rfcLimpio = rfc.trim().toUpperCase();
+
+        // Validación más estricta del RFC
+        const regexFisica = /^[A-ZÑ&]{4}\d{6}[A-Z0-9]{3}$/;
+        const regexMoral = /^[A-ZÑ&]{3}\d{6}[A-Z0-9]{3}$/;
+
+        if (regexFisica.test(rfcLimpio)) return "F";
+        if (regexMoral.test(rfcLimpio)) return "M";
+
+        return null;
+    };
+
+    // Efecto para filtrar regímenes cuando cambia el RFC o el catálogo
+    useEffect(() => {
+        effectRunCount.current += 1;
+        // console.log(`🔄 Efecto de filtrado ejecutado (${effectRunCount.current} veces)`);
+        // console.log("📌 Dependencias - RFC:", rfcValue, "Catálogo:", catalogoCompleto.length > 0);
+
+        if (!catalogoCompleto || catalogoCompleto.length === 0) {
+            // console.log("⛔ Catálogo vacío - no se puede filtrar");
+            setRegimenesFiltrados([]);
+            return;
+        }
+
+        const tipoContribuyente = obtenerTipoContribuyente(rfcValue);
+        // console.log("🔍 Tipo de contribuyente:", tipoContribuyente);
+
+        let filtrados = [];
+        const rfcValido = tipoContribuyente !== null;
+
+        if (rfcValido) {
+            const regimenesPermitidos = tipoContribuyente === "F" ? REGIMENES_FISICOS : REGIMENES_MORALES;
+            // console.log("📋 Regímenes permitidos:", Array.from(regimenesPermitidos));
+
+            filtrados = catalogoCompleto.filter(regimen => {
+                const clave = regimen.Clave.toString(); // Asegurar que es string
+                const incluido = regimenesPermitidos.has(clave);
+                // if (!incluido) {
+                //     console.log(`❌ Régimen excluido: ${clave} - ${regimen.Descripcion}`);
+                // }
+                return incluido;
+            });
+        }
+
+        // console.log("✅ Regímenes filtrados:", filtrados);
+        setRegimenesFiltrados(filtrados);
+
+        // Resetear valor si es necesario
+        const regimenActual = watch("RegimenFiscal");
+        if (regimenActual && !filtrados.some(r => r.Clave.toString() === regimenActual.toString())) {
+            console.log("🔄 Reseteando régimen fiscal seleccionado");
+            setValue("RegimenFiscal", "");
+        }
+    }, [rfcValue, catalogoCompleto, setValue, watch]);
 
     // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
@@ -43,6 +141,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
         reset();
 
     };
+
 
     // Función para manejar el envío del formulario
     const onSubmit = async (data) => {
@@ -148,27 +247,46 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                     <TextField
                         label="R.F.C."
                         fullWidth
-                        placeholder="EDS156842456"
                         margin="normal"
                         required
+                        {...register("Rfc", {
+                            required: "Este campo es obligatorio",
+                            validate: (value) => {
+                                const rfc = value?.trim().toUpperCase() || '';
+                                return rfc.length === 12 || rfc.length === 13 || "RFC debe tener al menos 12 caracteres";
+                            }
+                        })}
                         error={!!errors.Rfc}
-                        helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
-                        {...register("Rfc", { required: true })}
+                        helperText={errors.Rfc?.message}
+                        inputProps={{
+                            maxLength: 13,
+                            onInput: (e) => {
+                                e.target.value = e.target.value.toUpperCase();
+                            }
+                        }}
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
-                    <Select
-                        register={register} // Pasa register como prop
-                        label={"Regimen Fiscal*"}
-                        nombre="RegimenFiscal"
-                        url={`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`}
-                        clave="Clave"
-                        descripcion="Descripcion"
-                        onChange={(e) => setValue('RegimenFiscal', e.target.value)}
-                        error={!!errors.RegimenFiscal}
-                        helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                        sx={{ alignSelf: 'start' }}
-                        value={cliente ? cliente.RegimenFiscalReceptor : ""}
-                    />
+
+                    <FormControl fullWidth margin="normal" error={!!errors.RegimenFiscal} disabled={!rfcValue || rfcValue.length < 12 || regimenesFiltrados.length === 0} sx={{ alignSelf: 'start', marginTop: '0px' }}>
+                        <InputLabel id="regimen-label">Régimen Fiscal*</InputLabel>
+                        <MUISelect
+                            labelId="regimen-label"
+                            id="RegimenFiscal"
+                            value={selectedRegimen || ""}
+                            label="Régimen Fiscal*"
+                            onChange={(e) => setValue("RegimenFiscal", e.target.value)}
+                            name="RegimenFiscal"
+                        >
+                            <MenuItem value="">Seleccione un régimen</MenuItem>
+                            {regimenesFiltrados.map(regimen => (
+                                <MenuItem key={regimen.Clave} value={regimen.Clave}>
+                                    {`${regimen.Clave} - ${regimen.Descripcion}`}
+                                </MenuItem>
+                            ))}
+                        </MUISelect>
+                        {errors.RegimenFiscal && <FormHelperText>Este campo es obligatorio</FormHelperText>}
+                    </FormControl>
+
                     <TextField
                         label="Domicilio Fiscal"
                         fullWidth
