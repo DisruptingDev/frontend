@@ -143,7 +143,7 @@ export default function Pricing() {
                     {tier.title}
                   </Typography>
                   {tier.title === 'PYMES' && (
-                    <Chip icon={<AutoAwesomeIcon />} label={tier.subheader} />
+                    <Chip icon={<AutoAwesomeIcon.default />} label={tier.subheader} />
                   )}
                 </Box>
                 <Box
@@ -170,7 +170,7 @@ export default function Pricing() {
                     key={line}
                     sx={{ py: 1, display: 'flex', gap: 1.5, alignItems: 'center' }}
                   >
-                    <CheckCircleRoundedIcon
+                    <CheckCircleRoundedIcon.default
                       sx={[
                         {
                           width: 20,
