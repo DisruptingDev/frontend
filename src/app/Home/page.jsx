@@ -9,6 +9,7 @@ import Header from "@/components/Header/Header.jsx";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
 import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+import DataTable from "@/components/Home/Tabla/DataTable.jsx";
 //import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
@@ -30,7 +31,7 @@ export default function Home() {
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
-    const [filtro, setFiltro] = useState(null);
+    // const [filtro, setFiltro] = useState(null);
 
     // useEffect: se ejecuta al montar el componente
     useEffect(() => {
@@ -71,16 +72,18 @@ export default function Home() {
                 {/* Contenedor principal que ocupa el espacio restante */}
                 <Grid>
                     <Box
-                        bgcolor="white"
+                        //bgcolor="white"
                         ml={10}
                         mr={1}
-                        p={2}
-                        boxShadow={3}
+                        //p={2}
+                        //boxShadow={3}
                         borderRadius={2}
-                        mb={6}
+                        //mb={6}
+                        mb={10}
                     >
-                        <SearchFilter setFiltro={setFiltro} />
-                        <Tabla token={token} filtro={filtro} />
+                        {/* <SearchFilter setFiltro={setFiltro} />
+                        <Tabla token={token} filtro={filtro} /> */}
+                        <DataTable token={token} />
                     </Box>
                 </Grid>
             </Grid>

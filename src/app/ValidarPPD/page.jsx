@@ -212,7 +212,6 @@ export default function ValidarPPD() {
                 </Grid>
                 <Grid item xs>
                     <Box
-                        bgcolor="white"
                         ml={10}
                         mr={1}
                         mt={2}
