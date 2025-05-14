@@ -14,15 +14,15 @@ import { styled } from "@mui/material/styles";
 const StyledBox = styled("div")(({ theme }) => ({
   alignSelf: "center",
   width: "100%",
-  height: 400,
-  marginTop: theme.spacing(8),
+  height: 450,
+  marginTop: '1rem',
   borderRadius: (theme.vars || theme).shape.borderRadius,
   outline: "6px solid",
   outlineColor: "hsla(220, 25%, 80%, 0.2)",
   border: "1px solid",
   borderColor: (theme.vars || theme).palette.grey[200],
   boxShadow: "0 0 12px 8px hsla(220, 25%, 80%, 0.2)",
-  backgroundImage: 'url(../../images/cover-img-wiseFacturacion.png)',
+  backgroundImage: 'url(../../images/cover-wise-IA.jpg)',
   backgroundSize: "cover",
   [theme.breakpoints.up("sm")]: {
     marginTop: theme.spacing(0),
@@ -58,6 +58,7 @@ export default function Hero() {
           alignItems: "center",
           pt: { xs: 14, sm: 20 },
           pb: { xs: 8, sm: 12 },
+          marginBottom: '1rem',
         }}
       >
         <Stack
@@ -69,26 +70,17 @@ export default function Hero() {
             variant="h2"
             sx={{
               display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
+              flexDirection: { xs: "column", md: "row" },
               alignItems: "center",
               color: "white",
-              fontSize: "clamp(3rem, 10vw, 3.5rem)",
+              fontSize: "clamp(3.5rem, 10vw, 3.5rem)",
+              fontWeight: '700',
+              textAlign: "center",
+              
             }}
           >
-            La&nbsp;facturación&nbsp;
-            <Typography
-              component="span"
-              variant="h1"
-              sx={(theme) => ({
-                fontSize: "inherit",
-                color: "#10968A",
-                ...theme.applyStyles("dark", {
-                  color: "primary.light",
-                }),
-              })}
-            >
-              Inteligente
-            </Typography>
+            Timbres Fiscales CFDI 4.0: Simples, Rápidos y Confiables
+            
           </Typography>
           <Typography
             sx={{
@@ -97,7 +89,7 @@ export default function Hero() {
               width: { sm: "100%", md: "80%" },
             }}
           >
-             Simplifica tu facturación con una plataforma potente y fácil de usar, ahorra tiempo y enfócate en lo que realmente importa: tu negocio. Además, personaliza tu experiencia con ajustes a la medida y la creación de adendas, adaptando el sistema a tus necesidades específicas.
+             En Wise Facturación, te ofrecemos paquetes de timbres flexibles y el soporte que necesitas para una facturación electrónica sin complicaciones. ¡Cumplimiento SAT garantizado!
           </Typography>
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -110,26 +102,20 @@ export default function Hero() {
               variant="contained"
               color="primary"
               size="large"
-              sx={{ minWidth: "fit-content",  backgroundColor: '#10968A'}}
+              sx={{ minWidth: "fit-content",  backgroundColor: '#10968A', marginBottom:'1rem'}}
             >
-              Encuentra el plan a tu medida.
+              Ver paquetes.
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              size="large"
+              sx={{ minWidth: "fit-content",marginBottom:'1rem', }}
+            >
+              Más información
             </Button>
           </Stack>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ textAlign: "center", marginBottom: 2 }}
-          >
-           ya tienes una cuenta?{" "}
-            <Link
-              href="#"
-              color="primary"
-              sx={{ marginTop: 1, marginBottom: 1 }}
-            >
-              inicia sesión
-            </Link>
-            .
-          </Typography>
+          
         </Stack>
         <StyledBox id="image" />
       </Container>
