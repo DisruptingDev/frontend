@@ -17,9 +17,9 @@ export default function HomePage() {
         <div>
         <AppAppBar/>
         <Hero />
+        <Featured/>
         <Functions/>
         <Highlights/>
-        {/*<Featured/>*/}
         <Pricing/> 
         <Footer />
         </div>
