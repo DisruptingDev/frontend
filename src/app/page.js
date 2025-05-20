@@ -6,6 +6,7 @@ import Highlights from '@/components/Highlights/Highlights';
 import Functions from '@/components/Functions/Functions';
 import Pricing from '@/components/Pricing/Pricing';
 import Precios from '@/components/Pricing/Precios';
+import FolioPackages from '@/components/FolioPackages/folioPackages';
 import Footer from '@/components/Footer/Footer';
 import { AppBar, Toolbar, Typography, Button, Box, Grid, Container } from '@mui/material';
 import Image from 'next/image';
@@ -19,8 +20,11 @@ export default function HomePage() {
         <Hero />
         <Functions/>
         <Highlights/>
-        {/*<Featured/>*/}
-        <Pricing/> 
+        <FolioPackages/>
+        <Featured/>
+        
+        {/*<Pricing/> 
+        <Precios/> */}
         <Footer />
         </div>
         // <div className="flex flex-col items-center justify-between h-screen bg-primary-dark-total">
