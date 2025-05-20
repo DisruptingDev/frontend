@@ -152,7 +152,7 @@ export default function Features() {
           gutterBottom
           sx={{ color: 'text.primary' }}
         >
-          Venjas de facturar con Wise
+          Ventajas de facturar con Wise
         </Typography>
         <Typography
           variant="body1"

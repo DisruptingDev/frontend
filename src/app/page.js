@@ -18,13 +18,18 @@ export default function HomePage() {
         <div>
         <AppAppBar/>
         <Hero />
+        <Featured/>
         <Functions/>
         <Highlights/>
+<<<<<<< HEAD
         <FolioPackages/>
         <Featured/>
         
         {/*<Pricing/> 
         <Precios/> */}
+=======
+        <Pricing/> 
+>>>>>>> 35d03798ca42950a8574ecf97596ee64491922ec
         <Footer />
         </div>
         // <div className="flex flex-col items-center justify-between h-screen bg-primary-dark-total">
