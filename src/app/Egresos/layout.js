@@ -1,6 +1,6 @@
 export const metadata = {
-    title: 'Empresas',
-    description: 'Alta y edición de empresas',
+    title: 'Notas de Egreso',
+    description: 'Generación de Notas de Egreso',
   }
   
   export default function RootLayout({ children }) {
@@ -10,4 +10,3 @@ export const metadata = {
       </html>
     )
   }
-  

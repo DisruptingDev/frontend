@@ -30,6 +30,8 @@ import {
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import MUIDataTable from "mui-datatables";
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 
 // Importación de componentes de modal
 import ModalExito from '@/components/Home/Modales/modalExito';
@@ -39,6 +41,7 @@ import ModalCancelar from '../Modales/modalCancelar';
 
 // Utilidades
 import { formatCurrency } from '@/utils/formatCurrency';
+
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -374,6 +377,17 @@ export default function DataTable({ token }) {
         }
     };
 
+    // Extraer valores únicos para los filtros
+    const uniqueEmisores = [...new Set(data.map(item => {
+        const emisor = item.Emisor || { Nombre: 'Desconocido', Rfc: '' };
+        return `${emisor.Nombre} (${emisor.Rfc})`;
+    }))];
+
+    const uniqueReceptores = [...new Set(data.map(item => {
+        const receptor = item.Receptor || { Nombre: 'Desconocido', Rfc: '' };
+        return `${receptor.Nombre} (${receptor.Rfc})`;
+    }))];
+
     // Configuración de columnas para mui-datatables
     const columns = [
         {
@@ -415,6 +429,7 @@ export default function DataTable({ token }) {
                 customBodyRender: (value, tableMeta) => {
                     const rowData = data[tableMeta.rowIndex];
                     const receptor = rowData.Receptor || { Nombre: 'Desconocido', Rfc: '' };
+                    if (!receptor || !receptor.Nombre) return 'Desconocido';
                     return `${receptor.Nombre} (${receptor.Rfc})`;
                 }
             }
@@ -433,7 +448,13 @@ export default function DataTable({ token }) {
             options: {
                 filter: true,
                 sort: true,
-                customBodyRender: (value) => value || 'Sin timbrar'
+                customBodyRender: (value, tableMeta) => {
+                    const rowData = data[tableMeta.rowIndex];
+                    if (!rowData.uuid) {
+                        return <Chip label="Sin timbrar" color="warning" size="small" />;
+                    }
+                    return value || 'Sin timbrar';
+                }
             }
         },
         {
@@ -546,19 +567,6 @@ export default function DataTable({ token }) {
         rowsPerPage: 10,
         rowsPerPageOptions: [10, 25, 50],
         pagination: true,
-        setTableProps: () => ({
-            style: {
-                // Estilos para la tabla completa
-            },
-        }),
-        setHeaderProps: () => ({
-            style: {
-                backgroundColor: '#1976d2', // Color de fondo del encabezado
-                color: 'white',            // Color del texto
-                fontWeight: 'bold',        // Negrita
-                fontSize: '14px',          // Tamaño de fuente
-            },
-        }),
         customToolbarSelect: (selectedRows, displayData, setSelectedRows) => {
             const selectedIds = selectedRows.data.map(index => data[index.dataIndex].ID);
 

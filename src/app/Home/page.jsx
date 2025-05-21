@@ -81,7 +81,7 @@ export default function Home() {
                         //mb={6}
                         mb={10}
                     >
-                        {/* <SearchFilter setFiltro={setFiltro} />
+                         {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}
                         <DataTable token={token} />
                     </Box>

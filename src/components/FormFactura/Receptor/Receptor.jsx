@@ -7,7 +7,7 @@ import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el co
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false, setReceptorID }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -32,7 +32,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     useEffect(() => {
         if (receptorData) {
-            console.log("Receptor data", receptorData);
+            //console.log("Receptor data", receptorData);
             setValue("ReceptorID", receptorData.ID);
             setValue("Receptor", receptorData.ID);
             setRFC(receptorData.Rfc);
@@ -59,6 +59,10 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("UsoCFDI", receptorData.UsoCFDI);
             setValue("UsoCFDIDescripcion", receptorData.UsoCFDIDescripcion);
 
+            // Notificar al padre el ID del receptor
+            if (setReceptorID) {
+                setReceptorID(receptorData.ID);
+            }
 
             if (rfc === "XAXX010101000") {
 
@@ -80,11 +84,15 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
             trigger(["RFCReceptor","DomicilioFiscalReceptor","RegimenFiscalReceptor"]);
         }
-    }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion]);
+    }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion, setReceptorID]);
 
     useEffect(() => {
         if (receptor !== undefined) {
             let data = JSON.parse(receptor);
+            // Notificar al padre el ID del receptor
+            if (setReceptorID) {
+                setReceptorID(data.ID);
+            }
             if (data["Rfc"] !== "XAXX010101000") {
                 setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
                 setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
@@ -121,7 +129,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             trigger("RegimenFiscal");
 
         }
-    }, [receptor, lugarExpedicion, trigger, setValue, rfc]);
+    }, [receptor, lugarExpedicion, trigger, setValue, rfc, setReceptorID]);
 
     useEffect(() => {
         if (metodoPago !== undefined) {
@@ -157,7 +165,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     useEffect(() => {
         async function fetchData() {
             if (regimenFiscal) {
-                console.log("REGIMEN", token);
+                // console.log("REGIMEN", token);
                 // const token = localStorage.getItem('authToken');
                 fetch(`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`, {
                     // method: 'GET',
@@ -168,7 +176,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 })
                     .then(response => response.json())
                     .then(data => {
-                        console.log(data);
+                        // console.log(data);
                         // console.log("TIPO", impuestoEditor.TipoFactor);
 
                         const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
