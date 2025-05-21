@@ -55,12 +55,10 @@ export default function Header() {
 
       {/* Menú de usuario */}
       <div className="ml-auto flex items-center">
-        {/* <Layout>
+        <Layout>
           <FacturasPPD token={token} />
           <UserMenu />
-        </Layout> */}
-          <FacturasPPD token={token} />
-          <UserMenu />
+        </Layout>
       </div>
     </header>
   );
