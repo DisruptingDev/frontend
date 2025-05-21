@@ -1,5 +1,7 @@
 "use client";
 
+  
+
 import * as React from "react";
 import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
@@ -16,6 +18,25 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+
+(function(d,t) {
+		var BASE_URL="http://chatwoot-rails-api-service:80";
+		var CDN_URL="https://chat-widget.hiverhq.com/chat-widget";
+		var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+		g.src=CDN_URL+"/js/sdk.js";
+		g.defer = true;
+		g.async = true;
+		s.parentNode.insertBefore(g,s);
+		g.onload=function(){
+			window.chatwootSDK.run({
+				websiteToken: 'BVzRWDgxipHacrSLUQ43pN8y',
+				baseUrl: BASE_URL
+			})
+		}
+	})(document,"script");
+	
+  
+
 
 
 

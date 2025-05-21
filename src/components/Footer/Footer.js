@@ -32,16 +32,13 @@ const Footer = () => {
               Sistema integral de facturación electrónica y gestión empresarial.
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <IconButton aria-label="Facebook" color="inherit">
+              <IconButton aria-label="Facebook" color="inherit" href='https://www.facebook.com/wisefacturacion/'>
                 <Facebook />
               </IconButton>
-              <IconButton aria-label="Twitter" color="inherit">
-                <Twitter />
-              </IconButton>
-              <IconButton aria-label="Instagram" color="inherit">
+              <IconButton aria-label="Instagram" color="inherit" href='https://www.instagram.com/wisefacturacion/'>
                 <Instagram />
               </IconButton>
-              <IconButton aria-label="LinkedIn" color="inherit">
+              <IconButton aria-label="LinkedIn" color="inherit" href='https://www.linkedin.com/company/'>
                 <LinkedIn />
               </IconButton>
             </Box>
@@ -55,15 +52,6 @@ const Footer = () => {
             <Link href="/Home" color="inherit" underline="hover" display="block" mb={1}>
               Inicio
             </Link>
-            <Link href="/CrearFactura" color="inherit" underline="hover" display="block" mb={1}>
-              Facturación
-            </Link>
-            <Link href="/AltaCliente" color="inherit" underline="hover" display="block" mb={1}>
-              Clientes
-            </Link>
-            <Link href="/Empresas" color="inherit" underline="hover" display="block" mb={1}>
-              Empresas
-            </Link>
           </Grid>
 
           {/* Soporte */}
@@ -73,7 +61,7 @@ const Footer = () => {
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <WhatsApp fontSize="small" sx={{ mr: 1 }} />
-              <Typography variant="body2">+52 55 1234 5678</Typography>
+              <Typography variant="body2">+52 222 725 4392</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Email fontSize="small" sx={{ mr: 1 }} />

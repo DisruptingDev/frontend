@@ -5,7 +5,7 @@ import MuiChip from '@mui/material/Chip';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import CardContent from '@mui/material/CardContent';
-import { styled } from '@mui/material/styles';
+
 
 
 // Sample data for functionalities and benefits
@@ -95,12 +95,27 @@ function Functions() {
               },
             }}
           >
-            <CardContent sx={{ flexGrow: 1 }}>
-              <Typography variant="h5" component="div" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
-                {feature.icon && <span style={{ marginRight: '12px', fontSize: '1.5rem' }}>{feature.icon}</span>}
+            
+            <CardContent sx={{ 
+              flexGrow: 1, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              textAlign: 'center',
+              pt: 3, // Add some padding top
+              px: 2,
+              pb: 1, 
+            }}>
+              {feature.icon && (
+                <Typography component="div" sx={{ fontSize: '3.5rem', mb: 2, lineHeight: 1 }}>
+                  {feature.icon}
+                </Typography>
+              )}
+              <Typography variant="h5" component="h3" sx={{ fontWeight: 'medium', mb: 1 }}>
                 {feature.title}
+             
               </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {feature.description}
               </Typography>
             </CardContent>
