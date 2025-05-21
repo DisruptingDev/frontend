@@ -59,10 +59,8 @@ export default function Header() {
           <FacturasPPD token={token} />
           <UserMenu />
         </Layout> */}
-        
           <FacturasPPD token={token} />
           <UserMenu />
-      
       </div>
     </header>
   );
