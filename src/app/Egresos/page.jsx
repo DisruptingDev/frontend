@@ -15,6 +15,7 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 import SeleccionarFacturas from "@/components/FormFactura/NotaCredito/SeleccionarFacturas.jsx";
+import { set } from "date-fns";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -36,7 +37,6 @@ export default function GenerarEgreso() {
     const [motivoNotaCredito, setMotivoNotaCredito] = useState("");
     const [emisorID, setEmisorID] = useState("");
     const [receptorID, setReceptorID] = useState(null);
-    
 
     useEffect(() => {
         const token = isAuthenticated();
@@ -49,15 +49,16 @@ export default function GenerarEgreso() {
     }, [router]);
 
     const onSubmit = (data) => {
-        console.log("Datos del formulario", data);
+        //console.log("Datos del formulario", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos antes de crear", conceptos);
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura");
+        //console.log("Conceptos antes de crear", conceptos);
+        console.log("Facturas relacionadas antes de crear", facturasRelacionadas);
+        const factura = FormatearFactura(data, data, conceptos, "", "Factura", facturasRelacionadas);
         console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
@@ -106,7 +107,7 @@ export default function GenerarEgreso() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",  );
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
@@ -133,96 +134,16 @@ export default function GenerarEgreso() {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
-    const handleFacturasSeleccionadas = ({ facturas, motivo }) => {
-        // Datos dummy para prueba
-        const facturasDummy = [
-            {
-                _id: "1",
-                Folio: "F-001",
-                Fecha: new Date(),
-                Total: 1000.50,
-                UUID: "dummy-uuid-123"
-            },
-            {
-                _id: "2",
-                Folio: "F-002",
-                Fecha: new Date(),
-                Total: 2000.75,
-                UUID: "dummy-uuid-456"
-            },
-            {
-                _id: "3",
-                Folio: "F-003",
-                Fecha: new Date(),
-                Total: 1500.00,
-                UUID: "dummy-uuid-789"
-            },
-            {
-                _id: "4",
-                Folio: "F-004",
-                Fecha: new Date(),
-                Total: 2500.25,
-                UUID: "dummy-uuid-101"
-            },
-            {
-                _id: "5",
-                Folio: "F-005",
-                Fecha: new Date(),
-                Total: 1750.80,
-                UUID: "dummy-uuid-102"
-            },
-            {
-                _id: "6",
-                Folio: "F-006",
-                Fecha: new Date(),
-                Total: 3000.00,
-                UUID: "dummy-uuid-103"
-            },
-            {
-                _id: "7",
-                Folio: "F-007",
-                Fecha: new Date(),
-                Total: 1200.60,
-                UUID: "dummy-uuid-104"
-            },
-            {
-                _id: "8",
-                Folio: "F-008",
-                Fecha: new Date(),
-                Total: 2200.10,
-                UUID: "dummy-uuid-105"
-            },
-            {
-                _id: "9",
-                Folio: "F-009",
-                Fecha: new Date(),
-                Total: 1950.45,
-                UUID: "dummy-uuid-106"
-            },
-            {
-                _id: "10",
-                Folio: "F-010",
-                Fecha: new Date(),
-                Total: 2750.90,
-                UUID: "dummy-uuid-107"
-            }
-        ];
-
-        setFacturasRelacionadas(facturasDummy);
-        setMotivoNotaCredito(motivo || "01"); // Motivo por defecto
-
-        console.log("Facturas dummy seleccionadas:", facturasDummy);
-        console.log("Motivo:", motivo || "01");
-
-        setSnackbarMessage('Datos dummy de nota de crédito agregados');
+    const handleFacturasSeleccionadas = (data) => {
+        console.log("Facturas relacionadas recibidas:", data);
+        setFacturasRelacionadas(data.CFDIRelacionados);
+        setSnackbarMessage('Facturas relacionadas correctamente.');
         setSnackbarSeverity('success');
         setOpenSnackbar(true);
-
     };
 
     const handleReceptorSelect = (receptor) => {
         setReceptorData(receptor);
-        console.log("Receptor seleccionado:", receptor);
     };
 
     return (
@@ -283,6 +204,8 @@ export default function GenerarEgreso() {
                                 editIndex={editIndex}
                                 setEditIndex={setEditIndex}
                                 token={token}
+                                TipoComprobante={tipoComprobante} // Nuevo prop
+                                facturasRelacionadas={facturasRelacionadas} // Nuevo prop
                             />
                             <Resumen
                                 conceptos={conceptos}

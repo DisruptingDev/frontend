@@ -464,7 +464,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                     disabled={isProcessing}
                     size="large"
                 >
-                    {isProcessing ? 'Procesando...' : 'Confirmar Pago'}
+                    {isProcessing ? 'Procesando...' : 'Confirmar Orden'}
                 </Button>
             </DialogActions>
 

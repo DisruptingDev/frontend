@@ -10,12 +10,35 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
     const [selectedFacturas, setSelectedFacturas] = useState([]);
     const [motivo, setMotivo] = useState("");
     const [loading, setLoading] = useState(true);
+    const [motivosRelacion, setMotivosRelacion] = useState([]);
+    const [loadingMotivos, setLoadingMotivos] = useState(true);
 
-    // console.log('Emisor', emisorID);
-    // console.log('Receptor', receptorID);
+    // Función para cargar los motivos de relación
+    const fetchMotivosRelacion = useCallback(async () => {
+        if (token) {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/catalogos/Catalogos/TipoRelacion`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const data = await response.json();
 
+                if (Array.isArray(data)) {
+                    setMotivosRelacion(data);
+                }
+            } catch (error) {
+                console.error('Error fetching motivos de relación:', error);
+            } finally {
+                setLoadingMotivos(false);
+            }
+        }
+    }, [token]);
+
+    // Función para cargar las facturas 
     const fetchData = useCallback(async () => {
-        if (token && receptorID) {  // Asegurarse que tenemos receptorID
+        if (token && receptorID) {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/facturas/ListarFacturas`, {
                     headers: {
@@ -50,10 +73,12 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
 
                     setFacturas(normalizedData.sort((a, b) => b.ID - a.ID));
 
-                    // Filtrar por ID del receptor
                     const filtered = normalizedData.filter(
-                        factura => factura.Receptor?.ID === receptorID &&
-                        factura.Emisor?.ID === emisorID
+                        factura =>
+                            factura.Receptor?.ID === receptorID &&
+                            factura.Emisor?.ID === emisorID &&
+                            factura.TipoDeComprobante === "I" &&
+                            factura.uuid !== ""
                     );
 
                     setFilteredFacturas(filtered.sort((a, b) => b.ID - a.ID));
@@ -64,29 +89,37 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
                 setLoading(false);
             }
         }
-    }, [token, receptorID]);  // Dependencia de receptorID en lugar de receptor
+    }, [token, receptorID, emisorID]);
 
     useEffect(() => {
+        fetchMotivosRelacion();
         fetchData();
-    }, [fetchData]);
+    }, [fetchMotivosRelacion, fetchData]);
 
     const handleSubmit = () => {
         if (selectedFacturas.length === 0 || !motivo) {
             alert("Selecciona al menos una factura y especifica el motivo");
             return;
         }
-        onFacturasSeleccionadas({
-            facturas: selectedFacturas,
-            motivo
-        });
+
+        const CFDIRelacionados = {
+            TipoRelacion: motivo,
+            ListaCFDIRelacionados: selectedFacturas.map(factura => ({
+                UUID: factura.uuid
+            })),
+            SaldoTotalFacturasRelacionadas: sumaTotales
+        };
+
+        onFacturasSeleccionadas({ CFDIRelacionados });
     };
+
 
     const columns = [
         {
             name: "ID",
             label: "ID",
             options: {
-                display: false // Ocultamos el ID ya que es interno
+                display: false
             }
         },
         {
@@ -99,6 +132,13 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
         {
             name: "Folio",
             label: "Folio",
+            options: {
+                customBodyRender: (value) => value
+            }
+        },
+        {
+            name: "uuid",
+            label: "UUID",
             options: {
                 customBodyRender: (value) => value
             }
@@ -148,6 +188,9 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
         rowsPerPageOptions: [5, 10, 20],
     };
 
+    // Calcular la suma de los totales de las facturas seleccionadas
+    const sumaTotales = selectedFacturas.reduce((acc, factura) => acc + (parseFloat(factura.Total) || 0), 0);
+
     return (
         <Box sx={{ mt: 3, p: 2, mb: 3, border: '1px dashed grey', borderRadius: 2 }}>
             <Typography variant="h6" gutterBottom>Facturas Relacionadas</Typography>
@@ -157,7 +200,7 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
             ) : (
                 <Box sx={{ my: 3 }}>
                     <MUIDataTable
-                        title={`Facturas para ${receptor?.Nombre || 'Receptor'}`}
+                        title={`Relación de facturas`}
                         data={filteredFacturas}
                         columns={columns}
                         options={options}
@@ -173,13 +216,17 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
                         label="Motivo"
                         onChange={(e) => setMotivo(e.target.value)}
                         required
+                        disabled={loadingMotivos}
                     >
-                        <MenuItem value="01">01 - Devolución de mercancía</MenuItem>
-                        <MenuItem value="02">02 - Descuento aplicado</MenuItem>
-                        <MenuItem value="03">03 - Rebaja o bonificación</MenuItem>
-                        <MenuItem value="04">04 - Ajuste de precio</MenuItem>
-                        <MenuItem value="05">05 - Ajuste por inflación</MenuItem>
-                        <MenuItem value="06">06 - Otros</MenuItem>
+                        {loadingMotivos ? (
+                            <MenuItem value="">Cargando motivos...</MenuItem>
+                        ) : (
+                            motivosRelacion.map((motivo) => (
+                                <MenuItem key={motivo.ID} value={motivo.Clave}>
+                                    {motivo.Clave} - {motivo.Descripcion}
+                                </MenuItem>
+                            ))
+                        )}
                     </Select>
                 </FormControl>
 
@@ -187,9 +234,9 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
                     <TextField
                         label="Monto"
                         type="number"
-                        inputProps={{ min: 0, step: "0.01" }}
+                        inputProps={{ min: 0, step: "0.01", readOnly: true }}
                         variant="outlined"
-                        value={selectedFacturas.reduce((sum, factura) => sum + (factura.Total || 0), 0).toFixed(2)}
+                        value={sumaTotales.toFixed(2)}
                         InputProps={{
                             readOnly: true,
                         }}
@@ -201,7 +248,7 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
                 variant="contained"
                 onClick={handleSubmit}
                 sx={{ mt: 2 }}
-                disabled={loading || selectedFacturas.length === 0}
+                disabled={loading || selectedFacturas.length === 0 || loadingMotivos}
             >
                 Relacionar Facturas ({selectedFacturas.length})
             </Button>

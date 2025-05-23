@@ -4,6 +4,7 @@ import { Box, TextField, Button } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Impuesto({
     watch,
     register,
@@ -18,29 +19,22 @@ export default function Impuesto({
     setObjetoImpuestoError,
     setImpuestoError,
     impuestoEditor,
+    isNotaCredito = false // Nuevo prop para identificar notas de crédito
 }) {
     const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState('');
     const [monto, setMonto] = useState(0);
     const [tasaUrl, setTasaUrl] = useState('');
 
-
-
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
         if (impuestoEditor) {
-            console.log("Impuestos a editar", impuestoEditor)
-            // setValue(`impuestos[${index}].ObjetoImpuesto`, impuestoEditor.ObjetoImpuesto || '');
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
             setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
             setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
 
-
-
-
             if (impuestoEditor.Tasa) {
-                console.log("TASA", impuestoEditor.Tasa);
                 setTasa(impuestoEditor.Tasa);
                 setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || 0);
             }
@@ -56,121 +50,88 @@ export default function Impuesto({
     // Actualizar URL de tasas y sincronizar valores al cambiar impuesto
     useEffect(() => {
         if (impuesto) {
-            console.log('Entre impuestos', impuesto);
             try {
                 const data = JSON.parse(impuesto);
-
                 setValue(`impuestos[${index}].NombreImpuesto`, data.Impuesto || '');
                 setValue(`impuestos[${index}].Tipo`, data.Tipo || '');
                 setValue(`impuestos[${index}].ImpuestoClave`, data.Clave || '');
-                // trigger(`impuestos[${index}].ImpuestoClave`);
 
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);
                 if (nombreImpuesto && tipo) {
-                    setTasaUrl(`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
-                    setValue(`impuestos.${index}.TasaUrl`, `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`)
-                    // trigger(`impuestos[${index}].TasaUrl`);
+                    const url = `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`;
+                    setTasaUrl(url);
+                    setValue(`impuestos.${index}.TasaUrl`, url);
                 }
-
             } catch (e) {
                 console.error("El valor de impuesto no es un JSON válido:", impuesto);
             }
         }
     }, [impuesto, index, setValue, getValues]);
 
-
-
     // Calcular el monto basado en la tasa y base de impuesto
     useEffect(() => {
-        console.log("ENTRRE A CALCULAR");
         const tasaCuota = getValues(`impuestos[${index}].TasaOCuota`);
-        // if (tasaCuota) {
-        //     console.log("ENTRRE A CALCULAR2", tasaCuota);
-        //     const resultado = parseFloat(tasaCuota) * baseImpuesto;
-        //     setMonto(resultado);
-        //     setValue(`impuestos[${index}].Monto`, resultado);
-        // } else {
-        //     setMonto(0);
-        //     setValue(`impuestos[${index}].Monto`, 0);
-        // }
         if (tasaCuota) {
-            //console.log("ENTRE A CALCULAR", tasaCuota);
-            const resultado = parseFloat(tasaCuota) * baseImpuesto;
-
-            // Solución para redondear correctamente cuando hay errores de precisión periódica
+            let resultado = parseFloat(tasaCuota) * baseImpuesto;
+            
+            // Para notas de crédito, el monto debe ser negativo
+            if (isNotaCredito) {
+                resultado = -Math.abs(resultado);
+            }
+            
+            // Redondeo para evitar errores de precisión
             const montoRedondeado = Math.round((resultado + Number.EPSILON) * 100) / 100;
-
+            
             setMonto(montoRedondeado);
             setValue(`impuestos[${index}].Monto`, montoRedondeado);
         } else {
-            setMonto(0);
-            setValue(`impuestos[${index}].Monto`, 0);
+            const defaultMonto = isNotaCredito ? -0.00 : 0.00;
+            setMonto(defaultMonto);
+            setValue(`impuestos[${index}].Monto`, defaultMonto);
         }
+    }, [tasa, baseImpuesto, setValue, index, getValues, watch(`impuestos[${index}].TasaOCuota`), isNotaCredito]);
 
-    }, [tasa, baseImpuesto, setValue, index, getValues, impuestoEditor, watch(`impuestos[${index}].TasaOCuota`)]);
-
-    // Manejar cambios en ObjetoImpuesto
-    const handleObjetoImpuestoChange = (e) => {
-        const value = e.target.value;
-        setValue(`impuestos[${index}].ObjetoImpuesto`, value);
-        setObjetoImpuestoError(!value);
-    };
-
-    // Manejar cambios en Impuesto
     const handleImpuestoChange = (e) => {
         const value = e.target.value;
         setImpuesto(value);
         setImpuestoError(!value);
     };
 
-    // Sincronizar tasa seleccionada y actualizar valor del formulario
     const handleTasaChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
-            setTasa(data.ID); // Usar el ID para el campo de `Tasa`
-            setValue(`impuestos[${index}].Tasa`, data.ID); // Asignar ID al campo `Tasa`
-            setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor)); // Registrar el valor en `TasaOCuota`
+            setTasa(data.ID);
+            setValue(`impuestos[${index}].Tasa`, data.ID);
+            setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor));
         } catch (error) {
             console.error("Error al manejar el cambio de tasa:", error);
         }
     };
 
     const formatCurrency = (value) => {
-        if (!value) return '$';
-
-        // Convertir a string y limpiar (por si acaso)
-        const numStr = value.toString().replace(/[^0-9.]/g, '');
-
-        // Separar parte entera y decimal
-        const parts = numStr.split('.');
-        let integerPart = parts[0];
-        const decimalPart = parts.length > 1 ? `.${parts[1]}` : '';
-
-        // Formatear parte entera con separadores de miles
-        integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-        return `$${integerPart}${decimalPart}`;
+        if (value === undefined || value === null) return '$0.00';
+        
+        // Convertir a número y manejar notas de crédito (valores negativos)
+        const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
+        const absNum = Math.abs(num);
+        const isNegative = num < 0;
+        
+        // Formatear el valor absoluto
+        const formatted = absNum.toLocaleString('es-MX', {
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).replace('MXN', '').trim();
+        
+        // Añadir paréntesis para valores negativos (opcional)
+        return isNegative ? `-${formatted}` : formatted;
     };
 
     return (
         <Box>
             <Box display="flex" flexDirection="row" alignItems="start" gap={2}>
-                {/* <Box flex={2}>
-                    <Select
-                        register={register}
-                        clave='Clave'
-                        nombre={`impuestos[${index}].ObjetoImpuesto`}
-                        label='ObjetoImpuesto'
-                        descripcion='Descripcion'
-                        url="`${apiUrl}/Catalogos/ObjetoImpuestos`
-                        onChange={handleObjetoImpuestoChange}
-                        error={objetoImpuestoError}
-                        helperText={objetoImpuestoError ? "El objeto de impuesto es requerido." : ""}
-                        value={getValues(`impuestos[${index}].ObjetoImpuesto`) || ''}
-                    />
-                </Box> */}
-
                 <Box flex={1}>
                     <Select
                         register={register}
@@ -197,7 +158,6 @@ export default function Impuesto({
                         descripcion="Valor"
                         url={getValues(`impuestos.${index}.TasaUrl`)}
                         onChange={handleTasaChange}
-                        // value={tasa}
                         value={getValues(`impuestos[${index}].Tasa`)}
                         sx={{ minWidth: 120 }}
                     />
@@ -206,13 +166,11 @@ export default function Impuesto({
                 <Box flex={1}>
                     <TextField
                         label="Base Impuesto"
-                        type="text"  // Cambiamos a "text" para mostrar el formato
-                        {...register(`impuestos[${index}].BaseImpuesto`)} // Mantenemos el registro de React Hook Form
-                        value={formatCurrency(baseImpuesto || "0")} // Aseguramos que no sea undefined
+                        type="text"
+                        {...register(`impuestos[${index}].BaseImpuesto`)}
+                        value={formatCurrency(baseImpuesto || 0)}
                         fullWidth
-                        InputProps={{
-                            readOnly: true,
-                        }}
+                        InputProps={{ readOnly: true }}
                     />
                 </Box>
 
@@ -224,6 +182,11 @@ export default function Impuesto({
                         value={formatCurrency(monto)}
                         fullWidth
                         InputProps={{ readOnly: true }}
+                        sx={{
+                            '& .MuiInputBase-input': {
+                                color: isNotaCredito && monto < 0 ? 'error.main' : 'text.primary'
+                            }
+                        }}
                     />
                 </Box>
 

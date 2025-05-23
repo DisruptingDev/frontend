@@ -67,6 +67,8 @@ export default function DataTable({ token }) {
     const [menuRow, setMenuRow] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
 
+    console.log('token', token);
+
     // Obtener datos de la API
     const fetchData = useCallback(async () => {
         if (token) {
