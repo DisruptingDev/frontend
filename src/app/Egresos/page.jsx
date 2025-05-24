@@ -107,7 +107,7 @@ export default function GenerarEgreso() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",  );
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",);
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
@@ -135,7 +135,7 @@ export default function GenerarEgreso() {
     };
 
     const handleFacturasSeleccionadas = (data) => {
-        console.log("Facturas relacionadas recibidas:", data);
+        //console.log("Facturas relacionadas recibidas:", data);
         setFacturasRelacionadas(data.CFDIRelacionados);
         setSnackbarMessage('Facturas relacionadas correctamente.');
         setSnackbarSeverity('success');
@@ -144,6 +144,10 @@ export default function GenerarEgreso() {
 
     const handleReceptorSelect = (receptor) => {
         setReceptorData(receptor);
+    };
+
+    const handleTipoComprobanteChange = (tipo) => {
+        if (tipoComprobante !== "E") setFacturasRelacionadas(null); // Limpia si no es NC
     };
 
     return (

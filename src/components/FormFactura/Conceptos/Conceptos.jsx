@@ -6,7 +6,6 @@ import { useForm, useFieldArray, get } from 'react-hook-form';
 import CrearConcepto from "./ModelConceptos.js";
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from '@/components/Select/Select.jsx';
-import { is } from 'valibot';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Conceptos({ setConceptos, conceptos, editIndex, setEditIndex, token, modalAgregarConcepto, onClose, TipoComprobante, facturasRelacionadas }) {
@@ -87,6 +86,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             // 1. Prellenar descripción con UUIDs
             console.log(facturasRelacionadas?.CFDIRelacionados?.ListaCFDIRelacionados);
             const uuids = facturasRelacionadas.CFDIRelacionados?.ListaCFDIRelacionados?.map(f => f.UUID).join(', ');
+            if (!uuids) {
+                setSnackbarMessage('No se encontraron UUIDs para prellenar la descripción.');
+                setSnackbarSeverity('warning');
+                setOpenSnackbar(true);
+            }
             const descripcion = `Nota de crédito aplicada a facturas con UUIDs: ${uuids}`;
             setValue('Descripcion', descripcion);
 

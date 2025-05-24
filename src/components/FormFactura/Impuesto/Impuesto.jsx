@@ -19,12 +19,39 @@ export default function Impuesto({
     setObjetoImpuestoError,
     setImpuestoError,
     impuestoEditor,
-    isNotaCredito = false // Nuevo prop para identificar notas de crédito
+    isNotaCredito = false
 }) {
     const [impuesto, setImpuesto] = useState('');
     const [tasa, setTasa] = useState('');
     const [monto, setMonto] = useState(0);
     const [tasaUrl, setTasaUrl] = useState('');
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // Preload values for nota de crédito on first load
+    useEffect(() => {
+        if (isNotaCredito && isInitialLoad) {
+            // Set default impuesto (IVA)
+            const defaultImpuesto = {
+                ID: '2',
+                Clave: '002',
+                Impuesto: 'IVA',
+                Tipo: 'Tasa'
+            };
+            
+            setValue(`impuestos[${index}].Impuesto`, JSON.stringify(defaultImpuesto));
+            setValue(`impuestos[${index}].NombreImpuesto`, 'IVA');
+            setValue(`impuestos[${index}].Tipo`, 'Tasa');
+            setValue(`impuestos[${index}].ImpuestoClave`, '002');
+            setImpuesto(JSON.stringify(defaultImpuesto));
+
+            // Set URL for tasas
+            const url = `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=IVA&tipo=Tasa`;
+            setTasaUrl(url);
+            setValue(`impuestos.${index}.TasaUrl`, url);
+
+            setIsInitialLoad(false);
+        }
+    }, [isNotaCredito, index, setValue, isInitialLoad]);
 
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
@@ -73,11 +100,29 @@ export default function Impuesto({
     useEffect(() => {
         const tasaCuota = getValues(`impuestos[${index}].TasaOCuota`);
         if (tasaCuota) {
-            let resultado = parseFloat(tasaCuota) * baseImpuesto;
+            let resultado;
+            let nuevaBase;
             
-            // Para notas de crédito, el monto debe ser negativo
             if (isNotaCredito) {
-                resultado = -Math.abs(resultado);
+                // Para nota de crédito: base = monto total - monto impuesto
+                const taxRate = parseFloat(tasaCuota);
+                const montoTotal = baseImpuesto; // Este es el monto total de la nota
+                
+                // Calcular el monto del impuesto
+                resultado = montoTotal * (taxRate / (1 + taxRate));
+                
+                // Calcular la nueva base (monto total - impuesto)
+                nuevaBase = montoTotal - resultado;
+                
+                // Redondear valores
+                resultado = Math.round((resultado + Number.EPSILON) * 100) / 100;
+                nuevaBase = Math.round((nuevaBase + Number.EPSILON) * 100) / 100;
+                
+                // Actualizar la base impuesto
+                setValue(`impuestos[${index}].BaseImpuesto`, nuevaBase);
+            } else {
+                // Cálculo normal para facturas
+                resultado = parseFloat(tasaCuota) * baseImpuesto;
             }
             
             // Redondeo para evitar errores de precisión
@@ -86,9 +131,8 @@ export default function Impuesto({
             setMonto(montoRedondeado);
             setValue(`impuestos[${index}].Monto`, montoRedondeado);
         } else {
-            const defaultMonto = isNotaCredito ? -0.00 : 0.00;
-            setMonto(defaultMonto);
-            setValue(`impuestos[${index}].Monto`, defaultMonto);
+            setMonto(0.00);
+            setValue(`impuestos[${index}].Monto`, 0.00);
         }
     }, [tasa, baseImpuesto, setValue, index, getValues, watch(`impuestos[${index}].TasaOCuota`), isNotaCredito]);
 
@@ -104,6 +148,12 @@ export default function Impuesto({
             setTasa(data.ID);
             setValue(`impuestos[${index}].Tasa`, data.ID);
             setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor));
+            
+            // Si es nota de crédito, forzar recálculo
+            if (isNotaCredito) {
+                const currentBase = getValues(`impuestos[${index}].BaseImpuesto`);
+                setValue(`impuestos[${index}].BaseImpuesto`, currentBase);
+            }
         } catch (error) {
             console.error("Error al manejar el cambio de tasa:", error);
         }
@@ -112,22 +162,29 @@ export default function Impuesto({
     const formatCurrency = (value) => {
         if (value === undefined || value === null) return '$0.00';
         
-        // Convertir a número y manejar notas de crédito (valores negativos)
-        const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
-        const absNum = Math.abs(num);
-        const isNegative = num < 0;
+        // Convertir a número (siempre positivo)
+        const num = typeof value === 'string' ? 
+            Math.abs(parseFloat(value.replace(/[^0-9.-]/g, ''))) : 
+            Math.abs(value);
         
-        // Formatear el valor absoluto
-        const formatted = absNum.toLocaleString('es-MX', {
+        // Formatear el valor
+        return num.toLocaleString('es-MX', {
             style: 'currency',
             currency: 'MXN',
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).replace('MXN', '').trim();
-        
-        // Añadir paréntesis para valores negativos (opcional)
-        return isNegative ? `-${formatted}` : formatted;
     };
+
+    // Obtener valor actual del select de impuesto para renderizado
+    const currentImpuestoValue = isNotaCredito && isInitialLoad 
+        ? JSON.stringify({ ID: '2', Clave: '002', Impuesto: 'IVA', Tipo: 'Tasa' })
+        : getValues(`impuestos[${index}].Impuesto`) || '';
+
+    // Obtener valor actual del select de tasa para renderizado
+    const currentTasaValue = isNotaCredito && isInitialLoad 
+        ? JSON.stringify({ ID: '21', Valor: '0.160000', Descripcion: '16%' })
+        : getValues(`impuestos[${index}].Tasa`) || '';
 
     return (
         <Box>
@@ -144,7 +201,7 @@ export default function Impuesto({
                         onChange={handleImpuestoChange}
                         error={impuestoError}
                         helperText={impuestoError ? "El impuesto es requerido." : ""}
-                        value={getValues(`impuestos[${index}].Impuesto`) || ''}
+                        value={currentImpuestoValue}
                     />
                 </Box>
 
@@ -158,7 +215,7 @@ export default function Impuesto({
                         descripcion="Valor"
                         url={getValues(`impuestos.${index}.TasaUrl`)}
                         onChange={handleTasaChange}
-                        value={getValues(`impuestos[${index}].Tasa`)}
+                        value={currentTasaValue}
                         sx={{ minWidth: 120 }}
                     />
                 </Box>
@@ -168,7 +225,7 @@ export default function Impuesto({
                         label="Base Impuesto"
                         type="text"
                         {...register(`impuestos[${index}].BaseImpuesto`)}
-                        value={formatCurrency(baseImpuesto || 0)}
+                        value={formatCurrency(getValues(`impuestos[${index}].BaseImpuesto`) || 0)}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
@@ -182,11 +239,6 @@ export default function Impuesto({
                         value={formatCurrency(monto)}
                         fullWidth
                         InputProps={{ readOnly: true }}
-                        sx={{
-                            '& .MuiInputBase-input': {
-                                color: isNotaCredito && monto < 0 ? 'error.main' : 'text.primary'
-                            }
-                        }}
                     />
                 </Box>
 
