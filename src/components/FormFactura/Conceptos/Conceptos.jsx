@@ -38,9 +38,9 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
     const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
-    const [initialLoad, setInitialLoad] = useState(true);
+    const [initialLoad, setInitialLoad] = useState(false);
 
-    // console.log("Facturas seleccionadas: ", facturasRelacionadas);
+    //console.log("Facturas seleccionadas: ", facturasRelacionadas);
     // console.log("Tipo Comprobante: ", tipoComprobanteValue);
     // console.log("isNotaCredito: ", isNotaCredito);
 
@@ -80,44 +80,59 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     }, [queryConcepto, token]);
 
-    // Efecto para prellenar datos cuando es nota de crédito
+    // 1. Elimina el primer efecto (el que solo imprime y establece initialLoad)
+    // No es necesario ya que podemos hacer todo en un solo efecto
+
+    // 2. Modifica el segundo efecto para que maneje todo el flujo
     useEffect(() => {
-        if (isNotaCredito && facturasRelacionadas && initialLoad) {
-            // 1. Prellenar descripción con UUIDs
-            console.log(facturasRelacionadas?.CFDIRelacionados?.ListaCFDIRelacionados);
-            const uuids = facturasRelacionadas.CFDIRelacionados?.ListaCFDIRelacionados?.map(f => f.UUID).join(', ');
-            if (!uuids) {
-                setSnackbarMessage('No se encontraron UUIDs para prellenar la descripción.');
-                setSnackbarSeverity('warning');
-                setOpenSnackbar(true);
-            }
-            const descripcion = `Nota de crédito aplicada a facturas con UUIDs: ${uuids}`;
-            setValue('Descripcion', descripcion);
+        // Verifica si debemos procesar las facturas
+        const shouldProcess = isNotaCredito &&
+            facturasRelacionadas &&
+            Object.keys(facturasRelacionadas).length > 0;
 
-            // 2. Establecer valores por defecto
-            setValue('ClaveProdServ', '84111506'); // Código genérico para notas de crédito
-            setValue('ClaveUnidad', 'ACT'); // Actividad (unidad genérica)
-            setValue('Cantidad', 1);
+        if (!shouldProcess) return;
 
-            // 3. Calcular valor unitario basado en el saldo total
-            const saldoTotal = facturasRelacionadas.CFDIRelacionados?.SaldoTotalFacturasRelacionadas || 0;
-            setValue('ValorUnitario', Math.abs(saldoTotal)); // Notas de crédito usan valores negativos
+        console.log("Procesando facturas relacionadas:", facturasRelacionadas);
 
-            // 4. Descuento a 0 y deshabilitado
-            setValue('Descuento', 0);
+        // 1. Prellenar descripción con UUIDs - Ahora accedemos directamente a ListaCFDIRelacionados
+        const uuids = facturasRelacionadas.ListaCFDIRelacionados
+            ?.filter(f => f.UUID) // Filtra elementos sin UUID
+            ?.map(f => f.UUID)
+            ?.join(', ');
 
-            // Buscar y establecer las claves de producto y unidad
-            const prodServ = { Clave: '84111506', Descripcion: 'Notas de crédito' };
-            const unidad = { Clave: 'ACT', Descripcion: 'Actividad' };
-
-            setSelectedClaveProdServ(prodServ);
-            setSelectedClaveUnidad(unidad);
-            setClaveProdServOptions([prodServ]);
-            setClaveUnidadOptions([unidad]);
-
-            setInitialLoad(false);
+        if (!uuids) {
+            setSnackbarMessage('No se encontraron UUIDs para prellenar la descripción.');
+            setSnackbarSeverity('warning');
+            setOpenSnackbar(true);
+            return;
         }
-    }, [isNotaCredito, facturasRelacionadas, initialLoad, setValue]);
+
+        const descripcion = `Nota de crédito aplicada a facturas con UUIDs: ${uuids}`;
+        setValue('Descripcion', descripcion);
+
+        // 2. Establecer valores por defecto
+        setValue('ClaveProdServ', '84111506');
+        setValue('ClaveUnidad', 'ACT');
+        setValue('Cantidad', 1);
+
+        // 3. Calcular valor unitario (usar negativo para nota de crédito)
+        // Ahora accedemos directamente a SaldoTotalFacturasRelacionadas
+        const saldoTotal = facturasRelacionadas.SaldoTotalFacturasRelacionadas || 0;
+        //setValue('ValorUnitario', -Math.abs(saldoTotal)); // Negativo para NC
+
+        // 4. Descuento a 0
+        setValue('Descuento', 0);
+
+        // Configurar opciones de selects
+        const prodServ = { Clave: '84111506', Descripcion: 'Notas de crédito' };
+        const unidad = { Clave: 'ACT', Descripcion: 'Actividad' };
+
+        setSelectedClaveProdServ(prodServ);
+        setSelectedClaveUnidad(unidad);
+        setClaveProdServOptions([prodServ]);
+        setClaveUnidadOptions([unidad]);
+
+    }, [isNotaCredito, facturasRelacionadas, setValue]);
 
     const handleAddNewOption = (newOption) => {
         const newConcepto = { ID: '000', Descripcion: newOption };
@@ -173,6 +188,16 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("Subtotal", subtotal);
             return subtotal;
         };
+
+        // if (isNotaCredito) {
+        //         const subtotal = (cantidad * precioUnitario) / 1.16; // Sumar descuento para NC
+        //         setValue("Subtotal", subtotal);
+        //                         return subtotal;
+        //     } else {
+        //         const subtotal = (cantidad * precioUnitario) - descuento;
+        //         setValue("Subtotal", subtotal);
+        //         return subtotal;
+        //     }
 
         const subtotal = calcularSubtotal();
         setValue("Subtotal", subtotal);
@@ -790,7 +815,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                                     impuestoError={impuestoError}
                                     setObjetoImpuestoError={setObjetoImpuestoError}
                                     setImpuestoError={setImpuestoError}
-                                    isNotaCredito={isNotaCredito} // Pasa esta prop al componente Impuesto
+                                    isNotaCredito={isNotaCredito}
                                 // impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
                                 />
                             </Box>

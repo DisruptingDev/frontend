@@ -35,7 +35,9 @@ export default function Impuesto({
                 ID: '2',
                 Clave: '002',
                 Impuesto: 'IVA',
-                Tipo: 'Tasa'
+                Descripcion: 'IVA - Traslado',
+                Tipo: 'Tasa',
+                Tasa: 0.16,
             };
             
             setValue(`impuestos[${index}].Impuesto`, JSON.stringify(defaultImpuesto));

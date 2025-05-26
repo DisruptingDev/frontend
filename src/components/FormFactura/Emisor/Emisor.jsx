@@ -1,9 +1,8 @@
 "use client";
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
-import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {

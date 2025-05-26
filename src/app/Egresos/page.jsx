@@ -38,6 +38,8 @@ export default function GenerarEgreso() {
     const [emisorID, setEmisorID] = useState("");
     const [receptorID, setReceptorID] = useState(null);
 
+    console.log("Token en GenerarEgreso:", token);
+
     useEffect(() => {
         const token = isAuthenticated();
         if (!token) {
@@ -134,20 +136,34 @@ export default function GenerarEgreso() {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
+    // const handleFacturasSeleccionadas = (data) => {
+    //     //console.log("Facturas relacionadas recibidas:", data);
+    //     setFacturasRelacionadas(data.CFDIRelacionados);
+    //     setSnackbarMessage('Facturas relacionadas correctamente.');
+    //     setSnackbarSeverity('success');
+    //     setOpenSnackbar(true);
+    // };
+
     const handleFacturasSeleccionadas = (data) => {
-        //console.log("Facturas relacionadas recibidas:", data);
-        setFacturasRelacionadas(data.CFDIRelacionados);
-        setSnackbarMessage('Facturas relacionadas correctamente.');
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true);
+        console.log("Facturas relacionadas recibidas:", data);
+        if (data && data.CFDIRelacionados) {
+            setFacturasRelacionadas(data.CFDIRelacionados);
+            setSnackbarMessage('Facturas relacionadas correctamente.');
+            setSnackbarSeverity('success');
+            setOpenSnackbar(true);
+        }
     };
+
 
     const handleReceptorSelect = (receptor) => {
         setReceptorData(receptor);
     };
 
     const handleTipoComprobanteChange = (tipo) => {
-        if (tipoComprobante !== "E") setFacturasRelacionadas(null); // Limpia si no es NC
+        setTipoComprobante(tipo);
+        if (tipo !== "E") {
+            setFacturasRelacionadas([]); // Limpia si no es NC
+        }
     };
 
     return (
@@ -210,6 +226,7 @@ export default function GenerarEgreso() {
                                 token={token}
                                 TipoComprobante={tipoComprobante} // Nuevo prop
                                 facturasRelacionadas={facturasRelacionadas} // Nuevo prop
+                                setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
                             />
                             <Resumen
                                 conceptos={conceptos}

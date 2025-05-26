@@ -14,6 +14,8 @@ import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
+import SeleccionarFacturas from "@/components/FormFactura/NotaCredito/SeleccionarFacturas.jsx";
+import { set } from "date-fns";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -29,6 +31,14 @@ export default function CrearFactura() {
     const [previewContent, setPreviewContent] = useState('');
     const router = useRouter();
     const [token, setToken] = useState("");
+    const [receptorData, setReceptorData] = useState(null);
+    const [tipoComprobante, setTipoComprobante] = useState("");
+    const [facturasRelacionadas, setFacturasRelacionadas] = useState([]);
+    const [motivoNotaCredito, setMotivoNotaCredito] = useState("");
+    const [emisorID, setEmisorID] = useState("");
+    const [receptorID, setReceptorID] = useState(null);
+
+    console.log("Token en GenerarEgreso:", token);
 
     useEffect(() => {
         const token = isAuthenticated();
@@ -41,15 +51,16 @@ export default function CrearFactura() {
     }, [router]);
 
     const onSubmit = (data) => {
-        console.log("Datos del formulario", data);
+        //console.log("Datos del formulario", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos antes de crear", conceptos);
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura");
+        //console.log("Conceptos antes de crear", conceptos);
+        console.log("Facturas relacionadas antes de crear", facturasRelacionadas);
+        const factura = FormatearFactura(data, data, conceptos, "", "Factura", facturasRelacionadas);
         console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
@@ -98,11 +109,11 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",);
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
-        // await generatePDF(vistaPrevia);
+        await generatePDF(vistaPrevia);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
     });
@@ -123,6 +134,36 @@ export default function CrearFactura() {
 
     const handleDeleteConcepto = (index) => {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
+    };
+
+    // const handleFacturasSeleccionadas = (data) => {
+    //     //console.log("Facturas relacionadas recibidas:", data);
+    //     setFacturasRelacionadas(data.CFDIRelacionados);
+    //     setSnackbarMessage('Facturas relacionadas correctamente.');
+    //     setSnackbarSeverity('success');
+    //     setOpenSnackbar(true);
+    // };
+
+    const handleFacturasSeleccionadas = (data) => {
+        console.log("Facturas relacionadas recibidas:", data);
+        if (data && data.CFDIRelacionados) {
+            setFacturasRelacionadas(data.CFDIRelacionados);
+            setSnackbarMessage('Facturas relacionadas correctamente.');
+            setSnackbarSeverity('success');
+            setOpenSnackbar(true);
+        }
+    };
+
+
+    const handleReceptorSelect = (receptor) => {
+        setReceptorData(receptor);
+    };
+
+    const handleTipoComprobanteChange = (tipo) => {
+        setTipoComprobante(tipo);
+        if (tipo !== "E") {
+            setFacturasRelacionadas([]); // Limpia si no es NC
+        }
     };
 
     return (
@@ -150,6 +191,8 @@ export default function CrearFactura() {
                                 getValues={getValues}
                                 trigger={trigger}
                                 errors={errors}
+                                setTipoComprobante={setTipoComprobante} // Nuevo prop
+                                setEmisorID={setEmisorID} // Nuevo prop
                             />
                             <Receptor
                                 register={register}
@@ -159,7 +202,17 @@ export default function CrearFactura() {
                                 getValues={getValues}
                                 trigger={trigger}
                                 token={token}
+                                setReceptorID={setReceptorID} // Nuevo prop
                             />
+                            {tipoComprobante === "E" && receptorID != null && (
+                                <SeleccionarFacturas
+                                    receptor={receptorData}
+                                    token={token}
+                                    onFacturasSeleccionadas={handleFacturasSeleccionadas}
+                                    emisorID={emisorID}
+                                    receptorID={receptorID}
+                                />
+                            )}
                             <Conceptos
                                 trigger={trigger}
                                 register={register}
@@ -171,6 +224,9 @@ export default function CrearFactura() {
                                 editIndex={editIndex}
                                 setEditIndex={setEditIndex}
                                 token={token}
+                                TipoComprobante={tipoComprobante} // Nuevo prop
+                                facturasRelacionadas={facturasRelacionadas} // Nuevo prop
+                                setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
                             />
                             <Resumen
                                 conceptos={conceptos}
