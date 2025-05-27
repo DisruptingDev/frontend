@@ -498,10 +498,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     helperText={errors.UsoCFDI?.message || "Este campo es obligatorio"}
                     onChange={(e) => {
                         setUsoCFDI(e.target.value);
-                        // Actualizar también la descripción si es necesario
-                        if (e.target.selectedOptions[0]) {
-                            setValue("UsoCFDIDescripcion", e.target.selectedOptions[0].text);
-                        }
+                        // if (e.target.selectedOptions[0]) {
+                        //     setValue("UsoCFDIDescripcion", e.target.selectedOptions[0].text);
+                        // }
                     }}
                     value={getValues("UsoCFDI") || ""}
                     disabled={disabled || !regimenFiscal} // Deshabilitar si no hay régimen fiscal
