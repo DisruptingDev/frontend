@@ -14,13 +14,15 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const [loadingEmisores, setLoadingEmisores] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
-    console.log("Token:", token);
-
     useEffect(() => {
         const fetchEmisores = async () => {
             setLoadingEmisores(true);
             try {
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`, {
+                const url = searchTerm
+                    ? `${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`
+                    : `${apiUrl}/api/catalogos/Catalogos/Emisor`; // Llamada sin filtro
+
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
