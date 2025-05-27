@@ -333,14 +333,60 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                             : null
                     }
                     onChange={(_, newValue) => {
-                        handleReceptorChange(newValue);
-                        setSearchTerm(""); // Limpia el término de búsqueda al seleccionar o limpiar
+                        if (newValue && newValue.isAddOption) {
+                            handleOpenModal();
+                        } else {
+                            handleReceptorChange(newValue);
+                            setSearchTerm("");
+                        }
                     }}
                     onInputChange={(_, newInputValue) => {
                         setSearchTerm(newInputValue);
                     }}
-                    getOptionLabel={(option) => option.Nombre || ""}
+                    getOptionLabel={(option) => option.isAddOption ? `Agregar "${searchTerm}" como nuevo` : option.Nombre || ""}
                     isOptionEqualToValue={(option, value) => option.ID === value?.ID}
+                    filterOptions={(options, { inputValue }) => {
+                        const filtered = options.filter(option =>
+                            option.Nombre?.toLowerCase().includes(inputValue.toLowerCase()) ||
+                            option.Rfc?.toLowerCase().includes(inputValue.toLowerCase())
+                        );
+
+                        // Solo agregar opción si hay texto de búsqueda y no hay coincidencias
+                        if (inputValue.trim() && !filtered.length) {
+                            return [{
+                                isAddOption: true,
+                                ID: 'add-new',
+                                Nombre: `Agregar "${inputValue}" como nuevo cliente`
+                            }];
+                        }
+                        return filtered;
+                    }}
+                    renderOption={(props, option) => (
+                        <li {...props} key={option.ID}>
+                            {option.isAddOption ? (
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        width: '100%',
+                                        padding: '8px 16px',
+                                        color: '#0e8e85', // verde agua oscuro
+                                        backgroundColor: 'rgba(29, 57, 77, 0.1)',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(29, 57, 77, 0.2)',
+                                        }
+                                    }}
+                                >
+                                    <AddCircleIcon sx={{ color: '#0e8e85', mr: 1 }} />
+                                    <Typography fontWeight="bold">
+                                        {`Agregar "${searchTerm}" como nuevo cliente`}
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                option.Nombre
+                            )}
+                        </li>
+                    )}
                     renderInput={(params) => (
                         <TextField
                             {...params}
@@ -360,20 +406,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         />
                     )}
                 />
-
-                {/* <Select
-                    register={register}
-                    nombre="Receptor"
-                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
-                    id="ID"
-                    descripcion="Nombre"
-                    onChange={(e) => setReceptor(e.target.value)}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                    value={getValues("ReceptorID") || ""}
-                    reset={isModalClosed}  // Pasa el estado al componente Select
-                    disabled={disabled}
-                /> */}
 
                 <TextField
                     label="RFC"
@@ -589,8 +621,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     <AltaCliente register={register} token={token} onClose={handleCloseModal} />
                 </DialogContent>
             </Dialog>
-            {/* <pre> {JSON.stringify(usoCFDIURL,null,2)}</pre>   */}
-            {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
         </Box>
 
     );

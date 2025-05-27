@@ -23,8 +23,6 @@ const AltaUsuarios = () => {
     const [formData, setFormData] = useState({
         nombre: '',
         correo: '',
-        contraseña: '',
-        confirmacionContraseña: ''
     });
 
     const handleSubmit = async (event) => {
@@ -32,7 +30,7 @@ const AltaUsuarios = () => {
         // Handle form submission logic here
         console.log(formData);
         try {
-            const response = await fetch(`${apiUrl}/api/registrousuarios/RegistroUsuario`, {
+            const response = await fetch(`${apiUrl}/api/registrousuarios/EnviarCorreoValidacion`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
