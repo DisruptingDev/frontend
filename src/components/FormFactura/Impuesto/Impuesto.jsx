@@ -108,7 +108,7 @@ export default function Impuesto({
             if (isNotaCredito) {
                 // Para nota de crédito: base = monto total - monto impuesto
                 const taxRate = parseFloat(tasaCuota);
-                const montoTotal = baseImpuesto; // Este es el monto total de la nota
+                const montoTotal = baseImpuesto * 1.16; // Este es el monto total de la nota
                 
                 // Calcular el monto del impuesto
                 resultado = montoTotal * (taxRate / (1 + taxRate));

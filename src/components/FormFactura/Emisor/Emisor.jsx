@@ -1,15 +1,45 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { TextField, Box, Typography } from '@mui/material';
+import { TextField, Box, Typography, Autocomplete, CircularProgress } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID, token }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
     const [serieUrl, setSerieUrl] = useState('');
+    const [emisorOptions, setEmisorOptions] = useState([]);
+    const [loadingEmisores, setLoadingEmisores] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    console.log(token);
+
+    useEffect(() => {
+        const fetchEmisores = async () => {
+            setLoadingEmisores(true);
+            try {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                const data = await response.json();
+                console.log("Emisores fetched:", data);
+                setEmisorOptions(data);
+            } catch (error) {
+                console.error("Error fetching emisores:", error);
+            } finally {
+                setLoadingEmisores(false);
+            }
+        };
+
+        const debounceFetch = setTimeout(() => {
+            fetchEmisores();
+        }, 300);
+
+        return () => clearTimeout(debounceFetch);
+    }, [searchTerm]);
 
     useEffect(() => {
         const today = new Date();
@@ -29,8 +59,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     }, []);
     useEffect(() => {
         const today = new Date();
-
-
         const formatDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -177,6 +205,39 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
                 />
+
+                {/* <Autocomplete
+                    options={emisorOptions}
+                    loading={loadingEmisores}
+                    disabled={disabled}
+                    value={getValues("EmisorID") ? emisorOptions.find(e => e.ID === getValues("EmisorID")) : null}
+                    onChange={(_, newValue) => {
+                        setValue("EmisorID", newValue?.ID || "");
+                        handleEmisorChange(newValue?.ID);
+                    }}
+                    onInputChange={(_, newInputValue) => {
+                        setSearchTerm(newInputValue);
+                    }}
+                    getOptionLabel={(option) => option.Nombre || ""}
+                    isOptionEqualToValue={(option, value) => option.ID === value.ID}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Emisor"
+                            error={!!errors.Emisor}
+                            helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                            InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                    <>
+                                        {loadingEmisores ? <CircularProgress color="inherit" size={20} /> : null}
+                                        {params.InputProps.endAdornment}
+                                    </>
+                                ),
+                            }}
+                        />
+                    )}
+                /> */}
 
                 <TextField
                     label="RFC"

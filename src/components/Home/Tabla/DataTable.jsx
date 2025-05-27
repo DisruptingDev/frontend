@@ -506,21 +506,21 @@ export default function DataTable({ token }) {
             }
         },
         {
-            name: "Conceptos.TotalImpuestosTrasladados",
+            name: "Conceptos",
             label: "Traslados",
             options: {
                 filter: false,
                 sort: true,
-                customBodyRender: (value) => formatCurrency(value || 0)
+                customBodyRender: (value) => formatCurrency(value?.TotalImpuestosTrasladados || 0)
             }
         },
         {
-            name: "Conceptos.TotalImpuestosRetenidos",
+            name: "Conceptos",
             label: "Retenciones",
             options: {
                 filter: false,
                 sort: true,
-                customBodyRender: (value) => formatCurrency(value || 0)
+                customBodyRender: (value) => formatCurrency(value?.TotalImpuestosRetenidos || 0)
             }
         },
         {

@@ -184,7 +184,12 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             const cantidad = getValues('Cantidad');
             const precioUnitario = getValues('ValorUnitario');
             const descuento = getValues('Descuento');
-            const subtotal = (cantidad * precioUnitario) - descuento;
+            let subtotal;
+            if (isNotaCredito) {
+                subtotal = (cantidad * precioUnitario) / 1.16;
+            } else {
+                subtotal = (cantidad * precioUnitario) - descuento;
+            }
             setValue("Subtotal", subtotal);
             return subtotal;
         };

@@ -136,14 +136,6 @@ export default function CrearFactura() {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
-    // const handleFacturasSeleccionadas = (data) => {
-    //     //console.log("Facturas relacionadas recibidas:", data);
-    //     setFacturasRelacionadas(data.CFDIRelacionados);
-    //     setSnackbarMessage('Facturas relacionadas correctamente.');
-    //     setSnackbarSeverity('success');
-    //     setOpenSnackbar(true);
-    // };
-
     const handleFacturasSeleccionadas = (data) => {
         console.log("Facturas relacionadas recibidas:", data);
         if (data && data.CFDIRelacionados) {
@@ -191,6 +183,7 @@ export default function CrearFactura() {
                                 getValues={getValues}
                                 trigger={trigger}
                                 errors={errors}
+                                token={token}
                                 setTipoComprobante={setTipoComprobante} // Nuevo prop
                                 setEmisorID={setEmisorID} // Nuevo prop
                             />
