@@ -14,7 +14,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const [loadingEmisores, setLoadingEmisores] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
-    console.log(token);
+    console.log("Token:", token);
 
     useEffect(() => {
         const fetchEmisores = async () => {
@@ -26,7 +26,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 });
                 const data = await response.json();
                 console.log("Emisores fetched:", data);
-                setEmisorOptions(data);
+                setEmisorOptions(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching emisores:", error);
             } finally {
@@ -144,18 +144,20 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
     }, [setValue]);
 
-    const handleEmisorChange = (e) => {
+    const handleEmisorChange = (emisorID) => {
         try {
-            const data = JSON.parse(e.target.value);
-            setEmisor(data);
-            // console.log(data);
-            //Checar, si es correcto
-            setValue("Serie", "");
-            if (setEmisorID) {
-                setEmisorID(data.ID);
+            // Busca el emisor completo en las opciones disponibles
+            const emisorSeleccionado = emisorOptions.find(opt => opt.ID === emisorID);
+
+            if (emisorSeleccionado) {
+                setEmisor(emisorSeleccionado);
+                setValue("Serie", "");
+                if (setEmisorID) {
+                    setEmisorID(emisorSeleccionado.ID);
+                }
             }
         } catch (error) {
-            console.error("El valor de emisor no es un JSON válido:", e.target.value);
+            console.error("Error al procesar el emisor:", error);
         }
     };
     // const handleLugarExpedicionChange = (e) => {
@@ -191,7 +193,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                <Select
+                {/* <Select
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
@@ -204,9 +206,9 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
-                />
+                /> */}
 
-                {/* <Autocomplete
+                <Autocomplete
                     options={emisorOptions}
                     loading={loadingEmisores}
                     disabled={disabled}
@@ -237,7 +239,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                             }}
                         />
                     )}
-                /> */}
+                />
 
                 <TextField
                     label="RFC"
