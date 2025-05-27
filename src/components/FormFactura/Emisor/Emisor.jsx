@@ -18,9 +18,12 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         const fetchEmisores = async () => {
             setLoadingEmisores(true);
             try {
-                const url = searchTerm
-                    ? `${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`
-                    : `${apiUrl}/api/catalogos/Catalogos/Emisor`; // Llamada sin filtro
+                let url = `${apiUrl}/api/catalogos/Catalogos/Emisor`;
+
+                // Solo añade el parámetro de búsqueda si hay un término de búsqueda
+                if (searchTerm.trim() !== "") {
+                    url += `?emisorAutoComplete=${encodeURIComponent(searchTerm)}`;
+                }
 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -41,7 +44,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         }, 300);
 
         return () => clearTimeout(debounceFetch);
-    }, [searchTerm]);
+    }, [searchTerm, token]);
 
     useEffect(() => {
         const today = new Date();
@@ -195,21 +198,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                {/* <Select
-                    register={register}
-                    trigger={trigger}
-                    nombre="Emisor"
-                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                    id="ID"
-                    clave=""
-                    descripcion="Nombre"
-                    onChange={handleEmisorChange}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                    value={getValues("EmisorID") || ""}
-                    disabled={disabled}
-                /> */}
-
                 <Autocomplete
                     options={emisorOptions}
                     loading={loadingEmisores}
@@ -243,6 +231,20 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     )}
                 />
 
+                {/* <Select
+                    register={register}
+                    trigger={trigger}
+                    nombre="Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                    id="ID"
+                    clave=""
+                    descripcion="Nombre"
+                    onChange={handleEmisorChange}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("EmisorID") || ""}
+                    disabled={disabled}
+                /> */}
                 <TextField
                     label="RFC"
                     {...register("RFCEmisor", { required: "El RFC del emisor es requerido." })}

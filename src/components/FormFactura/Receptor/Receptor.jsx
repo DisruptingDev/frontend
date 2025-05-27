@@ -28,9 +28,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const fetchReceptores = async (query = "") => {
         setLoadingReceptores(true);
         try {
-            const url = query
-                ? `${apiUrl}/api/catalogos/Catalogos/Receptor?receptorAutoComplete=${encodeURIComponent(query)}`
-                : `${apiUrl}/api/catalogos/Catalogos/Receptor`;
+            let url = `${apiUrl}/api/catalogos/Catalogos/Receptor`;
+
+            // Solo añadir parámetro si hay query
+            if (query.trim() !== "") {
+                url += `?receptorAutoComplete=${encodeURIComponent(query)}`;
+            }
 
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -52,7 +55,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         }, 300);
 
         return () => clearTimeout(debounceTimer);
-    }, [searchTerm]);
+    }, [searchTerm, token]);
 
     // Carga inicial de receptores
     useEffect(() => {
@@ -80,6 +83,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
+                setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${newValue.RegimenFiscalReceptor}`);
             }
 
             if (setReceptorID) {
@@ -297,6 +301,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     };
 
+    useEffect(() => {
+        if (regimenFiscal) {
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+        }
+    }, [regimenFiscal]);
+
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
             sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem', marginBottom: '1rem', }}>
@@ -481,15 +491,21 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 <Select
                     register={register}
                     nombre="UsoCFDI"
-                    // url="`${apiUrl}/Catalogos/UsoCFDI"
                     url={usoCFDIURL}
                     clave="Clave"
                     descripcion="Descripcion"
                     error={!!errors.UsoCFDI}
-                    helperText={errors.UsoCFDI ? "Este campo es obligatorio" : ""}
-                    onChange={(e) => setUsoCFDI(e.target.value)}
+                    helperText={errors.UsoCFDI?.message || "Este campo es obligatorio"}
+                    onChange={(e) => {
+                        setUsoCFDI(e.target.value);
+                        // Actualizar también la descripción si es necesario
+                        if (e.target.selectedOptions[0]) {
+                            setValue("UsoCFDIDescripcion", e.target.selectedOptions[0].text);
+                        }
+                    }}
                     value={getValues("UsoCFDI") || ""}
-                    disabled={disabled}
+                    disabled={disabled || !regimenFiscal} // Deshabilitar si no hay régimen fiscal
+                    key={usoCFDIURL} // Forzar recreación cuando cambia la URL
                 />
                 <Select
                     // register={register}
