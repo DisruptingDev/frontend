@@ -1,4 +1,4 @@
-"use client"; // Indica que este componente se renderiza en el cliente
+"use client";
 
 // Importación de hooks y utilidades
 import { useState, useEffect } from "react";
@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
-import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
-import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+// import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
+// import Tabla from "@/components/Home/Tabla/Tabla.jsx";
 import DataTable from "@/components/Home/Tabla/DataTable.jsx";
-//import ModalWizard from "@/components/Home/Modales/modalWizard";
+import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
 import { isAuthenticated } from "@/utils/authRedirect";
@@ -27,6 +27,7 @@ export default function Home() {
 
     //Nuevo usuario
     const [newUser, setNewUser] = useState(null);
+    const [openWizard, setOpenWizard] = useState(false);
     const [setOpen] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
@@ -53,13 +54,18 @@ export default function Home() {
         const storedNewUser = sessionStorage.getItem('newUser');
         setNewUser(storedNewUser);
     }, []);
+
     useEffect(() => {
         console.log('newUser', newUser);
         if (newUser === "true") {
-            setOpen(true);
+            setOpenWizard(true);
             sessionStorage.setItem('newUser', "false");
         }
     }, [newUser]);
+
+    const handleCloseWizard = () => {
+        setOpenWizard(false);
+    };
 
     return (
         <div>
@@ -68,6 +74,13 @@ export default function Home() {
                 <Grid>
                     <SideBarMenu />
                 </Grid>
+
+                <ModalWizard 
+                    open={openWizard} 
+                    handleClose={handleCloseWizard}
+                    token={token}
+                    // Puedes pasar otras props necesarias para el wizard aquí
+                />
 
                 {/* Contenedor principal que ocupa el espacio restante */}
                 <Grid>
