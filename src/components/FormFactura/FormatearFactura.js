@@ -178,7 +178,8 @@ export default function FormatearFactura(
         Municipio: receptor.Municipio,
         Estado: receptor.Estado,
 
-        // Direccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
+        // Direccion: receptor:wp
+        // .Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
       },
       // ReceptorID: receptor.Receptor,
       // ReceptorNombre: receptor.NombreReceptor,
