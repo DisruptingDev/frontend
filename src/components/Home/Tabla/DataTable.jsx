@@ -66,6 +66,7 @@ export default function DataTable({ token }) {
     const [resultadoCancelar, setResultadoCancelar] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
+    const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
 
     // Obtener datos de la API
     const fetchData = useCallback(async () => {
@@ -327,8 +328,10 @@ export default function DataTable({ token }) {
     };
 
     const handleDeleteFactura = async () => {
+        if (!facturaIdToDelete) return; // Si no hay ID, no hacemos nada
+
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/${menuRow.ID}`, {
+            const response = await fetch(`${apiUrl}/api/facturas/${facturaIdToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -346,9 +349,12 @@ export default function DataTable({ token }) {
             }
         } catch (error) {
             console.error('Error en la solicitud DELETE:', error);
+            setConfirmationMessage('Error al eliminar la factura.');
+            setOpenModalError(true);
         } finally {
             setOpenModalConfirm(false);
             setMenuRow(null);
+            setFacturaIdToDelete(null); // Limpiamos el ID
         }
     };
 
@@ -669,6 +675,7 @@ export default function DataTable({ token }) {
         };
 
         const handleDelete = () => {
+            setFacturaIdToDelete(menuRow.ID);
             setConfirmationMessage('¿Estás seguro de que deseas eliminar esta factura?');
             setOpenModalConfirm(true);
             handleClose();
