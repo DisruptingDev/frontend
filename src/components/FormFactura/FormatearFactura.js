@@ -39,19 +39,19 @@ export default function FormatearFactura(
   let factura;
   if (modo == "Factura") {
     factura = {
-      ...(id && { ID: Number(id) }),
+      ...(id && { ID: Number(Number(id).toFixed(6)) }),
       Version: "4.0",
       Fecha: fechaFormateada,
       FormaPago: receptor.FormaPago,
-      Descuento: Number(TotalDescuento),
+      Descuento: Number(Number(TotalDescuento).toFixed(6)),
       Serie: emisor.Serie,
-      SubTotal: Number(subtotal),
+      SubTotal: Number(Number(subtotal).toFixed(6)),
       CondicionesDePago: "Condiciones De Pago",
       TipoDeComprobante: emisor.TipoComprobante,
       Descripcion: "",
       Moneda: emisor.Divisa || "MXN",
       TipoCambio: "1",
-      Total: Number(total),
+      Total: Number(Number(total).toFixed(6)),
       Exportacion: "01",
       MetodoPago: receptor.MetodoPago,
       LugarExpedicion: emisor.LugarExpedicion,
@@ -80,41 +80,41 @@ export default function FormatearFactura(
       ListaConceptos: conceptos.map((concepto) => ({
         ClaveProdServ: String(concepto.ClaveProdServ),
         NoIdentificacion: concepto.NoIdentificacion || "",
-        Cantidad: Number(concepto.Cantidad),
+        Cantidad: Number(Number(concepto.Cantidad).toFixed(6)),
         ClaveUnidad: String(concepto.ClaveUnidad),
         Unidad: concepto.Unidad || "",
         Descripcion: concepto.Descripcion,
-        ValorUnitario: Number(concepto.ValorUnitario),
-        Importe: Number(concepto.Subtotal),
-        Descuento: Number(concepto.Descuento),
+        ValorUnitario: Number(Number(concepto.ValorUnitario).toFixed(6)),
+        Importe: Number(Number(concepto.Subtotal).toFixed(6)),
+        Descuento: Number(Number(concepto.Descuento).toFixed(6)),
         ObjetoImp: concepto.ObjetoImpuesto,
         Impuestos: {
         Retenciones: concepto.Retenciones
           ? concepto.Retenciones.map((retencion) => ({
-            Base: Number(retencion.BaseImpuesto),
+            Base: Number(Number(retencion.BaseImpuesto).toFixed(6)),
             ImpuestoCatalogoID: retencion.Impuesto,
             ImpuestoClave: String(retencion.ImpuestoClave),
             TipoFactor: "Tasa",
-            TasaOCuota: Number(retencion.TasaOCuota),
+            TasaOCuota: Number(Number(retencion.TasaOCuota).toFixed(6)),
             TasaCatalogoID: retencion.Tasa,
-            Importe: Number(retencion.Monto),
+            Importe: Number(Number(retencion.Monto).toFixed(6)),
           }))
           : [],
         Traslados: concepto.Traslados
           ? concepto.Traslados.map((traslado) => ({
-            Base: Number(traslado.BaseImpuesto),
+            Base: Number(Number(traslado.BaseImpuesto).toFixed(6)),
             ImpuestoCatalogoID: traslado.Impuesto,
             ImpuestoClave: String(traslado.ImpuestoClave),
             TipoFactor: "Tasa",
-            TasaOCuota: Number(traslado.TasaOCuota),
+            TasaOCuota: Number(Number(traslado.TasaOCuota).toFixed(6)),
             TasaCatalogoID: traslado.Tasa,
-            Importe: Number(traslado.Monto),
+            Importe: Number(Number(traslado.Monto).toFixed(6)),
           }))
           : [],
         },
       })),
-      TotalImpuestosTrasladados: Number(TotalTraslados),
-      TotalImpuestosRetenidos: Number(TotalRetenciones),
+      TotalImpuestosTrasladados: Number(Number(TotalTraslados).toFixed(6)),
+      TotalImpuestosRetenidos: Number(Number(TotalRetenciones).toFixed(6)),
       },
     };
     console.log("Factura Generada:", factura);
