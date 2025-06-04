@@ -1,7 +1,7 @@
 "use client";
 
 // Importación de hooks y utilidades
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 // Importación de componentes personalizados
 import Header from "@/components/Header/Header.jsx";
@@ -16,8 +16,13 @@ import ModalWizard from "@/components/Home/Modales/modalWizard";
 import { isAuthenticated } from "@/utils/authRedirect";
 
 // Componente de diseño de Material-UI
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import Grid from '@mui/material/Unstable_Grid2';
+
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
+import HelpIcon from '@mui/icons-material/Help';
 
 // Componente principal de la página Home
 export default function Home() {
@@ -33,6 +38,13 @@ export default function Home() {
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
     // const [filtro, setFiltro] = useState(null);
+
+    // Referencias para los elementos que serán destacados en el tour
+    const headerRef = useRef(null);
+    const sidebarRef = useRef(null);
+    const datatableRef = useRef(null);
+    const searchRef = useRef(null);
+
 
     // useEffect: se ejecuta al montar el componente
     useEffect(() => {
@@ -60,6 +72,10 @@ export default function Home() {
         if (newUser === "true") {
             setOpenWizard(true);
             sessionStorage.setItem('newUser', "false");
+            // Iniciar el tour después de que el componente se monte
+            setTimeout(() => {
+                startTour();
+            }, 1000);
         }
     }, [newUser]);
 
@@ -67,19 +83,67 @@ export default function Home() {
         setOpenWizard(false);
     };
 
+    const startTour = () => {
+        const driverObj = driver({
+            className: 'driverjs-theme',
+            animate: true,
+            opacity: 0.75,
+            padding: 10,
+            allowClose: true,
+            overlayClickNext: false,
+            doneBtnText: 'Finalizar',
+            closeBtnText: 'Cerrar',
+            nextBtnText: 'Siguiente',
+            prevBtnText: 'Anterior',
+            steps: [
+                {
+                    element: headerRef.current,
+                    popover: {
+                        title: 'Encabezado',
+                        description: 'Aquí puedes acceder a tu perfil y cerrar sesión.',
+                        position: 'bottom'
+                    }
+                },
+                {
+                    element: sidebarRef.current,
+                    popover: {
+                        title: 'Menú Lateral',
+                        description: 'Navega entre las diferentes secciones de la aplicación.',
+                        position: 'right'
+                    }
+                },
+                {
+                    element: datatableRef.current,
+                    popover: {
+                        title: 'Tabla de Datos',
+                        description: 'Aquí puedes ver y gestionar la información principal.',
+                        position: 'top'
+                    }
+                }
+            ]
+        });
+
+        driverObj.drive(); // 👈 En v2.x se usa .drive(), NO .start()
+    };
+
+
     return (
         <div>
-            <Header token={token} />
+            <div ref={headerRef}>
+                <Header token={token} />
+            </div>
             <Grid container>
                 <Grid>
-                    <SideBarMenu />
+                    <div ref={sidebarRef}>
+                        <SideBarMenu />
+                    </div>
                 </Grid>
 
-                <ModalWizard 
-                    open={openWizard} 
+                <ModalWizard
+                    open={openWizard}
                     handleClose={handleCloseWizard}
                     token={token}
-                    // Puedes pasar otras props necesarias para el wizard aquí
+                // Puedes pasar otras props necesarias para el wizard aquí
                 />
 
                 {/* Contenedor principal que ocupa el espacio restante */}
@@ -94,9 +158,19 @@ export default function Home() {
                         //mb={6}
                         mb={10}
                     >
-                         {/* <SearchFilter setFiltro={setFiltro} />
+                        {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}
-                        <DataTable token={token} />
+                        <div ref={datatableRef}>
+                            <DataTable token={token} />
+                        </div>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={startTour}
+                            startIcon={<HelpIcon />}
+                        >
+                            Iniciar Tour
+                        </Button>
                     </Box>
                 </Grid>
             </Grid>

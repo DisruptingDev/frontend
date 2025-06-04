@@ -383,17 +383,6 @@ export default function DataTable({ token }) {
         }
     };
 
-    // Extraer valores únicos para los filtros
-    const uniqueEmisores = [...new Set(data.map(item => {
-        const emisor = item.Emisor || { Nombre: 'Desconocido', Rfc: '' };
-        return `${emisor.Nombre} (${emisor.Rfc})`;
-    }))];
-
-    const uniqueReceptores = [...new Set(data.map(item => {
-        const receptor = item.Receptor || { Nombre: 'Desconocido', Rfc: '' };
-        return `${receptor.Nombre} (${receptor.Rfc})`;
-    }))];
-
     // Configuración de columnas para mui-datatables
     const columns = [
         {
