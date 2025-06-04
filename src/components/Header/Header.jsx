@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { isAuthenticated } from "@/utils/authRedirect";
 import { useRouter } from 'next/navigation';
 import Layout from "../Layout";
+import HelpIcon from '@mui/icons-material/Help';
 
 
 // Configuración de la fuente Inter
@@ -56,6 +57,7 @@ export default function Header() {
       {/* Menú de usuario */}
       <div className="ml-auto flex items-center">
         <Layout>
+          <HelpIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }}/>
           <FacturasPPD token={token} />
           <UserMenu />
         </Layout>

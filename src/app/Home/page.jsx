@@ -100,8 +100,9 @@ export default function Home() {
                     element: headerRef.current,
                     popover: {
                         title: 'Encabezado',
-                        description: 'Aquí puedes acceder a tu perfil y cerrar sesión.',
-                        position: 'bottom'
+                        description: 'Aquí puedes comprar timbres, ver tus órdenes, invitar miembros a tu equipo y cerrar sesión.',
+                        side: "bottom",
+                        align: 'end'
                     }
                 },
                 {
@@ -109,7 +110,8 @@ export default function Home() {
                     popover: {
                         title: 'Menú Lateral',
                         description: 'Navega entre las diferentes secciones de la aplicación.',
-                        position: 'right'
+                        side: "right",
+                        align: 'start'
                     }
                 },
                 {
@@ -123,7 +125,7 @@ export default function Home() {
             ]
         });
 
-        driverObj.drive(); // 👈 En v2.x se usa .drive(), NO .start()
+        driverObj.drive();
     };
 
 

@@ -24,6 +24,7 @@ import {
   AttachMoney as AttachMoneyIcon,
   AddBox as AddIcon,
   FileOpen as ImportarIcon,
+  Close as CloseIcon,
   
   ExpandLess,
   ExpandMore
@@ -142,7 +143,7 @@ const SideBarMenu = () => {
             onClick={() => setDrawerOpen(!drawerOpen)}
             sx={{ margin: '0 auto' }}
           >
-            <MenuIcon />
+            {drawerOpen ? <CloseIcon /> : <MenuIcon />}
           </IconButton>
         </Toolbar>
         
