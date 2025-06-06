@@ -1,19 +1,18 @@
 'use client';
-import React from 'react';
 import { useState } from 'react';
-import {
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Collapse,
-  IconButton,
+import { 
+  Drawer, 
+  List, 
+  ListItemButton, 
+  ListItemIcon, 
+  ListItemText, 
+  Collapse, 
+  IconButton, 
   Toolbar,
   Tooltip,
   Box
 } from '@mui/material';
-import {
+import { 
   Menu as MenuIcon,
   Home as HomeIcon,
   People as ClientesIcon,
@@ -26,7 +25,7 @@ import {
   AddBox as AddIcon,
   FileOpen as ImportarIcon,
   Close as CloseIcon,
-
+  
   ExpandLess,
   ExpandMore
 } from '@mui/icons-material';
@@ -89,15 +88,10 @@ const menuItems = [
   }
 ];
 
-const SideBarMenu = React.forwardRef((props, ref) => {
+const SideBarMenu = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const [openSubMenu, setOpenSubMenu] = useState(null);
-
-  const handleSubMenuToggle = (menuTitle) => {
-    setOpenSubMenu(openSubMenu === menuTitle ? null : menuTitle);
-  };
 
   const handleNavigation = (path) => {
     if (path) router.push(path);
@@ -110,9 +104,7 @@ const SideBarMenu = React.forwardRef((props, ref) => {
   };
 
   return (
-
     <Box
-      ref={ref}
       sx={{
         display: 'block',
         height: '100vh',
@@ -138,8 +130,8 @@ const SideBarMenu = React.forwardRef((props, ref) => {
           }
         }}
       >
-        <Toolbar
-          sx={{
+        <Toolbar 
+          sx={{ 
             minHeight: '64px !important',
             display: 'flex',
             justifyContent: 'center',
@@ -147,25 +139,25 @@ const SideBarMenu = React.forwardRef((props, ref) => {
             px: '0 !important'
           }}
         >
-          <IconButton
+          <IconButton 
             onClick={() => setDrawerOpen(!drawerOpen)}
             sx={{ margin: '0 auto' }}
           >
             {drawerOpen ? <CloseIcon /> : <MenuIcon />}
           </IconButton>
         </Toolbar>
-
+        
         <List sx={{ overflow: 'auto', flexGrow: 1 }}>
           {menuItems.map((item) => (
             <div key={item.title}>
-              <Tooltip
-                title={item.title}
-                placement="right"
+              <Tooltip 
+                title={item.title} 
+                placement="right" 
                 disableHoverListener={drawerOpen}
               >
                 <ListItemButton
                   selected={isSelected(item.path, item.subItems)}
-                  onClick={() => item.subItems
+                  onClick={() => item.subItems 
                     ? handleSubMenuToggle(item.title)
                     : handleNavigation(item.path)
                   }
@@ -187,16 +179,16 @@ const SideBarMenu = React.forwardRef((props, ref) => {
                   {drawerOpen && (
                     <>
                       <ListItemText primary={item.title} />
-
+                      
                     </>
                   )}
                 </ListItemButton>
               </Tooltip>
 
               {item.subItems && (
-                <Collapse
-                  in={openSubMenu === item.title && drawerOpen}
-                  timeout="auto"
+                <Collapse 
+                  in={openSubMenu === item.title && drawerOpen} 
+                  timeout="auto" 
                   unmountOnExit
                 >
                   <List component="div" disablePadding>
@@ -219,6 +211,6 @@ const SideBarMenu = React.forwardRef((props, ref) => {
       </Drawer>
     </Box>
   );
-});
+};
 
 export default SideBarMenu;
