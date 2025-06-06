@@ -100,7 +100,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     const onSubmit = (data) => {
         const baseGravable = parseFloat(data.Monto) / 1.16;
         const importeIVA = parseFloat(data.Monto) - baseGravable;
-    
+
         const payload = {
             ...data,
             FechaPago: format(fechaPago, "yyyy-MM-dd'T'HH:mm:ss"),
@@ -115,7 +115,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                 MontoTotalPagos: data.Monto
             }
         };
-    
+
         onSave(payload);
     };
 
@@ -203,7 +203,6 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     />
                 </Box>
 
-                {/* Campos de saldos */}
                 <Box display="grid" gap={2} my={4} sx={{
                     gridTemplateColumns: {
                         xs: '1fr',
@@ -220,14 +219,14 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     />
                     <TextField
                         label="Saldo Anterior"
-                        value={factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt}
+                        value={Number(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
 
                     <TextField
                         label="Saldo Pagado"
-                        value={factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpPagado}
+                        value={Number(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpPagado).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
@@ -235,6 +234,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     <TextField
                         {...register("ImpSaldoInsoluto")}
                         label="Nuevo Saldo Insoluto"
+                        value={Number(watch("ImpSaldoInsoluto")).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
