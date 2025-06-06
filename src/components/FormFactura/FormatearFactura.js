@@ -53,8 +53,8 @@ export default function FormatearFactura(
       Descripcion: "",
       Moneda: emisor.Divisa || "MXN",
       TipoCambio: "1",
-      Total: Number(Number(total).toFixed(6)),
-      TotalString: String(total),
+      Total: Number(Number(total).toFixed(2)),
+      TotalString: String(Number(total).toFixed(2)),
       Exportacion: "01",
       MetodoPago: receptor.MetodoPago,
       LugarExpedicion: emisor.LugarExpedicion,
@@ -92,6 +92,7 @@ export default function FormatearFactura(
         Importe: Number(Number(concepto.Subtotal).toFixed(6)),
         ImporteString: String(concepto.Subtotal),
         Descuento: Number(Number(concepto.Descuento).toFixed(6)),
+        DescuentoString: String(concepto.Descuento),
         ObjetoImp: concepto.ObjetoImpuesto,
         Impuestos: {
         Retenciones: concepto.Retenciones
