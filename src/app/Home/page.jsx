@@ -72,6 +72,7 @@ export default function Home() {
         if (newUser === "true") {
             setOpenWizard(true);
             sessionStorage.setItem('newUser', "false");
+            setDrawerOpen(true);
             // Iniciar el tour después de que el componente se monte
             setTimeout(() => {
                 startTour();
@@ -137,7 +138,7 @@ export default function Home() {
             <Grid container>
                 <Grid>
                     <div ref={sidebarRef}>
-                        <SideBarMenu />
+                        <SideBarMenu ref={sidebarRef} />
                     </div>
                 </Grid>
 
