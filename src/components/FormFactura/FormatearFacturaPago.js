@@ -130,21 +130,21 @@ export default function FormatearFactura(
                   imp.TipoImpuesto === "Retencion" &&
                   imp.ImpuestoClave === "002"
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+             || "0"),
             TotalRetencionesISRString: String(
               data.ImpuestosPagos.filter(
                 (imp) =>
                   imp.TipoImpuesto === "Retencion" &&
                   imp.ImpuestoClave === "001"
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+            || "0"),
             TotalRetencionesIEPSString: String(
               data.ImpuestosPagos.filter(
                 (imp) =>
                   imp.TipoImpuesto === "Retencion" &&
                   imp.ImpuestoClave === "003"
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+            || "0"),
 
             // Traslados IVA 16%
             TotalTrasladosBaseIVA16: data.ImpuestosPagos.filter(
@@ -168,7 +168,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0.16
               ).reduce((sum, imp) => sum + imp.Base, 0)
-            ),
+            || "0"),
             TotalTrasladosImpuestoIVA16String: String(
               data.ImpuestosPagos.filter(
                 (imp) =>
@@ -176,7 +176,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0.16
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+            || "0"),
 
             // Traslados IVA 8%
             TotalTrasladosBaseIVA8: data.ImpuestosPagos.filter(
@@ -200,7 +200,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0.08
               ).reduce((sum, imp) => sum + imp.Base, 0)
-            ),
+            || "0"),
             TotalTrasladosImpuestoIVA8String: String(
               data.ImpuestosPagos.filter(
                 (imp) =>
@@ -208,7 +208,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0.08
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+            || "0"),
 
             // Traslados IVA 0%
             TotalTrasladosBaseIVA0: data.ImpuestosPagos.filter(
@@ -232,7 +232,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0
               ).reduce((sum, imp) => sum + imp.Base, 0)
-            ),
+            || "0"),
             TotalTrasladosImpuestoIVA0String: String(
               data.ImpuestosPagos.filter(
                 (imp) =>
@@ -240,7 +240,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.TasaOCuota === 0
               ).reduce((sum, imp) => sum + imp.Importe, 0)
-            ),
+            || "0"),
 
             // Traslados Exentos
             TotalTrasladosBaseIVAExento: data.ImpuestosPagos.filter(
@@ -258,7 +258,7 @@ export default function FormatearFactura(
                   imp.ImpuestoClave === "002" &&
                   imp.Exento === true
               ).reduce((sum, imp) => sum + imp.Base, 0)
-            ),
+            || "0"),
 
             // Monto Total
             MontoTotalPagos: parseFloat(data.Monto) || 0,
