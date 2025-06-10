@@ -44,10 +44,10 @@ export default function FormatearFactura(
       Fecha: fechaFormateada,
       FormaPago: receptor.FormaPago,
       Descuento: Number(Number(TotalDescuento).toFixed(6)),
-      DescuentoString: String(TotalDescuento),
+      DescuentoString: String(Number(TotalDescuento).toFixed(2)),
       Serie: emisor.Serie,
       SubTotal: Number(Number(subtotal).toFixed(6)),
-      SubTotalString: String(subtotal),
+      SubTotalString: String(Number(subtotal).toFixed(2)),
       CondicionesDePago: "Condiciones De Pago",
       TipoDeComprobante: emisor.TipoComprobante,
       Descripcion: "",
@@ -60,72 +60,82 @@ export default function FormatearFactura(
       LugarExpedicion: emisor.LugarExpedicion,
       Confirmacion: "",
       InformacionGlobal: {
-      Anio: receptor.Año || "01",
-      Meses: receptor.Meses || "01",
-      Periodicidad: receptor.Periodicidad || "2025",
+        Anio: receptor.Año || "01",
+        Meses: receptor.Meses || "01",
+        Periodicidad: receptor.Periodicidad || "2025",
       },
       EmisorID: emisor.Emisor,
       ReceptorID: receptor.Receptor,
       UsoCFDI: receptor.UsoCFDI,
-      ...(facturasRelacionadas && facturasRelacionadas.TipoRelacion && facturasRelacionadas.ListaCFDIRelacionados && facturasRelacionadas.ListaCFDIRelacionados.length > 0
-      ? {
-        CFDIRelacionados: {
-          TipoRelacion: facturasRelacionadas.TipoRelacion,
-          ListaCFDIRelacionados: facturasRelacionadas.ListaCFDIRelacionados.map(
-          (uuidObj) => ({
-            UUID: uuidObj.UUID,
-          })
-          ),
-        },
-        }
-      : {}),
+      ...(facturasRelacionadas &&
+      facturasRelacionadas.TipoRelacion &&
+      facturasRelacionadas.ListaCFDIRelacionados &&
+      facturasRelacionadas.ListaCFDIRelacionados.length > 0
+        ? {
+            CFDIRelacionados: {
+              TipoRelacion: facturasRelacionadas.TipoRelacion,
+              ListaCFDIRelacionados:
+                facturasRelacionadas.ListaCFDIRelacionados.map((uuidObj) => ({
+                  UUID: uuidObj.UUID,
+                })),
+            },
+          }
+        : {}),
       Conceptos: {
-      ListaConceptos: conceptos.map((concepto) => ({
-        ClaveProdServ: String(concepto.ClaveProdServ),
-        NoIdentificacion: concepto.NoIdentificacion || "",
-        Cantidad: Number(Number(concepto.Cantidad).toFixed(6)),
-        ClaveUnidad: String(concepto.ClaveUnidad),
-        Unidad: concepto.Unidad || "",
-        Descripcion: concepto.Descripcion,
-        ValorUnitario: Number(Number(concepto.ValorUnitario).toFixed(6)),
-        ValorUnitarioString: String(concepto.ValorUnitario),
-        Importe: Number(Number(concepto.Subtotal).toFixed(6)),
-        ImporteString: String(concepto.Subtotal),
-        Descuento: Number(Number(concepto.Descuento).toFixed(6)),
-        DescuentoString: String(concepto.Descuento),
-        ObjetoImp: concepto.ObjetoImpuesto,
-        Impuestos: {
-        Retenciones: concepto.Retenciones
-          ? concepto.Retenciones.map((retencion) => ({
-            Base: Number(Number(retencion.BaseImpuesto).toFixed(6)),
-            ImpuestoCatalogoID: retencion.Impuesto,
-            ImpuestoClave: String(retencion.ImpuestoClave),
-            TipoFactor: "Tasa",
-            TasaOCuota: Number(Number(retencion.TasaOCuota).toFixed(6)),
-            TasaCatalogoID: retencion.Tasa,
-            Importe: Number(Number(retencion.Monto).toFixed(6)),
-          }))
-          : [],
-        Traslados: concepto.Traslados
-          ? concepto.Traslados.map((traslado) => ({
-            Base: Number(Number(traslado.BaseImpuesto).toFixed(6)),
-            BaseString: String(traslado.BaseImpuesto),
-            ImpuestoCatalogoID: traslado.Impuesto,
-            ImpuestoClave: String(traslado.ImpuestoClave),
-            TipoFactor: "Tasa",
-            TasaOCuota: Number(Number(traslado.TasaOCuota).toFixed(6)),
-            TasaOCuotaString: String(traslado.TasaOCuota),
-            TasaCatalogoID: traslado.Tasa,
-            Importe: Number(Number(traslado.Monto).toFixed(6)),
-            ImporteString: String(traslado.Monto),
-          }))
-          : [],
-        },
-      })),
-      TotalImpuestosTrasladados: Number(Number(TotalTraslados).toFixed(6)),
-      TotalImpuestosTrasladadosString: String(TotalTraslados),
-      TotalImpuestosRetenidos: Number(Number(TotalRetenciones).toFixed(6)),
-      TotalImpuestosRetenidosString: String(TotalRetenciones),
+        ListaConceptos: conceptos.map((concepto) => ({
+          ClaveProdServ: String(concepto.ClaveProdServ),
+          NoIdentificacion: concepto.NoIdentificacion || "",
+          Cantidad: Number(Number(concepto.Cantidad).toFixed(6)),
+          ClaveUnidad: String(concepto.ClaveUnidad),
+          Unidad: concepto.Unidad || "",
+          Descripcion: concepto.Descripcion,
+          ValorUnitario: Number(Number(concepto.ValorUnitario).toFixed(6)),
+          ValorUnitarioString: String(
+            Number(concepto.ValorUnitario).toFixed(2)
+          ),
+          Importe: Number(Number(concepto.Subtotal).toFixed(6)),
+          ImporteString: String(Number(concepto.Subtotal).toFixed(2)),
+          Descuento: Number(Number(concepto.Descuento).toFixed(6)),
+          DescuentoString: String(Number(concepto.Descuento).toFixed(2)),
+          ObjetoImp: concepto.ObjetoImpuesto,
+          Impuestos: {
+            Retenciones: concepto.Retenciones
+              ? concepto.Retenciones.map((retencion) => ({
+                  Base: Number(Number(retencion.BaseImpuesto).toFixed(6)),
+                  ImpuestoCatalogoID: retencion.Impuesto,
+                  ImpuestoClave: String(retencion.ImpuestoClave),
+                  TipoFactor: "Tasa",
+                  TasaOCuota: Number(Number(retencion.TasaOCuota).toFixed(6)),
+                  TasaCatalogoID: retencion.Tasa,
+                  Importe: Number(Number(retencion.Monto).toFixed(6)),
+                }))
+              : [],
+            Traslados: concepto.Traslados
+              ? concepto.Traslados.map((traslado) => ({
+                  Base: Number(Number(traslado.BaseImpuesto).toFixed(6)),
+                  BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
+                  ImpuestoCatalogoID: traslado.Impuesto,
+                  ImpuestoClave: String(traslado.ImpuestoClave),
+                  TipoFactor: "Tasa",
+                  TasaOCuota: Number(Number(traslado.TasaOCuota).toFixed(6)),
+                  TasaOCuotaString: String(
+                    Number(traslado.TasaOCuota).toFixed(6)
+                  ),
+                  TasaCatalogoID: traslado.Tasa,
+                  Importe: Number(Number(traslado.Monto).toFixed(6)),
+                  ImporteString: String(Number(traslado.Monto).toFixed(2)),
+                }))
+              : [],
+          },
+        })),
+        TotalImpuestosTrasladados: Number(Number(TotalTraslados).toFixed(6)),
+        TotalImpuestosTrasladadosString: String(
+          Number(TotalTraslados).toFixed(2)
+        ),
+        TotalImpuestosRetenidos: Number(Number(TotalRetenciones).toFixed(6)),
+        TotalImpuestosRetenidosString: String(
+          Number(TotalRetenciones).toFixed(2)
+        ),
       },
     };
     console.log("Factura Generada:", factura);

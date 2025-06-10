@@ -32,7 +32,7 @@ export default function Home() {
 
     //Nuevo usuario
     const [newUser, setNewUser] = useState(null);
-    const [openWizard, setOpenWizard] = useState(false);
+    const [openWizard, setOpenWizard] = useState(true);
     const [setOpen] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda

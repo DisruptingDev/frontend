@@ -2,14 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Select from '../Select/Select';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
-    Box, Grid, Divider, Snackbar, Alert, TextField
+    Box, Grid, Divider, Snackbar, Alert
 } from '@mui/material';
-import { useRef } from 'react';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-const OPENPAY_MERCHANT_ID = 'mdzll2qkgndudhvft5s5';
-const OPENPAY_PUBLIC_KEY = 'pk_2184b0089644486ab942a933d494a78e';
-const OPENPAY_SANDBOX_MODE = 'true'; // Cambia a false para producción
 
 const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const [empresa, setEmpresa] = useState('');
@@ -17,83 +13,8 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const [severity, setSeverity] = useState('error');
     const [beneficios, setBeneficios] = useState([]);
     const [tipo, setTipo] = useState('');
-    const [tipoPago, setTipoPago] = useState('');
     const [empresas, setEmpresas] = useState([]);
-    const [cardData, setCardData] = useState({
-        holder_name: '',
-        card_number: '',
-        expiration_month: '',
-        expiration_year: '',
-        cvv2: ''
-    });
     const [isProcessing, setIsProcessing] = useState(false);
-    const [openpayInitialized, setOpenpayInitialized] = useState(false);
-    const [deviceSessionId, setDeviceSessionId] = useState(null);
-    const formRef = useRef(null);
-
-    // Inicialización de OpenPay
-    useEffect(() => {
-        if (open && typeof window !== 'undefined') {
-            const initializeOpenPay = () => {
-                try {
-                    // 1. Configurar OpenPay
-                    window.OpenPay.setId(OPENPAY_MERCHANT_ID);
-                    window.OpenPay.setApiKey(OPENPAY_PUBLIC_KEY);
-                    window.OpenPay.setSandboxMode(OPENPAY_SANDBOX_MODE);
-
-                    // 2. Esperar a que el formulario esté en el DOM
-                    if (!formRef.current) {
-                        console.error('Formulario no encontrado');
-                        return;
-                    }
-
-                    // 3. Configurar deviceData con retry
-                    const setupDeviceData = () => {
-                        try {
-                            const deviceId = window.OpenPay.deviceData.setup('payment-form', 'device_session_id');
-                            console.log('Device ID configurado:', deviceId);
-                            setDeviceSessionId(deviceId);
-                            setOpenpayInitialized(true);
-                        } catch (error) {
-                            console.log('Reintentando configuración de deviceData...');
-                            setTimeout(setupDeviceData, 500);
-                        }
-                    };
-
-                    setupDeviceData();
-                } catch (error) {
-                    console.error('Error configurando OpenPay:', error);
-                    setAlertMessage('Error al configurar el sistema de pago');
-                    setSeverity('error');
-                }
-            };
-
-            if (!window.OpenPay) {
-                // Cargar scripts dinámicamente si no están presentes
-                const loadScript = (src) => {
-                    return new Promise((resolve, reject) => {
-                        const script = document.createElement('script');
-                        script.src = src;
-                        script.onload = resolve;
-                        script.onerror = reject;
-                        document.body.appendChild(script);
-                    });
-                };
-
-                Promise.all([
-                    loadScript('https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js'),
-                    loadScript('https://js.openpay.mx/openpay.v1.min.js'),
-                    loadScript('https://js.openpay.mx/openpay-data.v1.min.js')
-                ]).then(initializeOpenPay).catch(error => {
-                    console.error('Error cargando scripts OpenPay:', error);
-                    setAlertMessage('Error al cargar el sistema de pago');
-                    setSeverity('error');
-                });
-            } else {
-                initializeOpenPay();
-            }
-        }
-    }, [open]);
 
     // Obtener empresas
     useEffect(() => {
@@ -136,137 +57,64 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
         }).format(value);
     };
 
-    const handleCardChange = (e) => {
-        const { name, value } = e.target;
-        setCardData(prev => ({ ...prev, [name]: value }));
-    };
-
     const handleEmpresa = (e) => {
         const data = JSON.parse(e.target.value);
         setEmpresa(data.ID);
     };
 
-    const handleTipoPago = (tipo) => {
-        setTipoPago(tipo);
-    };
-
-    const validateCardData = () => {
-        const { holder_name, card_number, expiration_month, expiration_year, cvv2 } = cardData;
-
-        if (!holder_name || !card_number || !expiration_month || !expiration_year || !cvv2) {
-            return false;
-        }
-
-        if (!/^\d{13,16}$/.test(card_number.replace(/\s/g, ''))) return false;
-        if (!/^(0[1-9]|1[0-2])$/.test(expiration_month)) return false;
-        if (!/^\d{2}$/.test(expiration_year)) return false;
-        if (!/^\d{3,4}$/.test(cvv2)) return false;
-
-        return true;
-    };
-
     const handleConfirmPago = async () => {
-        if (!openpayInitialized || !deviceSessionId) {
-            setAlertMessage('El sistema de pago se está inicializando. Por favor, espere...');
-            setSeverity('warning');
-            return;
-        }
-
         if (!empresa && opcion.Nombre.includes('Paquete')) {
             setAlertMessage('Por favor, seleccione una empresa.');
             setSeverity('error');
             return;
         }
 
-        if (tipoPago === 'openpay') {
-            if (!validateCardData()) {
-                setAlertMessage('Por favor, complete correctamente todos los datos de la tarjeta.');
-                setSeverity('error');
-                return;
-            }
-
-            try {
-                setIsProcessing(true);
-                setAlertMessage('Procesando pago...');
-                setSeverity('info');
-
-                window.OpenPay.token.create({
-                    "card_number": cardData.card_number.replace(/\s/g, ''),
-                    "holder_name": cardData.holder_name,
-                    "expiration_year": cardData.expiration_year,
-                    "expiration_month": cardData.expiration_month,
-                    "cvv2": cardData.cvv2
-                }, async (response) => {
-                    if (!response?.data?.id) {
-                        throw new Error('No se recibió un token válido');
-                    }
-
-                    const tokenId = response.data.id;
-
-                    // Usamos el deviceSessionId del estado
-                    const queryParams = new URLSearchParams({
-                        deviceID: deviceSessionId,  // <-- Usamos el estado directamente
-                        sourceID: tokenId
-                    });
-
-                    if (!deviceSessionId) {
-                        throw new Error('No se pudo obtener el ID de dispositivo');
-                    }
-
-                    const payload = opcion.Nombre.includes('Plan')
-                        ? { PlanID: opcion.ID }
-                        : { EmisorID: empresa, PaqueteID: opcion.ID };
-
-                    const endpoint = opcion.Nombre.includes('Plan')
-                        ? `${apiUrl}/api/compratimbres/GenerarOrdenPlan?${queryParams.toString()}`
-                        : `${apiUrl}/api/compratimbres/GenerarOrdenPaquete?${queryParams.toString()}`;
-
-                    const serverResponse = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!serverResponse.ok) {
-                        const errorData = await serverResponse.json().catch(() => ({}));
-                        throw new Error(errorData.message || 'Error en la respuesta del servidor');
-                    }
-
-                    const responseData = await serverResponse.json();
-
-                    setAlertMessage('¡Pago realizado con éxito!');
-                    setSeverity('success');
-
-                    if (typeof setCompra === 'function') {
-                        setCompra(true);
-                    }
-
-                    setTimeout(() => onClose(), 2000);
-                }, (error) => {
-                    let errorMsg = 'Error al procesar el pago';
-
-                    if (error?.data?.description) {
-                        errorMsg = error.data.description;
-                    } else if (error?.message) {
-                        errorMsg = error.message;
-                    }
-
-                    setAlertMessage(errorMsg);
-                    setSeverity('error');
-                });
-            } catch (error) {
-                console.error('Error en el proceso de pago:', error);
-                setAlertMessage(error.message || 'Error al procesar el pago');
-                setSeverity('error');
-            } finally {
-                setIsProcessing(false);
-            }
-        } else if (tipoPago === 'transferencia') {
-            setAlertMessage('Por favor, realice la transferencia con los datos proporcionados.');
+        try {
+            setIsProcessing(true);
+            setAlertMessage('Generando orden...');
             setSeverity('info');
+
+            const payload = opcion.Nombre.includes('Plan')
+                ? { PlanID: opcion.ID }
+                : { EmisorID: empresa, PaqueteID: opcion.ID };
+
+            const endpoint = opcion.Nombre.includes('Plan')
+                ? `${apiUrl}/api/compratimbres/GenerarOrdenPlan`
+                : `${apiUrl}/api/compratimbres/GenerarOrdenPaquete`;
+
+            const serverResponse = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!serverResponse.ok) {
+                const errorData = await serverResponse.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error en la respuesta del servidor');
+            }
+
+            const responseData = await serverResponse.json();
+
+            setAlertMessage('¡Orden generada con éxito! Por favor realice la transferencia con los datos proporcionados.');
+            setSeverity('success');
+
+            if (typeof setCompra === 'function') {
+                setCompra(true);
+            }
+
+            // Cerrar el modal después de 2 segundos
+            setTimeout(() => {
+                onClose();
+            }, 2000);
+        } catch (error) {
+            console.error('Error al generar la orden:', error);
+            setAlertMessage(error.message || 'Error al generar la orden');
+            setSeverity('error');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -278,181 +126,65 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ fontWeight: "600", fontSize: "1.5em" }}>Realizar Orden</DialogTitle>
             <DialogContent>
-                <form id="payment-form" ref={formRef}>
-                    <input type="hidden" name="token_id" id="token_id" />
-                    <input type="hidden" name="device_session_id" id="device_session_id" />
-                    <input type="hidden" name="use_card_points" id="use_card_points" value="false" />
-
-                    {/* Detalles de la compra */}
-                    <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Detalles de la compra</Typography>
-                        <Box display="flex" justifyContent="space-between" mb={1}>
-                            <Typography>{opcion.Nombre}</Typography>
-                            <Typography>{formatCurrency(opcion.Costo)}</Typography>
-                        </Box>
-                        <Typography color="textSecondary" mb={2}>{opcion.CantidadTimbres} Timbres</Typography>
-
-                        <Divider sx={{ my: 1 }} />
-
-                        <Box>
-                            <Typography variant="body2"><strong>Tipo:</strong> {tipo}</Typography>
-                            <Typography variant="body2"><strong>Características:</strong></Typography>
-                            <ul style={{ paddingLeft: '20px', margin: '4px 0' }}>
-                                {beneficios.map((beneficio, i) => (
-                                    <li key={i}>{beneficio}</li>
-                                ))}
-                            </ul>
-                        </Box>
+                {/* Detalles de la compra */}
+                <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Detalles de la compra</Typography>
+                    <Box display="flex" justifyContent="space-between" mb={1}>
+                        <Typography>{opcion.Nombre}</Typography>
+                        <Typography>{formatCurrency(opcion.Costo)}</Typography>
                     </Box>
+                    <Typography color="textSecondary" mb={2}>{opcion.CantidadTimbres} Timbres</Typography>
 
-                    {/* Selección de empresa */}
-                    {opcion.Nombre.includes('Paquete') && (
-                        <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Empresa</Typography>
-                            {empresas.length > 1 ? (
-                                <Select
-                                    label="Seleccionar empresa"
-                                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                                    id="ID"
-                                    clave=""
-                                    onChange={handleEmpresa}
-                                    descripcion="Nombre"
-                                />
-                            ) : (
-                                <Typography>
-                                    {empresas.length === 1 ? empresas[0].Nombre : 'No hay empresas disponibles'}
-                                </Typography>
-                            )}
-                        </Box>
-                    )}
+                    <Divider sx={{ my: 1 }} />
 
-                    {/* Selección de tipo de pago */}
-                    <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
-                        <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Método de pago</Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                                <Button
-                                    fullWidth
-                                    variant={tipoPago === 'transferencia' ? 'contained' : 'outlined'}
-                                    onClick={() => handleTipoPago('transferencia')}
-                                >
-                                    Transferencia
-                                </Button>
-                            </Grid>
-                            <Grid item xs={6}>
-                                <Button
-                                    fullWidth
-                                    variant={tipoPago === 'openpay' ? 'contained' : 'outlined'}
-                                    onClick={() => handleTipoPago('openpay')}
-                                >
-                                    Tarjeta (OpenPay)
-                                </Button>
-                            </Grid>
-                        </Grid>
+                    <Box>
+                        <Typography variant="body2"><strong>Tipo:</strong> {tipo}</Typography>
+                        <Typography variant="body2"><strong>Características:</strong></Typography>
+                        <ul style={{ paddingLeft: '20px', margin: '4px 0' }}>
+                            {beneficios.map((beneficio, i) => (
+                                <li key={i}>{beneficio}</li>
+                            ))}
+                        </ul>
                     </Box>
+                </Box>
 
-                    {/* Formulario de tarjeta */}
-                    {tipoPago === 'openpay' && (
-                        <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Tarjeta de crédito o débito</Typography>
+                {/* Selección de empresa */}
+                {opcion.Nombre.includes('Paquete') && (
+                    <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
+                        <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Empresa</Typography>
+                        {empresas.length > 1 ? (
+                            <Select
+                                label="Seleccionar empresa"
+                                url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                                id="ID"
+                                clave=""
+                                onChange={handleEmpresa}
+                                descripcion="Nombre"
+                            />
+                        ) : (
+                            <Typography>
+                                {empresas.length === 1 ? empresas[0].Nombre : 'No hay empresas disponibles'}
+                            </Typography>
+                        )}
+                    </Box>
+                )}
 
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        fullWidth
-                                        label="Nombre del titular"
-                                        name="holder_name"
-                                        value={cardData.holder_name}
-                                        onChange={handleCardChange}
-                                        inputProps={{ 'data-openpay-card': 'holder_name' }}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        fullWidth
-                                        label="Número de tarjeta"
-                                        name="card_number"
-                                        value={cardData.card_number}
-                                        onChange={handleCardChange}
-                                        inputProps={{
-                                            'data-openpay-card': 'card_number',
-                                            maxLength: 16
-                                        }}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Mes (MM)"
-                                        name="expiration_month"
-                                        value={cardData.expiration_month}
-                                        onChange={handleCardChange}
-                                        inputProps={{
-                                            'data-openpay-card': 'expiration_month',
-                                            maxLength: 2
-                                        }}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={6}>
-                                    <TextField
-                                        fullWidth
-                                        label="Año (AA)"
-                                        name="expiration_year"
-                                        value={cardData.expiration_year}
-                                        onChange={handleCardChange}
-                                        inputProps={{
-                                            'data-openpay-card': 'expiration_year',
-                                            maxLength: 2
-                                        }}
-                                        required
-                                    />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <TextField
-                                        fullWidth
-                                        label="CVV"
-                                        name="cvv2"
-                                        value={cardData.cvv2}
-                                        onChange={handleCardChange}
-                                        inputProps={{
-                                            'data-openpay-card': 'cvv2',
-                                            maxLength: 4
-                                        }}
-                                        required
-                                    />
-                                </Grid>
-                            </Grid>
-
-                            <Box mt={2}>
-                                <Typography variant="caption" color="text.secondary">
-                                    Transacciones seguras con OpenPay
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )}
-
-                    {/* Datos para transferencia */}
-                    {tipoPago === 'transferencia' && (
-                        <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
-                            <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Datos para transferencia</Typography>
-                            <Grid container spacing={1} sx={{ fontSize: '0.875rem' }}>
-                                <Grid item xs={5}><Typography color="text.secondary">Banco:</Typography></Grid>
-                                <Grid item xs={7}><Typography fontWeight="medium">Banco Nacional de México</Typography></Grid>
-                                <Grid item xs={5}><Typography color="text.secondary">Cuenta:</Typography></Grid>
-                                <Grid item xs={7}><Typography fontWeight="medium">1234567890</Typography></Grid>
-                                <Grid item xs={5}><Typography color="text.secondary">CLABE:</Typography></Grid>
-                                <Grid item xs={7}><Typography fontWeight="medium">002123456789012345</Typography></Grid>
-                                <Grid item xs={5}><Typography color="text.secondary">Beneficiario:</Typography></Grid>
-                                <Grid item xs={7}><Typography fontWeight="medium">Wise Factura S.A. de C.V.</Typography></Grid>
-                            </Grid>
-                            <Divider sx={{ my: 2 }} />
-                            <Typography>Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong></Typography>
-                        </Box>
-                    )}
-                </form>
+                {/* Datos para transferencia */}
+                <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Datos para transferencia</Typography>
+                    <Grid container spacing={1} sx={{ fontSize: '0.875rem' }}>
+                        <Grid item xs={5}><Typography color="text.secondary">Banco:</Typography></Grid>
+                        <Grid item xs={7}><Typography fontWeight="medium">Banco Nacional de México</Typography></Grid>
+                        <Grid item xs={5}><Typography color="text.secondary">Cuenta:</Typography></Grid>
+                        <Grid item xs={7}><Typography fontWeight="medium">1234567890</Typography></Grid>
+                        <Grid item xs={5}><Typography color="text.secondary">CLABE:</Typography></Grid>
+                        <Grid item xs={7}><Typography fontWeight="medium">002123456789012345</Typography></Grid>
+                        <Grid item xs={5}><Typography color="text.secondary">Beneficiario:</Typography></Grid>
+                        <Grid item xs={7}><Typography fontWeight="medium">Wise Factura S.A. de C.V.</Typography></Grid>
+                    </Grid>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography>Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong></Typography>
+                </Box>
             </DialogContent>
 
             <DialogActions sx={{ p: 2, pt: 0 }}>
