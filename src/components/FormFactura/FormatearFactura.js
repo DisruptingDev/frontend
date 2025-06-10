@@ -60,9 +60,9 @@ export default function FormatearFactura(
       LugarExpedicion: emisor.LugarExpedicion,
       Confirmacion: "",
       InformacionGlobal: {
-        Anio: "",
-        Meses: "",
-        Periodicidad: "",
+        Anio: receptor.Año || "",
+        Meses: receptor.Meses || "",
+        Periodicidad: receptor.Periodicidad || "",
       },
       EmisorID: emisor.Emisor,
       ReceptorID: receptor.Receptor,
