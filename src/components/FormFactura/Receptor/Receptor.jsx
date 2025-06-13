@@ -5,6 +5,7 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import AutocompletePersonalizado from '@/components/CustomAutocomplete/AutocompletePersonalizado.jsx';
 
 export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false, setReceptorID }) {
     const [receptor, setReceptor] = useState();
@@ -23,6 +24,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [receptorOptions, setReceptorOptions] = useState([]);
     const [loadingReceptores, setLoadingReceptores] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedReceptor, setSelectedReceptor] = useState(null);
+
 
     // Función para buscar receptores
     const fetchReceptores = async (query = "") => {
@@ -64,8 +67,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     // Manejo del cambio de receptor
     const handleReceptorChange = (newValue) => {
+        setSelectedReceptor(newValue);
+
         if (newValue) {
             // Lógica cuando se selecciona un receptor (igual que antes)
+            setSelectedReceptor(newValue);
             setValue("ReceptorID", newValue.ID, { shouldValidate: true });
             setValue("Receptor", newValue.ID);
             setRFC(newValue.Rfc);
@@ -112,6 +118,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setReceptorID(null);
             }
         }
+
+        setReceptor(newValue ? JSON.stringify(newValue) : "");
 
         trigger(["RFCReceptor", "DomicilioFiscalReceptor", "RegimenFiscal"]);
     };
@@ -182,47 +190,51 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion, setReceptorID]);
 
     useEffect(() => {
-        if (receptor !== undefined) {
-            let data = JSON.parse(receptor);
-            // Notificar al padre el ID del receptor
-            if (setReceptorID) {
-                setReceptorID(data.ID);
+        if (receptor) {
+            try {
+                const data = JSON.parse(receptor);
+
+                if (setReceptorID) {
+                    setReceptorID(data.ID);
+                }
+
+                if (data["Rfc"] !== "XAXX010101000") {
+                    setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
+                    setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
+                    setHiddeInfoGlobal(false);
+                    setRegimenFiscal(data["RegimenFiscalReceptor"]);
+                    setValue("RegimenFiscal", data["RegimenFiscalReceptor"]);
+                } else {
+                    setDomicilioFiscal(lugarExpedicion);
+                    setValue("DomicilioFiscalReceptor", lugarExpedicion);
+                    setRegimenFiscal("616");
+                    setValue("RegimenFiscal", "616");
+                    setHiddeInfoGlobal(true);
+                }
+
+                setValue("UsoCFDI", "");
+                setValue("UsoCFDIDescripcion", "");
+                setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+
+                setRFC(data["Rfc"]);
+                setValue("RFCReceptor", data["Rfc"]);
+                setValue("NombreReceptor", data["Nombre"]);
+                setValue("Calle", data["Calle"]);
+                setValue("NoExterior", data["NumeroExterior"]);
+                setValue("NoInterior", data["NumeroInterior"]);
+                setValue("Colonia", data["Colonia"]);
+                setValue("Municipio", data["Municipio"]);
+                setValue("Estado", data["Estado"]);
+
+                console.log("RFCReceptor", data["Rfc"]);
+
+                trigger("RFCReceptor");
+                trigger("DomicilioFiscalReceptor");
+                trigger("RegimenFiscal");
+
+            } catch (error) {
+                console.warn("Receptor inválido para parsear:", receptor);
             }
-            if (data["Rfc"] !== "XAXX010101000") {
-                setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
-                setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
-                setHiddeInfoGlobal(false);
-                setRegimenFiscal(data["RegimenFiscalReceptor"]);
-                setValue("RegimenFiscal", data["RegimenFiscalReceptor"]);
-            } else {
-                setDomicilioFiscal(lugarExpedicion);
-                setValue("DomicilioFiscalReceptor", lugarExpedicion);
-                setRegimenFiscal("616");
-                setValue("RegimenFiscal", "616");
-
-                setHiddeInfoGlobal(true);
-            }
-            // setUsoCFDI("");
-            setValue("UsoCFDI", "");
-            setValue("UsoCFDIDescripcion", "");
-            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
-
-            setRFC(data["Rfc"]);
-            setValue("RFCReceptor", data["Rfc"]);
-            setValue("NombreReceptor", data["Nombre"]);
-            setValue("Calle", data["Calle"]);
-            setValue("NoExterior", data["NumeroExterior"]);
-            setValue("NoInterior", data["NumeroInterior"]);
-            setValue("Colonia", data["Colonia"]);
-            setValue("Municipio", data["Municipio"]);
-            setValue("Estado", data["Estado"]);
-
-            console.log("RFCReceptor", data["Rfc"]);
-            // Dispara la validación de estos campos
-            trigger("RFCReceptor");
-            trigger("DomicilioFiscalReceptor");
-            trigger("RegimenFiscal");
-
         }
     }, [receptor, lugarExpedicion, trigger, setValue, rfc, setReceptorID]);
 
@@ -307,6 +319,19 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         }
     }, [regimenFiscal]);
 
+    useEffect(() => {
+        const receptorID = getValues("ReceptorID");
+        if (receptorID && receptorOptions.length > 0) {
+            const receptor = receptorOptions.find(opt => opt.ID === receptorID);
+            if (receptor) {
+                setSelectedReceptor(receptor);
+                handleReceptorChange(receptor); // ← Aquí forzamos que los campos se actualicen correctamente
+            }
+        }
+    }, [receptorOptions, getValues]);
+
+
+
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
             sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem', marginBottom: '1rem', }}>
@@ -322,28 +347,39 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 }}
                 gap={3}
             >
+                {/* <Select register={register}
+                    nombre="Receptor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
+                    id="ID"
+                    descripcion="Nombre"
+                    onChange={(e) => setReceptor(e.target.value)}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("ReceptorID") || ""}
+                    reset={isModalClosed}
+                    disabled={disabled}
+                /> */}
 
-                <Autocomplete
+                {/* <Autocomplete
                     options={receptorOptions}
                     loading={loadingReceptores}
                     disabled={disabled}
-                    value={
-                        getValues("ReceptorID")
-                            ? receptorOptions.find(option => option.ID === getValues("ReceptorID"))
-                            : null
-                    }
+                    value={selectedReceptor}
                     onChange={(_, newValue) => {
-                        if (newValue && newValue.isAddOption) {
+                        if (newValue?.isAddOption) {
                             handleOpenModal();
                         } else {
-                            handleReceptorChange(newValue);
+                            handleReceptorChange(newValue); // este también actualiza el form
+                            setSelectedReceptor(newValue); // muy importante
                             setSearchTerm("");
                         }
                     }}
                     onInputChange={(_, newInputValue) => {
                         setSearchTerm(newInputValue);
                     }}
-                    getOptionLabel={(option) => option.isAddOption ? `Agregar "${searchTerm}" como nuevo` : option.Nombre || ""}
+                    getOptionLabel={(option) =>
+                        option.isAddOption ? `Agregar "${searchTerm}" como nuevo` : option.Nombre || ""
+                    }
                     isOptionEqualToValue={(option, value) => option.ID === value?.ID}
                     filterOptions={(options, { inputValue }) => {
                         const filtered = options.filter(option =>
@@ -351,7 +387,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                             option.Rfc?.toLowerCase().includes(inputValue.toLowerCase())
                         );
 
-                        // Solo agregar opción si hay texto de búsqueda y no hay coincidencias
                         if (inputValue.trim() && !filtered.length) {
                             return [{
                                 isAddOption: true,
@@ -370,7 +405,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                                         alignItems: 'center',
                                         width: '100%',
                                         padding: '8px 16px',
-                                        color: '#0e8e85', // verde agua oscuro
+                                        color: '#0e8e85',
                                         backgroundColor: 'rgba(29, 57, 77, 0.1)',
                                         '&:hover': {
                                             backgroundColor: 'rgba(29, 57, 77, 0.2)',
@@ -405,6 +440,23 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                             required
                         />
                     )}
+                /> */}
+
+                <AutocompletePersonalizado
+                    register={register}
+                    nombre="Receptor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
+                    id="ID"
+                    descripcion="Nombre"
+                    onChange={(e) => setReceptor(e.target.value)}
+                    error={!!errors.Receptor}  // Corregí esto de Emisor a Receptor
+                    helperText={errors.Receptor ? "Este campo es obligatorio" : ""}
+                    value={getValues("ReceptorID") || ""}  // Usamos el estado que ya manejabas
+                    reset={isModalClosed}
+                    disabled={disabled}
+                    onAddOption={(input) => {
+                        handleOpenModal(); // o lo que necesites
+                    }}
                 />
 
                 <TextField
