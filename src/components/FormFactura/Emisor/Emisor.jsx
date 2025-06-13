@@ -227,11 +227,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
                     id="ID"
                     descripcion="Nombre"
-                    onChange={(e) => {
-                        // Parsea el JSON que viene del autocomplete
-                        const selectedEmisor = JSON.parse(e.target.value);
-                        handleEmisorChange(selectedEmisor);
-                    }}
+                    onChange={handleEmisorChange}
                     error={!!errors.Emisor}
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}

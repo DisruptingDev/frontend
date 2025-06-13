@@ -107,7 +107,7 @@ export default function AutocompleteEmisor({
 
         setSelectedValue(newValue);
         if (onChange) {
-            onChange({ target: { value: newValue ? JSON.stringify(newValue) : '' } });
+            onChange(newValue);
         }
     };
 
