@@ -166,14 +166,14 @@ export default function Home() {
                         <div ref={datatableRef}>
                             <DataTable token={token} />
                         </div>
-                        <Button
+                        {/* <Button
                             variant="contained"
                             color="primary"
                             onClick={startTour}
                             startIcon={<HelpIcon />}
                         >
                             Iniciar Tour
-                        </Button>
+                        </Button> */}
                     </Box>
                 </Grid>
             </Grid>
