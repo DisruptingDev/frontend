@@ -4,6 +4,8 @@ import { TextField, Box, Typography, Autocomplete, CircularProgress } from '@mui
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import AutocompletePersonalizado from "@/components/CustomAutocomplete/AutocompletePersonalizado.jsx";
+import AutocompleteEmisor from "@/components/CustomAutocomplete/AutoCompleteEmisor.jsx";
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID, token }) {
     const [emisor, setEmisor] = useState({});
@@ -149,22 +151,43 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
     }, [setValue]);
 
-    const handleEmisorChange = (emisorID) => {
-        try {
-            // Busca el emisor completo en las opciones disponibles
-            const emisorSeleccionado = emisorOptions.find(opt => opt.ID === emisorID);
-
-            if (emisorSeleccionado) {
-                setEmisor(emisorSeleccionado);
-                setValue("Serie", "");
-                if (setEmisorID) {
-                    setEmisorID(emisorSeleccionado.ID);
-                }
+    const handleEmisorChange = (emisorSeleccionado) => {
+    try {
+        if (emisorSeleccionado) {
+            setEmisor(emisorSeleccionado);
+            
+            // Actualiza todos los campos relacionados
+            setValue("EmisorID", emisorSeleccionado.ID);
+            setValue("RFCEmisor", emisorSeleccionado.Rfc);
+            setValue("LugarExpedicion", emisorSeleccionado.LugarExpedicion);
+            setValue("NombreEmisor", emisorSeleccionado.Nombre);
+            setValue("CalleEmisor", emisorSeleccionado.Calle);
+            setValue("NoExteriorEmisor", emisorSeleccionado.NumeroExterior);
+            setValue("NoInteriorEmisor", emisorSeleccionado.NumeroInterior);
+            setValue("ColoniaEmisor", emisorSeleccionado.Colonia);
+            setValue("MunicipioEmisor", emisorSeleccionado.Municipio);
+            setValue("EstadoEmisor", emisorSeleccionado.Estado);
+            setValue("RegimenFiscalEmisor", emisorSeleccionado.RegimenFiscal);
+            setValue("LogoEmisor", emisorSeleccionado.LogoPath);
+            
+            // Actualiza la URL para las series
+            setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorSeleccionado.ID}`);
+            
+            // Actualiza el estado en el componente padre si es necesario
+            if (setEmisorID) {
+                setEmisorID(emisorSeleccionado.ID);
             }
-        } catch (error) {
-            console.error("Error al procesar el emisor:", error);
+            if (setLugarExpedicion) {
+                setLugarExpedicion(emisorSeleccionado.LugarExpedicion);
+            }
+            
+            // Dispara validaciones
+            trigger(["RFCEmisor", "LugarExpedicion"]);
         }
-    };
+    } catch (error) {
+        console.error("Error al procesar el emisor:", error);
+    }
+};
     // const handleLugarExpedicionChange = (e) => {
     //     setLugarExpedicion(e.target.value);
     // };
@@ -198,38 +221,42 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                <Autocomplete
-                    options={emisorOptions}
-                    loading={loadingEmisores}
+                <AutocompleteEmisor
+                    register={register}
+                    nombre="Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                    id="ID"
+                    descripcion="Nombre"
+                    onChange={(e) => {
+                        // Parsea el JSON que viene del autocomplete
+                        const selectedEmisor = JSON.parse(e.target.value);
+                        handleEmisorChange(selectedEmisor);
+                    }}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("EmisorID") || ""}
                     disabled={disabled}
-                    value={getValues("EmisorID") ? emisorOptions.find(e => e.ID === getValues("EmisorID")) : null}
-                    onChange={(_, newValue) => {
-                        setValue("EmisorID", newValue?.ID || "");
-                        handleEmisorChange(newValue?.ID);
-                    }}
-                    onInputChange={(_, newInputValue) => {
-                        setSearchTerm(newInputValue);
-                    }}
-                    getOptionLabel={(option) => option.Nombre || ""}
-                    isOptionEqualToValue={(option, value) => option.ID === value.ID}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Emisor"
-                            error={!!errors.Emisor}
-                            helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                            InputProps={{
-                                ...params.InputProps,
-                                endAdornment: (
-                                    <>
-                                        {loadingEmisores ? <CircularProgress color="inherit" size={20} /> : null}
-                                        {params.InputProps.endAdornment}
-                                    </>
-                                ),
-                            }}
-                        />
-                    )}
                 />
+                {/* <AutocompletePersonalizado
+                    register={register}
+                    nombre="Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                    id="ID"
+                    descripcion="Nombre"
+                    onChange={handleEmisorChange}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+                    value={getValues("EmisorID") || ""}
+                    disabled={disabled}
+                    // Estas props aseguran que no aparezca la opción de agregar nuevo
+                    filterOptions={(options, state) => {
+                        const inputValue = state.inputValue?.trim().toLowerCase() || '';
+                        return options.filter(opt =>
+                            getOptionLabel(opt).toLowerCase().includes(inputValue)
+                        );
+                    }}
+                /> */}
+
 
                 {/* <Select
                     register={register}
