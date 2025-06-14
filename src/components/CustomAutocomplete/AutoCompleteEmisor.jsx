@@ -100,11 +100,6 @@ export default function AutocompleteEmisor({
     }, [value, opciones, id]);
 
     const handleChange = (event, newValue) => {
-        if (newValue?.isAddOption) {
-            if (onAddOption) onAddOption(inputValue); // llama a un callback externo
-            return;
-        }
-
         setSelectedValue(newValue);
         if (onChange) {
             onChange(newValue);
