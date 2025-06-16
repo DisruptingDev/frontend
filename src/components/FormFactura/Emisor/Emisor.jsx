@@ -4,6 +4,7 @@ import { TextField, Box, Typography, Autocomplete, CircularProgress } from '@mui
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import AutocompleteEmisor from "@/components/CustomAutocomplete/AutocompleteEmisor.jsx";
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID, token }) {
     const [emisor, setEmisor] = useState({});
@@ -14,24 +15,19 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const [loadingEmisores, setLoadingEmisores] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
+    //console.log(token);
+
     useEffect(() => {
         const fetchEmisores = async () => {
             setLoadingEmisores(true);
             try {
-                let url = `${apiUrl}/api/catalogos/Catalogos/Emisor`;
-
-                // Solo añade el parámetro de búsqueda si hay un término de búsqueda
-                if (searchTerm.trim() !== "") {
-                    url += `?emisorAutoComplete=${encodeURIComponent(searchTerm)}`;
-                }
-
-                const response = await fetch(url, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 const data = await response.json();
                 console.log("Emisores fetched:", data);
-                setEmisorOptions(Array.isArray(data) ? data : []);
+                setEmisorOptions(data);
             } catch (error) {
                 console.error("Error fetching emisores:", error);
             } finally {
@@ -44,7 +40,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         }, 300);
 
         return () => clearTimeout(debounceFetch);
-    }, [searchTerm, token]);
+    }, [searchTerm]);
 
     useEffect(() => {
         const today = new Date();
@@ -149,20 +145,18 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
     }, [setValue]);
 
-    const handleEmisorChange = (emisorID) => {
+    const handleEmisorChange = (e) => {
         try {
-            // Busca el emisor completo en las opciones disponibles
-            const emisorSeleccionado = emisorOptions.find(opt => opt.ID === emisorID);
-
-            if (emisorSeleccionado) {
-                setEmisor(emisorSeleccionado);
-                setValue("Serie", "");
-                if (setEmisorID) {
-                    setEmisorID(emisorSeleccionado.ID);
-                }
+            const data = JSON.parse(e.target.value);
+            setEmisor(data);
+            // console.log(data);
+            //Checar, si es correcto
+            setValue("Serie", "");
+            if (setEmisorID) {
+                setEmisorID(data.ID);
             }
         } catch (error) {
-            console.error("Error al procesar el emisor:", error);
+            console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
     // const handleLugarExpedicionChange = (e) => {
@@ -198,39 +192,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                <Autocomplete
-                    options={emisorOptions}
-                    loading={loadingEmisores}
-                    disabled={disabled}
-                    value={getValues("EmisorID") ? emisorOptions.find(e => e.ID === getValues("EmisorID")) : null}
-                    onChange={(_, newValue) => {
-                        setValue("EmisorID", newValue?.ID || "");
-                        handleEmisorChange(newValue?.ID);
-                    }}
-                    onInputChange={(_, newInputValue) => {
-                        setSearchTerm(newInputValue);
-                    }}
-                    getOptionLabel={(option) => option.Nombre || ""}
-                    isOptionEqualToValue={(option, value) => option.ID === value.ID}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Emisor"
-                            error={!!errors.Emisor}
-                            helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                            InputProps={{
-                                ...params.InputProps,
-                                endAdornment: (
-                                    <>
-                                        {loadingEmisores ? <CircularProgress color="inherit" size={20} /> : null}
-                                        {params.InputProps.endAdornment}
-                                    </>
-                                ),
-                            }}
-                        />
-                    )}
-                />
-
                 {/* <Select
                     register={register}
                     trigger={trigger}
@@ -245,6 +206,23 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
                 /> */}
+
+                <AutocompleteEmisor
+    register={register}
+    trigger={trigger}
+    nombre="Emisor"
+    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+    id="ID"
+    descripcion="Nombre"
+    onChange={handleEmisorChange}
+    error={!!errors.Emisor}
+    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
+    value={getValues("EmisorID")}
+    disabled={disabled}
+    setValue={setValue}
+    getValues={getValues}
+/>
+
                 <TextField
                     label="RFC"
                     {...register("RFCEmisor", { required: "El RFC del emisor es requerido." })}

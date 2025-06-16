@@ -1,18 +1,19 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
-import { Autocomplete, TextField, CircularProgress, FormControl, FormHelperText, Box, Typography } from '@mui/material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { Autocomplete, TextField, CircularProgress, FormControl, FormHelperText } from '@mui/material';
 
-async function obtener_opciones(url) {
+async function obtener_opciones(url, searchTerm = "") {
     try {
         let token;
-        if (localStorage.getItem('authToken')) {
+        if(localStorage.getItem('authToken')) {
             token = localStorage.getItem('authToken');
         } else {
             token = sessionStorage.getItem('authToken');
         }
-        const response = await fetch(url, {
+        
+        const finalUrl = searchTerm ? `${url}?search=${encodeURIComponent(searchTerm)}` : url;
+        
+        const response = await fetch(finalUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -20,29 +21,19 @@ async function obtener_opciones(url) {
         });
         const data = await response.json();
 
-        if (Array.isArray(data)) {
-            return data;
-        }
-
-        console.error('Expected an array but received:', data);
-        return [];
+        return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Error fetching data:', error);
-        return [
-            { Clave: 'valor1', Descripcion: 'Elemento 1' },
-            { Clave: 'valor2', Descripcion: 'Elemento 2' },
-            { Clave: 'valor3', Descripcion: 'Elemento 3' },
-        ];
+        return [];
     }
 }
 
-export default function AutocompleteEmisor({
-    register = () => (1),
+export default function CustomAutocomplete({
+    register = () => ({}),
     nombre,
     label = nombre,
     url,
     className,
-    clave = "",
     id = "ID",
     descripcion = "Nombre",
     onChange,
@@ -54,96 +45,115 @@ export default function AutocompleteEmisor({
     reset = false,
     opcion = false,
     opcionText = "Todos",
-    freeSolo = false,
-    onAddOption
+    trigger,
+    getValues,
+    setValue
 }) {
-    const [opciones, setOpciones] = useState([]);
-    const [selectedValue, setSelectedValue] = useState(null);
+    const [options, setOptions] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [initialLoad, setInitialLoad] = useState(true);
     const [inputValue, setInputValue] = useState('');
+    const [selectedValue, setSelectedValue] = useState(null);
+    const [initialLoad, setInitialLoad] = useState(true);
 
-    useEffect(() => {
-        if (url) {
-            setLoading(true);
-            obtener_opciones(url)
-                .then(data => {
-                    setOpciones(data);
-                    // Si tenemos un valor inicial, buscamos la opción correspondiente
-                    if (value && initialLoad) {
-                        const foundOption = data.find(opt => opt[id] === value);
-                        setSelectedValue(foundOption || null);
-                        setInitialLoad(false);
-                    }
-                    setLoading(false);
-                })
-                .catch(() => setLoading(false));
+    // Función para cargar opciones con debounce
+    const fetchOptions = React.useCallback(async (search) => {
+        setLoading(true);
+        try {
+            const data = await obtener_opciones(url, search);
+            setOptions(data);
+            
+            // Si es la carga inicial y tenemos un valor, buscamos el correspondiente
+            if (initialLoad && value) {
+                const foundValue = data.find(option => option[id] === value);
+                if (foundValue) {
+                    setSelectedValue(foundValue);
+                    setInputValue(foundValue[descripcion]);
+                }
+            }
+            setInitialLoad(false);
+        } finally {
+            setLoading(false);
         }
-    }, [url, value, id, initialLoad]);
+    }, [url, id, descripcion, value, initialLoad]);
 
+    // Efecto para cargar opciones iniciales
+    useEffect(() => {
+        fetchOptions('');
+    }, [fetchOptions]);
+
+    // Efecto para manejar cambios externos en el valor (como en edición)
+    useEffect(() => {
+        if (value && options.length > 0) {
+            const foundValue = options.find(option => option[id] === value);
+            if (foundValue) {
+                setSelectedValue(foundValue);
+                setInputValue(foundValue[descripcion]);
+            }
+        } else if (!value) {
+            setSelectedValue(null);
+            setInputValue('');
+        }
+    }, [value, options, id, descripcion]);
+
+    // Efecto para manejar el reset
     useEffect(() => {
         if (reset) {
-            if (url) {
-                obtener_opciones(url).then(data => setOpciones(data));
-            }
-        }
-    }, [reset, url]);
-
-    useEffect(() => {
-        // Actualizar el valor seleccionado cuando cambia la prop `value`
-        if (value !== undefined && value !== null) {
-            const foundOption = opciones.find(opt => opt[id] === value);
-            setSelectedValue(foundOption || null);
-        } else {
+            fetchOptions('');
+            setInputValue('');
             setSelectedValue(null);
         }
-    }, [value, opciones, id]);
+    }, [reset, fetchOptions]);
+
+    // Efecto para buscar con debounce
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!initialLoad || inputValue !== '') {
+                fetchOptions(inputValue);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [inputValue, fetchOptions, initialLoad]);
 
     const handleChange = (event, newValue) => {
         setSelectedValue(newValue);
+        
         if (onChange) {
-            onChange(newValue);
+            const eventValue = newValue ? JSON.stringify(newValue) : '';
+            onChange({ target: { value: eventValue } });
+            
+            // Actualizar el valor en react-hook-form
+            if (setValue) {
+                setValue(nombre, newValue ? newValue[id] : '');
+            }
+        }
+        
+        if (trigger) {
+            trigger(nombre);
         }
     };
 
-    const getOptionLabel = (option) => {
-        if (!option) return '';
-        if (option.isAddOption) return option[descripcion];
-        if (typeof option === 'string') return option;
-        return clave !== ""
-            ? `${option[clave] || ''}${option[descripcion] ? ` - ${option[descripcion]}` : ''}`
-            : `${option[descripcion] || ''}`;
+    const handleInputChange = (event, newInputValue) => {
+        setInputValue(newInputValue);
     };
-
-
-
-    const isOptionEqualToValue = (option, value) => {
-        return option?.[id] === value?.[id];
-    };
-
-
-
 
     return (
         <FormControl fullWidth className={className} sx={sx} error={error} disabled={disabled}>
             <Autocomplete
-                options={opciones}
+                options={options}
+                getOptionLabel={(option) => option[descripcion] || ''}
+                isOptionEqualToValue={(option, value) => option[id] === value?.[id]}
                 value={selectedValue}
                 onChange={handleChange}
                 inputValue={inputValue}
-                onInputChange={(event, newInputValue) => {
-                    setInputValue(newInputValue);
-                }}
-                getOptionLabel={getOptionLabel}
-                isOptionEqualToValue={isOptionEqualToValue}
+                onInputChange={handleInputChange}
                 loading={loading}
                 disabled={disabled}
-                freeSolo={freeSolo}
                 renderInput={(params) => (
                     <TextField
                         {...params}
                         label={label}
-                        error={error}
+                        variant="outlined"
                         InputProps={{
                             ...params.InputProps,
                             endAdornment: (
@@ -156,9 +166,15 @@ export default function AutocompleteEmisor({
                         {...register(nombre, {
                             required: "Este campo es obligatorio",
                         })}
+                        error={error}
                     />
                 )}
-                noOptionsText={opciones.length === 0 ? "No hay opciones disponibles" : "No se encontraron resultados"}
+                renderOption={(props, option) => (
+                    <li {...props} key={option[id]}>
+                        {option[descripcion]}
+                    </li>
+                )}
+                noOptionsText="No hay opciones"
             />
             {error && <FormHelperText>{helperText}</FormHelperText>}
         </FormControl>
