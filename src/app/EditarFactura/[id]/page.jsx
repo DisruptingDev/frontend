@@ -39,8 +39,8 @@ export default function EditarFactura() {
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState(""); // Estado para almacenar el token
 
-    console.log(token);
-    console.log(conceptos);
+    // console.log(token);
+    // console.log(conceptos);
 
     useEffect(() => {
         // Verifica la autenticación al montar el componente

@@ -13,6 +13,8 @@ export default function SeleccionarFacturas({ receptor, token, onFacturasSelecci
     const [motivosRelacion, setMotivosRelacion] = useState([]);
     const [loadingMotivos, setLoadingMotivos] = useState(true);
 
+    //console.log(emisorID, receptorID, "EmisorID y ReceptorID");
+
     // Función para cargar los motivos de relación
     const fetchMotivosRelacion = useCallback(async () => {
         if (token) {

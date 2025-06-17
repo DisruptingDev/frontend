@@ -1,46 +1,16 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { TextField, Box, Typography, Autocomplete, CircularProgress } from '@mui/material';
+import React, { useState, useEffect, use } from 'react';
+import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
+import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-import AutocompleteEmisor from "@/components/CustomAutocomplete/AutocompleteEmisor.jsx";
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID, token }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID}) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
     const [serieUrl, setSerieUrl] = useState('');
-    const [emisorOptions, setEmisorOptions] = useState([]);
-    const [loadingEmisores, setLoadingEmisores] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-
-    //console.log(token);
-
-    useEffect(() => {
-        const fetchEmisores = async () => {
-            setLoadingEmisores(true);
-            try {
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor?emisorAutoComplete=${encodeURIComponent(searchTerm)}`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                const data = await response.json();
-                console.log("Emisores fetched:", data);
-                setEmisorOptions(data);
-            } catch (error) {
-                console.error("Error fetching emisores:", error);
-            } finally {
-                setLoadingEmisores(false);
-            }
-        };
-
-        const debounceFetch = setTimeout(() => {
-            fetchEmisores();
-        }, 300);
-
-        return () => clearTimeout(debounceFetch);
-    }, [searchTerm]);
 
     useEffect(() => {
         const today = new Date();
@@ -60,6 +30,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     }, []);
     useEffect(() => {
         const today = new Date();
+
+
         const formatDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -149,9 +121,10 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         try {
             const data = JSON.parse(e.target.value);
             setEmisor(data);
-            // console.log(data);
+            console.log(data);
             //Checar, si es correcto
             setValue("Serie", "");
+            setValue("TipoComprobante", "");
             if (setEmisorID) {
                 setEmisorID(data.ID);
             }
@@ -159,9 +132,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
-    // const handleLugarExpedicionChange = (e) => {
-    //     setLugarExpedicion(e.target.value);
-    // };
+
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
@@ -178,7 +149,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
-            sx={{ padding: '1rem', margin: 'auto', marginButtom: '1rem' }}>
+        sx={{   padding: '1rem', margin:'auto', marginButtom:'1rem'}}>
             <Typography variant="h6" mb={4}>Datos del Emisor</Typography>
             <Box
                 display="grid"
@@ -192,7 +163,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                {/* <Select
+                <Select
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
@@ -205,23 +176,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
-                /> */}
-
-                <AutocompleteEmisor
-    register={register}
-    trigger={trigger}
-    nombre="Emisor"
-    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-    id="ID"
-    descripcion="Nombre"
-    onChange={handleEmisorChange}
-    error={!!errors.Emisor}
-    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-    value={getValues("EmisorID")}
-    disabled={disabled}
-    setValue={setValue}
-    getValues={getValues}
-/>
+                />
 
                 <TextField
                     label="RFC"

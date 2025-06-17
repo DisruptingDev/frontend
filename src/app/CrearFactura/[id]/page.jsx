@@ -47,7 +47,7 @@ export default function CrearFactura() {
         }
         else {
             setToken(token);
-            console.log("Token", token);
+            //console.log("Token", token);
         }
     }, [router]);
 
@@ -87,11 +87,11 @@ export default function CrearFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            console.log("Factura editada", facturaEdit);
+            //console.log("Factura editada", facturaEdit);
             const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
-                console.log("Conceptos", Conceptos);
+                //console.log("Conceptos", Conceptos);
                 setConceptos(Conceptos);
             }
             if (Emisor) {
