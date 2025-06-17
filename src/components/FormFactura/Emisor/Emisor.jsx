@@ -5,7 +5,7 @@ import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-import AutocompleteEmisor from '@/components/CustomAutocomplete/AutocompleteEmisor.jsx';
+import AutocompleteEmisor from '@/components/Autocompletes/AutocompleteEmisor';
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
     const [emisor, setEmisor] = useState({});

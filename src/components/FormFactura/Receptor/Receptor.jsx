@@ -4,7 +4,7 @@ import { Box, TextField, Button, Typography, Dialog, DialogTitle, DialogContent,
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
-import AutocompleteReceptor from "@/components/CustomAutocomplete/AutocompleteReceptor.jsx";
+import AutocompleteReceptor from "@/components/Autocompletes/AutocompleteReceptor";
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
