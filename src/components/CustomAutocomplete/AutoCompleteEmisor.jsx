@@ -1,192 +1,109 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Autocomplete as MuiAutocomplete, 
-  TextField, 
-  CircularProgress,
-  FormControl,
-  FormHelperText 
-} from '@mui/material';
+import React, { useState, useEffect } from "react";
+import { Autocomplete, TextField } from "@mui/material";
 
 async function obtener_opciones(url) {
     try {
-        let token;
-        if(localStorage.getItem('authToken')) {
-            token = localStorage.getItem('authToken');
-        }
-        else{
-            token = sessionStorage.getItem('authToken');
-        }
+        const token =
+            localStorage.getItem("authToken") ||
+            sessionStorage.getItem("authToken");
+
         const response = await fetch(url, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            }
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
         });
+
         const data = await response.json();
-
-        if (Array.isArray(data)) {
-            return data;
-        }
-
-        console.error('Expected an array but received:', data);
-        return [];
+        return Array.isArray(data) ? data : [];
     } catch (error) {
-        console.error('Error fetching data:', error);
-        return [
-            { Clave: 'valor1', Descripcion: 'Elemento 1' },
-            { Clave: 'valor2', Descripcion: 'Elemento 2' },
-            { Clave: 'valor3', Descripcion: 'Elemento 3' },
-        ];
+        console.error("Error al obtener opciones:", error);
+        return [];
     }
 }
 
 export default function AutocompleteEmisor({
-    register = () => (1),
     nombre,
     label = nombre,
     url,
-    className,
+    id = "ID",
     clave = "",
-    id = clave,
     descripcion = "",
     onChange,
-    sx,
-    variant = "outlined",
+    value = "",
+    setValue = () => { },
+    register = () => ({}),
     error = false,
     helperText = "",
-    value,
     disabled = false,
-    reset = false,
-    opcion = false,
-    opcionText = "Todos",
-    freeSolo = false,
-    filterOptions,
-    loading = false,
-    setValue,
-    updateFields,
+    noOptionsText = "No hay opciones disponibles",
 }) {
     const [opciones, setOpciones] = useState([]);
-    const [selectedValue, setSelectedValue] = useState(null);
-    const [inputValue, setInputValue] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [inputValue, setInputValue] = useState("");
+    const [selectedOption, setSelectedOption] = useState(null);
 
     useEffect(() => {
         if (url) {
-            setIsLoading(true);
-            obtener_opciones(url).then((data) => {
-                setOpciones(data);
-                setIsLoading(false);
-                
-                // Set initial value if provided
-                if (value) {
-                    const foundOption = data.find(item => item[id] === value);
-                    if (foundOption) {
-                        setSelectedValue(foundOption);
-                    }
-                }
-            });
+            obtener_opciones(url).then((data) => setOpciones(data));
         }
-    }, [url, value, id]);
+    }, [url]);
 
     useEffect(() => {
-        if (reset && url) {
-            setIsLoading(true);
-            obtener_opciones(url).then(data => {
-                setOpciones(data);
-                setIsLoading(false);
-            });
-        }
-    }, [reset, url]);
-
-    const handleChange = (event, newValue) => {
-        setSelectedValue(newValue);
-        
-        if (onChange) {
-            if (newValue) {
-                // Enviar solo el ID al onChange
-                onChange({ target: { value: newValue[id], name: nombre } });
-                
-                // Si necesitas actualizar campos relacionados
-                if (updateFields) {
-                    updateFields(newValue);
-                }
-                
-                // Actualizar el valor en react-hook-form
-                if (setValue) {
-                    setValue(nombre, newValue[id], { shouldValidate: true });
-                }
-            } else {
-                onChange({ target: { value: '', name: nombre } });
-                if (setValue) {
-                    setValue(nombre, '', { shouldValidate: true });
-                }
+        if (value && opciones.length > 0) {
+            const selected = opciones.find((opt) => opt[id] === value);
+            if (selected) {
+                setSelectedOption(selected);
+                setInputValue(clave ? `${selected[clave]} - ${selected[descripcion]}` : selected[descripcion]);
             }
         }
-    };
+    }, [value, opciones, id, clave, descripcion]);
 
-    const handleInputChange = (event, newInputValue) => {
-        setInputValue(newInputValue);
-    };
-
-    const getOptionLabel = (option) => {
-        if (typeof option === 'string') {
-            return option;
+    const handleChange = (event, newValue) => {
+        setSelectedOption(newValue);
+        if (newValue) {
+            setInputValue(clave ? `${newValue[clave]} - ${newValue[descripcion]}` : newValue[descripcion]);
+            setValue(nombre, newValue[id]); // sincroniza con react-hook-form
+            if (onChange) {
+                onChange({ target: { value: JSON.stringify(newValue) } });
+            }
+        } else {
+            setValue(nombre, "");
         }
-        if (clave !== "" && descripcion !== "") {
-            return `${option[clave]} - ${option[descripcion]}`;
-        }
-        if (descripcion !== "") {
-            return option[descripcion];
-        }
-        if (clave !== "") {
-            return option[clave];
-        }
-        return option.toString();
-    };
-
-    const isOptionEqualToValue = (option, value) => {
-        if (!option || !value) return false;
-        return option[id] === value[id];
     };
 
     return (
-        <FormControl fullWidth className={className} sx={sx} error={error} disabled={disabled}>
-            <MuiAutocomplete
-                options={opciones}
-                value={selectedValue}
-                onChange={handleChange}
-                inputValue={inputValue}
-                onInputChange={handleInputChange}
-                getOptionLabel={getOptionLabel}
-                isOptionEqualToValue={isOptionEqualToValue}
-                freeSolo={freeSolo}
-                filterOptions={filterOptions}
-                loading={isLoading || loading}
-                disabled={disabled}
-                renderInput={(params) => (
+        <Autocomplete
+            disabled={disabled}
+            options={opciones}
+            getOptionLabel={(option) =>
+                clave ? `${option[clave]} - ${option[descripcion]}` : option[descripcion]
+            }
+            value={selectedOption}
+            onChange={handleChange}
+            inputValue={inputValue}
+            onInputChange={(e, newInputValue) => setInputValue(newInputValue)}
+            noOptionsText={noOptionsText}
+            renderInput={(params) => (
+                <>
                     <TextField
                         {...params}
-                        {...register(nombre, {
-                            required: "Este campo es obligatorio"
-                        })}
                         label={label}
-                        variant={variant}
+                        fullWidth
                         error={error}
-                        InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                                <>
-                                    {isLoading || loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                    {params.InputProps.endAdornment}
-                                </>
-                            ),
-                        }}
+                        helperText={helperText}
                     />
-                )}
-            />
-            {error && <FormHelperText>{helperText}</FormHelperText>}
-        </FormControl>
+                    <input
+                        type="hidden"
+                        {...register(nombre, {
+                            required: "Este campo es obligatorio",
+                        })}
+                        value={selectedOption?.[id] || ""}
+                    />
+                </>
+            )}
+            isOptionEqualToValue={(option, value) => option[id] === value[id]}
+        />
     );
 }

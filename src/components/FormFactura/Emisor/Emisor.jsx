@@ -5,8 +5,9 @@ import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
 import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import AutocompleteEmisor from '@/components/CustomAutocomplete/AutocompleteEmisor.jsx';
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID}) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -112,6 +113,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
         }
     }, [emisor, setLugarExpedicion, setValue, trigger]);
+
     useEffect(() => {
         // Establece el valor por defecto para 'Divisa'
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
@@ -149,7 +151,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
     return (
         <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
-        sx={{   padding: '1rem', margin:'auto', marginButtom:'1rem'}}>
+            sx={{ padding: '1rem', margin: 'auto', marginButtom: '1rem' }}>
             <Typography variant="h6" mb={4}>Datos del Emisor</Typography>
             <Box
                 display="grid"
@@ -163,7 +165,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                <Select
+                {/* <Select
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
@@ -176,7 +178,23 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
+                /> */}
+
+                <AutocompleteEmisor
+                    nombre="Emisor"
+                    label="Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                    id="ID"
+                    clave=""
+                    descripcion="Nombre"
+                    register={register}
+                    setValue={setValue}
+                    value={getValues("Emisor")}
+                    onChange={handleEmisorChange}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                 />
+
 
                 <TextField
                     label="RFC"
