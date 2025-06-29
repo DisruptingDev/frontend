@@ -1,12 +1,32 @@
 import React, { useState } from 'react';
-import { Modal, Box, Typography, TextField, Button, List, ListItem, ListItemText, IconButton, Tooltip, Snackbar, Alert } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { 
+  Modal, 
+  Box, 
+  Typography, 
+  TextField, 
+  Button, 
+  Snackbar, 
+  Alert,
+  Autocomplete,
+  Chip
+} from '@mui/material';
 import { isAuthenticated } from '@/utils/authRedirect';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+// Datos dummy de roles
+const rolesDummy = [
+  { id: 1, nombre: 'Administrador' },
+  { id: 2, nombre: 'Facturador' },
+  { id: 3, nombre: 'Consultor' },
+  { id: 4, nombre: 'Gestor de clientes' },
+  { id: 5, nombre: 'Supervisor' },
+  { id: 6, nombre: 'Auditor' }
+];
+
 const ModalCorreos = ({ open, onClose, setOpen }) => {
     const [emailAddresses, setEmailAddresses] = useState('');
+    const [selectedRole, setSelectedRole] = useState(null);
     const [invitationLinks, setInvitationLinks] = useState([]);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [toast, setToast] = useState({
@@ -30,7 +50,20 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
     };
 
     const handleSendInvitations = async () => {
-        const emailsArray = emailAddresses.split(',').map(email => email.trim());
+        if (!selectedRole) {
+            showToast('Por favor selecciona un rol', 'error');
+            return;
+        }
+
+        const emailsArray = emailAddresses.split(',')
+            .map(email => email.trim())
+            .filter(email => email.length > 0);
+
+        if (emailsArray.length === 0) {
+            showToast('Ingresa al menos una dirección de correo', 'error');
+            return;
+        }
+
         try {
             const response = await fetch(`${apiUrl}/api/invitacioncolaboradores/Invitar`, {
                 method: 'POST',
@@ -38,7 +71,11 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ correos: emailsArray }),
+                body: JSON.stringify({ 
+                    correos: emailsArray,
+                    rolId: selectedRole.id,
+                    rolNombre: selectedRole.nombre
+                }),
             });
 
             if (response.ok) {
@@ -48,38 +85,33 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                 // Mostrar toast de éxito
                 const emailCount = Object.keys(data).length;
                 const message = emailCount === 1
-                    ? 'Correo enviado correctamente'
-                    : `${emailCount} correos enviados correctamente`;
+                    ? `Invitación enviada correctamente (Rol: ${selectedRole.nombre})`
+                    : `${emailCount} invitaciones enviadas correctamente (Rol: ${selectedRole.nombre})`;
                 showToast(message, 'success');
 
                 // Convertir el objeto en un array
                 const invitationsArray = Object.keys(data).map(email => ({
                     email: email,
-                    status: data[email]
+                    status: data[email],
+                    rol: selectedRole.nombre
                 }));
 
-                setInvitationLinks(invitationsArray); // Guardar el array en el estado
+                setInvitationLinks(invitationsArray);
                 setResultModalOpen(true);
                 setOpen(false);
+                setEmailAddresses('');
+                setSelectedRole(null);
             } else {
                 const errorData = await response.json();
                 console.error("Error al enviar invitaciones:", errorData);
-
-                // Mostrar toast de error
                 showToast('Hubo un error al enviar las invitaciones', 'error');
             }
         } catch (error) {
             console.error("Error en la solicitud:", error);
-
-            // Mostrar toast de error
             showToast('No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
         }
     };
 
-    const handleCopyLink = (text) => {
-        navigator.clipboard.writeText(text);
-        alert("Copiado al portapapeles: " + text);
-    };
     return (
         <>
             {/* Modal principal para enviar invitaciones */}
@@ -103,97 +135,83 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                         Envía invitaciones a los miembros de tu equipo para que se unan al sistema.
                     </Typography>
+                    
+                    {/* Select Autocomplete para roles */}
+                    <Autocomplete
+                        options={rolesDummy}
+                        getOptionLabel={(option) => option.nombre}
+                        value={selectedRole}
+                        onChange={(event, newValue) => {
+                            setSelectedRole(newValue);
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Selecciona un rol"
+                                variant="outlined"
+                                fullWidth
+                                sx={{ mt: 2 }}
+                            />
+                        )}
+                        renderOption={(props, option) => (
+                            <Box component="li" {...props} key={option.id}>
+                                {option.nombre}
+                            </Box>
+                        )}
+                        renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                                <Chip
+                                    {...getTagProps({ index })}
+                                    key={option.id}
+                                    label={option.nombre}
+                                />
+                            ))
+                        }
+                        noOptionsText="No hay roles disponibles"
+                    />
+                    
                     <TextField
                         label="Direcciones de correo electrónico"
-                        placeholder="Ingresa direcciones de correo, separadas por comas"
+                        placeholder="ejemplo1@correo.com, ejemplo2@correo.com"
                         multiline
+                        rows={3}
                         fullWidth
                         variant="outlined"
                         value={emailAddresses}
                         onChange={(e) => setEmailAddresses(e.target.value)}
                         sx={{ mt: 2, mb: 2 }}
+                        helperText="Separa múltiples correos con comas"
                     />
 
                     <Button
                         variant="contained"
                         fullWidth
                         onClick={handleSendInvitations}
-                        sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                        disabled={!selectedRole || !emailAddresses.trim()}
+                        sx={{ 
+                            backgroundColor: '#1b384a', 
+                            '&:hover': { backgroundColor: '#10232f' },
+                            '&:disabled': { opacity: 0.7 }
+                        }}
                     >
                         Enviar Invitaciones
                     </Button>
                 </Box>
             </Modal>
 
-            {/* Modal para mostrar los resultados */}
-            {/* <Modal open={resultModalOpen} onClose={() => setResultModalOpen(false)}>
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '50%',
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        p: 4,
-                        borderRadius: 2,
-                        maxHeight: '80vh',
-                        overflowY: 'auto'
-                    }}
-                >
-                    <Typography variant="h6" gutterBottom>
-                        Resultados de las Invitaciones
-                    </Typography>
-                    <List>
-                        {invitationLinks.map((invitation, index) => (
-                            <ListItem
-                                key={index}
-                                sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    overflow: 'hidden',
-                                    whiteSpace: 'nowrap',
-                                    textOverflow: 'ellipsis',
-                                    bgcolor: 'background.default',
-                                    borderRadius: 1,
-                                    p: 1,
-                                    mb: 1,
-                                }}
-                            >
-                                <Tooltip title={`${invitation.email}: ${invitation.status}`}>
-                                    <ListItemText
-                                        primary={`${invitation.email}: ${invitation.status}`}
-                                        primaryTypographyProps={{
-                                            sx: { maxWidth: '95%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
-                                        }}
-                                    />
-                                </Tooltip>
-                                <IconButton onClick={() => handleCopyLink(invitation.email)} sx={{ ml: 1 }}>
-                                    <ContentCopyIcon />
-                                </IconButton>
-                            </ListItem>
-                        ))}
-                    </List>
-                    <Button
-                        variant="contained"
-                        onClick={() => setResultModalOpen(false)}
-                        sx={{ mt: 2, backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
-                        fullWidth
-                    >
-                        Cerrar
-                    </Button>
-                </Box>
-            </Modal> */}
             {/* Toast de notificación */}
             <Snackbar
                 open={toast.open}
-                autoHideDuration={6000} // Duración en milisegundos
+                autoHideDuration={6000}
                 onClose={handleCloseToast}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }} // Posición del toast
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-                <Alert onClose={handleCloseToast} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
+                <Alert 
+                    onClose={handleCloseToast} 
+                    severity={toast.severity} 
+                    variant="filled" 
+                    sx={{ width: '100%' }}
+                >
                     {toast.message}
                 </Alert>
             </Snackbar>
