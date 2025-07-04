@@ -51,7 +51,7 @@ export default function AdministraRoles() {
   });
 
   const router = useRouter();
-  const [token, setToken] = useState("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRCI6MiwiZW1haWwiOiJkZW1vQGRlbW8uY29tIiwiZXhwIjoxNzUxODUwNTI0fQ.HA-5JGdOVy6tOHHm-dJcgjM0fSh89ssaHmj2V5TbxUs");
+  const [token, setToken] = useState("");
 
   // console.log("token", token);
 
