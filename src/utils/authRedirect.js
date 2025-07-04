@@ -1,6 +1,3 @@
-// export const isAuthenticated = () => {
-//     return !!localStorage.getItem("authToken"); // Verifica si hay un token de autenticación en localStorage
-// };
 "use client";
 export const isAuthenticated = () => {
     if (typeof window === 'undefined') {
@@ -13,10 +10,7 @@ export const isAuthenticated = () => {
 
     const currentDate = new Date();
     const savedLoginDate = new Date(loginDate);
-    // console.log("authTokenSession", authTokenSession);
     if (authTokenSession) {
-        // console.log("authTokenSession", authTokenSession);
-      
         return authTokenSession
     }
 

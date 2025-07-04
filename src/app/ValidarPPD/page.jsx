@@ -26,17 +26,20 @@ export default function ValidarPPD() {
                 }
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    router.push('/IniciaSesion');
-                    return;
-                }
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
+            // if (!response.ok) {
+            //     if (response.status === 401) {
+            //         router.push('/IniciaSesion');
+            //         return;
+            //     }
+            //     throw new Error(`Error HTTP: ${response.status}`);
+            // }
 
             const result = await response.json();
             console.log("Datos recibidos:", result);
-            setData(result);
+
+            // Filtrar facturas con Total > 0
+            const facturasFiltradas = result.filter(factura => factura.Total > 0);
+            setData(facturasFiltradas);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -88,19 +91,25 @@ export default function ValidarPPD() {
             }
         },
         {
-            name: "fechaTimbrado",
-            label: "Fecha de Timbrado",
-            options: {
-                filter: true,
-                customBodyRender: (value) => new Date(value).toLocaleDateString('es-MX', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }),
-            }
-        },
+  name: "fechaTimbrado",
+  label: "Fecha de Timbrado",
+  options: {
+    filter: true,
+    customBodyRender: (value) => {
+      const fecha = new Date(value);
+      if (isNaN(fecha.getTime())) {
+        return value || "Sin timbrar";
+      }
+      return fecha.toLocaleDateString('es-MX', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    },
+  }
+},  
         {
             name: "ID",
             label: "Acciones",

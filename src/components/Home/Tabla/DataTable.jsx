@@ -118,9 +118,9 @@ const RowActionMenu = React.memo(({
                 <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
                     <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                 </MenuItem>,
-                <MenuItem key="clone-timbrada" onClick={handleClone}>
-                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                </MenuItem>,
+                // <MenuItem key="clone-timbrada" onClick={handleClone}>
+                //     <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                // </MenuItem>,
                 <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
                     <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
                 </MenuItem>
@@ -130,8 +130,8 @@ const RowActionMenu = React.memo(({
                 <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
                     <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
                 </MenuItem>,
-                <MenuItem key="clone-pago" onClick={handleClone}>
-                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
+                    <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                 </MenuItem>,
                 <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
                     <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
