@@ -13,10 +13,8 @@ import {
   Checkbox,
   FormControlLabel,
   Typography,
-  Container,
   TextField,
   Avatar,
-  Tooltip,
   CircularProgress,
   Chip,
   Snackbar,
@@ -53,8 +51,6 @@ export default function AdministraRoles() {
   const router = useRouter();
   const [token, setToken] = useState("");
 
-  // console.log("token", token);
-
   // Mostrar notificación
   const showToast = (message, severity = 'success') => {
     setToast({
@@ -73,28 +69,30 @@ export default function AdministraRoles() {
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPermisos(data);
-
-        // Organizar permisos por sección
-        const seccionesOrganizadas = {};
-        data.forEach(permiso => {
-          if (!seccionesOrganizadas[permiso.Seccion.Clave]) {
-            seccionesOrganizadas[permiso.Seccion.Clave] = {
-              nombre: permiso.Seccion.Descripcion,
-              permisos: []
-            };
-          }
-          seccionesOrganizadas[permiso.Seccion.Clave].permisos.push({
-            id: permiso.ID, // Usamos el ID del permiso
-            clave: permiso.Clave,
-            descripcion: permiso.Descripcion
-          });
-        });
-
-        setSecciones(seccionesOrganizadas);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      setPermisos(data);
+
+      // Organizar permisos por sección
+      const seccionesOrganizadas = {};
+      data.forEach(permiso => {
+        if (!seccionesOrganizadas[permiso.Seccion.Clave]) {
+          seccionesOrganizadas[permiso.Seccion.Clave] = {
+            nombre: permiso.Seccion.Descripcion,
+            permisos: []
+          };
+        }
+        seccionesOrganizadas[permiso.Seccion.Clave].permisos.push({
+          id: permiso.ID,
+          clave: permiso.Clave,
+          descripcion: permiso.Descripcion
+        });
+      });
+
+      setSecciones(seccionesOrganizadas);
     } catch (error) {
       console.error("Error al cargar permisos:", error);
       showToast('Error al cargar los permisos', 'error');
@@ -110,10 +108,12 @@ export default function AdministraRoles() {
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setRoles(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      setRoles(data);
     } catch (error) {
       console.error("Error al cargar roles:", error);
       showToast('Error al cargar los roles', 'error');
@@ -129,37 +129,44 @@ export default function AdministraRoles() {
         },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setUsuarios(data.map(usuario => ({
-          id: usuario.ID,
-          nombre: usuario.Nombre,
-          email: usuario.Email,
-          avatar: usuario.Nombre.charAt(0) + (usuario.Nombre.split(' ')[1]?.charAt(0) || '')
-        })));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      setUsuarios(data.map(usuario => ({
+        id: usuario.ID,
+        nombre: usuario.Nombre,
+        email: usuario.Email,
+        avatar: usuario.Nombre.charAt(0) + (usuario.Nombre.split(' ')[1]?.charAt(0) || '')
+      })));
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
       showToast('Error al cargar los usuarios', 'error');
     }
   };
 
+  // Efecto para verificar autenticación y cargar datos iniciales
   useEffect(() => {
-    const checkAuth = async () => {
-      const authToken = isAuthenticated();
-      if (!authToken) {
-        router.push("/IniciaSesion");
-        return;
-      }
+    const authToken = isAuthenticated();
+    if (!authToken) {
+      router.push("/IniciaSesion");
+      return;
+    }
+    setToken(authToken);
+  }, [router]);
 
-      setToken(authToken);
+  // Efecto para cargar datos cuando el token cambia
+  useEffect(() => {
+    if (!token) return;
+
+    const loadData = async () => {
       setLoading(true);
-
       try {
         await Promise.all([
-          fetchPermisos(authToken),
-          fetchRoles(authToken),
-          fetchUsuarios(authToken)
+          fetchPermisos(),
+          fetchRoles(),
+          fetchUsuarios()
         ]);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -169,8 +176,8 @@ export default function AdministraRoles() {
       }
     };
 
-    checkAuth();
-  }, [router, actualizar]);
+    loadData();
+  }, [token, actualizar]);
 
   const handleOpenModal = (modo = 'crear', id = null) => {
     setOpenModal(true);
@@ -195,43 +202,44 @@ export default function AdministraRoles() {
     setUsuariosSeleccionados([]);
   };
 
+  // Efecto para cargar datos del rol cuando se edita
   useEffect(() => {
-    if (rolIdEditar && !modoAsignacion && openModal) { // Añade openModal a las dependencias
-      const fetchRol = async () => {
-        try {
-          setLoading(true);
-          const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol/${rolIdEditar}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
+    if (!rolIdEditar || modoAsignacion || !openModal || !token) return;
 
-          console.log("Fetching rol with ID:", rolIdEditar);
+    const fetchRol = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol/${rolIdEditar}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-          if (response.ok) {
-            const rolData = await response.json();
-            setRol(rolData);
-            setClaveRol(rolData.Clave);
-            setDescripcionRol(rolData.Descripcion);
-
-            // Convertir permisos del rol a formato {permisoId: true}
-            const permisosRol = rolData.Permisos.reduce((acc, permiso) => {
-              acc[permiso.ID] = true;
-              return acc;
-            }, {});
-
-            setPermisosSeleccionados(permisosRol);
-            setEditar(true);
-          }
-        } catch (error) {
-          console.error("Error al cargar el rol:", error);
-          showToast('Error al cargar el rol', 'error');
-        } finally {
-          setLoading(false);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-      };
-      fetchRol();
-    }
+
+        const rolData = await response.json();
+        setRol(rolData);
+        setClaveRol(rolData.Clave);
+        setDescripcionRol(rolData.Descripcion);
+
+        const permisosRol = rolData.Permisos.reduce((acc, permiso) => {
+          acc[permiso.ID] = true;
+          return acc;
+        }, {});
+
+        setPermisosSeleccionados(permisosRol);
+        setEditar(true);
+      } catch (error) {
+        console.error("Error al cargar el rol:", error);
+        showToast('Error al cargar el rol', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRol();
   }, [rolIdEditar, modoAsignacion, token, openModal]);
 
   const handleTogglePermiso = (permisoId) => {
@@ -254,14 +262,11 @@ export default function AdministraRoles() {
         PermisosID: permisosIDs
       };
 
-      let url, method;
-      if (editar) {
-        url = `${apiUrl}/api/gestionusuarios/Rol/${rolIdEditar}`;
-        method = 'PATCH';
-      } else {
-        url = `${apiUrl}/api/gestionusuarios/Rol`;
-        method = 'POST';
-      }
+      const url = editar 
+        ? `${apiUrl}/api/gestionusuarios/Rol/${rolIdEditar}`
+        : `${apiUrl}/api/gestionusuarios/Rol`;
+      
+      const method = editar ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
         method,
@@ -272,18 +277,17 @@ export default function AdministraRoles() {
         body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        showToast(`Rol ${editar ? 'actualizado' : 'creado'} correctamente`, 'success');
-        setActualizar(prev => !prev);
-        handleCloseModal();
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error al guardar el rol:", errorData);
-        showToast(`Error al ${editar ? 'actualizar' : 'crear'} el rol`, 'error');
+        throw new Error(errorData.message || 'Error en la respuesta del servidor');
       }
+
+      showToast(`Rol ${editar ? 'actualizado' : 'creado'} correctamente`, 'success');
+      setActualizar(prev => !prev);
+      handleCloseModal();
     } catch (error) {
       console.error("Error al guardar el rol:", error);
-      showToast('Error en la conexión', 'error');
+      showToast(error.message || `Error al ${editar ? 'actualizar' : 'crear'} el rol`, 'error');
     } finally {
       setLoading(false);
     }
@@ -299,17 +303,15 @@ export default function AdministraRoles() {
         },
       });
 
-      if (response.ok) {
-        showToast('Rol eliminado correctamente', 'success');
-        setActualizar(prev => !prev);
-      } else {
-        const errorData = await response.json();
-        console.error("Error al eliminar el rol:", errorData);
-        showToast('Error al eliminar el rol', 'error');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      showToast('Rol eliminado correctamente', 'success');
+      setActualizar(prev => !prev);
     } catch (error) {
       console.error("Error al eliminar el rol:", error);
-      showToast('Error en la conexión', 'error');
+      showToast('Error al eliminar el rol', 'error');
     } finally {
       setLoading(false);
     }
@@ -327,7 +329,6 @@ export default function AdministraRoles() {
     try {
       setLoading(true);
 
-      // Asignar rol a cada usuario seleccionado
       const promises = usuariosSeleccionados.map(usuarioId =>
         fetch(`${apiUrl}/api/gestionusuarios/Usuario/${usuarioId}/Rol`, {
           method: 'POST',
@@ -344,16 +345,16 @@ export default function AdministraRoles() {
       const results = await Promise.all(promises);
       const allSuccess = results.every(res => res.ok);
 
-      if (allSuccess) {
-        showToast(`${usuariosSeleccionados.length} usuario(s) asignado(s) correctamente`, 'success');
-        setActualizar(prev => !prev);
-        handleCloseModal();
-      } else {
-        showToast('Error al asignar algunos usuarios', 'error');
+      if (!allSuccess) {
+        throw new Error('Error al asignar algunos usuarios');
       }
+
+      showToast(`${usuariosSeleccionados.length} usuario(s) asignado(s) correctamente`, 'success');
+      setActualizar(prev => !prev);
+      handleCloseModal();
     } catch (error) {
       console.error("Error al asignar usuarios:", error);
-      showToast('Error en la conexión', 'error');
+      showToast(error.message || 'Error en la conexión', 'error');
     } finally {
       setLoading(false);
     }
@@ -363,7 +364,7 @@ export default function AdministraRoles() {
     <div>
       <Header />
       <Grid container>
-        <Grid >
+        <Grid>
           <SideBarMenu />
         </Grid>
         <Grid>
@@ -372,11 +373,11 @@ export default function AdministraRoles() {
             mb={1}
             width='93vw'
             sx={{
-              backgroundColor: '#fff', // Color de fondo gris claro
+              backgroundColor: '#fff',
               borderRadius: 2,
               boxShadow: 3,
               p: 2,
-              minHeight: 'auto', // Permite que el contenido crezca según sea necesario
+              minHeight: 'auto',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -387,8 +388,8 @@ export default function AdministraRoles() {
                 variant="contained"
                 startIcon={<AssignmentInd />}
                 sx={{
-                  backgroundColor: '#009688', // Verde agua oscuro
-                  '&:hover': { backgroundColor: '#00695f' } // Más oscuro al pasar el mouse
+                  backgroundColor: '#009688',
+                  '&:hover': { backgroundColor: '#00695f' }
                 }}
                 onClick={() => handleOpenModal('crear')}
               >
@@ -595,7 +596,6 @@ export default function AdministraRoles() {
         </Grid>
       </Grid>
 
-      {/* Notificación Toast */}
       <Snackbar
         open={toast.open}
         autoHideDuration={6000}
