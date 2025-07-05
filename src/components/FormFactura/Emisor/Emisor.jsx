@@ -249,28 +249,47 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     label="Fecha"
                     type="date"
                     {...register("Fecha", {
-                        required: !disabled ? "La fecha es requerida." : false, // Solo aplica validación si no está deshabilitado
+                        required: !disabled ? "La fecha es requerida." : false,
                         validate: !disabled
                             ? {
                                 notTooOld: (value) => {
-                                    const currentDate = new Date();
                                     const inputDate = new Date(value);
-                                    const threeDaysAgo = new Date();
-                                    threeDaysAgo.setDate(currentDate.getDate() - 3);
-                                    return inputDate >= threeDaysAgo || "Fecha invalida";
+                                    const today = new Date();
+                                    const twoDaysAgo = new Date();
+                                    twoDaysAgo.setDate(today.getDate() - 2);
+
+                                    // Normalizar fechas a medianoche para evitar errores por horas
+                                    inputDate.setHours(0, 0, 0, 0);
+                                    today.setHours(0, 0, 0, 0);
+                                    twoDaysAgo.setHours(0, 0, 0, 0);
+
+                                    return (
+                                        (inputDate >= twoDaysAgo && inputDate <= today) ||
+                                        "Fecha inválida."
+                                    );
                                 },
                             }
-                            : undefined, // No se aplican validaciones si está deshabilitado
+                            : undefined,
                     })}
                     fullWidth
                     InputLabelProps={{
                         shrink: true,
                     }}
                     InputProps={{
-                        inputProps: { min: minDate, max: maxDate },
+                        inputProps: {
+                            min: (() => {
+                                const d = new Date();
+                                d.setDate(d.getDate() - 2);
+                                return d.toISOString().split("T")[0];
+                            })(),
+                            max: (() => {
+                                const d = new Date();
+                                return d.toISOString().split("T")[0];
+                            })(),
+                        },
                     }}
-                    error={!disabled && !!errors.Fecha} // Solo marca error si no está deshabilitado
-                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""} // No muestra mensaje si está deshabilitado
+                    error={!disabled && !!errors.Fecha}
+                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""}
                     disabled={disabled}
                 />
 
