@@ -275,8 +275,8 @@ export default function FormatearFactura(
               DoctosRelacionados: [
                 {
                   IdDocumento: data.IdDocumento || "",
-                  Serie: data.SeriePagos || "P",
-                  Folio: "",
+                  Serie: facturaOriginal.Serie || "",
+                  Folio: facturaOriginal.Folio || "",
                   MonedaDR: data.Divisa || "MXN",
                   NumParcialidad: parseInt(data.NumeroOperacion) || 1,
                   ImpSaldoAnt: parseFloat(data.SaldoAnterior),
