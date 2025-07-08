@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Modal, 
   Box, 
@@ -8,25 +8,19 @@ import {
   Snackbar, 
   Alert,
   Autocomplete,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import { isAuthenticated } from '@/utils/authRedirect';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// Datos dummy de roles
-const rolesDummy = [
-  { id: 1, nombre: 'Administrador' },
-  { id: 2, nombre: 'Facturador' },
-  { id: 3, nombre: 'Consultor' },
-  { id: 4, nombre: 'Gestor de clientes' },
-  { id: 5, nombre: 'Supervisor' },
-  { id: 6, nombre: 'Auditor' }
-];
-
 const ModalCorreos = ({ open, onClose, setOpen }) => {
     const [emailAddresses, setEmailAddresses] = useState('');
     const [selectedRole, setSelectedRole] = useState(null);
+    const [roles, setRoles] = useState([]);
+    const [loadingRoles, setLoadingRoles] = useState(false);
+    const [sendingInvitations, setSendingInvitations] = useState(false);
     const [invitationLinks, setInvitationLinks] = useState([]);
     const [resultModalOpen, setResultModalOpen] = useState(false);
     const [toast, setToast] = useState({
@@ -36,6 +30,41 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
     });
 
     const token = isAuthenticated();
+
+    useEffect(() => {
+        if (open) {
+            fetchRoles();
+        }
+    }, [open]);
+
+    const fetchRoles = async () => {
+        setLoadingRoles(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setRoles(data.map(role => ({
+                    id: role.ID,
+                    nombre: role.Descripcion || `Rol ${role.Clave}`,
+                    rawData: role
+                })));
+            } else {
+                console.error("Error al obtener roles");
+                showToast('Error al cargar los roles disponibles', 'error');
+            }
+        } catch (error) {
+            console.error("Error en la solicitud de roles:", error);
+            showToast('No se pudo cargar la lista de roles', 'error');
+        } finally {
+            setLoadingRoles(false);
+        }
+    };
 
     const showToast = (message, severity) => {
         setToast({
@@ -64,18 +93,23 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
             return;
         }
 
+        setSendingInvitations(true);
+
         try {
+            const invitationsPayload = {
+                Direcciones: emailsArray.map(email => ({
+                    Email: email,
+                    RolID: selectedRole.id
+                }))
+            };
+
             const response = await fetch(`${apiUrl}/api/invitacioncolaboradores/Invitar`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    correos: emailsArray,
-                    rolId: selectedRole.id,
-                    rolNombre: selectedRole.nombre
-                }),
+                body: JSON.stringify(invitationsPayload),
             });
 
             if (response.ok) {
@@ -83,16 +117,16 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                 console.log("Invitaciones enviadas:", data);
 
                 // Mostrar toast de éxito
-                const emailCount = Object.keys(data).length;
+                const emailCount = emailsArray.length;
                 const message = emailCount === 1
                     ? `Invitación enviada correctamente (Rol: ${selectedRole.nombre})`
                     : `${emailCount} invitaciones enviadas correctamente (Rol: ${selectedRole.nombre})`;
                 showToast(message, 'success');
 
                 // Convertir el objeto en un array
-                const invitationsArray = Object.keys(data).map(email => ({
+                const invitationsArray = emailsArray.map(email => ({
                     email: email,
-                    status: data[email],
+                    status: 'success', // Asumimos éxito si la respuesta fue OK
                     rol: selectedRole.nombre
                 }));
 
@@ -109,6 +143,8 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
         } catch (error) {
             console.error("Error en la solicitud:", error);
             showToast('No se pudo enviar la solicitud. Inténtalo de nuevo.', 'error');
+        } finally {
+            setSendingInvitations(false);
         }
     };
 
@@ -138,7 +174,8 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                     
                     {/* Select Autocomplete para roles */}
                     <Autocomplete
-                        options={rolesDummy}
+                        options={roles}
+                        loading={loadingRoles}
                         getOptionLabel={(option) => option.nombre}
                         value={selectedRole}
                         onChange={(event, newValue) => {
@@ -151,6 +188,15 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                                 variant="outlined"
                                 fullWidth
                                 sx={{ mt: 2 }}
+                                InputProps={{
+                                    ...params.InputProps,
+                                    endAdornment: (
+                                        <>
+                                            {loadingRoles ? <CircularProgress color="inherit" size={20} /> : null}
+                                            {params.InputProps.endAdornment}
+                                        </>
+                                    ),
+                                }}
                             />
                         )}
                         renderOption={(props, option) => (
@@ -167,7 +213,7 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                                 />
                             ))
                         }
-                        noOptionsText="No hay roles disponibles"
+                        noOptionsText={loadingRoles ? "Cargando roles..." : "No hay roles disponibles"}
                     />
                     
                     <TextField
@@ -187,14 +233,18 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                         variant="contained"
                         fullWidth
                         onClick={handleSendInvitations}
-                        disabled={!selectedRole || !emailAddresses.trim()}
+                        disabled={!selectedRole || !emailAddresses.trim() || sendingInvitations}
                         sx={{ 
                             backgroundColor: '#1b384a', 
                             '&:hover': { backgroundColor: '#10232f' },
                             '&:disabled': { opacity: 0.7 }
                         }}
                     >
-                        Enviar Invitaciones
+                        {sendingInvitations ? (
+                            <CircularProgress size={24} color="inherit" />
+                        ) : (
+                            'Enviar Invitaciones'
+                        )}
                     </Button>
                 </Box>
             </Modal>
