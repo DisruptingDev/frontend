@@ -68,6 +68,7 @@ const VistaRoles = ({ roles, setRolIdEditar, handleOpenModal, handleEliminarRol,
         <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
           <TableRow>
             <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Clave</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Permisos</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }} align="center">Acciones</TableCell>
@@ -76,6 +77,9 @@ const VistaRoles = ({ roles, setRolIdEditar, handleOpenModal, handleEliminarRol,
         <TableBody>
           {roles.map((rol) => (
             <TableRow key={rol.ID} hover>
+              <TableCell>
+                <Typography fontWeight="medium">{rol.ID}</Typography>
+              </TableCell>
               <TableCell>
                 <Typography fontWeight="medium">{rol.Clave}</Typography>
               </TableCell>

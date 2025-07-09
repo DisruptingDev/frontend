@@ -18,11 +18,13 @@ import {
   CircularProgress,
   Chip,
   Snackbar,
-  Alert
+  Alert,
+  IconButton,
+  Tooltip
 } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
-import { AssignmentInd, Close, Save } from "@mui/icons-material";
+import { AssignmentInd, Close, Save, CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -38,7 +40,13 @@ export default function AdministraRoles() {
   const [modoAsignacion, setModoAsignacion] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
   const [usuariosSeleccionados, setUsuariosSeleccionados] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState({
+    page: true,
+    modal: false,
+    usuarios: false,
+    roles: false,
+    permisos: false
+  });
   const [permisos, setPermisos] = useState([]);
   const [secciones, setSecciones] = useState({});
   const [roles, setRoles] = useState([]);
@@ -63,6 +71,7 @@ export default function AdministraRoles() {
   // Obtener permisos desde la API
   const fetchPermisos = async () => {
     try {
+      setLoading(prev => ({ ...prev, permisos: true }));
       const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Permiso`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -96,12 +105,15 @@ export default function AdministraRoles() {
     } catch (error) {
       console.error("Error al cargar permisos:", error);
       showToast('Error al cargar los permisos', 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, permisos: false }));
     }
   };
 
   // Obtener roles desde la API
   const fetchRoles = async () => {
     try {
+      setLoading(prev => ({ ...prev, roles: true }));
       const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -117,12 +129,15 @@ export default function AdministraRoles() {
     } catch (error) {
       console.error("Error al cargar roles:", error);
       showToast('Error al cargar los roles', 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, roles: false }));
     }
   };
 
   // Obtener usuarios desde la API
   const fetchUsuarios = async () => {
     try {
+      setLoading(prev => ({ ...prev, usuarios: true }));
       const response = await fetch(`${apiUrl}/api/gestionusuarios/Usuario`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +157,10 @@ export default function AdministraRoles() {
       })));
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
+      // No mostramos el toast aquí para evitar el mensaje inicial
       showToast('Error al cargar los usuarios', 'error');
+    } finally {
+      setLoading(prev => ({ ...prev, usuarios: false, page: false }));
     }
   };
 
@@ -161,7 +179,6 @@ export default function AdministraRoles() {
     if (!token) return;
 
     const loadData = async () => {
-      setLoading(true);
       try {
         await Promise.all([
           fetchPermisos(),
@@ -171,8 +188,6 @@ export default function AdministraRoles() {
       } catch (error) {
         console.error("Error loading data:", error);
         showToast('Error al cargar datos', 'error');
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -200,6 +215,7 @@ export default function AdministraRoles() {
     setOpenModal(false);
     setModoAsignacion(false);
     setUsuariosSeleccionados([]);
+    setLoading(prev => ({ ...prev, modal: false }));
   };
 
   // Efecto para cargar datos del rol cuando se edita
@@ -208,7 +224,7 @@ export default function AdministraRoles() {
 
     const fetchRol = async () => {
       try {
-        setLoading(true);
+        setLoading(prev => ({ ...prev, modal: true }));
         const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol/${rolIdEditar}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -235,7 +251,7 @@ export default function AdministraRoles() {
         console.error("Error al cargar el rol:", error);
         showToast('Error al cargar el rol', 'error');
       } finally {
-        setLoading(false);
+        setLoading(prev => ({ ...prev, modal: false }));
       }
     };
 
@@ -249,9 +265,25 @@ export default function AdministraRoles() {
     }));
   };
 
+  // Función para marcar/desmarcar todos los permisos de una sección
+  const toggleAllPermisos = (seccionClave) => {
+    const seccion = secciones[seccionClave];
+    if (!seccion) return;
+
+    const allSelected = seccion.permisos.every(permiso => permisosSeleccionados[permiso.id]);
+    
+    const nuevosPermisos = { ...permisosSeleccionados };
+    
+    seccion.permisos.forEach(permiso => {
+      nuevosPermisos[permiso.id] = !allSelected;
+    });
+
+    setPermisosSeleccionados(nuevosPermisos);
+  };
+
   const handleGuardarRol = async () => {
     try {
-      setLoading(true);
+      setLoading(prev => ({ ...prev, modal: true }));
       const permisosIDs = Object.keys(permisosSeleccionados)
         .filter(key => permisosSeleccionados[key])
         .map(id => parseInt(id));
@@ -289,13 +321,13 @@ export default function AdministraRoles() {
       console.error("Error al guardar el rol:", error);
       showToast(error.message || `Error al ${editar ? 'actualizar' : 'crear'} el rol`, 'error');
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, modal: false }));
     }
   };
 
   const handleEliminarRol = async (id) => {
     try {
-      setLoading(true);
+      setLoading(prev => ({ ...prev, modal: true }));
       const response = await fetch(`${apiUrl}/api/gestionusuarios/Rol/${id}`, {
         method: 'DELETE',
         headers: {
@@ -313,7 +345,7 @@ export default function AdministraRoles() {
       console.error("Error al eliminar el rol:", error);
       showToast('Error al eliminar el rol', 'error');
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, modal: false }));
     }
   };
 
@@ -327,7 +359,7 @@ export default function AdministraRoles() {
 
   const handleAsignarUsuarios = async () => {
     try {
-      setLoading(true);
+      setLoading(prev => ({ ...prev, modal: true }));
 
       const promises = usuariosSeleccionados.map(usuarioId =>
         fetch(`${apiUrl}/api/gestionusuarios/Usuario/${usuarioId}/Rol`, {
@@ -356,8 +388,15 @@ export default function AdministraRoles() {
       console.error("Error al asignar usuarios:", error);
       showToast(error.message || 'Error en la conexión', 'error');
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, modal: false }));
     }
+  };
+
+  // Verificar si todos los permisos de una sección están seleccionados
+  const isAllSelected = (seccionClave) => {
+    const seccion = secciones[seccionClave];
+    if (!seccion || seccion.permisos.length === 0) return false;
+    return seccion.permisos.every(permiso => permisosSeleccionados[permiso.id]);
   };
 
   return (
@@ -402,7 +441,7 @@ export default function AdministraRoles() {
               setRolIdEditar={setRolIdEditar}
               handleOpenModal={handleOpenModal}
               handleEliminarRol={handleEliminarRol}
-              loading={loading}
+              loading={loading.page || loading.roles}
             />
 
             <Dialog
@@ -417,7 +456,7 @@ export default function AdministraRoles() {
               }}
             >
               <DialogContent sx={{ p: 4 }}>
-                {loading ? (
+                {loading.modal ? (
                   <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
                     <CircularProgress />
                   </Box>
@@ -476,7 +515,7 @@ export default function AdministraRoles() {
                         variant="outlined"
                         startIcon={<Close />}
                         onClick={handleCloseModal}
-                        disabled={loading}
+                        disabled={loading.modal}
                       >
                         Cancelar
                       </Button>
@@ -484,13 +523,13 @@ export default function AdministraRoles() {
                         variant="contained"
                         startIcon={<Save />}
                         onClick={handleAsignarUsuarios}
-                        disabled={usuariosSeleccionados.length === 0 || loading}
+                        disabled={usuariosSeleccionados.length === 0 || loading.modal}
                         sx={{
                           backgroundColor: '#009688',
                           '&:hover': { backgroundColor: '#00695f' }
                         }}
                       >
-                        {loading ? 'Asignando...' : 'Guardar Asignación'}
+                        {loading.modal ? 'Asignando...' : 'Guardar Asignación'}
                       </Button>
                     </Box>
                   </Box>
@@ -526,16 +565,27 @@ export default function AdministraRoles() {
 
                     {Object.entries(secciones).map(([seccionClave, seccionData]) => (
                       <Box key={seccionClave} mb={4}>
-                        <Typography variant="subtitle1" sx={{
-                          fontWeight: 'bold',
-                          mb: 2,
+                        <Box display="flex" alignItems="center" sx={{
                           p: 1,
                           backgroundColor: 'grey.100',
                           borderRadius: 1
                         }}>
-                          {seccionData.nombre}
-                        </Typography>
-                        <Grid container spacing={2}>
+                          <Typography variant="subtitle1" sx={{
+                            fontWeight: 'bold',
+                            flexGrow: 1
+                          }}>
+                            {seccionData.nombre}
+                          </Typography>
+                          <Tooltip title={isAllSelected(seccionClave) ? "Desmarcar todos" : "Marcar todos"}>
+                            <IconButton 
+                              onClick={() => toggleAllPermisos(seccionClave)}
+                              size="small"
+                            >
+                              {isAllSelected(seccionClave) ? <CheckBox /> : <CheckBoxOutlineBlank />}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                        <Grid container spacing={2} sx={{ mt: 1 }}>
                           {seccionData.permisos.map(permiso => (
                             <Grid item xs={12} sm={6} md={4} key={permiso.id}>
                               <FormControlLabel
@@ -571,7 +621,7 @@ export default function AdministraRoles() {
                         variant="outlined"
                         startIcon={<Close />}
                         onClick={handleCloseModal}
-                        disabled={loading}
+                        disabled={loading.modal}
                       >
                         Cancelar
                       </Button>
@@ -579,13 +629,13 @@ export default function AdministraRoles() {
                         variant="contained"
                         startIcon={<Save />}
                         onClick={handleGuardarRol}
-                        disabled={!claveRol.trim() || !descripcionRol.trim() || loading}
+                        disabled={!claveRol.trim() || !descripcionRol.trim() || loading.modal}
                         sx={{
                           backgroundColor: '#009688',
                           '&:hover': { backgroundColor: '#00695f' }
                         }}
                       >
-                        {loading ? 'Guardando...' : 'Guardar Rol'}
+                        {loading.modal ? 'Guardando...' : 'Guardar Rol'}
                       </Button>
                     </Box>
                   </Box>
