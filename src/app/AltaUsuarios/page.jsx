@@ -30,7 +30,7 @@ const AltaUsuarios = () => {
         // Handle form submission logic here
         console.log(formData);
         try {
-            const response = await fetch(`${apiUrl}/api/registrousuarios/EnviarCorreoValidacion`, {
+            const response = await fetch(`${apiUrl}/api/registrousuarios/RegistroUsuario`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
