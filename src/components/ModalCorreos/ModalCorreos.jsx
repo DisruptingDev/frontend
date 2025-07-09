@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Modal, 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
-  Snackbar, 
-  Alert,
-  Autocomplete,
-  Chip,
-  CircularProgress
+import {
+    Modal,
+    Box,
+    Typography,
+    TextField,
+    Button,
+    Snackbar,
+    Alert,
+    Autocomplete,
+    Chip,
+    CircularProgress
 } from '@mui/material';
 import { isAuthenticated } from '@/utils/authRedirect';
 
@@ -51,7 +51,8 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                 const data = await response.json();
                 setRoles(data.map(role => ({
                     id: role.ID,
-                    nombre: role.Descripcion || `Rol ${role.Clave}`,
+                    clave: role.Clave,
+                    nombre: role.Descripcion,
                     rawData: role
                 })));
             } else {
@@ -171,7 +172,7 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                         Envía invitaciones a los miembros de tu equipo para que se unan al sistema.
                     </Typography>
-                    
+
                     {/* Select Autocomplete para roles */}
                     <Autocomplete
                         options={roles}
@@ -199,9 +200,16 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                                 }}
                             />
                         )}
+                        filterOptions={(options, { inputValue }) =>
+                            options.filter((option) =>
+                                `${option.clave} ${option.nombre}`
+                                    .toLowerCase()
+                                    .includes(inputValue.toLowerCase())
+                            )
+                        }
                         renderOption={(props, option) => (
                             <Box component="li" {...props} key={option.id}>
-                                {option.nombre}
+                                {option.clave} - {option.nombre}
                             </Box>
                         )}
                         renderTags={(value, getTagProps) =>
@@ -209,13 +217,13 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                                 <Chip
                                     {...getTagProps({ index })}
                                     key={option.id}
-                                    label={option.nombre}
+                                    label={`${option.clave} - ${option.nombre}`}
                                 />
                             ))
                         }
                         noOptionsText={loadingRoles ? "Cargando roles..." : "No hay roles disponibles"}
                     />
-                    
+
                     <TextField
                         label="Direcciones de correo electrónico"
                         placeholder="ejemplo1@correo.com, ejemplo2@correo.com"
@@ -234,8 +242,8 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                         fullWidth
                         onClick={handleSendInvitations}
                         disabled={!selectedRole || !emailAddresses.trim() || sendingInvitations}
-                        sx={{ 
-                            backgroundColor: '#1b384a', 
+                        sx={{
+                            backgroundColor: '#1b384a',
                             '&:hover': { backgroundColor: '#10232f' },
                             '&:disabled': { opacity: 0.7 }
                         }}
@@ -256,10 +264,10 @@ const ModalCorreos = ({ open, onClose, setOpen }) => {
                 onClose={handleCloseToast}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-                <Alert 
-                    onClose={handleCloseToast} 
-                    severity={toast.severity} 
-                    variant="filled" 
+                <Alert
+                    onClose={handleCloseToast}
+                    severity={toast.severity}
+                    variant="filled"
                     sx={{ width: '100%' }}
                 >
                     {toast.message}
