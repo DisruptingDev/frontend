@@ -67,8 +67,8 @@ const VistaRoles = ({ roles, setRolIdEditar, handleOpenModal, handleEliminarRol,
       <Table>
         <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
           <TableRow>
-            <TableCell sx={{ fontWeight: 'bold' }}>Clave</TableCell>
-            <TableCell sx={{ fontWeight: 'bold' }}>Descripción</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Permisos</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }} align="center">Acciones</TableCell>
           </TableRow>
