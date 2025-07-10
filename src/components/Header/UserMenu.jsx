@@ -70,12 +70,14 @@ export default function UserMenu() {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('usuarioSuplantado');
     sessionStorage.removeItem('authToken');
     router.push('/IniciaSesion');
   };
 
   const handleOffSuplantar = async () => {
     console.log('Desactivando suplantar');
+    localStorage.removeItem('usuarioSuplantado');
     setUsuarioSuplantado('');
     offSuplantar();
     router.push('/Dashboard');
