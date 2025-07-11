@@ -11,6 +11,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useRouter } from 'next/navigation';
 import { offSuplantar } from '@/utils/desactivarSuplantar';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import { WithPermission } from '@/components/WithPermission';
 
 import ModalCorreos from '../ModalCorreos/ModalCorreos';
 
@@ -169,55 +170,56 @@ export default function UserMenu() {
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
 
         {superUser === 'true' && (
-          <>
-            <MenuItem
-              onClick={handleDashboardClick}
-              sx={{
-                padding: '10px 20px',
-                "&:hover": {
-                  backgroundColor: '#1d394d',
+          <MenuItem
+            onClick={handleDashboardClick}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                backgroundColor: '#1d394d',
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
                   color: '#fff',
-                  '& .MuiListItemIcon-root': {
-                    color: '#fff',
-                  },
-                  '& MuiSvgIcon-root': {
-                    color: '#fff',
-                  },
                 },
-              }}
-            >
-              <ListItemIcon sx={{ color: '#333' }}>
-                <DashboardIcon />
-              </ListItemIcon>
-              <Typography noWrap sx={{ color: 'inherit', }}>
-                Dashboard
-              </Typography>
-            </MenuItem>
-            <MenuItem
-              onClick={handlePermisions}
-              sx={{
-                padding: '10px 20px',
-                "&:hover": {
-                  backgroundColor: '#1d394d',
+                '& MuiSvgIcon-root': {
                   color: '#fff',
-                  '& .MuiListItemIcon-root': {
-                    color: '#fff',
-                  },
-                  '& MuiSvgIcon-root': {
-                    color: '#fff',
-                  },
                 },
-              }}
-            >
-              <ListItemIcon sx={{ color: '#333' }}>
-                <SecurityIcon />
-              </ListItemIcon>
-              <Typography noWrap sx={{ color: 'inherit', }}>
-                Administrar Roles y Permisos
-              </Typography>
-            </MenuItem>
-          </>
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <DashboardIcon />
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit', }}>
+              Dashboard
+            </Typography>
+          </MenuItem>
         )}
+        <WithPermission permission="ver_roles">
+          <MenuItem
+            onClick={handlePermisions}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                backgroundColor: '#1d394d',
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff',
+                },
+                '& MuiSvgIcon-root': {
+                  color: '#fff',
+                },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <SecurityIcon />
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit', }}>
+              Administrar Roles y Permisos
+            </Typography>
+          </MenuItem>
+        </WithPermission>
+
 
         <MenuItem
           onClick={handleBuyClick}
