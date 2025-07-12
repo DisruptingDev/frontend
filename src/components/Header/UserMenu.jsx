@@ -220,81 +220,86 @@ export default function UserMenu() {
           </MenuItem>
         </WithPermission>
 
+        <WithPermission permission="crear_compras">
+          <MenuItem
+            onClick={handleBuyClick}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+                backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+                '& MuiSvgIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <ShoppingCartIcon /> {/* Cambiar color del ícono */}
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit', }}>
+              Comprar Timbres
+            </Typography>
+          </MenuItem>
+        </WithPermission>
 
-        <MenuItem
-          onClick={handleBuyClick}
-          sx={{
-            padding: '10px 20px',
-            "&:hover": {
-              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-              backgroundColor: '#1d394d', // Color de fondo al hacer hover
-              color: '#fff',
-              '& .MuiListItemIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
+        <WithPermission permission="ver_compras">
+          <MenuItem
+            onClick={handleViewOrdersClick}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+                backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+                '& MuiSvgIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
               },
-              '& MuiSvgIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
-              },
-            },
-          }}
-        >
-          <ListItemIcon sx={{ color: '#333' }}>
-            <ShoppingCartIcon /> {/* Cambiar color del ícono */}
-          </ListItemIcon>
-          <Typography noWrap sx={{ color: 'inherit', }}>
-            Comprar Timbres
-          </Typography>
-        </MenuItem>
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <ListAltIcon /> {/* Cambiar color del ícono */}
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit', }}>
+              Ver órdenes
+            </Typography>
+          </MenuItem>
+        </WithPermission>
 
-        <MenuItem
-          onClick={handleViewOrdersClick}
-          sx={{
-            padding: '10px 20px',
-            "&:hover": {
-              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-              backgroundColor: '#1d394d', // Color de fondo al hacer hover
-              color: '#fff',
-              '& .MuiListItemIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
+        <WithPermission permission="invitar_usuarios">
+          <MenuItem
+            onClick={handleInviteTeamMembersClick}
+            sx={{
+              padding: '10px 20px',
+              "&:hover": {
+                // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+                backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                color: '#fff',
+                '& .MuiListItemIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
+                '& MuiSvgIcon-root': {
+                  color: '#fff', // Cambiar color del ícono al hacer hover
+                },
               },
-              '& MuiSvgIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
-              },
-            },
-          }}
-        >
-          <ListItemIcon sx={{ color: '#333' }}>
-            <ListAltIcon /> {/* Cambiar color del ícono */}
-          </ListItemIcon>
-          <Typography noWrap sx={{ color: 'inherit', }}>
-            Ver órdenes
-          </Typography>
-        </MenuItem>
-
-        <MenuItem
-          onClick={handleInviteTeamMembersClick}
-          sx={{
-            padding: '10px 20px',
-            "&:hover": {
-              // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-              backgroundColor: '#1d394d', // Color de fondo al hacer hover
-              color: '#fff',
-              '& .MuiListItemIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
-              },
-              '& MuiSvgIcon-root': {
-                color: '#fff', // Cambiar color del ícono al hacer hover
-              },
-            },
-          }}
-        >
-          <ListItemIcon sx={{ color: '#333' }}>
-            <GroupAddIcon /> {/* Cambiar color del ícono */}
-          </ListItemIcon>
-          <Typography noWrap sx={{ color: 'inherit', }}>
-            Invitar Miembros del Equipo
-          </Typography>
-        </MenuItem>
+            }}
+          >
+            <ListItemIcon sx={{ color: '#333' }}>
+              <GroupAddIcon /> {/* Cambiar color del ícono */}
+            </ListItemIcon>
+            <Typography noWrap sx={{ color: 'inherit', }}>
+              Invitar Miembros del Equipo
+            </Typography>
+          </MenuItem>
+        </WithPermission>
 
 
         <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />

@@ -1,18 +1,18 @@
 'use client';
 import { useState } from 'react';
-import { 
-  Drawer, 
-  List, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Collapse, 
-  IconButton, 
+import {
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+  IconButton,
   Toolbar,
   Tooltip,
   Box
 } from '@mui/material';
-import { 
+import {
   Menu as MenuIcon,
   Home as HomeIcon,
   People as ClientesIcon,
@@ -25,65 +25,75 @@ import {
   AddBox as AddIcon,
   FileOpen as ImportarIcon,
   Close as CloseIcon,
-  
+
   ExpandLess,
   ExpandMore
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
+import { WithPermission } from '@/components/WithPermission';
 
 const menuItems = [
   {
     title: "Vista Principal",
     icon: <HomeIcon />,
     path: "/Home",
+    permission: "ver_facturas",
     subItems: null
   },
   {
     title: "Nueva Factura",
     icon: <AddIcon />,
     path: "/CrearFactura",
+    permission: "crear_facturas",
     subItems: null
   },
   {
     title: "Importar Facturas",
     icon: <ImportarIcon />,
     path: "/ImportarFacturas",
+    permission: "importar_facturas",
     subItems: null
   },
   {
     title: "Nóminas",
     icon: <AttachMoneyIcon />,
     path: "/AltaNomina",
+    permission: "ver_nominas",
     subItems: null
   },
   {
     title: "Clientes",
     icon: <ClientesIcon />,
     path: "/AltaCliente",
+    permission: "ver_receptores",
     subItems: null
   },
   {
     title: "Empresas",
     icon: <EmpresasIcon />,
     path: "/Empresas",
+    permission: "ver_emisores",
     subItems: null
   },
   {
     title: "Series",
     icon: <SeriesIcon />,
     path: "/AltaSerie",
+    permission: "crear_facturas",
     subItems: null
   },
   {
     title: "Timbres",
     icon: <TimbresIcon />,
     path: "/Timbres",
+    permission: "ver_timbres_disponibles",
     subItems: null
   },
   {
     title: "Conceptos",
     icon: <ConceptosIcon />,
     path: "/Conceptos",
+    permission: "ver_conceptos",
     subItems: null
   }
 ];
@@ -130,8 +140,8 @@ const SideBarMenu = () => {
           }
         }}
       >
-        <Toolbar 
-          sx={{ 
+        <Toolbar
+          sx={{
             minHeight: '64px !important',
             display: 'flex',
             justifyContent: 'center',
@@ -139,25 +149,25 @@ const SideBarMenu = () => {
             px: '0 !important'
           }}
         >
-          <IconButton 
+          <IconButton
             onClick={() => setDrawerOpen(!drawerOpen)}
             sx={{ margin: '0 auto' }}
           >
             {drawerOpen ? <CloseIcon /> : <MenuIcon />}
           </IconButton>
         </Toolbar>
-        
+
         <List sx={{ overflow: 'auto', flexGrow: 1 }}>
           {menuItems.map((item) => (
-            <div key={item.title}>
-              <Tooltip 
-                title={item.title} 
-                placement="right" 
+            <WithPermission permission={item.permission} key={item.title}>
+              <Tooltip
+                title={item.title}
+                placement="right"
                 disableHoverListener={drawerOpen}
               >
                 <ListItemButton
                   selected={isSelected(item.path, item.subItems)}
-                  onClick={() => item.subItems 
+                  onClick={() => item.subItems
                     ? handleSubMenuToggle(item.title)
                     : handleNavigation(item.path)
                   }
@@ -176,36 +186,32 @@ const SideBarMenu = () => {
                   >
                     {item.icon}
                   </ListItemIcon>
-                  {drawerOpen && (
-                    <>
-                      <ListItemText primary={item.title} />
-                      
-                    </>
-                  )}
+                  {drawerOpen && <ListItemText primary={item.title} />}
                 </ListItemButton>
               </Tooltip>
 
               {item.subItems && (
-                <Collapse 
-                  in={openSubMenu === item.title && drawerOpen} 
-                  timeout="auto" 
+                <Collapse
+                  in={openSubMenu === item.title && drawerOpen}
+                  timeout="auto"
                   unmountOnExit
                 >
                   <List component="div" disablePadding>
                     {item.subItems.map((subItem) => (
-                      <ListItemButton
-                        key={subItem.title}
-                        sx={{ pl: 4 }}
-                        selected={pathname === subItem.path}
-                        onClick={() => handleNavigation(subItem.path)}
-                      >
-                        <ListItemText primary={subItem.title} />
-                      </ListItemButton>
+                      <WithPermission permission={subItem.permission} key={subItem.title}>
+                        <ListItemButton
+                          sx={{ pl: 4 }}
+                          selected={pathname === subItem.path}
+                          onClick={() => handleNavigation(subItem.path)}
+                        >
+                          <ListItemText primary={subItem.title} />
+                        </ListItemButton>
+                      </WithPermission>
                     ))}
                   </List>
                 </Collapse>
               )}
-            </div>
+            </WithPermission>
           ))}
         </List>
       </Drawer>

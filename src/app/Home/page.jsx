@@ -33,6 +33,7 @@ export default function Home() {
     //Nuevo usuario
     const [newUser, setNewUser] = useState(null);
     const [openWizard, setOpenWizard] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const [setOpen] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
@@ -68,20 +69,19 @@ export default function Home() {
     }, []);
 
     useEffect(() => {
-        console.log('newUser', newUser);
         if (newUser === "true") {
             setOpenWizard(true);
             sessionStorage.setItem('newUser', "false");
             setDrawerOpen(true);
-            // Iniciar el tour después de que el componente se monte
-            setTimeout(() => {
-                startTour();
-            }, 1000);
         }
     }, [newUser]);
 
     const handleCloseWizard = () => {
         setOpenWizard(false);
+        // Iniciar el tour después de cerrar el wizard
+        setTimeout(() => {
+            startTour();
+        }, 500);
     };
 
     const startTour = () => {
