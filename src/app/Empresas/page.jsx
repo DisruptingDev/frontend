@@ -136,7 +136,7 @@ export default function AdministraEmpresas() {
                                 {/* {editar ? <Typography variant="h5" mb={2}>Editar Empresa</Typography> : ''} */}
                                 <CertificadoCSD onUpdateEmpresa={handleUpdateEmpresa} editar={editar} empresaIdEditar={empresaIdEditar} token={token} />
                                 <Divider sx={{ marginY: 2 }} />
-                                <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc} token={token} setActualizar={setActualizar} />
+                                <AltaEmpresa editar={editar} empresa={empresa} onClose={handleCloseModal} issuerName={issuerName} issuerRfc={issuerRfc} token={token} setActualizar={setActualizar} btnCancelar={true} />
                             </DialogContent>
                         </Dialog>
 

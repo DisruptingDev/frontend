@@ -22,7 +22,7 @@ export function useAuth() {
     }
     try {
       const response = await fetch(
-        `${apiUrl}/api/gestionusuarios/Rol/${rolId}`,
+        `${apiUrl}/api/gestionusuarios/RolCopy/${rolId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

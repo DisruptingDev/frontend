@@ -1,13 +1,29 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogActions, DialogContent, Stepper, Step, StepLabel, Tabs, Tab, Divider, Typography, Button } from '@mui/material';
+import {
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Stepper,
+    Step,
+    StepLabel,
+    Tabs,
+    Tab,
+    Divider,
+    Typography,
+    Button,
+} from '@mui/material';
 import { styled } from '@mui/material/styles';
 import BusinessIcon from '@mui/icons-material/Business';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
 import CertificadoCSD from "@/components/AltaEmpresa/CertificadoCSD";
 import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa";
 import Paquetes from '@/components/CompraTimbres/Paquetes';
 import Planes from '@/components/CompraTimbres/Planes';
+import { WithPermission } from '@/components/WithPermission'; // Ajusta esta ruta según tu estructura
 
 const steps = [
     { label: 'Registrar Empresa', icon: <BusinessIcon /> },
@@ -44,11 +60,7 @@ const ModalWizard = ({ open, handleClose, token }) => {
     const [valorTab, setValorTab] = useState(0);
 
     const handleNext = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    };
-
-    const handleBack = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
+        setActiveStep((prev) => prev + 1);
     };
 
     const handleUpdateEmpresa = (name, rfc) => {
@@ -57,14 +69,12 @@ const ModalWizard = ({ open, handleClose, token }) => {
     };
 
     useEffect(() => {
-        console.log('Registro Empresa:', registroEmpresa);
         if (registroEmpresa && activeStep === 0) {
             handleNext();
         }
     }, [registroEmpresa, activeStep]);
 
     useEffect(() => {
-        console.log('Compra:', compra);
         if (compra && activeStep === 1) {
             handleNext();
         }
@@ -82,6 +92,7 @@ const ModalWizard = ({ open, handleClose, token }) => {
                             issuerRfc={issuerRfc}
                             token={token}
                             setRegistroEmpresa={setRegistroEmpresa}
+                            btnCancelar={false}
                         />
                     </div>
                 );
@@ -91,7 +102,7 @@ const ModalWizard = ({ open, handleClose, token }) => {
                         <Tabs
                             value={valorTab}
                             onChange={(e, newValue) => setValorTab(newValue)}
-                            textColor="#1b384a"
+                            textColor="primary"
                             centered
                             sx={{
                                 '& .MuiTabs-indicator': {
@@ -109,85 +120,100 @@ const ModalWizard = ({ open, handleClose, token }) => {
                         )}
                     </div>
                 );
-                case 2:
-                    return (
-                        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                            <Typography variant="h5" gutterBottom>
-                                ¡Confirmación Exitosa!
-                            </Typography>
-                            <Typography variant="body1" sx={{ marginY: 2 }}>
-                                Realiza tu pago y empieza a timbrar facturas de manera inmediata.
-                            </Typography>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                sx={{
-                                    marginTop: 2,
-                                    backgroundColor: 'rgba(29, 57, 77, 1)',
-                                    '&:hover': { backgroundColor: 'rgba(29, 57, 77, 0.9)' },
-                                }}
-                                onClick={handleClose}
-                            >
-                                Cerrar
-                            </Button>
-                        </div>
-                    );
-                default:
-                return 'Unknown step';
+            case 2:
+                return (
+                    <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                        <Typography variant="h5" gutterBottom>
+                            ¡Confirmación Exitosa!
+                        </Typography>
+                        <Typography variant="body1" sx={{ marginY: 2 }}>
+                            Realiza tu pago y empieza a timbrar facturas de manera inmediata.
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            sx={{
+                                marginTop: 2,
+                                backgroundColor: 'rgba(29, 57, 77, 1)',
+                                '&:hover': { backgroundColor: 'rgba(29, 57, 77, 0.9)' },
+                            }}
+                            onClick={handleClose}
+                        >
+                            Cerrar
+                        </Button>
+                    </div>
+                );
+            default:
+                return 'Paso desconocido';
         }
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            fullWidth
-            maxWidth={false}
-            PaperProps={{
-                sx: {
-                    width: '80%',
-                    margin: 'auto',
-                },
-            }}
+        <WithPermission
+            permission="crear_emisor"
+            fallback={
+                <Dialog open={open} onClose={handleClose}>
+                    <DialogContent>
+                        <Typography variant="h5" align="center">
+                            Bienvenido(a)
+                        </Typography>
+                        <Typography variant="body1" align="center">
+                            ¡Hola! Que gusto poder tenerte con nosotros por primera vez.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleClose} color="primary">
+                            Cerrar
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            }
         >
-            <DialogContent>
-                <Stepper activeStep={activeStep} alternativeLabel>
-                    {steps.map((step, index) => (
-                        <Step key={index}>
-                            <StepLabel
-                                StepIconComponent={() => (
-                                    <CustomStepIcon
-                                        icon={step.icon}
-                                        active={activeStep === index}
-                                        completed={activeStep > index}
-                                    />
-                                )}
-                            >
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        fontWeight: activeStep === index ? 'bold' : 'normal',
-                                        color: activeStep === index ? 'rgba(29, 57, 77, 1)' : 'text.secondary',
-                                        transition: 'color 0.3s ease-in-out',
-                                    }}
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                fullWidth
+                maxWidth={false}
+                PaperProps={{
+                    sx: {
+                        width: '80%',
+                        margin: 'auto',
+                    },
+                }}
+            >
+                <DialogContent>
+                    <Stepper activeStep={activeStep} alternativeLabel>
+                        {steps.map((step, index) => (
+                            <Step key={index}>
+                                <StepLabel
+                                    StepIconComponent={() => (
+                                        <CustomStepIcon
+                                            icon={step.icon}
+                                            active={activeStep === index}
+                                            completed={activeStep > index}
+                                        />
+                                    )}
                                 >
-                                    {step.label}
-                                </Typography>
-                            </StepLabel>
-                        </Step>
-                    ))}
-                </Stepper>
-                <div>{getStepContent(activeStep)}</div>
-            </DialogContent>
-            <DialogActions>
-                {/* <Button disabled={activeStep === 0} onClick={handleBack} sx={{ color: 'rgba(29, 57, 77, 1)' }}>
-                    Back
-                </Button> */}
-                {/* {activeStep === steps.length - 1 ? (
-                    <Button onClick={handleClose}>Finish</Button>
-                ) : null} */}
-            </DialogActions>
-        </Dialog>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            fontWeight: activeStep === index ? 'bold' : 'normal',
+                                            color: activeStep === index
+                                                ? 'rgba(29, 57, 77, 1)'
+                                                : 'text.secondary',
+                                            transition: 'color 0.3s ease-in-out',
+                                        }}
+                                    >
+                                        {step.label}
+                                    </Typography>
+                                </StepLabel>
+                            </Step>
+                        ))}
+                    </Stepper>
+                    <div>{getStepContent(activeStep)}</div>
+                </DialogContent>
+            </Dialog>
+        </WithPermission>
     );
 };
 

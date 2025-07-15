@@ -146,7 +146,6 @@ export default function Home() {
                     open={openWizard}
                     handleClose={handleCloseWizard}
                     token={token}
-                // Puedes pasar otras props necesarias para el wizard aquí
                 />
 
                 {/* Contenedor principal que ocupa el espacio restante */}

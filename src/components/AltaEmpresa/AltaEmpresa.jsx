@@ -6,7 +6,7 @@ import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa }) {
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa, btnCancelar }) {
     const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -437,7 +437,8 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     justifyContent="flex-end"
                     gap={3}
                 >
-                    <Button
+                    {btnCancelar == true && (
+                        <Button
                         variant="contained"
                         color="error"
                         sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
@@ -446,6 +447,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     >
                         Cancelar
                     </Button>
+                    )}
 
                     <Button
                         variant="contained"
