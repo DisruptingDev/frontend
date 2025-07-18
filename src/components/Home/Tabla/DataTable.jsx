@@ -80,7 +80,9 @@ const RowActionMenu = React.memo(({
                 <WithPermission permission="timbrar_facturas">
                     <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
                         <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                    </MenuItem>,
+                    </MenuItem>
+                </WithPermission>,
+                <WithPermission permission="timbrar_facturas">
                     <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
                         <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
                     </MenuItem>
