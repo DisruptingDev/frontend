@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa, btnCancelar }) {
@@ -416,17 +417,19 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
 
                 {rfcValue && ( // Mostrar input de subir imagen solo si RFC tiene valor
                     <Box my={2}>
-                        <Typography variant="h6">Subir Logo</Typography>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                        />
-                        {imagePreview && (
-                            <Box mt={2}>
-                                <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
-                            </Box>
-                        )}
+                        <WithPermission permission="subir_logo">
+                            <Typography variant="h6">Subir Logo</Typography>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                            />
+                            {imagePreview && (
+                                <Box mt={2}>
+                                    <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
+                                </Box>
+                            )}
+                        </WithPermission>
                     </Box>
                 )}
 
@@ -439,14 +442,14 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 >
                     {btnCancelar == true && (
                         <Button
-                        variant="contained"
-                        color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
-                        type="button"
-                        onClick={handleReset}
-                    >
-                        Cancelar
-                    </Button>
+                            variant="contained"
+                            color="error"
+                            sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                            type="button"
+                            onClick={handleReset}
+                        >
+                            Cancelar
+                        </Button>
                     )}
 
                     <Button

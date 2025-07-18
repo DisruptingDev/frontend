@@ -4,6 +4,7 @@ import MUIDataTable from "mui-datatables";
 import { ThemeProvider, createTheme, Box, CircularProgress, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import textLabels from "@/components/DataTables/datatablesTextLabels";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
@@ -150,19 +151,21 @@ const VistaClientes = ({ setClienteIdEditar, actualizar, token }) => {
                 customBodyRender: (value, tableMeta) => {
                     const receptor = receptores[tableMeta.rowIndex];
                     if (receptor.Rfc === 'XAXX010101000') return null;
-                    
+
                     return (
                         <>
                             <IconButton onClick={(event) => handleMenuClick(event, receptor)}>
                                 <MoreVertIcon />
                             </IconButton>
-                            <Menu
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl) && menuRow?.ID === receptor.ID}
-                                onClose={handleMenuClose}
-                            >
-                                <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                            </Menu>
+                            <WithPermission permission="editar_receptores">
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={Boolean(anchorEl) && menuRow?.ID === receptor.ID}
+                                    onClose={handleMenuClose}
+                                >
+                                    <MenuItem onClick={handleEditar}>Editar</MenuItem>
+                                </Menu>
+                            </WithPermission>
                         </>
                     );
                 }

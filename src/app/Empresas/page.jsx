@@ -8,6 +8,7 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa";
 import CertificadoCSD from "@/components/AltaEmpresa/CertificadoCSD";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdministraEmpresas() {
@@ -100,21 +101,23 @@ export default function AdministraEmpresas() {
                     >
 
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: 'rgba(29, 57, 77, 1)',
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(19, 47, 67, 1)',
-                                    }
-                                }}
-                                onClick={handleOpenModal}
-                            >
-                                Agregar Empresa
-                            </Button>
+                            <WithPermission permission="crear_emisores">
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: 'rgba(29, 57, 77, 1)',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(19, 47, 67, 1)',
+                                        }
+                                    }}
+                                    onClick={handleOpenModal}
+                                >
+                                    Agregar Empresa
+                                </Button>
+                            </WithPermission>
                         </Box>
 
 

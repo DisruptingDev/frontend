@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert, Typography, FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert, Typography, Select as MuiSelect, FormHelperText } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
-import Image from 'next/image';
 import { useRouter } from "next/navigation";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaSerie({ token }) {
@@ -139,6 +139,7 @@ export default function AltaSerie({ token }) {
                         }} // Elimina caracteres no numéricos
                     />
                 </Box>
+                <WithPermission permission="crear_series">
                 <Box
                     my={1}
                     mx={0}
@@ -170,6 +171,7 @@ export default function AltaSerie({ token }) {
                         Guardar
                     </Button>
                 </Box>
+                </WithPermission>
             </form>
             <Snackbar
                 open={toast.open}

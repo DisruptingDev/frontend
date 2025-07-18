@@ -3,6 +3,7 @@ import MUIDataTable from "mui-datatables";
 import { ThemeProvider, createTheme, Box, CircularProgress, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import textLabels from "@/components/DataTables/datatablesTextLabels";
+import { WithPermission } from '@/components/WithPermission';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -78,7 +79,7 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                     },
                 });
                 const data = await response.json();
-                
+
                 if (Array.isArray(data)) {
                     const sortedData = data.sort((a, b) => b.ID - a.ID);
                     setEmisores(sortedData);
@@ -162,16 +163,19 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                     const emisor = emisores[tableMeta.rowIndex];
                     return (
                         <div>
+
                             <IconButton onClick={(event) => handleMenuClick(event, emisor)}>
                                 <MoreVertIcon />
                             </IconButton>
-                            <Menu
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl) && menuRow?.ID === emisor.ID}
-                                onClose={handleMenuClose}
-                            >
-                                <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                            </Menu>
+                            <WithPermission permission="editar_emisores">
+                                <Menu
+                                    anchorEl={anchorEl}
+                                    open={Boolean(anchorEl) && menuRow?.ID === emisor.ID}
+                                    onClose={handleMenuClose}
+                                >
+                                    <MenuItem onClick={handleEditar}>Editar</MenuItem>
+                                </Menu>
+                            </WithPermission>
                         </div>
                     );
                 }
@@ -192,6 +196,8 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
     // Opciones de la tabla
     const options = {
         filterType: 'dropdown',
+        fixedHeader: true,
+        fixedSelectColumn: false,
         responsive: 'standard',
         selectableRows: 'none',
         download: false,

@@ -8,6 +8,7 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos";
 import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ModuloConceptos() {
@@ -150,19 +151,21 @@ export default function ModuloConceptos() {
                         borderRadius={2}
                     >
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
+                            <WithPermission permission="crear_conceptos">
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
 
-                                }}
-                                onClick={handleOpenModal}
-                            >
-                                Agregar Concepto
-                            </Button>
+                                    }}
+                                    onClick={handleOpenModal}
+                                >
+                                    Agregar Concepto
+                                </Button>
+                            </WithPermission>
                         </Box>
                         <VistaConceptos token={token} actualizar={actualizar} setActualizar={setActualizar} />
                     </Box>

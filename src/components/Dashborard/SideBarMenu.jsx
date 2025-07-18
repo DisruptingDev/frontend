@@ -25,7 +25,7 @@ import {
   AddBox as AddIcon,
   FileOpen as ImportarIcon,
   Close as CloseIcon,
-
+  FileUpload as ImportarXMLIcon,
   ExpandLess,
   ExpandMore
 } from '@mui/icons-material';
@@ -55,6 +55,13 @@ const menuItems = [
     subItems: null
   },
   {
+    title: "Importar XML",
+    icon: <ImportarXMLIcon />,
+    path: "/ImportarXML",
+    permission: "importar_xml",
+    subItems: null
+  },
+  {
     title: "Nóminas",
     icon: <AttachMoneyIcon />,
     path: "/AltaNomina",
@@ -79,7 +86,7 @@ const menuItems = [
     title: "Series",
     icon: <SeriesIcon />,
     path: "/AltaSerie",
-    permission: "crear_facturas",
+    permission: "ver_series",
     subItems: null
   },
   {

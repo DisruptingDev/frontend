@@ -7,6 +7,7 @@ import VistaClientes from "@/components/VistaClientes/VistaClientes";
 import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -91,6 +92,7 @@ export default function RegistroClientes() {
                         borderRadius={2}
                     >
                         <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <WithPermission permission="crear_receptores">
                             <Button
                                 variant="contained"
                                 sx={{
@@ -103,6 +105,7 @@ export default function RegistroClientes() {
                             >
                                 Agregar Cliente
                             </Button>
+                            </WithPermission>
                         </Box>
                         <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
                     </Box>

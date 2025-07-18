@@ -46,6 +46,8 @@ export default function Home() {
     const datatableRef = useRef(null);
     const searchRef = useRef(null);
 
+    console.log("Token en Home:", token);
+
 
     // useEffect: se ejecuta al montar el componente
     useEffect(() => {
