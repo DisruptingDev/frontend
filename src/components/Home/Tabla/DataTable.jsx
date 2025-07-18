@@ -46,12 +46,12 @@ import { formatCurrency } from '@/utils/formatCurrency';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 // Componente de menú memoizado
-const RowActionMenu = React.memo(({
-    anchorEl,
-    menuRow,
-    handleClose,
-    handleTimbrar,
-    handleTimbrarYEnviar,
+const RowActionMenu = React.memo(({ 
+    anchorEl, 
+    menuRow, 
+    handleClose, 
+    handleTimbrar, 
+    handleTimbrarYEnviar, 
     handleDownloadSelecteds,
     handleViewPdf,
     handleCancelarFactura,
@@ -77,24 +77,18 @@ const RowActionMenu = React.memo(({
             }}
         >
             {!menuRow?.uuid && menuRow?.TipoDeComprobante !== 'P' && [
-                <WithPermission permission="timbrar_facturas">
-                    <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                    </MenuItem>
-                </WithPermission>,
-                <WithPermission permission="timbrar_facturas">
-                    <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
-                        <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
-                    </MenuItem>
-                </WithPermission>,
+                <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                </MenuItem>,
+                <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
+                </MenuItem>,
                 <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
                     <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
                 </MenuItem>,
-                <WithPermission permission="editar_facturas">
-                    <MenuItem key="edit" onClick={handleEdit}>
-                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                    </MenuItem>
-                </WithPermission>,
+                <MenuItem key="edit" onClick={handleEdit}>
+                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                </MenuItem>,
                 <MenuItem key="clone" onClick={handleClone}>
                     <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
                 </MenuItem>,
@@ -104,16 +98,12 @@ const RowActionMenu = React.memo(({
             ]}
 
             {!menuRow?.uuid && menuRow?.TipoDeComprobante === 'P' && [
-                <WithPermission permission="timbrar_facturas">
-                    <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                    </MenuItem>
-                </WithPermission>,
-                <WithPermission permission="editar_facturas">
-                    <MenuItem key="edit-pago" onClick={handleEdit}>
-                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                    </MenuItem>
-                </WithPermission>,
+                <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                </MenuItem>,
+                <MenuItem key="edit-pago" onClick={handleEdit}>
+                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                </MenuItem>,
                 <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
                     <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
                 </MenuItem>,
@@ -132,19 +122,15 @@ const RowActionMenu = React.memo(({
                 // <MenuItem key="clone-timbrada" onClick={handleClone}>
                 //     <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
                 // </MenuItem>,
-                <WithPermission permission='cancelar_facturas'>
-                    <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                        <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                    </MenuItem>
-                </WithPermission>
+                <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                </MenuItem>
             ]}
 
             {menuRow?.uuid && menuRow?.TipoDeComprobante === "P" && [
-                <WithPermission permission='cancelar_facturas'>
-                    <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                        <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                    </MenuItem>
-                </WithPermission>,
+                <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                </MenuItem>,
                 <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
                     <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                 </MenuItem>,
@@ -792,7 +778,7 @@ export default function DataTable({ token }) {
     return (
         <Box>
             {loading && <LinearProgress />}
-
+            
             <MUIDataTable
                 title="Vista General de Facturas"
                 data={data}
