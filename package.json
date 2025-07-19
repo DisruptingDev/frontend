@@ -77,6 +77,7 @@
     "negotiator": "0.6.3",
     "next": "^14.2.24",
     "next-auth": "4.24.7",
+    "nodemailer": "^6.10.1",
     "openpay": "^1.0.5",
     "puppeteer": "^23.4.0",
     "qrcode": "^1.5.4",
