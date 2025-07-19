@@ -150,7 +150,7 @@ const ModalWizard = ({ open, handleClose, token }) => {
 
     return (
         <WithPermission
-            permission="crear_emisor"
+            permission="crear_emisores"
             fallback={
                 <Dialog open={open} onClose={handleClose}>
                     <DialogContent>
