@@ -119,9 +119,9 @@ const RowActionMenu = React.memo(({
                 <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
                     <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                 </MenuItem>,
-                // <MenuItem key="clone-timbrada" onClick={handleClone}>
-                //     <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                // </MenuItem>,
+                <MenuItem key="clone-timbrada" onClick={handleClone}>
+                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                </MenuItem>,
                 <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
                     <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
                 </MenuItem>
