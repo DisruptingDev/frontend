@@ -1,5 +1,5 @@
 "use client";
-import AppAppBar from '/components/AppAppBar/AppAppBar';
+import AppAppBar from '@/components/AppAppBar/AppAppBar';
 import Hero from '@/components/Hero/Hero';
 import Featured from '@/components/Features/Features';
 import Highlights from '@/components/Highlights/Highlights';

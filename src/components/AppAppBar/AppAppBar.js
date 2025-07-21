@@ -1,7 +1,5 @@
 "use client";
 
-  
-
 import * as React from "react";
 import { styled, alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
