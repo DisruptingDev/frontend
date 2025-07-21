@@ -7,7 +7,7 @@ import Functions from '@/components/Functions/Functions';
 import Pricing from '@/components/Pricing/Pricing';
 import Precios from '@/components/Pricing/Precios';
 import FolioPackages from '@/components/FolioPackages/folioPackages';
-import Contact from '@/components/Contact/Contact';
+import Contact from '@/components/contact/contact';
 import Footer from '@/components/Footer/Footer';
 
 import Image from 'next/image';
