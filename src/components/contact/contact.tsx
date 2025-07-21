@@ -14,7 +14,7 @@ export default function  Contact () {
             <p className='text-md mt-2'><span className='font-bold'>Correo</span> admin@wisefacturacion.com</p>
             <p className='text-md mt-2'><span className='font-bold'>Teléfono</span> (222) 725 4392 </p>
             <Image
-                src="/images/Lu-wise-Contact.jpg"
+                src="/images/Lu-wise-contact.jpg"
                 alt="Contact Us"
                 width={400}
                 height={300}
