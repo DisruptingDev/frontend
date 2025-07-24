@@ -173,8 +173,8 @@ export function useAuth() {
       localStorage.setItem("superUser", result.sudo);
 
       // Establecer 'newUser' solo si no existe en sessionStorage
-      if (sessionStorage.getItem("newUser") === null) {
-        sessionStorage.setItem("newUser", "true");
+      if (localStorage.getItem("newUser") === null) {
+        localStorage.setItem("newUser", "true");
       }
 
       // Obtener permisos
@@ -196,8 +196,8 @@ export function useAuth() {
         permissionsLoaded: true,
       });
 
-      if (sessionStorage.getItem("newUser") === null) {
-        sessionStorage.setItem("newUser", "true");
+      if (localStorage.getItem("newUser") === null) {
+        localStorage.setItem("newUser", "true");
       }
 
       // Redirigir según el tipo de usuario

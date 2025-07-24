@@ -66,14 +66,14 @@ export default function Home() {
 
     useEffect(() => {
         // Solo se ejecuta en el cliente
-        const storedNewUser = sessionStorage.getItem('newUser');
+        const storedNewUser = localStorage.getItem('newUser');
         setNewUser(storedNewUser);
     }, []);
 
     useEffect(() => {
         if (newUser === "true") {
             setOpenWizard(true);
-            sessionStorage.setItem('newUser', "false");
+            localStorage.setItem('newUser', "false");
             setDrawerOpen(true);
         }
     }, [newUser]);

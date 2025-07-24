@@ -25,7 +25,7 @@ export default function Layout({ children }) {
 
   // Manejo de nuevo usuario
   useEffect(() => {
-    const storedNewUser = sessionStorage.getItem('newUser');
+    const storedNewUser = localStorage.getItem('newUser');
     setNewUser(storedNewUser);
   }, []);
 
