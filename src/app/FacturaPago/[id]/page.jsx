@@ -91,28 +91,20 @@ export default function FacturaPago() {
                     },
                 });
                 const data = await response.json();
-                console.log("Docto Relacionado", data);
 
-                // Calcular el número de operación
-                const numOperacion = data.length === 0 ? 1 : data[data.length - 1].NumParcialidad + 1;
+                // Calcular el total pagado sumando todos los ImpPagado
+                const totalPagado = data.reduce((sum, pago) => sum + parseFloat(pago.ImpPagadoString || pago.ImpPagado), 0);
 
-                // Calcular el total pagado
-                const totalPagado = data.reduce((sum, pago) => sum + pago.ImpPagado, 0);
+                // Calcular el saldo anterior (Total factura - Total pagado)
+                const saldoAnterior = parseFloat(totalPago) - totalPagado;
 
-                // Calcular el saldo restante
-                const saldoRestante = totalPago - totalPagado;
-
-                // Actualizar el estado de pagos
                 setPagos({
-                    numOperacion: numOperacion,
+                    numOperacion: data.length + 1, // Siguiente número de parcialidad
                     totalPagado: totalPagado,
-                    saldo: saldoRestante,
-                });
-
-                console.log("Pagos calculados:", {
-                    numOperacion: numOperacion,
-                    totalPagado: totalPagado,
-                    saldo: saldoRestante,
+                    saldoAnterior: saldoAnterior, // Total factura - pagos acumulados
+                    saldoInsoluto: saldoAnterior, // Inicialmente igual al saldo anterior
+                    totalFactura: parseFloat(totalPago), // Guardamos el total original
+                    pagosAnteriores: data
                 });
 
             } catch (error) {
