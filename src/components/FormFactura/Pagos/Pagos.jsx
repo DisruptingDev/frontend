@@ -1,22 +1,26 @@
 "use client";
 
 import React, { useState, forwardRef, useEffect } from "react";
-import { TextField, Box, Typography, FormControl, Select as MuiSelect, InputLabel, MenuItem } from "@mui/material";
+import { TextField, Box, Typography, FormControl, Select as MuiSelect, InputLabel, MenuItem, } from "@mui/material";
 import { styled } from "@mui/material/styles";
+
 import "react-datepicker/dist/react-datepicker.css";
 import Select from "@/components/Select/Select.jsx";
+// import DatePickerComponent from "./DatePickerComponent";
 import ReactDatePicker from "./DatePickerComponent";
 import { get } from "react-hook-form";
 import Impuesto from "../Impuesto/Impuesto";
 import { format, parse, set } from "date-fns";
-
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+
 export default function Pagos({ emisorID, children, register, conceptos, pagos, total, errors, getValues, setValue, token }) {
+
   const [pago, setPago] = useState({});
   const [fechaPago, setFechaPago] = useState(new Date());
   const [desglose, setDesglose] = useState([]);
   const [totalesImpuestos, setTotalesImpuestos] = useState([]);
+  const [serieUrl, setSerieUrl] = useState('');
   const [opcionesSerie, setOpcionesSerie] = useState([]);
   const [totales, setTotales] = useState({
     TotalRetencionesIVA: 0,
@@ -31,10 +35,10 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     TotalTrasladosBaseIVAExento: 0,
   });
 
-  // Obtener series disponibles
   useEffect(() => {
     async function fetchData() {
       if (emisorID) {
+        //console.log("emisorID", emisorID);
         try {
           const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
             headers: {
@@ -44,64 +48,40 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           });
           if (response.ok) {
             const data = await response.json();
+            //console.log('Data received from API:', data);
             const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
               .map(opcion => ({
                 ID: opcion.ID,
                 Clave: opcion.Clave,
-              }));
+              }))
             setOpcionesSerie(opciones);
           }
         } catch (error) {
           console.error('Error fetching serie:', error);
+
         }
       }
     }
     fetchData();
   }, [emisorID, token]);
 
-  // Inicializar fecha de pago
+
+
   useEffect(() => {
     const today = new Date();
-    setFechaPago(today);
+    setFechaPago(today); // Inicializa como una instancia válida de Date
     setValue("FechaPago", format(today, "yyyy-MM-dd'T'HH:mm:ss"));
   }, [setValue]);
 
-  // Selección por defecto de serie
+
+
+  // Selección por defecto en un useEffect:
   useEffect(() => {
     if (!getValues("SeriePagos") && opcionesSerie.length > 0) {
       setValue("SeriePagos", opcionesSerie[0].Clave, { shouldValidate: true });
     }
   }, [opcionesSerie, setValue, getValues]);
 
-  // Inicializar valores de pagos
-  useEffect(() => {
-    if (pagos) {
-      console.log("Datos de pago recibidos:", pagos);
-      setValue("NumeroOperacion", pagos.numOperacion);
-      setValue("SaldoAnterior", pagos.saldoAnterior); // Total factura original
-      setValue("SaldoPagado", pagos.totalPagado); // Suma de todos los pagos anteriores
-      setValue("ImpSaldoInsoluto", pagos.saldoInsoluto); // Saldo pendiente actual
-    }
-  }, [pagos, setValue]);
-
-  const handleMontoChange = (e) => {
-    let nuevoMonto = e.target.value;
-    nuevoMonto = nuevoMonto.replace(/[^0-9.]/g, "");
-
-    if ((nuevoMonto.match(/\./g) || []).length > 1) {
-      nuevoMonto = nuevoMonto.replace(/\.+$/, '');
-    }
-
-    setPago({ ...pago, monto: nuevoMonto });
-    calcularDesglose(nuevoMonto);
-    setValue("Monto", nuevoMonto);
-
-    // Calcular nuevo saldo insoluto
-    if (pagos) {
-      const nuevoSaldoInsoluto = (parseFloat(pagos.saldoAnterior) - parseFloat(nuevoMonto || 0)).toFixed(2);
-      setValue("ImpSaldoInsoluto", nuevoSaldoInsoluto);
-    }
-  };
 
   const calcularDesglose = (monto) => {
     if (!conceptos || conceptos.length === 0 || monto <= 0) return;
@@ -117,8 +97,14 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
       const pagoParcial = monto * proporcion;
 
       const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
+        // Calcular la proporción del subtotal sin impuestos
+        const proporcionSubtotal = concepto.Subtotal / totalConcepto;
         const baseProporcional = pagoParcial / (1 + impuesto.TasaOCuota);
         const montoProporcional = baseProporcional * impuesto.TasaOCuota;
+
+        // console.log("BaseProporcional", baseProporcional);
+        // console.log("MontoProporcional", montoProporcional);
+        // console.log("PagoParcial", pagoParcial);
 
         return {
           ImpuestoCatalogoID: impuesto.Impuesto || 0,
@@ -178,22 +164,37 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     setValue("ImpuestosPagos", nuevosTotalesImpuestos);
   };
 
-  // const handleMontoChange = (e) => {
-  //   let nuevoMonto = e.target.value;
-  //   nuevoMonto = nuevoMonto.replace(/[^0-9.]/g, "");
-  //   if ((nuevoMonto.match(/\./g) || []).length > 1) {
-  //     nuevoMonto = nuevoMonto.replace(/\.+$/, '');
-  //   }
+  useEffect(() => {
+    if (pagos) {
+      console.log("Pagos:", pagos)
+      // Asegurarse de que numOperacion sea un entero usando Math.floor()
+      const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
+      setValue("NumeroOperacion", numeroOperacionEntero);
+      setValue("SaldoAnterior", pagos.saldo);
+      setValue("SaldoPagado", pagos.totalPagado);
+    }
+  }, [pagos, setValue]);
 
-  //   setPago({ ...pago, monto: nuevoMonto });
-  //   calcularDesglose(nuevoMonto);
-  //   setValue("Monto", nuevoMonto);
+  const handleMontoChange = (e) => {
+    let nuevoMonto = e.target.value;
+    nuevoMonto = nuevoMonto.replace(/[^0-9.]/g, "");
+    if ((nuevoMonto.match(/\./g) || []).length > 1) {
+      nuevoMonto = nuevoMonto.replace(/\.+$/, '');
+    }
 
-  //   // Calcular el saldo insoluto usando el saldo anterior del padre
-  //   const saldoAnterior = parseFloat(pagos.saldo);
-  //   const saldoInsoluto = (saldoAnterior - parseFloat(nuevoMonto || 0)).toFixed(2);
-  //   setValue("ImpSaldoInsoluto", saldoInsoluto);
-  // };
+    setPago({ ...pago, monto: nuevoMonto });
+    calcularDesglose(nuevoMonto);
+    setValue("Monto", nuevoMonto);
+
+    // Asegurar que el número de operación sea entero
+    const numeroOperacionEntero = Math.floor(pagos.numOperacion);
+    setValue("NumeroOperacion", numeroOperacionEntero);
+
+    // Calcular el saldo insoluto
+    const saldoAnterior = parseFloat(pagos.saldo);
+    const saldoInsoluto = (saldoAnterior - nuevoMonto).toFixed(2);
+    setValue("ImpSaldoInsoluto", saldoInsoluto);
+  };
 
   return (
     <Box bgcolor="white" my={2} p={2} boxShadow={3} borderRadius={2}>
@@ -208,17 +209,26 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(3, 1fr)',
-            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}>
-        <ReactDatePicker
+        {/* <DatePickerComponent
           selectedDate={fechaPago}
           onChange={(date) => {
+            const formattedDate = format(new Date(date), "yyyy-MM-dd'T'HH:mm:ss");
+            setFechaPago(formattedDate);
             setFechaPago(date);
-            setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+            setPago({ ...pago, fechaPago: formattedDate });
+            // setValue("FechaPago", formattedDate);
+          }}
+        /> */}
+        <ReactDatePicker
+          selectedDate={fechaPago} // Pasa el estado al componente hijo
+          onChange={(date) => {
+            setFechaPago(date); // Actualiza el estado
+            setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss")); // Actualiza el formulario
           }}
         />
-
         <FormControl variant="outlined" fullWidth>
           <InputLabel id="serie-label">Serie</InputLabel>
           <MuiSelect
@@ -239,6 +249,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           </MuiSelect>
         </FormControl>
 
+
         <Select
           register={register}
           nombre="FormaPagoComprobante"
@@ -250,37 +261,37 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           error={!!errors.FormaPagoComprobante}
           helperText={errors.FormaPagoComprobante ? "Este campo es obligatorio" : ""}
         />
-
         <TextField
           {...register("Monto", {
             required: "Este campo es obligatorio",
             validate: (value) => {
-              const monto = parseFloat(value || 0);
-              const saldoDisponible = parseFloat(pagos?.saldoInsoluto || 0);
+              const monto = parseFloat(value);
+              const saldoDisponible = pagos.saldo;
 
-              if (monto <= 0) return "El monto debe ser mayor a 0";
-              if (monto > saldoDisponible) {
-                return `El monto no puede ser mayor al saldo pendiente (${saldoDisponible.toFixed(2)})`;
+              if (monto <= 0) {
+                return "El monto debe ser mayor a 0";
               }
-              return true;
+              if (monto > saldoDisponible) {
+                return "El monto no puede ser mayor al saldo restante de pago";
+              }
+              return true; // Si pasa la validación
             },
           })}
           label="Monto"
           name="monto"
-          onChange={handleMontoChange}
+          onChange={handleMontoChange} // Función para manejar cambios en el monto
           fullWidth
-          error={!!errors.Monto}
-          helperText={errors.Monto?.message}
+          error={!!errors.Monto} // Muestra el error si existe
+          helperText={errors.Monto?.message} // Muestra el mensaje de error
         />
-
         <TextField
+
           label="Moneda"
           name="moneda"
           value={"MXN"}
           fullWidth
           disabled
         />
-
         <TextField
           label="Tipo de Cambio"
           name="tipoCambio"
@@ -289,7 +300,6 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           disabled
         />
       </Box>
-
       <Box display="grid"
         gap={2}
         mt={4}
@@ -298,44 +308,41 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             xs: '1fr',
             sm: 'repeat(2, 1fr)',
             md: 'repeat(3, 1fr)',
-            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'
+            lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}
       >
         <TextField
           label="Número de operación"
           name="numeroOperacion"
-          value={pagos?.numOperacion || "1"}
+          value={Math.floor(pagos.numOperacion) || "Sin pagos aún"} // Asegurar entero aquí
           disabled
           fullWidth
         />
-
         <TextField
           label="Importe del saldo anterior"
           name="saldoAnterior"
-          value={pagos?.saldoAnterior ? parseFloat(pagos.saldoAnterior).toFixed(2) : parseFloat(totalPago).toFixed(2)}
+          value={pagos.saldoAnterior || totalPago} // Usa saldoAnterior, si no hay pagos usa totalPago
           disabled
           fullWidth
         />
-
         <TextField
           label="Importe del saldo Pagado"
           name="saldoPagado"
-          value={pagos?.totalPagado ? parseFloat(pagos.totalPagado).toFixed(2) : "0.00"}
+          value={pagos.totalPagado || "0.00"} // Usa el saldo pagado
           disabled
           fullWidth
         />
-
         <TextField
           label="Importe del saldo insoluto"
           name="saldoInsoluto"
-          value={getValues("ImpSaldoInsoluto") ? parseFloat(getValues("ImpSaldoInsoluto")).toFixed(2) : pagos?.saldoInsoluto ? parseFloat(pagos.saldoInsoluto).toFixed(2) : parseFloat(totalPago).toFixed(2)}
+          value={getValues("ImpSaldoInsoluto") || ""} // Muestra el saldo insoluto calculado
           disabled
           fullWidth
         />
       </Box>
-
       <Box mt={4}>
+
         {totalesImpuestos.length > 0 ? (
           totalesImpuestos.map((impuesto, index) => (
             <Box key={index}>
@@ -378,10 +385,13 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
               </Box>
             </Box>
           ))
-        ) : null}
+        ) : (
+          ""
+        )}
       </Box>
 
       {children}
+
     </Box>
   );
 }
