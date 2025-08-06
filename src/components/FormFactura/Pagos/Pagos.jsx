@@ -322,7 +322,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Importe del saldo anterior"
           name="saldoAnterior"
-          value={pagos.saldoAnterior || totalPago} // Usa saldoAnterior, si no hay pagos usa totalPago
+          value={pagos.saldoAnterior || "0.00"} // Usa saldoAnterior, si no hay pagos usa totalPago
           disabled
           fullWidth
         />
