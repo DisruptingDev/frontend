@@ -166,7 +166,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
   useEffect(() => {
     if (pagos) {
-      console.log("Pagos:",pagos)
+      console.log("Pagos:", pagos)
       // Asegurarse de que numOperacion sea un entero usando Math.floor()
       const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
       setValue("NumeroOperacion", numeroOperacionEntero);
@@ -322,7 +322,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         <TextField
           label="Importe del saldo anterior"
           name="saldoAnterior"
-          value={pagos.saldo || ""} // Usa el saldo restante
+          value={pagos.saldoAnterior || "0.00"} // Usa saldoAnterior, si no hay pagos usa totalPago
           disabled
           fullWidth
         />
