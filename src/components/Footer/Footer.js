@@ -78,14 +78,8 @@ const Footer = () => {
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
               Legal
             </Typography>
-            <Link href="/terminos" color="inherit" underline="hover" display="block" mb={1}>
-              Términos y condiciones
-            </Link>
-            <Link href="/privacidad" color="inherit" underline="hover" display="block" mb={1}>
+            <Link href="/Privacidad" color="inherit" underline="hover" display="block" mb={1}>
               Política de privacidad
-            </Link>
-            <Link href="/cookies" color="inherit" underline="hover" display="block" mb={1}>
-              Política de cookies
             </Link>
           </Grid>
         </Grid>

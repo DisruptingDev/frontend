@@ -17,15 +17,13 @@ export default function HomePage() {
     const router = useRouter();
     return (
         <div>
-        <AppAppBar/>
-        <Hero />
-        <Featured/>
-        <Highlights/>
-        <FolioPackages/>
-        <div className="mt-10 mb-10">
+            <AppAppBar/>
+            <Hero />
+            <Featured/>
+            <Highlights/>
+            <FolioPackages/>
             <Contact/>
-        </div>
-        <Footer />
+            <Footer />
         </div>
     );
 }

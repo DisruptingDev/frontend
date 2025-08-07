@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+
+
 export async function POST(request: Request) {
   try {
     const { name, email, subject, message } = await request.json();
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
     });
 
     const mailOptions = {
-      from: `"Tu Portafolio" <${process.env.SMTP_USER}>`, // Es mejor enviar desde un correo verificado
+      from: `"Form contacto" <${process.env.SMTP_USER}>`, // Es mejor enviar desde un correo verificado
       replyTo: email, // Para que al responder, le llegue al usuario
       to: process.env.SMTP_RECIPIENT_EMAIL, // El email que recibirá el mensaje
       subject: `Nuevo mensaje de contacto de ${name}: ${subject}`,
