@@ -22,6 +22,8 @@ import StyledVerticalNavBgColorContainer from '../../styles/vertical/StyledVerti
 // Style Imports
 import styles from '../../styles/vertical/verticalNavBgImage.module.css'
 
+import Image from 'next/image'
+
 // Default Config Imports
 import { defaultBreakpoints, verticalNavToggleDuration } from '../../defaultConfigs'
 
@@ -171,9 +173,9 @@ const VerticalNav = props => {
         {...(!isPopoutWhenCollapsedContext &&
           isCollapsedContext &&
           !breakpointReached && {
-            onMouseEnter: handleVerticalNavHover,
-            onMouseLeave: handleVerticalNavHoverOut
-          })}
+          onMouseEnter: handleVerticalNavHover,
+          onMouseLeave: handleVerticalNavHoverOut
+        })}
       >
         {/* VerticalNav Container to apply styling like background */}
         <StyledVerticalNavBgColorContainer
@@ -187,9 +189,9 @@ const VerticalNav = props => {
         {backgroundImage && (
           // eslint-disable-next-line lines-around-comment
           /* VerticalNav Background Image */
-          <img
-            className={classnames(verticalNavClasses.image, styles.root)}
+          <Image
             src={backgroundImage}
+            className={classnames(verticalNavClasses.image, styles.root)}
             alt='verticalNav background'
           />
         )}
