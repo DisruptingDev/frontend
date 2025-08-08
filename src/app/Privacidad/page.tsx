@@ -15,12 +15,12 @@ export default function Privacidad() {
         </div>
         <div className="text-justify p-20 pt-10">
           <p>
-            En Wise Facturación ("nosotros", "nuestro", "la Empresa"), la
+            En Wise Facturación (&quot;nosotros&quot;, &quot;nuestro&quot;, &quot;la Empresa&quot;), la
             privacidad y seguridad de los datos de nuestros usuarios es nuestra
             máxima prioridad. Esta Política de Privacidad describe cómo
             recopilamos, usamos, protegemos y, en casos específicos, compartimos
             su información personal y la de sus clientes cuando utiliza nuestro
-            sistema de facturación en línea (el "Servicio").
+            sistema de facturación en línea (el &quot;Servicio&quot;).
           </p>
           <p className="mt-2">
             Al registrarse y utilizar nuestro Servicio, usted declara haber
@@ -152,7 +152,7 @@ export default function Privacidad() {
               </ul>
             </li>
             <li>
-              <h3>Finalidades Secundarias (No Primarias):</h3>
+              <h3>Finalidades Secundarias (Non Primarias):</h3>
               <ul>
                 <li>
                   Enviarle comunicaciones sobre promociones, nuevos productos o
@@ -179,7 +179,7 @@ export default function Privacidad() {
           </h2>
           <p>
             No venderemos, alquilaremos ni cederemos sus datos personales a
-            terceros, con excepción de
+            terceros, con excepción de:
           </p>
           <ul>
             <li>
@@ -192,7 +192,7 @@ export default function Privacidad() {
               proveedores que nos asisten en la operación del Servicio, como
               servicios de hosting (ej. Amazon Web Services, Google Cloud),
               proveedores de bases de datos y servicios de envío de correo
-              electrónico. Estos proveedores actúan como "Encargados" y están
+              electrónico. Estos proveedores actúan como &quot;Encargados&quot; y están
               contractualmente obligados a proteger la información.
             </li>
             <li>
@@ -263,7 +263,6 @@ export default function Privacidad() {
           </p>
         </div>
       </div>
-      '
       <div className="mt-10 mb-10">
         <Contact />
       </div>
