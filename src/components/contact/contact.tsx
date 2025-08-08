@@ -5,7 +5,7 @@ import React from 'react';
 
 export default function  Contact () {
     return (
-        <div className='w-full flex mt-25 mb-20'>
+        <div className='w-full flex mt-25 my-20'>
     <div className='w-3/4 m-auto flex'>            
         <div className='w-1/2'>
             <h1 className='text-4xl font-bold '>Contacto</h1>
@@ -18,7 +18,7 @@ export default function  Contact () {
                 alt="Contact Us"
                 width={400}
                 height={300}
-                className='mask mask-squirclemt-3'
+                className='mask mask-squirclemt-3 mt-4'
             />
         </div>
         <div className='w-1/2'>
