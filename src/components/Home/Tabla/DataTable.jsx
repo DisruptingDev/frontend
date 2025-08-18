@@ -46,15 +46,16 @@ import { formatCurrency } from '@/utils/formatCurrency';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 // Componente de menú memoizado
-const RowActionMenu = React.memo(({ 
-    anchorEl, 
-    menuRow, 
-    handleClose, 
-    handleTimbrar, 
-    handleTimbrarYEnviar, 
+const RowActionMenu = React.memo(({
+    anchorEl,
+    menuRow,
+    handleClose,
+    handleTimbrar,
+    handleTimbrarYEnviar,
     handleDownloadSelecteds,
     handleViewPdf,
     handleCancelarFactura,
+    handleAcuseCancelacion,
     handleFacturaPago,
     handleEdit,
     handleClone,
@@ -76,74 +77,84 @@ const RowActionMenu = React.memo(({
                 horizontal: 'right',
             }}
         >
-            {!menuRow?.uuid && menuRow?.TipoDeComprobante !== 'P' && [
-                <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                </MenuItem>,
-                <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
-                    <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
-                </MenuItem>,
-                <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
-                </MenuItem>,
-                <MenuItem key="edit" onClick={handleEdit}>
-                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                </MenuItem>,
-                <MenuItem key="clone" onClick={handleClone}>
-                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                </MenuItem>,
-                <MenuItem key="delete" onClick={handleDelete}>
-                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
-                </MenuItem>
-            ]}
+            {menuRow?.Estatus === 'Cancelada' ? (
+                [
+                    <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(menuRow.ID); handleClose(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Acuse de Cancelación
+                    </MenuItem>
+                ]
+            ) : (
+                <>
+                    {!menuRow?.uuid && menuRow?.TipoDeComprobante !== 'P' && [
+                        <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                            <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                        </MenuItem>,
+                        <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
+                            <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
+                        </MenuItem>,
+                        <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                        </MenuItem>,
+                        <MenuItem key="edit" onClick={handleEdit}>
+                            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                        </MenuItem>,
+                        <MenuItem key="clone" onClick={handleClone}>
+                            <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                        </MenuItem>,
+                        <MenuItem key="delete" onClick={handleDelete}>
+                            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                        </MenuItem>
+                    ]}
 
-            {!menuRow?.uuid && menuRow?.TipoDeComprobante === 'P' && [
-                <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                </MenuItem>,
-                <MenuItem key="edit-pago" onClick={handleEdit}>
-                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                </MenuItem>,
-                <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
-                </MenuItem>,
-                <MenuItem key="delete-pago" onClick={handleDelete}>
-                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
-                </MenuItem>,
-            ]}
+                    {!menuRow?.uuid && menuRow?.TipoDeComprobante === 'P' && [
+                        <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                            <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                        </MenuItem>,
+                        <MenuItem key="edit-pago" onClick={handleEdit}>
+                            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                        </MenuItem>,
+                        <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                        </MenuItem>,
+                        <MenuItem key="delete-pago" onClick={handleDelete}>
+                            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                        </MenuItem>
+                    ]}
 
-            {menuRow?.uuid && menuRow?.TipoDeComprobante !== "P" && [
-                <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
-                </MenuItem>,
-                <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
-                    <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
-                </MenuItem>,
-                <MenuItem key="clone-timbrada" onClick={handleClone}>
-                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                </MenuItem>,
-                <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                </MenuItem>
-            ]}
+                    {menuRow?.uuid && menuRow?.TipoDeComprobante !== "P" && [
+                        <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                        </MenuItem>,
+                        <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
+                            <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                        </MenuItem>,
+                        <MenuItem key="clone-timbrada" onClick={handleClone}>
+                            <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                        </MenuItem>,
+                        <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                            <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                        </MenuItem>
+                    ]}
 
-            {menuRow?.uuid && menuRow?.TipoDeComprobante === "P" && [
-                <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                </MenuItem>,
-                <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
-                    <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
-                </MenuItem>,
-                <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
-                </MenuItem>,
-            ]}
+                    {menuRow?.uuid && menuRow?.TipoDeComprobante === "P" && [
+                        <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                            <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                        </MenuItem>,
+                        <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
+                            <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                        </MenuItem>,
+                        <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                        </MenuItem>,
+                    ]}
 
-            {menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && [
-                <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
-                    <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
-                </MenuItem>
-            ]}
+                    {menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && [
+                        <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
+                            <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
+                        </MenuItem>
+                    ]}
+                </>
+            )}
         </Menu>
     );
 });
@@ -431,6 +442,28 @@ export default function DataTable({ token }) {
         setFacturasRemplazo(registros);
         setOpenModalCancelar(true);
     }, [data]);
+
+    const handleAcuseCancelacion = useCallback(async (id) => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/AcuseCancelacion/${id}`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (response.ok) {
+                const blob = await response.blob();
+                const pdfUrl = URL.createObjectURL(blob);
+                window.open(pdfUrl, '_blank');
+            }
+        } catch (error) {
+            setConfirmationMessage('Error al visualizar el acuse de cancelación: ' + error.message);
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [token]);
 
     const handleDeleteFactura = useCallback(async () => {
         if (!facturaIdToDelete) return;
@@ -778,7 +811,7 @@ export default function DataTable({ token }) {
     return (
         <Box>
             {loading && <LinearProgress />}
-            
+
             <MUIDataTable
                 title="Vista General de Facturas"
                 data={data}
@@ -795,6 +828,7 @@ export default function DataTable({ token }) {
                 handleDownloadSelecteds={handleDownloadSelecteds}
                 handleViewPdf={handleViewPdf}
                 handleCancelarFactura={handleCancelarFactura}
+                handleAcuseCancelacion={handleAcuseCancelacion}
                 handleFacturaPago={handleFacturaPago}
                 handleEdit={handleEdit}
                 handleClone={handleClone}
