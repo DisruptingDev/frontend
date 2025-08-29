@@ -22,8 +22,6 @@ const VistaFacturasImportadas = ({
     setFacturas(facturasRecuperadas);
   }, [facturasRecuperadas]);
 
-  console.log("Facturas recuperadas: ",facturasRecuperadas)
-
   // Tema personalizado para la tabla
   const getMuiTheme = () =>
     createTheme({

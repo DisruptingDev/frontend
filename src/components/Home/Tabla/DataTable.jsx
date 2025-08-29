@@ -446,7 +446,7 @@ export default function DataTable({ token }) {
     const handleAcuseCancelacion = useCallback(async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/AcuseCancelacion/${id}`, {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${token}`,

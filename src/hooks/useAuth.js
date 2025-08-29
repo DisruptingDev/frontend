@@ -40,7 +40,6 @@ export function useAuth() {
       }
 
       const rolData = await response.json();
-      console.log("Datos completos del rol:", rolData);
 
       if (!rolData.Permisos || !Array.isArray(rolData.Permisos)) {
         console.warn("Formato de permisos inválido en la respuesta");
