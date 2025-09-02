@@ -469,7 +469,7 @@ export default function DataTable({ token }) {
         if (!facturaIdToDelete) return;
 
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/${facturaIdToDelete}`, {
+            const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
