@@ -26,19 +26,12 @@ export default function ValidarPPD() {
                 }
             });
 
-            // if (!response.ok) {
-            //     if (response.status === 401) {
-            //         router.push('/IniciaSesion');
-            //         return;
-            //     }
-            //     throw new Error(`Error HTTP: ${response.status}`);
-            // }
-
             const result = await response.json();
-            console.log("Datos recibidos:", result);
 
-            // Filtrar facturas con Total > 0
-            const facturasFiltradas = result.filter(factura => factura.Total > 0);
+            // Filtrar facturas con Total > 0 y fechaTimbrado no null
+            const facturasFiltradas = result.filter(
+                factura => factura.Total > 0 && factura.fechaTimbrado !== ""
+            );
             setData(facturasFiltradas);
         } catch (err) {
             setError(err.message);
@@ -91,25 +84,25 @@ export default function ValidarPPD() {
             }
         },
         {
-  name: "fechaTimbrado",
-  label: "Fecha de Timbrado",
-  options: {
-    filter: true,
-    customBodyRender: (value) => {
-      const fecha = new Date(value);
-      if (isNaN(fecha.getTime())) {
-        return value || "Sin timbrar";
-      }
-      return fecha.toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    },
-  }
-},  
+            name: "fechaTimbrado",
+            label: "Fecha de Timbrado",
+            options: {
+                filter: true,
+                customBodyRender: (value) => {
+                    const fecha = new Date(value);
+                    if (isNaN(fecha.getTime())) {
+                        return value || "Sin timbrar";
+                    }
+                    return fecha.toLocaleDateString('es-MX', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                },
+            }
+        },
         {
             name: "ID",
             label: "Acciones",
@@ -118,9 +111,7 @@ export default function ValidarPPD() {
                 sort: false,
                 customBodyRender: (value, tableMeta) => {
                     const rowData = tableMeta.rowData; // Acceso a todos los datos de la fila
-                    console.log("Row data:", rowData); // Verifica los datos de la fila
                     const facturaID = tableMeta.rowData[5]; // Recuperar el ID de la factura
-                    console.log("Factura ID:", facturaID); // Verifica el ID de la factura
                     return (
                         <button
                             onClick={() => handleGenerarCP(rowData, facturaID)}
@@ -138,9 +129,6 @@ export default function ValidarPPD() {
 
     // Función para manejar el click en "Generar CP"
     const handleGenerarCP = async (rowData, facturaID) => {
-        console.log("ID de la factura:", facturaID);
-        console.log("Generar CP para:", rowData);
-        console.log("Emisor ID", rowData[1].ID);
         const token = localStorage.getItem('authToken');
         try {
             const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${rowData[1].ID}`, {
@@ -151,9 +139,7 @@ export default function ValidarPPD() {
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log('Datos recibidos de la API:', data);
                 const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
-                console.log('Opciones:', opciones);
                 if (opciones.length > 0) {
                     router.push(`/FacturaPago/${facturaID}`); // Redirige a la página de edición con el ID de la factura
                 }

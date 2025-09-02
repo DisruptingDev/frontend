@@ -33,8 +33,8 @@ export default function UserMenu({ token }) {
       try {
         const response = await fetch(`${apiUrl}/api/facturas/FacturasPendientes`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           }
         });
         
