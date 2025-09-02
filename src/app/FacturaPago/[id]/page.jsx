@@ -100,7 +100,7 @@ export default function FacturaPago() {
                 const totalPagado = data.reduce((sum, pago) => sum + pago.ImpPagado, 0);
 
                 // Obtener el saldo anterior del último pago (si existe)
-                const saldoAnterior = data.length > 0 ? parseFloat(data[data.length - 1].ImpSaldoAntString) : totalPago;
+                const saldoAnterior = data.length > 0 ? parseFloat(data[data.length - 1].ImpSaldoInsoluto) : totalPago;
 
                 // Calcular el saldo restante
                 const saldoRestante = totalPago - totalPagado;
