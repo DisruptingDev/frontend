@@ -32,19 +32,6 @@ const Pagos = ({ token }) => {
     }).format(value);
   };
 
-  // const Pagos = [
-  //   { ID: 1, Usuario: 'Kevin', Ordenes: [
-  //       { ID: 1, Opcion: 'Opcion 1', Monto: 100, Empresa: 'Escuela' },
-  //       { ID: 2, Opcion: 'Opcion 2', Monto: 200, Empresa: 'Empresa' },
-  //       { ID: 3, Opcion: 'Opcion 3', Monto: 300, Empresa: 'Hospital' },
-  //     ], Monto: 600, FechaPago: '2024-01-01', Comprobante: 'c1.pdf' },
-  //   { ID: 2, Usuario: 'Carlos', Ordenes: [
-  //       { ID: 4, Opcion: 'Opcion 4', Monto: 150, Empresa: 'Clínica' },
-  //       { ID: 5, Opcion: 'Opcion 5', Monto: 250, Empresa: 'Escuela' },
-  //     ], Monto: 400, FechaPago: '2024-01-02', Comprobante: 'c2.pdf' },
-  // ];
-
-
   const fetchOrdenes = useCallback(async () => {
     if (token) {
       console.log('Fetching pagoes', token);

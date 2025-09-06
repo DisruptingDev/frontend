@@ -38,7 +38,6 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
   useEffect(() => {
     async function fetchData() {
       if (emisorID) {
-        //console.log("emisorID", emisorID);
         try {
           const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorID}`, {
             headers: {
@@ -48,7 +47,6 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
           });
           if (response.ok) {
             const data = await response.json();
-            //console.log('Data received from API:', data);
             const opciones = data.filter(opcion => opcion.TipoComprobante === 'P')
               .map(opcion => ({
                 ID: opcion.ID,
@@ -101,10 +99,6 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         const proporcionSubtotal = concepto.Subtotal / totalConcepto;
         const baseProporcional = pagoParcial / (1 + impuesto.TasaOCuota);
         const montoProporcional = baseProporcional * impuesto.TasaOCuota;
-
-        // console.log("BaseProporcional", baseProporcional);
-        // console.log("MontoProporcional", montoProporcional);
-        // console.log("PagoParcial", pagoParcial);
 
         return {
           ImpuestoCatalogoID: impuesto.Impuesto || 0,
@@ -170,7 +164,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
       // Asegurarse de que numOperacion sea un entero usando Math.floor()
       const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
       setValue("NumeroOperacion", numeroOperacionEntero);
-      setValue("SaldoAnterior", pagos.saldo);
+      setValue("SaldoAnterior", pagos.saldoAnterior);
       setValue("SaldoPagado", pagos.totalPagado);
     }
   }, [pagos, setValue]);
