@@ -40,6 +40,7 @@
     "@mui/material": "^5.16.14",
     "@mui/x-date-pickers": "^6.0.0",
     "@mui/x-date-pickers-pro": "^6.0.0",
+    "@paypal/react-paypal-js": "^8.9.1",
     "@prisma/client": "5.17.0",
     "@reduxjs/toolkit": "2.2.6",
     "@tanstack/match-sorter-utils": "8.15.1",
