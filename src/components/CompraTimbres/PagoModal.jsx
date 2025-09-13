@@ -369,7 +369,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
 const PagoModalWithPayPal = (props) => {
     const [{ isPending }] = usePayPalScriptReducer();
 
-    return (
+    return ( 
         <>
             {isPending && <div>Cargando PayPal...</div>}
             <PagoModal {...props} />

@@ -76,15 +76,6 @@ export default function CrearFactura() {
         }
     }, [id, token]);
 
-
-
-
-
-
-
-
-
-
     useEffect(() => {
         if (facturaEdit) {
             //console.log("Factura editada", facturaEdit);
@@ -106,6 +97,7 @@ export default function CrearFactura() {
 
 
     const onSubmit = (data) => {
+        console.log("Datos del formulario:", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
@@ -115,6 +107,7 @@ export default function CrearFactura() {
         console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Factura");
         console.log('Factura creada:', factura);
+        console.log("Flujo antes de guardar")
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito

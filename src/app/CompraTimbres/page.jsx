@@ -21,11 +21,9 @@ export default function CompraTimbres() {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
-            //console.log('Token', token);
             setToken(token);
         }
     }, [router]);
