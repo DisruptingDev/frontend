@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Select from '../Select/Select';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
-    Box, Grid, Divider, Snackbar, Alert, FormControlLabel, Radio, RadioGroup, FormControl, FormLabel
+    Box, Grid, Divider, Snackbar, Alert, FormControlLabel, Radio, RadioGroup, FormControl, FormLabel,
+    CircularProgress, Backdrop
 } from '@mui/material';
 import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 
@@ -16,8 +17,10 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const [tipo, setTipo] = useState('');
     const [empresas, setEmpresas] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('transferencia');
+    const [paymentMethod, setPaymentMethod] = useState('paypal'); // PayPal por defecto
     const [paypalOrderId, setPaypalOrderId] = useState(null);
+    const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const paypalSectionRef = useRef(null);
 
     // Obtener empresas
     useEffect(() => {
@@ -52,6 +55,18 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
         }
     }, [opcion]);
 
+    // Hacer scroll a la sección de PayPal cuando se selecciona
+    useEffect(() => {
+        if (paymentMethod === 'paypal' && paypalSectionRef.current) {
+            setTimeout(() => {
+                paypalSectionRef.current.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }, 100);
+        }
+    }, [paymentMethod]);
+
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('es-MX', {
             style: 'currency',
@@ -72,7 +87,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     // Función para crear orden en PayPal
     const createPayPalOrder = async () => {
         try {
-            setIsProcessing(true);
+            setIsCreatingOrder(true);
             
             const payload = opcion.Nombre.includes('Plan')
                 ? { PlanID: opcion.ID }
@@ -107,13 +122,15 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
             setSeverity('error');
             throw error;
         } finally {
-            setIsProcessing(false);
+            setIsCreatingOrder(false);
         }
     };
 
     // Función para capturar pago de PayPal
     const capturePayPalOrder = async (orderID) => {
         try {
+            setIsProcessing(true);
+            
             const response = await fetch(`${apiUrl}/api/compratimbres/CapturarOrdenPayPal`, {
                 method: 'POST',
                 headers: {
@@ -148,6 +165,8 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
             setAlertMessage('Error al completar el pago');
             setSeverity('error');
             throw error;
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -213,6 +232,19 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            {/* Backdrop para bloquear la interfaz durante el procesamiento */}
+            <Backdrop
+                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                open={isProcessing}
+            >
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <CircularProgress color="inherit" />
+                    <Typography variant="h6" sx={{ mt: 2 }}>
+                        Procesando pago...
+                    </Typography>
+                </Box>
+            </Backdrop>
+
             <DialogTitle sx={{ fontWeight: "600", fontSize: "1.5em" }}>Realizar Orden</DialogTitle>
             <DialogContent>
                 {/* Método de pago */}
@@ -303,11 +335,22 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
 
                 {/* Botón de PayPal (solo se muestra si se selecciona PayPal) */}
                 {paymentMethod === 'paypal' && (
-                    <Box mb={2} bgcolor="#f3f4f6" p={2} borderRadius={1}>
+                    <Box 
+                        mb={2} 
+                        bgcolor="#f3f4f6" 
+                        p={2} 
+                        borderRadius={1}
+                        ref={paypalSectionRef}
+                    >
                         <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>
                             Pago con PayPal
                         </Typography>
                         <Box sx={{ minHeight: '120px' }}>
+                            {isCreatingOrder && (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
+                                    <CircularProgress />
+                                </Box>
+                            )}
                             <PayPalButtons
                                 createOrder={createPayPalOrder}
                                 onApprove={(data, actions) => {
@@ -325,6 +368,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                                     shape: 'rect',
                                     color: 'blue',
                                 }}
+                                disabled={isProcessing || isCreatingOrder}
                             />
                         </Box>
                     </Box>
