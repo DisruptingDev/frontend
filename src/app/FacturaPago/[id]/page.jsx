@@ -133,14 +133,17 @@ export default function FacturaPago() {
                 const data = await response.json();
                 console.log("Docto Relacionado", data);
 
+                // Convertir todos los campos numéricos usando tu función general
+                const dataConvertida = convertirCamposANumericos(data);
+
                 // Calcular el número de operación
-                const numOperacion = data.length === 0 ? 1 : data[data.length - 1].NumParcialidad + 1;
+                const numOperacion = dataConvertida.length === 0 ? 1 : dataConvertida[dataConvertida.length - 1].NumParcialidad + 1;
 
                 // Calcular el total pagado
-                const totalPagado = data.reduce((sum, pago) => sum + pago.ImpPagado, 0);
+                const totalPagado = dataConvertida.reduce((sum, pago) => sum + pago.ImpPagado, 0);
 
                 // Obtener el saldo anterior del último pago (si existe)
-                const saldoAnterior = data.length > 0 ? parseFloat(data[data.length - 1].ImpSaldoInsoluto) : totalPago;
+                const saldoAnterior = dataConvertida.length > 0 ? dataConvertida[dataConvertida.length - 1].ImpSaldoInsoluto : totalPago;
 
                 // Calcular el saldo restante
                 const saldoRestante = totalPago - totalPagado;
@@ -150,7 +153,7 @@ export default function FacturaPago() {
                     numOperacion: numOperacion,
                     totalPagado: totalPagado,
                     saldo: saldoRestante,
-                    saldoAnterior: saldoAnterior, // Añadir saldoAnterior al estado
+                    saldoAnterior: saldoAnterior,
                 });
 
                 console.log("Pagos calculados:", {
