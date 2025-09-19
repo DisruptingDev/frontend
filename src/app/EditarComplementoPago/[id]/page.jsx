@@ -86,7 +86,7 @@ export default function EditarComplementoPago() {
                         }],
                         Totales: {
                             ...facturaData.factura.Complemento.Pagos.Totales,
-                            TotalTrasladosBaseIVA16: parseFloat(editedPago.Monto) / 1.16,
+                            TotalTrasladosBaseIVA16: parseFloat((editedPago.Monto).toFixed(2)) / 1.16,
                             TotalTrasladosImpuestoIVA16: parseFloat(editedPago.Monto) - (parseFloat(editedPago.Monto) / 1.16),
                             MontoTotalPagos: parseFloat(editedPago.Monto)
                         }
