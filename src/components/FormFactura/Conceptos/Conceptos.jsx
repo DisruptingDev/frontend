@@ -181,9 +181,9 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     useEffect(() => {
         const calcularSubtotal = () => {
-            const cantidad = getValues('Cantidad');
-            const precioUnitario = getValues('ValorUnitario');
-            const descuento = getValues('Descuento');
+            const cantidad = parseFloat(getValues('Cantidad'));
+            const precioUnitario = parseFloat(getValues('ValorUnitario'));
+            const descuento = parseFloat(getValues('Descuento'));
             let subtotal;
             if (isNotaCredito) {
                 subtotal = (cantidad * precioUnitario) / 1.16;

@@ -2,14 +2,9 @@
 
 import React, { useState, forwardRef, useEffect } from "react";
 import { TextField, Box, Typography, FormControl, Select as MuiSelect, InputLabel, MenuItem, } from "@mui/material";
-import { styled } from "@mui/material/styles";
-
 import "react-datepicker/dist/react-datepicker.css";
 import Select from "@/components/Select/Select.jsx";
-// import DatePickerComponent from "./DatePickerComponent";
 import ReactDatePicker from "./DatePickerComponent";
-import { get } from "react-hook-form";
-import Impuesto from "../Impuesto/Impuesto";
 import { format, parse, set } from "date-fns";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -206,16 +201,6 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
             lg: '0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
           }
         }}>
-        {/* <DatePickerComponent
-          selectedDate={fechaPago}
-          onChange={(date) => {
-            const formattedDate = format(new Date(date), "yyyy-MM-dd'T'HH:mm:ss");
-            setFechaPago(formattedDate);
-            setFechaPago(date);
-            setPago({ ...pago, fechaPago: formattedDate });
-            // setValue("FechaPago", formattedDate);
-          }}
-        /> */}
         <ReactDatePicker
           selectedDate={fechaPago} // Pasa el estado al componente hijo
           onChange={(date) => {

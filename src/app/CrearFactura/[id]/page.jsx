@@ -42,21 +42,55 @@ export default function CrearFactura() {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
             setToken(token);
-            //console.log("Token", token);
         }
     }, [router]);
 
+    function convertirCamposANumericos(obj) {
+        if (typeof obj !== 'object' || obj === null) {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            return obj.map(item => convertirCamposANumericos(item));
+        }
+
+        const resultado = {};
+
+        for (const [key, value] of Object.entries(obj)) {
+            // Si es un objeto o array, procesar recursivamente
+            if (typeof value === 'object' && value !== null) {
+                resultado[key] = convertirCamposANumericos(value);
+                continue;
+            }
+
+            // Si la clave no termina en "String" y existe una versión con "String"
+            if (!key.endsWith('String') && typeof value === 'string') {
+                const stringKey = key + 'String';
+
+                // Verificar si existe la versión con "String" en el mismo nivel
+                if (obj.hasOwnProperty(stringKey)) {
+                    // Intentar convertir a número
+                    const numero = parseFloat(value);
+                    resultado[key] = isNaN(numero) ? value : numero;
+                    continue;
+                }
+            }
+
+            // Mantener el valor original
+            resultado[key] = value;
+        }
+
+        return resultado;
+    }
 
     useEffect(() => {
 
         const fetchFactura = async () => {
             try {
-                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
                 const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -64,8 +98,11 @@ export default function CrearFactura() {
                     },
                 });
                 const data = await response.json();
-                setFacturaEdit(data);
-                console.log("Factura", data);
+
+                // Convertir automáticamente todos los campos
+                const facturaConvertida = convertirCamposANumericos(data);
+                setFacturaEdit(facturaConvertida);
+
             } catch (error) {
                 console.error('Error fetching factura:', error);
             }
@@ -78,11 +115,9 @@ export default function CrearFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            //console.log("Factura editada", facturaEdit);
             const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
-                //console.log("Conceptos", Conceptos);
                 setConceptos(Conceptos);
             }
             if (Emisor) {
@@ -97,17 +132,13 @@ export default function CrearFactura() {
 
 
     const onSubmit = (data) => {
-        console.log("Datos del formulario:", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "Factura");
-        console.log('Factura creada:', factura);
-        console.log("Flujo antes de guardar")
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito

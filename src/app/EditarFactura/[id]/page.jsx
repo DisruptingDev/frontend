@@ -53,11 +53,49 @@ export default function EditarFactura() {
             setToken(token);
         }
     }, [router]);
+
+    function convertirCamposANumericos(obj) {
+        if (typeof obj !== 'object' || obj === null) {
+            return obj;
+        }
+
+        if (Array.isArray(obj)) {
+            return obj.map(item => convertirCamposANumericos(item));
+        }
+
+        const resultado = {};
+
+        for (const [key, value] of Object.entries(obj)) {
+            // Si es un objeto o array, procesar recursivamente
+            if (typeof value === 'object' && value !== null) {
+                resultado[key] = convertirCamposANumericos(value);
+                continue;
+            }
+
+            // Si la clave no termina en "String" y existe una versión con "String"
+            if (!key.endsWith('String') && typeof value === 'string') {
+                const stringKey = key + 'String';
+
+                // Verificar si existe la versión con "String" en el mismo nivel
+                if (obj.hasOwnProperty(stringKey)) {
+                    // Intentar convertir a número
+                    const numero = parseFloat(value);
+                    resultado[key] = isNaN(numero) ? value : numero;
+                    continue;
+                }
+            }
+
+            // Mantener el valor original
+            resultado[key] = value;
+        }
+
+        return resultado;
+    }
+
     useEffect(() => {
 
         const fetchFactura = async () => {
             try {
-                // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
                 const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -65,8 +103,8 @@ export default function EditarFactura() {
                     },
                 });
                 const data = await response.json();
-                setFacturaEdit(data);
-                console.log("Factura", data);
+                const facturaConvertida = convertirCamposANumericos(data);
+                setFacturaEdit(facturaConvertida);
             } catch (error) {
                 console.error('Error fetching factura:', error);
             }
