@@ -77,42 +77,54 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
 
   const calcularDesglose = (monto) => {
-    if (!conceptos || conceptos.length === 0 || monto <= 0) return;
+    // Convertir monto a número
+    const montoNumero = parseFloat(monto) || 0;
+    
+    if (!conceptos || conceptos.length === 0 || montoNumero <= 0) return;
 
+    // Asegurar que los valores sean números
     const totalFactura = conceptos.reduce(
-      (total, concepto) => total + concepto.Subtotal + concepto.TotalTraslados,
-      0
+        (total, concepto) => {
+            const subtotal = parseFloat(concepto.Subtotal) || 0;
+            const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
+            return total + subtotal + totalTraslados;
+        },
+        0
     );
 
     const nuevoDesglose = conceptos.map((concepto) => {
-      const totalConcepto = concepto.Subtotal + concepto.TotalTraslados;
-      const proporcion = totalConcepto / totalFactura;
-      const pagoParcial = monto * proporcion;
+        const subtotal = parseFloat(concepto.Subtotal) || 0;
+        const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
+        const totalConcepto = subtotal + totalTraslados;
+        const proporcion = totalConcepto / totalFactura;
+        const pagoParcial = montoNumero * proporcion;
 
-      const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
-        // Calcular la proporción del subtotal sin impuestos
-        const proporcionSubtotal = concepto.Subtotal / totalConcepto;
-        const baseProporcional = pagoParcial / (1 + impuesto.TasaOCuota);
-        const montoProporcional = baseProporcional * impuesto.TasaOCuota;
+        const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
+            // Convertir valores a números
+            const tasaOCuota = parseFloat(impuesto.TasaOCuota) || 0;
+            
+            const proporcionSubtotal = subtotal / totalConcepto;
+            const baseProporcional = pagoParcial / (1 + tasaOCuota);
+            const montoProporcional = baseProporcional * tasaOCuota;
+
+            return {
+                ImpuestoCatalogoID: impuesto.Impuesto || 0,
+                TipoImpuesto: impuesto.TipoImpuesto,
+                NombreImpuesto: impuesto.NombreImpuesto,
+                ImpuestoClave: impuesto.ImpuestoClave || "",
+                TasaOCuota: tasaOCuota,
+                BaseProporcional: baseProporcional,
+                MontoProporcional: montoProporcional,
+                TipoFactor: impuesto.TipoF,
+            };
+        });
 
         return {
-          ImpuestoCatalogoID: impuesto.Impuesto || 0,
-          TipoImpuesto: impuesto.TipoImpuesto,
-          NombreImpuesto: impuesto.NombreImpuesto,
-          ImpuestoClave: impuesto.ImpuestoClave || "",
-          TasaOCuota: impuesto.TasaOCuota,
-          BaseProporcional: baseProporcional.toFixed(2),
-          MontoProporcional: montoProporcional.toFixed(2),
-          TipoFactor: impuesto.TipoF,
+            Descripcion: concepto.Descripcion,
+            PagoProporcional: pagoParcial,
+            SubtotalProporcional: ((subtotal / totalConcepto) * pagoParcial),
+            ImpuestosProporcionales: impuestosProporcionales,
         };
-      });
-
-      return {
-        Descripcion: concepto.Descripcion,
-        PagoProporcional: pagoParcial.toFixed(2),
-        SubtotalProporcional: ((concepto.Subtotal / totalConcepto) * pagoParcial).toFixed(2),
-        ImpuestosProporcionales: impuestosProporcionales,
-      };
     });
 
     // Consolidar totales de impuestos
