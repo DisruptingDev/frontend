@@ -28,7 +28,9 @@ export default function AltaSerie({ token }) {
             TimbresDisponibles: 0,
             EmisorID: data.Empresa
         };
-    
+
+        console.log('Datos a enviar:', datos);
+
         try {
             const response = await fetch(`${apiUrl}/api/series/CrearSerie`, {
                 method: 'POST',
@@ -38,34 +40,44 @@ export default function AltaSerie({ token }) {
                 },
                 body: JSON.stringify(datos),
             });
-    
+
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error al guardar:', errorData);
-                setToast({ 
-                    open: true, 
-                    message: errorData.error || 'Error al guardar los datos', 
-                    severity: 'error' 
-                });
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    console.error('Error de autenticación:', errorData);
+                    setToast({
+                        open: true,
+                        message: 'El Rol actual no cuenta con los permisos necesarios para realizar esta acción.',
+                        severity: 'error'
+                    });
+                } else {
+                    const errorData = await response.json();
+                    console.error('Error al guardar:', errorData);
+                    setToast({
+                        open: true,
+                        message: errorData.error || 'Error al guardar los datos',
+                        severity: 'error'
+                    });
+                }
             } else {
                 const result = await response.json();
                 console.log('Guardado exitoso:', result);
-                setToast({ 
-                    open: true, 
-                    message: 'Serie guardada exitosamente', 
-                    severity: 'success' 
+                setToast({
+                    open: true,
+                    message: 'Serie guardada exitosamente',
+                    severity: 'success'
                 });
             }
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            setToast({ 
-                open: true, 
-                message: 'Ocurrió un error al guardar los datos', 
-                severity: 'error' 
+            setToast({
+                open: true,
+                message: 'Ocurrió un error al guardar los datos',
+                severity: 'error'
             });
         }
-    };    
-    
+    };
+
     return (
         <Box>
             <Typography variant="h6" mb={4}>Alta de Serie</Typography>
@@ -140,37 +152,37 @@ export default function AltaSerie({ token }) {
                     />
                 </Box>
                 <WithPermission permission="crear_series">
-                <Box
-                    my={1}
-                    mx={0}
-                    display="flex"
-                    justifyContent="flex-end"
-                    gap={3}
-                >
-                    <Button
-                        variant="contained"
-                        color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
-                        type="button"
-                        onClick={() => router.push("/Home")}
+                    <Box
+                        my={1}
+                        mx={0}
+                        display="flex"
+                        justifyContent="flex-end"
+                        gap={3}
                     >
-                        Cancelar
-                    </Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                            type="button"
+                            onClick={() => router.push("/Home")}
+                        >
+                            Cancelar
+                        </Button>
 
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        sx={{
-                            width: '250px',
-                            backgroundColor: '#04b2ca',
-                            '&:hover': { backgroundColor: '#038a9e' },
-                        }}
-                        type="button"
-                        onClick={handleSubmit(onSubmit)}
-                    >
-                        Guardar
-                    </Button>
-                </Box>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            sx={{
+                                width: '250px',
+                                backgroundColor: '#04b2ca',
+                                '&:hover': { backgroundColor: '#038a9e' },
+                            }}
+                            type="button"
+                            onClick={handleSubmit(onSubmit)}
+                        >
+                            Guardar
+                        </Button>
+                    </Box>
                 </WithPermission>
             </form>
             <Snackbar

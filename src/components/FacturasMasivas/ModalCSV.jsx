@@ -16,11 +16,6 @@ const ModalCSV = ({ token, open, handleClose, handleUpload }) => {
         formData.append("ExcelFile", file, file.name); // `ExcelFile` es el nombre del campo esperado por la API
 
         try {
-            console.log("Token: " + token);
-            console.log("api: " + apiUrl)+"/api/FacturasMasivas/ImportarFactura";
-            console.log("formData: " + formData);
-            console.log("file name: " + file.name);
-          
             const response = await fetch(`${apiUrl}/api/cargamasivafacturas/CargarFacturas`, {
                 method: 'POST',
                 headers: {

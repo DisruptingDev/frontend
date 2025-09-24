@@ -5,7 +5,6 @@ import Header from "@/components/Header/Header.jsx";
 import { isAuthenticated } from "@/utils/authRedirect";
 import { Box, Button, Grid } from "@mui/material";
 import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
-
 import ModalExito from "@/components/Home/Modales/modalExito";
 import ModalFacturasError from "@/components/FacturasMasivas/Modal";
 import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
@@ -73,6 +72,8 @@ export default function ImportarFacturas() {
         setLoading(true);
         let exito = 0;
 
+        console.log("Facturas a guardar:", facturasAGuardar);
+
         try {
             for (const factura of facturasAGuardar) {
                 const response = await fetch(`${apiUrl}/api/facturas/GuardarFactura`, {
@@ -98,6 +99,8 @@ export default function ImportarFacturas() {
             }, 2000);
         } catch (error) {
             console.error(error);
+            setConfirmationMessage("Ocurrió un error al guardar las facturas");
+            setOpenModalError(true);
         } finally {
             setLoading(false);
         }
