@@ -88,9 +88,15 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion, setReceptorID]);
 
     const handleReceptorChange = (e) => {
+        console.log("Valor seleccionado:", e.target.value);
         try {
             const data = JSON.parse(e.target.value);
             setReceptor(data); // tu estado local
+
+            // Actualiza el valor en el formulario
+            setValue("Receptor", data.ID);
+            setValue("ReceptorID", data.ID);
+
             if (setReceptorID) {
                 setReceptorID(data.ID);
             }
@@ -106,6 +112,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             if (setReceptorID) {
                 setReceptorID(data.ID);
             }
+
+            // Actualizar los valores del formulario
+            setValue("Receptor", data.ID);
+            setValue("ReceptorID", data.ID);
+            
             if (data["Rfc"] !== "XAXX010101000") {
                 setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
                 setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
@@ -220,19 +231,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 }}
                 gap={3}
             >
-                {/* <Select
-                    register={register}
-                    nombre="Receptor"
-                    url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
-                    id="ID"
-                    descripcion="Nombre"
-                    onChange={(e) => setReceptor(e.target.value)}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                    value={getValues("ReceptorID") || ""}
-                    reset={isModalClosed}  // Pasa el estado al componente Select
-                    disabled={disabled}
-                /> */}
 
                 <AutocompleteReceptor
                     nombre="Receptor"
