@@ -148,7 +148,7 @@ const RowActionMenu = React.memo(({
                         </MenuItem>,
                     ]}
 
-                    {menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && [
+                    {menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && menuRow?.EstatusPagos != 'Liquidado' && [
                         <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
                             <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
                         </MenuItem>
@@ -204,7 +204,9 @@ export default function DataTable({ token }) {
                             TotalImpuestosRetenidos: 0
                         },
                         Emisor: item.Emisor || { Nombre: 'Desconocido', Rfc: '' },
-                        Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' }
+                        Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' },
+                        // Normalizar MontoTotalPagos
+                        MontoTotalPagos: item.Complemento?.Pagos?.Totales?.MontoTotalPagos || 0,
                     }));
 
                     setData(normalizedData.sort((a, b) => b.ID - a.ID));
@@ -571,6 +573,15 @@ export default function DataTable({ token }) {
             }
         },
         {
+            name: "uuid",
+            label: "UUID",
+            options: {
+                filter: true,
+                sort: true,
+                customBodyRender: (value) => value || 'Sin timbrar'
+            }
+        },
+        {
             name: "Emisor",
             label: "Emisor",
             options: {
@@ -689,6 +700,15 @@ export default function DataTable({ token }) {
         {
             name: "Total",
             label: "Total",
+            options: {
+                filter: false,
+                sort: true,
+                customBodyRender: (value) => formatCurrency(value || 0)
+            }
+        },
+        {
+            name: "MontoTotalPagos",
+            label: "Monto Pagado",
             options: {
                 filter: false,
                 sort: true,
