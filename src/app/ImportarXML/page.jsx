@@ -3,14 +3,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import { isAuthenticated } from "@/utils/authRedirect";
-import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
-import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
+import { Box, Button, Grid } from "@mui/material";
+import ModalXML from "@/components/ImportarXML/ModalXML";
 import ModalFacturasError from "@/components/FacturasMasivas/Modal";
 import ModalError from "@/components/Home/Modales/modalError";
 import ModalExito from "@/components/Home/Modales/modalExito";
 import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
-import FormatearFactura from "@/components/FacturasMasivas/FormatearFactura";
+import VistaXMLImportado from "@/components/ImportarXML/VistaXMLImportado";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { formatearFacturaXML, formatearFacturaXMLSimple } from "@/components/ImportarXML/FormatearXML.js";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -23,13 +24,57 @@ export default function ImportarFacturas() {
     const [respuestaModal, setRespuestaModal] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
     const [facturas, setFacturas] = useState([]);
+    const [facturaXML, setFacturaXML] = useState(null);
     const [facturasSinErrores, setFacturasSinErrores] = useState([]);
     const [token, setToken] = useState("");
     const [loading, setLoading] = useState(false);
+    const [modoImportacion, setModoImportacion] = useState("masiva");
+
+    // Función para manejar la carga de XML
+    // Función para manejar la carga de XML
+    const handleUploadXML = (result) => {
+        console.log("Resultado XML:", result);
+
+        if (result.success) {
+            let facturaFormateada;
+
+            // ✅ Usar la función con detección de timbrado si tenemos el XML original
+            if (result.xmlContentOriginal) {
+                facturaFormateada = formatearFacturaXML(result.data, result.xmlContentOriginal);
+            } else {
+                // ✅ Usar la función simple si no tenemos el XML original
+                facturaFormateada = formatearFacturaXMLSimple(result.data);
+            }
+
+            setFacturaXML(facturaFormateada);
+            setModoImportacion("xml");
+            setFacturas([facturaFormateada]);
+
+            // ✅ Mostrar mensaje diferente si ya está timbrado
+            if (facturaFormateada.estaTimbrado) {
+                setConfirmationMessage(`✅ XML timbrado importado. UUID: ${facturaFormateada.infoTimbrado?.UUID}`);
+            } else {
+                setConfirmationMessage("✅ XML validado correctamente - Listo para timbrar");
+            }
+
+            setOpenModalExito(true);
+        } else {
+            setConfirmationMessage(`❌ Errores en XML:\n${result.errors.join('\n')}`);
+            setOpenModalError(true);
+        }
+    };
 
     // Función para actualizar las facturas
     const actualizarFacturas = (nuevasFacturas) => {
-        setFacturas(nuevasFacturas); // Actualiza el estado de las facturas
+        setFacturas(nuevasFacturas);
+        if (nuevasFacturas.length > 0 && nuevasFacturas[0]?.Version) {
+            // Si tiene estructura de XML, mantener modo XML
+            setModoImportacion("xml");
+            setFacturaXML(nuevasFacturas[0]);
+        } else {
+            setModoImportacion("masiva");
+            setFacturaXML(null);
+        }
     };
 
     useEffect(() => {
@@ -45,35 +90,23 @@ export default function ImportarFacturas() {
     const handleCloseModal = () => setOpenModal(false);
     const handleCloseModalError = () => setOpenModalError(false);
 
-    const handleDescargarPlantilla = async () => {
-        try {
-            const response = await fetch(`${apiUrl}/api/cargamasivafacturas/DescargarCSV`, {
-                method: "GET",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = "Plantilla_Factura_Masiva.xlsx";
-                link.click();
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
+    // Guardar facturas
     const guardarFacturas = async (facturasAGuardar) => {
         setLoading(true);
         let exito = 0;
 
         try {
             for (const factura of facturasAGuardar) {
-                const response = await fetch(`${apiUrl}/api/facturas/GuardarFactura`, {
+                console.log("📦 Procesando factura:", factura);
+
+                // ✅ Determinar el endpoint según si está timbrada o no
+                const endpoint = factura.estaTimbrado ?
+                    `${apiUrl}/api/facturas/GuardarFacturaTimbrada` : // Endpoint para facturas timbradas
+                    `${apiUrl}/api/facturas/GuardarFactura`;         // Endpoint para facturas por timbrar
+
+                console.log(`📤 Enviando a: ${endpoint}`);
+
+                const response = await fetch(endpoint, {
                     method: "POST",
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -84,54 +117,66 @@ export default function ImportarFacturas() {
 
                 if (response.ok) {
                     exito++;
+                    console.log("✅ Factura guardada exitosamente");
                 } else {
-                    console.error("Error al guardar la factura");
+                    const errorData = await response.json();
+                    console.error("❌ Error al guardar la factura:", errorData);
+
+                    // Mensaje específico según el tipo de factura
+                    const tipoFactura = factura.estaTimbrado ? "timbrada" : "por timbrar";
+                    alert(`Error al guardar factura ${tipoFactura}: ${errorData.error || "Error desconocido"}`);
                 }
             }
 
-            setConfirmationMessage(`Se guardaron ${exito} facturas con éxito`);
-            setOpenModalExito(true);
-            setTimeout(() => {
-                router.push("/Home");
-            }, 2000);
+            if (exito > 0) {
+                const mensaje = facturasAGuardar[0]?.estaTimbrado ?
+                    `Se importaron ${exito} facturas timbradas con éxito` :
+                    `Se guardaron ${exito} facturas listas para timbrar`;
+
+                setConfirmationMessage(mensaje);
+                setOpenModalExito(true);
+                setTimeout(() => {
+                    router.push("/Home");
+                }, 2000);
+            }
         } catch (error) {
-            console.error(error);
+            console.error("Error en guardarFacturas:", error);
+            setConfirmationMessage("Error de conexión al guardar las facturas");
+            setOpenModalError(true);
         } finally {
             setLoading(false);
         }
     };
 
     const handleGuardarFacturas = async () => {
-        const hasError = (obj) => Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
-
-        const facturasConErrores = facturas.filter((factura) =>
-            hasError(factura.Concepto) || hasError(factura.Emisor) || hasError(factura.Impuesto) || hasError(factura.Receptor)
-        );
-
-        const facturasSinErrores = facturas.filter((factura) =>
-            !hasError(factura.Concepto) && !hasError(factura.Emisor) && !hasError(factura.Impuesto) && !hasError(factura.Receptor)
-        );
-
-        if (facturasConErrores.length === facturas.length) {
-            setOpenModalError(true);
-            setConfirmationMessage("Todas las facturas contienen errores");
-        } else if (facturasConErrores.length > 0) {
-            setFacturasSinErrores(facturasSinErrores);
-            setOpenModalFacturasError(true);
-            setConfirmationMessage(`Hay ${facturasConErrores.length} facturas con errores`);
+        if (modoImportacion === "xml" && facturaXML) {
+            // ✅ Guardar directamente factura_completa sin formatear
+            await guardarFacturas([facturaXML]);
         } else {
-            const facturasFormateadas = facturasSinErrores.map((factura) => FormatearFactura([factura]));
-            await guardarFacturas(facturasFormateadas);
+            // Lógica original para facturas masivas (si aplica)
+            const hasError = (obj) => Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
+
+            const facturasConErrores = facturas.filter((factura) =>
+                hasError(factura.Concepto) || hasError(factura.Emisor) || hasError(factura.Impuesto) || hasError(factura.Receptor)
+            );
+
+            const facturasSinErrores = facturas.filter((factura) =>
+                !hasError(factura.Concepto) && !hasError(factura.Emisor) && !hasError(factura.Impuesto) && !hasError(factura.Receptor)
+            );
+
+            if (facturasConErrores.length === facturas.length) {
+                setOpenModalError(true);
+                setConfirmationMessage("Todas las facturas contienen errores");
+            } else if (facturasConErrores.length > 0) {
+                setFacturasSinErrores(facturasSinErrores);
+                setOpenModalFacturasError(true);
+                setConfirmationMessage(`Hay ${facturasConErrores.length} facturas con errores`);
+            } else {
+                // Para facturas masivas, usar la lógica existente
+                await guardarFacturas(facturasSinErrores);
+            }
         }
     };
-
-    useEffect(() => {
-        if (respuestaModal && facturasSinErrores.length > 0) {
-            const facturasFormateadas = facturasSinErrores.map((factura) => FormatearFactura([factura]));
-            guardarFacturas(facturasFormateadas);
-            setRespuestaModal(false);
-        }
-    }, [respuestaModal, facturasSinErrores]);
 
     return (
         <div>
@@ -140,7 +185,7 @@ export default function ImportarFacturas() {
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid   >
+                <Grid>
                     <Box
                         bgcolor="white"
                         ml={10}
@@ -157,18 +202,24 @@ export default function ImportarFacturas() {
                             >
                                 Importar XML
                             </Button>
-                            {/* <Button
-                                variant="contained"
-                                sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
-                                onClick={handleDescargarPlantilla}
-                            >
-                                Descargar Plantilla
-                            </Button> */}
                         </Box>
-                        <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} actualizarFacturas={actualizarFacturas} />
-                        <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
+
+                        <VistaXMLImportado
+                            facturaXML={facturaXML}
+                            token={token}
+                            actualizarFacturas={actualizarFacturas}
+                        />
+
+                        <ModalXML
+                            token={token}
+                            open={openModal}
+                            handleClose={handleCloseModal}
+                            handleUpload={handleUploadXML}
+                        />
+
                         <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
-                        {facturas.length > 0 && (
+
+                        {(facturas.length > 0 || facturaXML) && (
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button
                                     variant="contained"

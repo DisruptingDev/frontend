@@ -51,13 +51,6 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
             setPasswordError(false);
         }
 
-        // if (hasError) {
-        //     setSnackbarMessage('Por favor, complete todos los campos obligatorios.');
-        //     setSnackbarSeverity('warning');
-        //     setOpenSnackbar(true);
-        //     return;
-        // }
-
         const formData = new FormData();
         formData.append('CSD', csdFile);
         formData.append('KEY', keyFile);
@@ -73,7 +66,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                 const response = await fetch(`${apiUrl}/api/certificados/EditarCertificado`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: formData,
                 });
@@ -82,24 +75,10 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
 
                     const data = await response.json();
                     console.log(data);
-                    // if (data.status === 'success') {
                         setSnackbarMessage("Certificado actualizado correctamente");
                         setSnackbarSeverity('success');
                         setOpenSnackbar(true);
 
-                        // const { issuer_rfc, issuer_business_name } = data.CSD;
-                        // onUpdateEmpresa(issuer_business_name, issuer_rfc);
-                    // }
-
-                    // else if (data.status === 'error') {
-
-                    //     const error = "Error al subir los archivos: " + data.error;
-                    //     console.error('Error al subir los archivos:', error);
-
-                    //     setSnackbarMessage(error);
-                    //     setSnackbarSeverity('error');
-                    //     setOpenSnackbar(true);
-                    // }
                 }
                 else {
                     const data = await response.json();
@@ -125,10 +104,13 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                 const response = await fetch(`${apiUrl}/api/certificados/SubirCSD`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: formData,
                 });
+
+                console.log('Response',response);
+                console.log('Token',token);
 
                 if (response.ok) {
 

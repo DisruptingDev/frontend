@@ -1,6 +1,5 @@
 "use client";
 
-
 import { Box, Tabs, Tab, Typography, Grid } from '@mui/material';
 import Planes from '@/components/CompraTimbres/Planes';
 import Paquetes from '@/components/CompraTimbres/Paquetes';

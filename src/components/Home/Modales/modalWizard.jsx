@@ -24,6 +24,15 @@ import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa";
 import Paquetes from '@/components/CompraTimbres/Paquetes';
 import Planes from '@/components/CompraTimbres/Planes';
 import { WithPermission } from '@/components/WithPermission'; // Ajusta esta ruta según tu estructura
+import { PayPalScriptProvider } from '@paypal/react-paypal-js';
+
+
+const initialOptions = {
+    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+    currency: "MXN",
+    intent: "capture",
+    locale: "es_MX",
+};
 
 const steps = [
     { label: 'Registrar Empresa', icon: <BusinessIcon /> },
@@ -41,8 +50,8 @@ const StyledStepIcon = styled('div')(({ theme, active, completed }) => ({
     backgroundColor: active
         ? 'rgba(29, 57, 77, 1)'
         : completed
-        ? 'rgba(29, 57, 77, 1)'
-        : theme.palette.grey[300],
+            ? 'rgba(29, 57, 77, 1)'
+            : theme.palette.grey[300],
     color: theme.palette.common.white,
     transition: 'background-color 0.3s ease-in-out',
 }));
@@ -98,27 +107,29 @@ const ModalWizard = ({ open, handleClose, token }) => {
                 );
             case 1:
                 return (
-                    <div>
-                        <Tabs
-                            value={valorTab}
-                            onChange={(e, newValue) => setValorTab(newValue)}
-                            textColor="primary"
-                            centered
-                            sx={{
-                                '& .MuiTabs-indicator': {
-                                    backgroundColor: '#1b384a',
-                                },
-                            }}
-                        >
-                            <Tab label="Paquetes" />
-                            <Tab label="Planes" />
-                        </Tabs>
-                        {valorTab === 0 ? (
-                            <Paquetes token={token} setCompra={setCompra} />
-                        ) : (
-                            <Planes token={token} setCompra={setCompra} />
-                        )}
-                    </div>
+                    <PayPalScriptProvider options={initialOptions}>
+                        <div>
+                            <Tabs
+                                value={valorTab}
+                                onChange={(e, newValue) => setValorTab(newValue)}
+                                textColor="primary"
+                                centered
+                                sx={{
+                                    '& .MuiTabs-indicator': {
+                                        backgroundColor: '#1b384a',
+                                    },
+                                }}
+                            >
+                                <Tab label="Paquetes" />
+                                <Tab label="Planes" />
+                            </Tabs>
+                            {valorTab === 0 ? (
+                                <Paquetes token={token} setCompra={setCompra} />
+                            ) : (
+                                <Planes token={token} setCompra={setCompra} />
+                            )}
+                        </div>
+                    </PayPalScriptProvider>
                 );
             case 2:
                 return (
