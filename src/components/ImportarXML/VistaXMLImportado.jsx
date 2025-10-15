@@ -14,6 +14,8 @@ const VistaXMLImportado = ({
     const [menuRow, setMenuRow] = useState(null);
     const [facturas, setFacturas] = useState([]);
 
+    console.log("Factura XML recibida en VistaXMLImportado:", facturaXML);
+
     // Convertir la factura XML al formato esperado por la tabla
     useEffect(() => {
         if (facturaXML) {
@@ -37,18 +39,20 @@ const VistaXMLImportado = ({
 
             // Emisor desde factura_completa
             Emisor: {
-                RFC: factura.Emisor?.Rfc || factura.RFCEmisor || "",
+                RFC: factura.Emisor?.Rfc || factura.EmisorRFC || "",
                 Nombre: factura.Emisor?.Nombre || factura.NombreEmisor || "",
                 RegimenFiscal: factura.Emisor?.RegimenFiscal || "",
-                Error: factura.validaciones?.emisor_valido ? "" : "record not found"
+                // ✅ Para XML timbrados, considerar que ya están validados
+                Error: factura.estaTimbrado ? "" : (factura.validaciones?.emisor_valido ? "" : "record not found")
             },
 
             // Receptor desde factura_completa
             Receptor: {
-                RFC: factura.Receptor?.Rfc || factura.RFCReceptor || "",
+                RFC: factura.Receptor?.Rfc || factura.ReceptorRFC || "",
                 Nombre: factura.Receptor?.Nombre || factura.NombreReceptor || "",
                 UsoCFDI: factura.UsoCFDI || factura.Receptor?.UsoCFDI || "",
-                Error: factura.validaciones?.receptor_valido ? "" : "record not found"
+                // ✅ Para XML timbrados, considerar que ya están validados
+                Error: factura.estaTimbrado ? "" : (factura.validaciones?.receptor_valido ? "" : "record not found")
             },
 
             // Concepto (tomamos el primer concepto)
@@ -63,6 +67,10 @@ const VistaXMLImportado = ({
             // Validaciones
             Validaciones: factura.validaciones || {},
 
+            // ✅ Mantener propiedades importantes para validación
+            estaTimbrado: factura.estaTimbrado,
+            infoTimbrado: factura.infoTimbrado,
+            
             // ✅ Mantener la factura original completa para edición/guardado
             FacturaCompleta: factura
         };
@@ -122,14 +130,36 @@ const VistaXMLImportado = ({
         handleMenuClose();
     };
 
-    // Función para mostrar estado de validación
-    const renderEstadoValidacion = (validaciones) => {
-        if (!validaciones) return null;
+    // ✅ Función CORREGIDA para mostrar estado de validación
+    const renderEstadoValidacion = (validaciones, facturaCompleta) => {
+        // Si la factura está timbrada, automáticamente es válida
+        if (facturaCompleta?.estaTimbrado) {
+            return (
+                <Chip
+                    label="Válida (Timbrada)"
+                    color="success"
+                    size="small"
+                />
+            );
+        }
 
-        const todasValidas = validaciones.emisor_valido &&
-            validaciones.receptor_valido &&
-            validaciones.serie_valida &&
-            !validaciones.duplicado;
+        if (!validaciones) {
+            return (
+                <Chip
+                    label="Sin validar"
+                    color="default"
+                    size="small"
+                />
+            );
+        }
+
+        // Para facturas no timbradas, evaluar las validaciones
+        const emisorValido = validaciones.emisor_valido !== false;
+        const receptorValido = validaciones.receptor_valido !== false;
+        const serieValida = validaciones.serie_valida !== false;
+        const noDuplicado = !validaciones.duplicado;
+
+        const todasValidas = emisorValido && receptorValido && serieValida && noDuplicado;
 
         return (
             <Chip
@@ -140,11 +170,16 @@ const VistaXMLImportado = ({
         );
     };
 
-    // Función para formatear celdas con errores
-    const renderCellWithError = (value, hasError) => {
+    // ✅ Función CORREGIDA para formatear celdas con errores
+    const renderCellWithError = (value, hasError, facturaCompleta) => {
+        // Si está timbrada, no mostrar errores
+        if (facturaCompleta?.estaTimbrado) {
+            return <span>{value || "N/A"}</span>;
+        }
+
         return (
             <span style={{ color: hasError ? "red" : "inherit" }}>
-                {hasError ? `${value} no encontrado` : value}
+                {hasError ? `${value} (No encontrado)` : value}
             </span>
         );
     };
@@ -183,22 +218,29 @@ const VistaXMLImportado = ({
             name: "Emisor",
             label: "Emisor",
             options: {
-                customBodyRender: (value) =>
-                    renderCellWithError(
-                        value.Nombre || value.RFC,
-                        value.Error === "record not found"
-                    ),
+                customBodyRender: (value, tableMeta) => {
+                    const factura = facturas[tableMeta.rowIndex];
+                    return renderCellWithError(
+                        value.RFC || "N/A",
+                        value.Error === "record not found",
+                        factura?.FacturaCompleta
+                    );
+                },
             },
         },
         {
             name: "Receptor",
             label: "Receptor",
             options: {
-                customBodyRender: (value) =>
-                    renderCellWithError(
-                        value.Nombre || value.RFC,
-                        value.Error === "record not found"
-                    ),
+                customBodyRender: (value, tableMeta) => {
+                    const factura = facturas[tableMeta.rowIndex];
+                    const displayValue = value.Nombre || value.RFC || "N/A";
+                    return renderCellWithError(
+                        displayValue,
+                        value.Error === "record not found",
+                        factura?.FacturaCompleta
+                    );
+                },
             },
         },
         {
@@ -221,42 +263,11 @@ const VistaXMLImportado = ({
         },
         {
             name: "Validaciones",
-            label: "Estado",
-            options: {
-                customBodyRender: (value) => renderEstadoValidacion(value),
-            },
-        },
-        {
-            name: "estaTimbrado",
-            label: "Estado",
+            label: "Validación",
             options: {
                 customBodyRender: (value, tableMeta) => {
                     const factura = facturas[tableMeta.rowIndex];
-                    const estaTimbrado = factura.estaTimbrado;
-                    const uuid = factura.infoTimbrado?.UUID;
-
-                    if (estaTimbrado) {
-                        return (
-                            <Box>
-                                <Chip
-                                    label="✅ TIMBRADO"
-                                    color="success"
-                                    size="small"
-                                />
-                                <Typography variant="caption" display="block">
-                                    UUID: {uuid ? `${uuid.substring(0, 8)}...` : 'N/A'}
-                                </Typography>
-                            </Box>
-                        );
-                    } else {
-                        return (
-                            <Chip
-                                label="⏳ POR TIMBRAR"
-                                color="warning"
-                                size="small"
-                            />
-                        );
-                    }
+                    return renderEstadoValidacion(value, factura?.FacturaCompleta);
                 },
             },
         },

@@ -31,7 +31,6 @@ export default function ImportarFacturas() {
     const [modoImportacion, setModoImportacion] = useState("masiva");
 
     // Función para manejar la carga de XML
-    // Función para manejar la carga de XML
     const handleUploadXML = (result) => {
         console.log("Resultado XML:", result);
 
@@ -46,17 +45,19 @@ export default function ImportarFacturas() {
                 facturaFormateada = formatearFacturaXMLSimple(result.data);
             }
 
+            // ✅ Validar que la factura esté timbrada
+            if (!facturaFormateada.estaTimbrado) {
+                setConfirmationMessage("❌ Error: Solo se pueden importar facturas timbradas. Este XML no contiene información de timbrado.");
+                setOpenModalError(true);
+                return;
+            }
+
             setFacturaXML(facturaFormateada);
             setModoImportacion("xml");
             setFacturas([facturaFormateada]);
 
-            // ✅ Mostrar mensaje diferente si ya está timbrado
-            if (facturaFormateada.estaTimbrado) {
-                setConfirmationMessage(`✅ XML timbrado importado. UUID: ${facturaFormateada.infoTimbrado?.UUID}`);
-            } else {
-                setConfirmationMessage("✅ XML validado correctamente - Listo para timbrar");
-            }
-
+            // ✅ Mostrar mensaje de éxito para XML timbrado
+            setConfirmationMessage(`✅ XML timbrado importado. UUID: ${facturaFormateada.infoTimbrado?.UUID}`);
             setOpenModalExito(true);
         } else {
             setConfirmationMessage(`❌ Errores en XML:\n${result.errors.join('\n')}`);
@@ -90,20 +91,22 @@ export default function ImportarFacturas() {
     const handleCloseModal = () => setOpenModal(false);
     const handleCloseModalError = () => setOpenModalError(false);
 
-    // Guardar facturas
-    const guardarFacturas = async (facturasAGuardar) => {
+    // Guardar facturas timbradas
+    const guardarFacturasTimbradas = async (facturasAGuardar) => {
         setLoading(true);
         let exito = 0;
 
         try {
             for (const factura of facturasAGuardar) {
-                console.log("📦 Procesando factura:", factura);
+                console.log("📦 Procesando factura timbrada:", factura);
 
-                // ✅ Determinar el endpoint según si está timbrada o no
-                const endpoint = factura.estaTimbrado ?
-                    `${apiUrl}/api/facturas/GuardarFacturaTimbrada` : // Endpoint para facturas timbradas
-                    `${apiUrl}/api/facturas/GuardarFactura`;         // Endpoint para facturas por timbrar
+                // ✅ Validar que la factura esté timbrada antes de enviar
+                if (!factura.estaTimbrado) {
+                    console.warn("⚠️ Se intentó guardar una factura no timbrada, se omitirá:", factura);
+                    continue;
+                }
 
+                const endpoint = `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
                 console.log(`📤 Enviando a: ${endpoint}`);
 
                 const response = await fetch(endpoint, {
@@ -117,31 +120,27 @@ export default function ImportarFacturas() {
 
                 if (response.ok) {
                     exito++;
-                    console.log("✅ Factura guardada exitosamente");
+                    console.log("✅ Factura timbrada guardada exitosamente");
                 } else {
                     const errorData = await response.json();
-                    console.error("❌ Error al guardar la factura:", errorData);
-
-                    // Mensaje específico según el tipo de factura
-                    const tipoFactura = factura.estaTimbrado ? "timbrada" : "por timbrar";
-                    alert(`Error al guardar factura ${tipoFactura}: ${errorData.error || "Error desconocido"}`);
+                    console.error("❌ Error al guardar la factura timbrada:", errorData);
+                    alert(`Error al guardar factura timbrada: ${errorData.error || "Error desconocido"}`);
                 }
             }
 
             if (exito > 0) {
-                const mensaje = facturasAGuardar[0]?.estaTimbrado ?
-                    `Se importaron ${exito} facturas timbradas con éxito` :
-                    `Se guardaron ${exito} facturas listas para timbrar`;
-
-                setConfirmationMessage(mensaje);
+                setConfirmationMessage(`✅ Se importaron ${exito} facturas timbradas con éxito`);
                 setOpenModalExito(true);
                 setTimeout(() => {
                     router.push("/Home");
                 }, 2000);
+            } else {
+                setConfirmationMessage("❌ No se pudo importar ninguna factura timbrada");
+                setOpenModalError(true);
             }
         } catch (error) {
-            console.error("Error en guardarFacturas:", error);
-            setConfirmationMessage("Error de conexión al guardar las facturas");
+            console.error("Error en guardarFacturasTimbradas:", error);
+            setConfirmationMessage("❌ Error de conexión al guardar las facturas timbradas");
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -150,31 +149,30 @@ export default function ImportarFacturas() {
 
     const handleGuardarFacturas = async () => {
         if (modoImportacion === "xml" && facturaXML) {
-            // ✅ Guardar directamente factura_completa sin formatear
-            await guardarFacturas([facturaXML]);
-        } else {
-            // Lógica original para facturas masivas (si aplica)
-            const hasError = (obj) => Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
-
-            const facturasConErrores = facturas.filter((factura) =>
-                hasError(factura.Concepto) || hasError(factura.Emisor) || hasError(factura.Impuesto) || hasError(factura.Receptor)
-            );
-
-            const facturasSinErrores = facturas.filter((factura) =>
-                !hasError(factura.Concepto) && !hasError(factura.Emisor) && !hasError(factura.Impuesto) && !hasError(factura.Receptor)
-            );
-
-            if (facturasConErrores.length === facturas.length) {
+            // ✅ Validar que la factura XML esté timbrada
+            if (!facturaXML.estaTimbrado) {
+                setConfirmationMessage("❌ Error: Solo se pueden importar facturas timbradas. Esta factura no contiene información de timbrado.");
                 setOpenModalError(true);
-                setConfirmationMessage("Todas las facturas contienen errores");
-            } else if (facturasConErrores.length > 0) {
-                setFacturasSinErrores(facturasSinErrores);
-                setOpenModalFacturasError(true);
-                setConfirmationMessage(`Hay ${facturasConErrores.length} facturas con errores`);
-            } else {
-                // Para facturas masivas, usar la lógica existente
-                await guardarFacturas(facturasSinErrores);
+                return;
             }
+            await guardarFacturasTimbradas([facturaXML]);
+        } else {
+            // ✅ Para facturas masivas, también validar que estén timbradas
+            const facturasTimbradas = facturas.filter(factura => factura.estaTimbrado);
+            const facturasNoTimbradas = facturas.filter(factura => !factura.estaTimbrado);
+
+            if (facturasTimbradas.length === 0) {
+                setConfirmationMessage("❌ No hay facturas timbradas para importar. Solo se permiten facturas timbradas.");
+                setOpenModalError(true);
+                return;
+            }
+
+            if (facturasNoTimbradas.length > 0) {
+                console.warn(`⚠️ Se omitirán ${facturasNoTimbradas.length} facturas no timbradas`);
+            }
+
+            // ✅ Solo procesar las facturas timbradas
+            await guardarFacturasTimbradas(facturasTimbradas);
         }
     };
 
@@ -200,7 +198,7 @@ export default function ImportarFacturas() {
                                 sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
                                 onClick={handleOpenModal}
                             >
-                                Importar XML
+                                Importar XML Timbrado
                             </Button>
                         </Box>
 
@@ -227,7 +225,7 @@ export default function ImportarFacturas() {
                                     onClick={handleGuardarFacturas}
                                     disabled={loading}
                                 >
-                                    {loading ? "Procesando..." : "Importar"}
+                                    {loading ? "Procesando..." : "Importar Facturas Timbradas"}
                                 </Button>
                             </Box>
                         )}

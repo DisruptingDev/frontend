@@ -7,7 +7,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const ModalXML = ({ token, open, handleClose, handleUpload }) => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [xmlContentOriginal, setXmlContentOriginal] = useState(''); // ✅ Nuevo state
+    const [xmlContentOriginal, setXmlContentOriginal] = useState('');
 
     const handleFileChange = (event) => {
         setFile(event.target.files[0]);
@@ -44,7 +44,7 @@ const ModalXML = ({ token, open, handleClose, handleUpload }) => {
                         data: data.factura_completa || data.comprobante,
                         message: data.mensaje,
                         validaciones: data.validaciones,
-                        xmlContentOriginal: fileContent // ✅ Pasar contenido original
+                        xmlContentOriginal: fileContent
                     });
                 } else {
                     handleUpload({
@@ -55,7 +55,7 @@ const ModalXML = ({ token, open, handleClose, handleUpload }) => {
                 }
                 handleClose();
                 setFile(null);
-                setXmlContentOriginal(''); // ✅ Limpiar
+                setXmlContentOriginal('');
             } else {
                 alert(`Error: ${data.error || "Hubo un problema al validar el XML"}`);
             }
