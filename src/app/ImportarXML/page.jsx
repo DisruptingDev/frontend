@@ -29,47 +29,79 @@ export default function ImportarFacturas() {
     const [token, setToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [modoImportacion, setModoImportacion] = useState("masiva");
+    const handleCloseModalExito = () => setOpenModalExito(false);
 
     // Función para manejar la carga de XML
     const handleUploadXML = (result) => {
-        console.log("Resultado XML:", result);
-
-        if (result.success) {
-            let facturaFormateada;
-
-            // ✅ Usar la función con detección de timbrado si tenemos el XML original
-            if (result.xmlContentOriginal) {
-                facturaFormateada = formatearFacturaXML(result.data, result.xmlContentOriginal);
-            } else {
-                // ✅ Usar la función simple si no tenemos el XML original
-                facturaFormateada = formatearFacturaXMLSimple(result.data);
-            }
-
-            // ✅ Validar que la factura esté timbrada
-            if (!facturaFormateada.estaTimbrado) {
-                setConfirmationMessage("❌ Error: Solo se pueden importar facturas timbradas. Este XML no contiene información de timbrado.");
+        try {
+            if (!result) {
+                setConfirmationMessage("No se recibió respuesta del servidor al cargar el XML.");
                 setOpenModalError(true);
                 return;
             }
 
-            setFacturaXML(facturaFormateada);
-            setModoImportacion("xml");
-            setFacturas([facturaFormateada]);
+            if (!result.success) {
+                const errores = result.errors?.join("\n") || "Error desconocido en el XML.";
+                setConfirmationMessage(`Errores en XML:\n${errores}`);
+                setOpenModalError(true);
+                return;
+            }
 
-            // ✅ Mostrar mensaje de éxito para XML timbrado
-            setConfirmationMessage(`✅ XML timbrado importado. UUID: ${facturaFormateada.infoTimbrado?.UUID}`);
+            let facturaFormateada = null;
+
+            console.log("Resultado recibido en handleUploadXML:", result);
+
+            if (result.success) {
+                facturaFormateada = formatearFacturaXML(result.data, result.xmlContentOriginal);
+                console.log("Factura formateada con detección de timbrado:", facturaFormateada);
+            } else {
+                facturaFormateada = formatearFacturaXMLSimple(result.data);
+            }
+
+            // Proteger en caso de que venga null o vacío
+            if (!facturaFormateada || typeof facturaFormateada !== "object") {
+                setConfirmationMessage("Error: No se pudo procesar la factura XML correctamente.");
+                setOpenModalError(true);
+                return;
+            }
+
+            // Doble verificación de timbrado (por si el formateador aún no lo detecta)
+            const estaTimbrado =
+                facturaFormateada?.estaTimbrado === true ||
+                result?.data?.factura_completa?.validaciones?.timbre_valido === true ||
+                !!result?.data?.factura_completa?.timbre?.UUID;
+
+            if (!estaTimbrado) {
+                setConfirmationMessage(
+                    "Error: Solo se pueden importar facturas timbradas. Este XML no contiene información de timbrado."
+                );
+                setOpenModalError(true);
+                return;
+            }
+
+            // Guardar factura en estado y mostrar éxito
+            setFacturaXML({
+                ...facturaFormateada,
+                estaTimbrado: true,
+                infoTimbrado: facturaFormateada.infoTimbrado || result?.data?.factura_completa?.timbre || {},
+            });
+
+            setModoImportacion("xml");
+            setConfirmationMessage(`XML timbrado importado. UUID: ${facturaFormateada?.infoTimbrado?.UUID || "Desconocido"}`);
             setOpenModalExito(true);
-        } else {
-            setConfirmationMessage(`❌ Errores en XML:\n${result.errors.join('\n')}`);
+        } catch (error) {
+            console.error("Error en handleUploadXML:", error);
+            setConfirmationMessage("Error inesperado al procesar el XML.");
             setOpenModalError(true);
         }
     };
 
-    // Función para actualizar las facturas
+
+    // Función para actualizar las facturas (si aún la necesitas)
     const actualizarFacturas = (nuevasFacturas) => {
+        // Si quieres mantener compatibilidad con el modo masivo
         setFacturas(nuevasFacturas);
         if (nuevasFacturas.length > 0 && nuevasFacturas[0]?.Version) {
-            // Si tiene estructura de XML, mantener modo XML
             setModoImportacion("xml");
             setFacturaXML(nuevasFacturas[0]);
         } else {
@@ -98,16 +130,16 @@ export default function ImportarFacturas() {
 
         try {
             for (const factura of facturasAGuardar) {
-                console.log("📦 Procesando factura timbrada:", factura);
 
-                // ✅ Validar que la factura esté timbrada antes de enviar
+                // Validar que la factura esté timbrada antes de enviar
                 if (!factura.estaTimbrado) {
-                    console.warn("⚠️ Se intentó guardar una factura no timbrada, se omitirá:", factura);
+                    console.warn("Se intentó guardar una factura no timbrada, se omitirá:", factura);
                     continue;
                 }
 
+                console.log("Guardando factura timbrada:", factura);
+
                 const endpoint = `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
-                console.log(`📤 Enviando a: ${endpoint}`);
 
                 const response = await fetch(endpoint, {
                     method: "POST",
@@ -120,27 +152,24 @@ export default function ImportarFacturas() {
 
                 if (response.ok) {
                     exito++;
-                    console.log("✅ Factura timbrada guardada exitosamente");
                 } else {
                     const errorData = await response.json();
-                    console.error("❌ Error al guardar la factura timbrada:", errorData);
+                    console.error("Error al guardar la factura timbrada:", errorData);
                     alert(`Error al guardar factura timbrada: ${errorData.error || "Error desconocido"}`);
                 }
-            }
 
-            if (exito > 0) {
-                setConfirmationMessage(`✅ Se importaron ${exito} facturas timbradas con éxito`);
-                setOpenModalExito(true);
-                setTimeout(() => {
-                    router.push("/Home");
-                }, 2000);
-            } else {
-                setConfirmationMessage("❌ No se pudo importar ninguna factura timbrada");
-                setOpenModalError(true);
+                if (exito > 0) {
+                    setConfirmationMessage(`Se importó la factura ${factura.UUID} timbrada correctamente.`);
+                    setOpenModalExito(true);
+                    // Redirigir después de mostrar el modal
+                    setTimeout(() => {
+                        router.push("/Home");
+                    }, 2000);
+                }
             }
         } catch (error) {
             console.error("Error en guardarFacturasTimbradas:", error);
-            setConfirmationMessage("❌ Error de conexión al guardar las facturas timbradas");
+            setConfirmationMessage("Error de conexión al guardar las facturas timbradas");
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -151,7 +180,7 @@ export default function ImportarFacturas() {
         if (modoImportacion === "xml" && facturaXML) {
             // ✅ Validar que la factura XML esté timbrada
             if (!facturaXML.estaTimbrado) {
-                setConfirmationMessage("❌ Error: Solo se pueden importar facturas timbradas. Esta factura no contiene información de timbrado.");
+                setConfirmationMessage("Error: Solo se pueden importar facturas timbradas. Esta factura no contiene información de timbrado.");
                 setOpenModalError(true);
                 return;
             }
@@ -162,7 +191,7 @@ export default function ImportarFacturas() {
             const facturasNoTimbradas = facturas.filter(factura => !factura.estaTimbrado);
 
             if (facturasTimbradas.length === 0) {
-                setConfirmationMessage("❌ No hay facturas timbradas para importar. Solo se permiten facturas timbradas.");
+                setConfirmationMessage("No hay facturas timbradas para importar. Solo se permiten facturas timbradas.");
                 setOpenModalError(true);
                 return;
             }
@@ -171,7 +200,6 @@ export default function ImportarFacturas() {
                 console.warn(`⚠️ Se omitirán ${facturasNoTimbradas.length} facturas no timbradas`);
             }
 
-            // ✅ Solo procesar las facturas timbradas
             await guardarFacturasTimbradas(facturasTimbradas);
         }
     };
@@ -179,20 +207,28 @@ export default function ImportarFacturas() {
     return (
         <div>
             <Header />
-            <Grid container>
+            <Grid container >
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
                 <Grid>
                     <Box
                         bgcolor="white"
-                        ml={10}
-                        mr={1}
+                        ml={{ xs: 1, sm: 5, md: 10 }}
+                        mr={{ xs: 1, sm: 2, md: 3 }}
                         p={2}
                         boxShadow={3}
                         borderRadius={2}
+                        sx={{
+                            width: {
+                                xs: '90vw', // móviles
+                                sm: '85vw', // tablets
+                                md: '80vw', // pantallas medianas
+                                lg: '94vw', // pantallas grandes
+                            },
+                        }}
                     >
-                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2} width="100%">
                             <Button
                                 variant="contained"
                                 sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
@@ -215,9 +251,15 @@ export default function ImportarFacturas() {
                             handleUpload={handleUploadXML}
                         />
 
+                        <ModalExito
+                            openModalSuccess={openModalExito}
+                            handleCloseModal={handleCloseModalExito}
+                            confirmationMessage={confirmationMessage}
+                        />
+
                         <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
 
-                        {(facturas.length > 0 || facturaXML) && (
+                        {facturaXML && (
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button
                                     variant="contained"
@@ -225,13 +267,13 @@ export default function ImportarFacturas() {
                                     onClick={handleGuardarFacturas}
                                     disabled={loading}
                                 >
-                                    {loading ? "Procesando..." : "Importar Facturas Timbradas"}
+                                    {loading ? "Procesando..." : "Importar Factura"}
                                 </Button>
                             </Box>
                         )}
                     </Box>
                 </Grid>
             </Grid>
-        </div>
+        </div >
     );
 }
