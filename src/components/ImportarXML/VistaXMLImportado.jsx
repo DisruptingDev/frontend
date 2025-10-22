@@ -63,13 +63,27 @@ const VistaXMLImportado = ({
     // Efecto para realizar validaciones cuando llega una nueva factura
     useEffect(() => {
         if (facturaXML && facturaXML.EmisorID) {
+            console.log('useEffect - Iniciando validaciones:', {
+                EmisorID: facturaXML.EmisorID,
+                Serie: facturaXML.Serie,
+                ReceptorID: facturaXML.ReceptorID
+            });
+
             validarEmisor();
             validarReceptor();
-            if (facturaXML.EmisorID && facturaXML.Serie) {
-                validarSerie();
-            }
+            validarSerie(); // Siempre ejecutar, incluso si Serie está vacía
         }
     }, [facturaXML]);
+
+    // Efecto separado para recargar validaciones cuando cambian los IDs
+    useEffect(() => {
+        if (facturaXML?.EmisorID) {
+            console.log('useEffect - IDs actualizados, recargando validaciones');
+            validarEmisor();
+            validarReceptor();
+            validarSerie();
+        }
+    }, [facturaXML?.EmisorID, facturaXML?.ReceptorID]);
 
     const validarEmisor = async () => {
         if (!facturaXML?.EmisorID) return;
@@ -162,11 +176,16 @@ const VistaXMLImportado = ({
     };
 
     const validarSerie = async () => {
-        if (!facturaXML?.EmisorID || !facturaXML?.Serie) return;
+        if (!facturaXML?.EmisorID) {
+            console.log('validarSerie - No hay EmisorID, cancelando validación');
+            return;
+        }
 
         setValidaciones(prev => ({ ...prev, serie: { ...prev.serie, cargando: true } }));
 
         try {
+            console.log('validarSerie - Iniciando búsqueda de series para emisor:', facturaXML.EmisorID);
+
             const response = await fetch(
                 `${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${facturaXML.EmisorID}`,
                 {
@@ -176,10 +195,31 @@ const VistaXMLImportado = ({
                 }
             );
 
+            console.log("validarSerie - Respuesta HTTP:", response.status, response.statusText);
+
             if (response.ok) {
                 const series = await response.json();
-                // Buscar la serie por el campo "Clave" en lugar de "Serie"
-                const serieEncontrada = series.find(serie => serie.Clave === facturaXML.Serie);
+                console.log('validarSerie - Series recibidas:', series);
+
+                // Normalizar valores para comparación
+                const serieBuscada = facturaXML.Serie || '';
+                const serieEncontrada = series.find(serie => {
+                    const serieClave = serie.Clave || '';
+                    console.log('validarSerie - Comparando:', {
+                        buscada: `'${serieBuscada}'`,
+                        actual: `'${serieClave}'`,
+                        coincide: serieClave === serieBuscada
+                    });
+                    return serieClave === serieBuscada;
+                });
+
+                console.log('validarSerie - Resultado final:', {
+                    serieBuscada: `'${serieBuscada}'`,
+                    seriesDisponibles: series.map(s => ({ id: s.ID, clave: `'${s.Clave || ''}'` })),
+                    encontrada: !!serieEncontrada,
+                    serieEncontrada
+                });
+
                 setValidaciones(prev => ({
                     ...prev,
                     serie: {
@@ -189,6 +229,7 @@ const VistaXMLImportado = ({
                     }
                 }));
             } else {
+                console.error('validarSerie - Error en respuesta:', response.status);
                 setValidaciones(prev => ({
                     ...prev,
                     serie: {
@@ -199,7 +240,7 @@ const VistaXMLImportado = ({
                 }));
             }
         } catch (error) {
-            console.error("Error validando serie:", error);
+            console.error("validarSerie - Error en fetch:", error);
             setValidaciones(prev => ({
                 ...prev,
                 serie: {
@@ -242,18 +283,24 @@ const VistaXMLImportado = ({
 
     // Función para manejar la actualización después de crear/editar empresa
     const handleUpdateEmpresa = (empresaCreada) => {
+        console.log('handleUpdateEmpresa - Empresa creada:', empresaCreada);
+
         if (empresaCreada && empresaCreada.ID) {
             // Actualizar la factura con el nuevo ID del emisor
             const facturaActualizada = {
                 ...facturaXML,
                 EmisorID: empresaCreada.ID
             };
+
+            console.log('handleUpdateEmpresa - Actualizando factura con nuevo EmisorID:', empresaCreada.ID);
             actualizarFacturas([facturaActualizada]);
 
-            // Recargar validación del emisor
+            // Recargar validación del emisor y serie
             setTimeout(() => {
+                console.log('handleUpdateEmpresa - Recargando validaciones...');
                 validarEmisor();
-            }, 500);
+                validarSerie(); // ¡IMPORTANTE! Recargar validación de serie
+            }, 1000);
 
             // Cerrar el modal
             handleCloseModalEmpresa();
@@ -262,18 +309,23 @@ const VistaXMLImportado = ({
 
     // Función para manejar la actualización después de crear/editar cliente
     const handleUpdateCliente = (clienteCreado) => {
+        console.log('handleUpdateCliente - Cliente creado:', clienteCreado);
+
         if (clienteCreado && clienteCreado.ID) {
             // Actualizar la factura con el nuevo ID del receptor
             const facturaActualizada = {
                 ...facturaXML,
                 ReceptorID: clienteCreado.ID
             };
+
+            console.log('handleUpdateCliente - Actualizando factura con nuevo ReceptorID:', clienteCreado.ID);
             actualizarFacturas([facturaActualizada]);
 
             // Recargar validación del receptor
             setTimeout(() => {
+                console.log('handleUpdateCliente - Recargando validaciones...');
                 validarReceptor();
-            }, 500);
+            }, 1000);
 
             // Cerrar el modal
             handleCloseModalCliente();
@@ -834,7 +886,7 @@ const VistaXMLImportado = ({
                         onClose={handleCloseModalCliente}
                         setActualizar={setActualizar}
                         token={token}
-                        // Puedes pasar datos del XML como props iniciales si tu componente lo soporta
+                        onUpdateCliente={handleUpdateCliente} // <-- AGREGAR ESTA PROP
                         datosIniciales={{
                             RFC: facturaXML.ReceptorRFC,
                             Nombre: facturaXML.Receptor?.Nombre || facturaXML.ReceptorRFC,

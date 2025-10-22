@@ -87,7 +87,7 @@ export default function ImportarFacturas() {
             });
 
             setModoImportacion("xml");
-            setConfirmationMessage(`XML timbrado importado. UUID: ${facturaFormateada?.infoTimbrado?.UUID || "Desconocido"}`);
+            setConfirmationMessage(`XML validado correctamente. UUID: ${facturaFormateada?.infoTimbrado?.UUID || "Desconocido"}`);
             setOpenModalExito(true);
         } catch (error) {
             console.error("Error en handleUploadXML:", error);
