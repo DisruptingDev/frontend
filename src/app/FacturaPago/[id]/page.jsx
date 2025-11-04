@@ -133,17 +133,42 @@ export default function FacturaPago() {
                 const data = await response.json();
                 console.log("Docto Relacionado", data);
 
-                // Convertir todos los campos numéricos usando tu función general
-                const dataConvertida = convertirCamposANumericos(data);
+                if (data.length === 0) {
+                    // Si no hay pagos, establecer valores por defecto
+                    setPagos({
+                        numOperacion: 1,
+                        totalPagado: 0,
+                        saldo: totalPago,
+                        saldoAnterior: 0,
+                    });
+                    return;
+                }
 
-                // Calcular el número de operación
-                const numOperacion = dataConvertida.length === 0 ? 1 : dataConvertida[dataConvertida.length - 1].NumParcialidad + 1;
+                // Ordenar por ID ascendente
+                const dataOrdenada = [...data].sort((a, b) => a.ID - b.ID);
 
-                // Calcular el total pagado
-                const totalPagado = dataConvertida.reduce((sum, pago) => sum + pago.ImpPagado, 0);
+                // Obtener el último pago (el de mayor ID después de ordenar)
+                const ultimoPago = dataOrdenada[dataOrdenada.length - 1];
 
-                // Obtener el saldo anterior del último pago (si existe)
-                const saldoAnterior = dataConvertida.length > 0 ? dataConvertida[dataConvertida.length - 1].ImpSaldoInsoluto : totalPago;
+                // Convertir campos a números usando parseFloat directamente
+                const saldoAnterior = parseFloat(ultimoPago.ImpSaldoAnt);
+                const impPagado = parseFloat(ultimoPago.ImpPagado);
+                const saldoInsoluto = parseFloat(ultimoPago.ImpSaldoInsoluto);
+
+                console.log("Saldo Anterior:", saldoAnterior);
+                console.log("Importe Pagado:", impPagado);
+                console.log("Saldo Insoluto:", saldoInsoluto);
+
+                // Calcular el siguiente número de operación
+                const numOperacion = ultimoPago.NumParcialidad + 1;
+
+                // Calcular el total pagado sumando todos los pagos CORRECTAMENTE
+                const totalPagado = dataOrdenada.reduce((sum, pago) => {
+                    const pagoConvertido = parseFloat(pago.ImpPagado);
+                    return sum + pagoConvertido;
+                }, 0);
+
+                console.log("Total Pagado hasta ahora:", totalPagado);
 
                 // Calcular el saldo restante
                 const saldoRestante = totalPago - totalPagado;
@@ -153,9 +178,10 @@ export default function FacturaPago() {
                     numOperacion: numOperacion,
                     totalPagado: totalPagado,
                     saldo: saldoRestante,
-                    saldoAnterior: saldoAnterior,
+                    saldoAnterior: saldoInsoluto,
                 });
 
+                console.log("Último pago obtenido:", ultimoPago);
                 console.log("Pagos calculados:", {
                     numOperacion: numOperacion,
                     totalPagado: totalPagado,
