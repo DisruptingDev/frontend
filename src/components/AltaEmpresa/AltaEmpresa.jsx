@@ -485,7 +485,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     />
                 </Box>
 
-                {/* Sección de Selección de Plantilla (versión con dropdown por categoría) */}
+                {/* Sección de Selección de Plantilla (versión mejorada) */}
                 <Box my={4}>
                     <Typography variant="h6" gutterBottom>
                         Seleccionar Plantilla
@@ -495,44 +495,41 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         {Object.keys(plantillasAgrupadas).map((categoria) => {
                             const opciones = plantillasAgrupadas[categoria];
 
+                            // Siempre usar la primera plantilla de la categoría como miniatura por defecto
+                            const plantillaPorDefecto = opciones[0];
+
                             // Encontrar la plantilla seleccionada actual (si pertenece a esta categoría)
-                            const plantillaActual = opciones.find(p => p.ID === plantillaSeleccionada);
+                            const plantillaSeleccionadaEnCategoria = opciones.find(p => p.ID === plantillaSeleccionada);
+
+                            // Plantilla a mostrar en la miniatura (la seleccionada o la primera por defecto)
+                            const plantillaAMostrar = plantillaSeleccionadaEnCategoria || plantillaPorDefecto;
 
                             return (
                                 <Grid item xs={12} sm={6} md={4} key={categoria}>
-                                    <Card variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                                    <Card
+                                        variant="outlined"
+                                        sx={{
+                                            p: 2,
+                                            borderRadius: 2,
+                                            border: plantillaSeleccionadaEnCategoria ? '2px solid #04b2ca' : '1px solid #e0e0e0',
+                                            backgroundColor: plantillaSeleccionadaEnCategoria ? '#f0fafa' : 'white'
+                                        }}
+                                    >
                                         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                                             {categoria}
                                         </Typography>
 
-                                        {/* Dropdown para seleccionar plantilla */}
-                                        <TextField
-                                            select
-                                            fullWidth
-                                            label="Modelo"
-                                            value={plantillaActual ? plantillaActual.ID : ''}
-                                            onChange={(e) => {
-                                                const seleccionada = opciones.find(p => p.ID === Number(e.target.value));
-                                                if (seleccionada) {
-                                                    handleSeleccionarPlantilla(seleccionada);
-                                                }
-                                            }}
-                                        >
-                                            {opciones.map((plantilla) => (
-                                                <MenuItem key={plantilla.ID} value={plantilla.ID}>
-                                                    {plantilla.Nombre}
-                                                </MenuItem>
-                                            ))}
-                                        </TextField>
-
-                                        {/* Miniatura */}
-                                        {plantillaActual && (
-                                            <Box mt={2} textAlign="center">
+                                        {/* Miniatura siempre visible */}
+                                        <Box mt={1} textAlign="center">
+                                            <CardActionArea
+                                                onClick={() => handleVerImagen(plantillaAMostrar.VistaPrevia)}
+                                                sx={{ borderRadius: 1 }}
+                                            >
                                                 <CardMedia
                                                     component="img"
                                                     height="140"
-                                                    image={plantillaActual.VistaPrevia || '/placeholder-image.jpg'}
-                                                    alt={plantillaActual.Nombre}
+                                                    image={plantillaAMostrar.VistaPrevia || '/placeholder-image.jpg'}
+                                                    alt={plantillaAMostrar.Nombre}
                                                     sx={{
                                                         objectFit: 'contain',
                                                         borderRadius: 1,
@@ -540,13 +537,90 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                                                         mx: 'auto'
                                                     }}
                                                 />
-                                                <IconButton
+                                            </CardActionArea>
+
+                                            {/* Botones de acción */}
+                                            <Box mt={1} display="flex" justifyContent="center" gap={1}>
+                                                <Button
                                                     size="small"
-                                                    sx={{ mt: 1 }}
-                                                    onClick={() => handleVerImagen(plantillaActual.VistaPrevia)}
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => handleVerImagen(plantillaAMostrar.VistaPrevia)}
+                                                    sx={{ fontSize: '0.75rem' }}
                                                 >
-                                                    <VisibilityIcon fontSize="small" />
-                                                </IconButton>
+                                                    Ver
+                                                </Button>
+
+                                                {plantillaAMostrar.ID !== plantillaSeleccionada && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={() => handleSeleccionarPlantilla(plantillaAMostrar)}
+                                                        sx={{
+                                                            fontSize: '0.75rem',
+                                                            backgroundColor: '#04b2ca',
+                                                            '&:hover': {
+                                                                backgroundColor: '#038a9e',
+                                                            },
+                                                        }}
+                                                    >
+                                                        Seleccionar
+                                                    </Button>
+                                                )}
+
+                                                {plantillaAMostrar.ID === plantillaSeleccionada && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="success"
+                                                        sx={{ fontSize: '0.75rem' }}
+                                                        disabled
+                                                    >
+                                                        Seleccionada
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </Box>
+
+                                        {/* Dropdown para seleccionar entre todas las plantillas de la categoría */}
+                                        <Box mt={2}>
+                                            <Typography variant="body2" color="textSecondary" gutterBottom>
+                                                O elegir otro modelo:
+                                            </Typography>
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                size="small"
+                                                value={plantillaSeleccionadaEnCategoria ? plantillaSeleccionadaEnCategoria.ID : ''}
+                                                onChange={(e) => {
+                                                    const seleccionada = opciones.find(p => p.ID === Number(e.target.value));
+                                                    if (seleccionada) {
+                                                        handleSeleccionarPlantilla(seleccionada);
+                                                    }
+                                                }}
+                                            >
+                                                <MenuItem value="">
+                                                    <em>Seleccionar modelo...</em>
+                                                </MenuItem>
+                                                {opciones.map((plantilla) => (
+                                                    <MenuItem key={plantilla.ID} value={plantilla.ID}>
+                                                        {plantilla.Nombre}
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField>
+                                        </Box>
+
+                                        {/* Indicador de plantilla seleccionada */}
+                                        {plantillaSeleccionadaEnCategoria && (
+                                            <Box mt={1} textAlign="center">
+                                                <Typography
+                                                    variant="body2"
+                                                    color="success.main"
+                                                    fontWeight="bold"
+                                                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}
+                                                >
+                                                    <span>✓</span> Plantilla seleccionada
+                                                </Typography>
                                             </Box>
                                         )}
                                     </Card>
