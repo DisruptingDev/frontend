@@ -295,21 +295,51 @@ export default function DataTable({ token }) {
 
             if (response.ok) {
                 const blob = await response.blob();
+
+                // Función para extraer el nombre del archivo del header
+                const getFileNameFromHeaders = (headers) => {
+                    const contentDisposition = headers.get('Content-Disposition');
+                    if (!contentDisposition) return null;
+
+                    // Buscar el patrón filename="nombre.extension" o filename=nombre.extension
+                    const matches = contentDisposition.match(/filename\*?=["']?([^"']+)["']?/i) ||
+                        contentDisposition.match(/filename=["']?([^"']+)["']?/i);
+
+                    if (matches && matches[1]) {
+                        // Decodificar si está en formato URL encoded (filename*=UTF-8''archivo.zip)
+                        let fileName = matches[1];
+                        if (fileName.startsWith("UTF-8''")) {
+                            fileName = decodeURIComponent(fileName.substring(7));
+                        }
+                        return fileName.replace(/"/g, '');
+                    }
+                    return null;
+                };
+
+                // Obtener nombre del archivo o usar uno por defecto
+                const fileName = getFileNameFromHeaders(response.headers) ||
+                    (ids.length === 1 ? 'Factura.zip' : 'Facturas.zip');
+
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = ids.length === 1 ? 'Factura.zip' : 'Facturas.zip';
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
 
-                setConfirmationMessage(ids.length === 1 ?
-                    'Su archivo se ha descargado. Revise su carpeta de descargas.' :
-                    'Su archivo Facturas.zip se ha descargado. Revise su carpeta de descargas.');
+                // Liberar el objeto URL
+                window.URL.revokeObjectURL(url);
+
+                setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
                 setOpenModalSuccess(true);
+            } else {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Error en la respuesta del servidor');
             }
         } catch (error) {
-            setConfirmationMessage('Error al descargar la factura.');
+            console.error('Error al descargar:', error);
+            setConfirmationMessage(error.message || 'Error al descargar la factura.');
             setOpenModalError(true);
         } finally {
             setLoading(false);
