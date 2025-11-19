@@ -139,7 +139,7 @@ export default function FacturaPago() {
                         numOperacion: 1,
                         totalPagado: 0,
                         saldo: totalPago,
-                        saldoAnterior: 0,
+                        saldoAnterior: totalPago,
                     });
                     return;
                 }

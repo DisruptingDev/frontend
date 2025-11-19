@@ -40,7 +40,7 @@ export default function EditarComplementoPago() {
                 if (!data?.factura?.Complemento?.Pagos) {
                     throw new Error('No se encontró el complemento de pago');
                 }
-
+                console.log("Datos del pago cargados:", data);
                 setFacturaData(data);
                 return data;
 

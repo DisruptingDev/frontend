@@ -88,7 +88,6 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                console.log("Formas de pago:", data);
                 setOpcionesFormaPago(data);
             } catch (error) {
                 console.error('Error fetching formas de pago:', error);
@@ -96,6 +95,26 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
         };
         fetchFormasPago();
     }, [token]);
+
+    useEffect(() => {
+        const fetchDoctosRelacionados = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${factura.ID}`, { 
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                console.log('Documentos relacionados fetched:', data);
+                if (data.length > 0) {
+                    const docRelacionado = data[0];
+                    const nuevoSaldoInsoluto = (parseFloat(docRelacionado.ImpSaldoAnt) - parseFloat(watch("Monto") || 0)).toFixed(2);
+                    setValue("ImpSaldoInsoluto", nuevoSaldoInsoluto);
+                }
+            } catch (error) {
+                console.error('Error fetching documentos relacionados:', error);
+            }
+        };
+        fetchDoctosRelacionados();
+    }, [factura.ID, token, watch("Monto"), setValue]);
 
     const onSubmit = (data) => {
         const baseGravable = parseFloat(data.Monto) / 1.16;
