@@ -678,8 +678,8 @@ export default function DataTable({ token, filtro }) {
   };
 
   return (
-    <Box bgcolor="white" my={2}>
-      <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+    <Box bgcolor="white" my={2} >
+      <Box display="flex" justifyContent="flex-end" mb={2} gap={2} >
         <Button
           variant="contained"
           disabled={selectedRows.length === 0}

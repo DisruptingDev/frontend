@@ -151,7 +151,10 @@ export default function Home() {
                 />
 
                 {/* Contenedor principal que ocupa el espacio restante */}
-                <Grid>
+                <Grid
+                    minWidth={"100vw"}
+                    maxWidth={"100vw"}
+                >
                     <Box
                         //bgcolor="white"
                         ml={10}
@@ -161,6 +164,7 @@ export default function Home() {
                         borderRadius={2}
                         //mb={6}
                         mb={10}
+
                     >
                         {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}

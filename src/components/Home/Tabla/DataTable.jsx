@@ -15,10 +15,8 @@ import {
     Menu,
     MenuItem
 } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
-    Email as EmailIcon,
-    CloudUpload as TimbrarIcon,
-    CloudDownload as DescargarIcon,
     Send as TimbrarEnviarIcon,
     PictureAsPdf as PdfIcon,
     Edit as EditIcon,
@@ -26,10 +24,15 @@ import {
     Delete as DeleteIcon,
     Cancel as CancelIcon,
     Payment as PaymentIcon,
-    MoreVert as MoreVertIcon
+    MoreVert as MoreVertIcon,
+    Email as EmailIcon,
+    CloudUpload as TimbrarIcon,
+    CloudDownload as DescargarIcon,
+    Padding
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
-import MUIDataTable from "mui-datatables";
+import dynamic from 'next/dynamic';
+const MUIDataTable = dynamic(() => import('mui-datatables'), { ssr: false });
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import { WithPermission } from '@/components/WithPermission';
@@ -232,59 +235,16 @@ export default function DataTable({ token }) {
             fetchData();
         } else if (resultadoCancelar === "error") {
             setOpenModalError(true);
-            setConfirmationMessage('Error al cancelar facturas.');
-            setIDFacturaCancelada(null);
-            fetchData();
+            setConfirmationMessage('Error al cancelar la factura.');
         }
+        setResultadoCancelar(null);
     }, [resultadoCancelar, fetchData]);
 
-    // Operaciones con múltiples facturas
+    // Funciones de acción
     const handleTimbrar = useCallback(async (ids) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ Facturas_ID: ids }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-
-                if (data.Facturas.length > 1) {
-                    setOpenModalTimbrar(true);
-                    setFacturasTimbrar(data.Facturas.map(factura => ({
-                        id: factura.facturaID,
-                        status: factura.status,
-                        error: factura.error || null,
-                    })));
-                } else if (data.Facturas.length === 1) {
-                    const factura = data.Facturas[0];
-                    if (factura.status === 'success') {
-                        setConfirmationMessage('Facturas timbradas exitosamente.');
-                        setOpenModalSuccess(true);
-                    } else {
-                        setConfirmationMessage('Error al timbrar facturas: ' + (factura.error || ''));
-                        setOpenModalError(true);
-                    }
-                }
-            }
-        } catch (error) {
-            setConfirmationMessage('Error en la conexión o en el timbrado.');
-            setOpenModalError(true);
-        } finally {
-            setLoading(false);
-            fetchData();
-        }
-    }, [token, fetchData]);
-
-    const handleDownloadSelecteds = useCallback(async (ids) => {
-        setLoading(true);
-        try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
+            const response = await fetch(`${apiUrl}/api/facturas/TimbrarFactura`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -294,52 +254,49 @@ export default function DataTable({ token }) {
             });
 
             if (response.ok) {
-                const blob = await response.blob();
-
-                // Función para extraer el nombre del archivo del header
-                const getFileNameFromHeaders = (headers) => {
-                    const contentDisposition = headers.get('Content-Disposition');
-                    if (!contentDisposition) return null;
-
-                    // Buscar el patrón filename="nombre.extension" o filename=nombre.extension
-                    const matches = contentDisposition.match(/filename\*?=["']?([^"']+)["']?/i) ||
-                        contentDisposition.match(/filename=["']?([^"']+)["']?/i);
-
-                    if (matches && matches[1]) {
-                        // Decodificar si está en formato URL encoded (filename*=UTF-8''archivo.zip)
-                        let fileName = matches[1];
-                        if (fileName.startsWith("UTF-8''")) {
-                            fileName = decodeURIComponent(fileName.substring(7));
-                        }
-                        return fileName.replace(/"/g, '');
-                    }
-                    return null;
-                };
-
-                // Obtener nombre del archivo o usar uno por defecto
-                const fileName = getFileNameFromHeaders(response.headers) ||
-                    (ids.length === 1 ? 'Factura.zip' : 'Facturas.zip');
-
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-
-                // Liberar el objeto URL
-                window.URL.revokeObjectURL(url);
-
-                setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
-                setOpenModalSuccess(true);
+                const result = await response.json();
+                setFacturasTimbrar(result);
+                setOpenModalTimbrar(true);
+                fetchData();
             } else {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.message || 'Error en la respuesta del servidor');
+                setConfirmationMessage('Error al timbrar las facturas.');
+                setOpenModalError(true);
+            }
+        } catch (error) {
+            console.error('Error al timbrar:', error);
+            setConfirmationMessage('Error de conexión al timbrar.');
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [token, fetchData]);
+
+    const handleDownloadSelecteds = useCallback(async (ids) => {
+        setLoading(true);
+        try {
+            for (const id of ids) {
+                const response = await fetch(`${apiUrl}/api/facturas/DescargarFactura/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `factura_${id}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    console.error(`Error al descargar factura ${id}`);
+                }
             }
         } catch (error) {
             console.error('Error al descargar:', error);
-            setConfirmationMessage(error.message || 'Error al descargar la factura.');
+            setConfirmationMessage('Error al descargar los archivos.');
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -349,7 +306,7 @@ export default function DataTable({ token }) {
     const handleEnviarCorreo = useCallback(async (ids) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+            const response = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -359,11 +316,15 @@ export default function DataTable({ token }) {
             });
 
             if (response.ok) {
-                setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
+                setConfirmationMessage('Correos enviados exitosamente.');
                 setOpenModalSuccess(true);
+            } else {
+                setConfirmationMessage('Error al enviar los correos.');
+                setOpenModalError(true);
             }
         } catch (error) {
-            setConfirmationMessage('Error al enviar las facturas por correo.');
+            console.error('Error al enviar correo:', error);
+            setConfirmationMessage('Error de conexión al enviar correo.');
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -371,88 +332,30 @@ export default function DataTable({ token }) {
     }, [token]);
 
     const handleTimbrarYEnviar = useCallback(async (ids) => {
-        setLoading(true);
-        setConfirmationMessage('Procesando timbrado y envío de facturas...');
+        await handleTimbrar(ids);
+        await handleEnviarCorreo(ids);
+    }, [handleTimbrar, handleEnviarCorreo]);
 
-        try {
-            // 1. Timbrado
-            const timbradoResponse = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ Facturas_ID: ids }),
-            });
-
-            if (!timbradoResponse.ok) throw new Error('Error en el timbrado');
-
-            const timbradoData = await timbradoResponse.json();
-            const facturasTimbradasExitosas = timbradoData.Facturas.filter(
-                factura => factura.status === 'success'
-            );
-
-            if (facturasTimbradasExitosas.length === 0) {
-                throw new Error('Ninguna factura se timbró correctamente');
-            }
-
-            // 2. Envío por correo
-            const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
-            await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(idsTimbrados),
-            });
-
-            let message = '';
-            if (facturasTimbradasExitosas.length === ids.length) {
-                message = 'Todas las facturas se timbraron y enviaron correctamente.';
-            } else {
-                const fallidas = ids.length - facturasTimbradasExitosas.length;
-                message = `${facturasTimbradasExitosas.length} facturas timbradas y enviadas correctamente. ${fallidas} facturas no se pudieron procesar.`;
-            }
-
-            setConfirmationMessage(message);
-            setOpenModalSuccess(true);
-
-            if (facturasTimbradasExitosas.length > 0 && facturasTimbradasExitosas.length < ids.length) {
-                setFacturasTimbrar(timbradoData.Facturas.map(factura => ({
-                    id: factura.facturaID,
-                    status: factura.status,
-                    error: factura.error || null,
-                })));
-                setOpenModalTimbrar(true);
-            }
-        } catch (error) {
-            setConfirmationMessage(`Error al procesar las facturas: ${error.message}`);
-            setOpenModalError(true);
-        } finally {
-            setLoading(false);
-            fetchData();
-        }
-    }, [token, fetchData]);
-
-    // Operaciones con una sola factura
     const handleViewPdf = useCallback(async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
-                method: 'GET',
+            const response = await fetch(`${apiUrl}/api/facturas/VerPdf/${id}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
 
             if (response.ok) {
                 const blob = await response.blob();
-                const pdfUrl = URL.createObjectURL(blob);
-                window.open(pdfUrl, '_blank');
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } else {
+                setConfirmationMessage('Error al visualizar el PDF.');
+                setOpenModalError(true);
             }
         } catch (error) {
-            setConfirmationMessage('Error al visualizar la factura: ' + error.message);
+            console.error('Error al ver PDF:', error);
+            setConfirmationMessage('Error de conexión al ver PDF.');
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -460,37 +363,35 @@ export default function DataTable({ token }) {
     }, [token]);
 
     const handleCancelarFactura = useCallback((row) => {
-        const filtro = {
-            Emisor: row.Emisor.Rfc,
-            Receptor: row.Receptor.Rfc,
-            Estatus: 'timbrada'
-        };
-        const registros = data.filter(r =>
-            r.Emisor.Rfc === filtro.Emisor &&
-            r.Receptor.Rfc === filtro.Receptor &&
-            r.uuid
-        );
         setIDFacturaCancelada(row.ID);
-        setFacturasRemplazo(registros);
         setOpenModalCancelar(true);
-    }, [data]);
+    }, []);
 
     const handleAcuseCancelacion = useCallback(async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
-                method: 'GET',
+            const response = await fetch(`${apiUrl}/api/facturas/DescargarAcuse/${id}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    'Authorization': `Bearer ${token}`,
                 },
             });
+
             if (response.ok) {
                 const blob = await response.blob();
-                const pdfUrl = URL.createObjectURL(blob);
-                window.open(pdfUrl, '_blank');
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `acuse_cancelacion_${id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } else {
+                setConfirmationMessage('Error al descargar el acuse.');
+                setOpenModalError(true);
             }
         } catch (error) {
-            setConfirmationMessage('Error al visualizar el acuse de cancelación: ' + error.message);
+            console.error('Error al descargar acuse:', error);
+            setConfirmationMessage('Error de conexión al descargar acuse.');
             setOpenModalError(true);
         } finally {
             setLoading(false);
@@ -505,12 +406,11 @@ export default function DataTable({ token }) {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
                 },
             });
 
             if (response.ok) {
-                setConfirmationMessage('La factura se ha eliminado correctamente.');
+                setConfirmationMessage('Factura eliminada exitosamente.');
                 setOpenModalSuccess(true);
                 fetchData();
             } else {
@@ -858,16 +758,49 @@ export default function DataTable({ token }) {
         },
     }), [data, handleEnviarCorreo, handleTimbrar, handleDownloadSelecteds, handleTimbrarYEnviar]);
 
+    // Tema personalizado para la tabla
+    const getMuiTheme = () => createTheme({
+        components: {
+            MUIDataTableBodyCell: {
+                styleOverrides: {
+                    root: {
+                        fontSize: '11px',// MODIFICAR AQUÍ: Tamaño de fuente del cuerpo de la tabla
+                        padding: '0px 5px',
+                    }
+                }
+            },
+            MUIDataTableHeadCell: {
+                styleOverrides: {
+                    root: {
+                        fontSize: '12px', // MODIFICAR AQUÍ: Tamaño de fuente del encabezado
+                        fontWeight: 'bold',
+                        color: '#000',
+                        backgroundColor: '#f0f0f0',
+                        paddingTop: '5px',
+                        paddingBottom: '5px',
+                        paddingLeft: '0px',
+                        paddingRight: '0px',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '100%',
+                    }
+                }
+            }
+        }
+    });
+
     return (
         <Box>
             {loading && <LinearProgress />}
 
-            <MUIDataTable
-                title="Vista General de Facturas"
-                data={data}
-                columns={columns}
-                options={options}
-            />
+            <ThemeProvider theme={getMuiTheme()}>
+                <MUIDataTable
+                    title="Vista General de Facturas"
+                    data={data}
+                    columns={columns}
+                    options={options}
+                />
+            </ThemeProvider>
 
             <RowActionMenu
                 anchorEl={anchorEl}

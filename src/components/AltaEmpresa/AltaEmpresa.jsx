@@ -12,9 +12,6 @@ import {
     Card,
     CardMedia,
     CardActionArea,
-    Menu,
-    MenuItem,
-    ListItemIcon,
     Dialog,
     DialogContent,
     IconButton
@@ -28,7 +25,7 @@ import CloseIcon from '@mui/icons-material/Close';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa, btnCancelar }) {
-    const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
+    const { register, handleSubmit, setValue, getValues, formState: { errors }, watch } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -40,18 +37,14 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
 
     // Estados para las plantillas
     const [plantillas, setPlantillas] = useState([]);
-    const [plantillasAgrupadas, setPlantillasAgrupadas] = useState({});
     const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
-    const [menuAnchor, setMenuAnchor] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [imagenModal, setImagenModal] = useState('');
 
     const rfcValue = watch("Rfc");
 
     useEffect(() => {
-        console.log("cliente", empresa);
         if (empresa && Object.keys(empresa).length > 0) {
-            console.log(empresa);
             setValue('Nombre', empresa.Nombre);
             setValue('Rfc', empresa.Rfc);
             setValue('RegimenFiscal', empresa.RegimenFiscal);
@@ -66,7 +59,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('Estado', empresa.Estado);
             setImagePreview(empresa.LogoPath);
 
-            // Si hay plantilla seleccionada en la empresa
             if (empresa.PlantillaID) {
                 setPlantillaSeleccionada(empresa.PlantillaID);
             }
@@ -80,7 +72,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         }
     }, [issuerName, issuerRfc, setValue]);
 
-    // Cargar plantillas al montar el componente
     useEffect(() => {
         cargarPlantillas();
     }, []);
@@ -97,18 +88,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             if (response.ok) {
                 const data = await response.json();
                 setPlantillas(data);
-
-                // Agrupar plantillas por categoría
-                const agrupadas = data.reduce((acc, plantilla) => {
-                    const categoria = plantilla.Categoria || 'Default';
-                    if (!acc[categoria]) {
-                        acc[categoria] = [];
-                    }
-                    acc[categoria].push(plantilla);
-                    return acc;
-                }, {});
-
-                setPlantillasAgrupadas(agrupadas);
             }
         } catch (error) {
             console.error('Error al cargar plantillas:', error);
@@ -118,15 +97,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
     const handleSeleccionarPlantilla = (plantilla) => {
         setPlantillaSeleccionada(plantilla.ID);
         setValue('PlantillaID', plantilla.ID);
-        setMenuAnchor(null);
-    };
-
-    const handleAbrirMenu = (event, categoria) => {
-        setMenuAnchor(event.currentTarget);
-    };
-
-    const handleCerrarMenu = () => {
-        setMenuAnchor(null);
     };
 
     const handleVerImagen = (imagenUrl) => {
@@ -150,7 +120,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
     };
 
     const handleReset = () => {
-        console.log('Resetting form...', getValues("RegimenFiscal"));
         setValue("Nombre", "");
         setValue("Rfc", "");
         setValue("RegimenFiscal", "");
@@ -167,7 +136,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         setImagePreview('');
         setImagePath('');
         setPlantillaSeleccionada(null);
-        console.log('Resetting form...', getValues("RegimenFiscal"));
         if (onClose) onClose();
     };
 
@@ -195,7 +163,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 }
 
                 const result = await response.json();
-                console.log('Ruta del archivo:', result.filePath);
                 setImagePath(result.filePath);
                 setSnackbarMessage('Imagen subida correctamente.');
                 setSnackbarSeverity('success');
@@ -220,27 +187,30 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
     };
 
     const onSubmit = async (data) => {
-        if (editar) {
-            const empresaData = {
-                ID: empresa.ID,
-                RegimenFiscal: data.RegimenFiscal,
-                LugarExpedicion: data.LugarExpedicion,
-                Email: data.Email,
-                LogoPath: imagePath,
-                Calle: data.Calle || "",
-                NumeroExterior: data.NumeroExterior || "",
-                NumeroInterior: data.NumeroInterior || "",
-                Colonia: data.Colonia || "",
-                Municipio: data.Municipio || "",
-                Estado: data.Estado || "",
-                PlantillaID: plantillaSeleccionada,
-            };
+        const commonData = {
+            RegimenFiscal: data.RegimenFiscal,
+            LugarExpedicion: data.LugarExpedicion,
+            Email: data.Email,
+            LogoPath: imagePath,
+            Calle: data.Calle || "",
+            NumeroExterior: data.NumeroExterior || "",
+            NumeroInterior: data.NumeroInterior || "",
+            Colonia: data.Colonia || "",
+            Municipio: data.Municipio || "",
+            Estado: data.Estado || "",
+            PlantillaID: plantillaSeleccionada,
+        };
 
-            console.log('EmpresaData:', JSON.stringify(empresaData));
-            setLoading(true);
+        setLoading(true);
 
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/EditarEmisor`, {
+        try {
+            let response;
+            if (editar) {
+                const empresaData = {
+                    ID: empresa.ID,
+                    ...commonData
+                };
+                response = await fetch(`${apiUrl}/api/gestores/EditarEmisor`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -248,52 +218,15 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     },
                     body: JSON.stringify(empresaData),
                 });
-                const data = await response.json();
-                console.log('Data received from API:', data);
-                if (!response.ok) {
-                    setSnackbarMessage('Error al guardar los datos.');
-                    setSnackbarSeverity('error');
-                    setOpenSnackbar(true);
-                } else {
-                    setSnackbarMessage('Empresa guardada correctamente.');
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
-                    if (setActualizar) setActualizar(true);
-                    setTimeout(() => {
-                        if (onClose) onClose();
-                        if (setActualizar) setActualizar(false);
-                    }, 2000);
-                }
-            } catch (error) {
-                setSnackbarMessage('Ocurrió un error al guardar los datos.');
-                setSnackbarSeverity('error');
-                setOpenSnackbar(true);
-            } finally {
-                setLoading(false);
-            }
-        } else {
-            const empresaData = {
-                Emisor: {
-                    Rfc: data.Rfc,
-                    Nombre: data.Nombre,
-                    RegimenFiscal: data.RegimenFiscal,
-                    LugarExpedicion: data.LugarExpedicion,
-                    LogoPath: imagePath,
-                    Calle: data.Calle || "",
-                    NumeroExterior: data.NumeroExterior || "",
-                    NumeroInterior: data.NumeroInterior || "",
-                    Colonia: data.Colonia || "",
-                    Municipio: data.Municipio || "",
-                    Estado: data.Estado || "",
-                    PlantillaID: plantillaSeleccionada,
-                }
-            };
-            console.log('EmpresaData:', JSON.stringify(empresaData));
-
-            setLoading(true);
-
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/RegistroEmisor`, {
+            } else {
+                const empresaData = {
+                    Emisor: {
+                        Rfc: data.Rfc,
+                        Nombre: data.Nombre,
+                        ...commonData
+                    }
+                };
+                response = await fetch(`${apiUrl}/api/gestores/RegistroEmisor`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -301,39 +234,36 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     },
                     body: JSON.stringify(empresaData),
                 });
-                const data = await response.json();
-                console.log('Data received from API:', data);
+            }
 
-                if (!response.ok) {
-                    setSnackbarMessage('Error al guardar los datos.');
-                    setSnackbarSeverity('error');
-                    setOpenSnackbar(true);
-                } else {
-                    setSnackbarMessage('Empresa guardada correctamente.');
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
-                    if (setActualizar) setActualizar(true);
-                    setTimeout(() => {
-                        if (setRegistroEmpresa) setRegistroEmpresa(true);
-                        if (onClose) onClose();
-                        if (setActualizar) setActualizar(false);
-                    }, 2000);
-                }
-            } catch (error) {
-                console.error('Error al guardar los datos:', error);
-                setSnackbarMessage('Ocurrió un error al guardar los datos.');
+            if (!response.ok) {
+                setSnackbarMessage('Error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
-            } finally {
-                setLoading(false);
+            } else {
+                setSnackbarMessage('Empresa guardada correctamente.');
+                setSnackbarSeverity('success');
+                setOpenSnackbar(true);
+                if (setActualizar) setActualizar(true);
+                setTimeout(() => {
+                    if (setRegistroEmpresa) setRegistroEmpresa(true);
+                    if (onClose) onClose();
+                    if (setActualizar) setActualizar(false);
+                }, 2000);
             }
+        } catch (error) {
+            console.error('Error al guardar los datos:', error);
+            setSnackbarMessage('Ocurrió un error al guardar los datos.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <Box bgcolor="white">
             <form>
-                {/* Campos existentes */}
                 <Box
                     my={2}
                     display="grid"
@@ -476,158 +406,13 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     <TextField
                         label="Estado"
                         fullWidth
-                        placeholder="Ej: Benito Juárez"
+                        placeholder="Ej: CDMX"
                         margin="normal"
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
                         {...register("Estado", { required: false })}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
-                </Box>
-
-                {/* Sección de Selección de Plantilla (versión mejorada) */}
-                <Box my={4}>
-                    <Typography variant="h6" gutterBottom>
-                        Seleccionar Plantilla
-                    </Typography>
-
-                    <Grid container spacing={3}>
-                        {Object.keys(plantillasAgrupadas).map((categoria) => {
-                            const opciones = plantillasAgrupadas[categoria];
-
-                            // Siempre usar la primera plantilla de la categoría como miniatura por defecto
-                            const plantillaPorDefecto = opciones[0];
-
-                            // Encontrar la plantilla seleccionada actual (si pertenece a esta categoría)
-                            const plantillaSeleccionadaEnCategoria = opciones.find(p => p.ID === plantillaSeleccionada);
-
-                            // Plantilla a mostrar en la miniatura (la seleccionada o la primera por defecto)
-                            const plantillaAMostrar = plantillaSeleccionadaEnCategoria || plantillaPorDefecto;
-
-                            return (
-                                <Grid item xs={12} sm={6} md={4} key={categoria}>
-                                    <Card
-                                        variant="outlined"
-                                        sx={{
-                                            p: 2,
-                                            borderRadius: 2,
-                                            border: plantillaSeleccionadaEnCategoria ? '2px solid #04b2ca' : '1px solid #e0e0e0',
-                                            backgroundColor: plantillaSeleccionadaEnCategoria ? '#f0fafa' : 'white'
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                                            {categoria}
-                                        </Typography>
-
-                                        {/* Miniatura siempre visible */}
-                                        <Box mt={1} textAlign="center">
-                                            <CardActionArea
-                                                onClick={() => handleVerImagen(plantillaAMostrar.VistaPrevia)}
-                                                sx={{ borderRadius: 1 }}
-                                            >
-                                                <CardMedia
-                                                    component="img"
-                                                    height="140"
-                                                    image={plantillaAMostrar.VistaPrevia || '/placeholder-image.jpg'}
-                                                    alt={plantillaAMostrar.Nombre}
-                                                    sx={{
-                                                        objectFit: 'contain',
-                                                        borderRadius: 1,
-                                                        border: '1px solid #e0e0e0',
-                                                        mx: 'auto'
-                                                    }}
-                                                />
-                                            </CardActionArea>
-
-                                            {/* Botones de acción */}
-                                            <Box mt={1} display="flex" justifyContent="center" gap={1}>
-                                                <Button
-                                                    size="small"
-                                                    startIcon={<VisibilityIcon />}
-                                                    onClick={() => handleVerImagen(plantillaAMostrar.VistaPrevia)}
-                                                    sx={{ fontSize: '0.75rem' }}
-                                                >
-                                                    Ver
-                                                </Button>
-
-                                                {plantillaAMostrar.ID !== plantillaSeleccionada && (
-                                                    <Button
-                                                        size="small"
-                                                        variant="contained"
-                                                        color="primary"
-                                                        onClick={() => handleSeleccionarPlantilla(plantillaAMostrar)}
-                                                        sx={{
-                                                            fontSize: '0.75rem',
-                                                            backgroundColor: '#04b2ca',
-                                                            '&:hover': {
-                                                                backgroundColor: '#038a9e',
-                                                            },
-                                                        }}
-                                                    >
-                                                        Seleccionar
-                                                    </Button>
-                                                )}
-
-                                                {plantillaAMostrar.ID === plantillaSeleccionada && (
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        color="success"
-                                                        sx={{ fontSize: '0.75rem' }}
-                                                        disabled
-                                                    >
-                                                        Seleccionada
-                                                    </Button>
-                                                )}
-                                            </Box>
-                                        </Box>
-
-                                        {/* Dropdown para seleccionar entre todas las plantillas de la categoría */}
-                                        <Box mt={2}>
-                                            <Typography variant="body2" color="textSecondary" gutterBottom>
-                                                O elegir otro modelo:
-                                            </Typography>
-                                            <TextField
-                                                select
-                                                fullWidth
-                                                size="small"
-                                                value={plantillaSeleccionadaEnCategoria ? plantillaSeleccionadaEnCategoria.ID : ''}
-                                                onChange={(e) => {
-                                                    const seleccionada = opciones.find(p => p.ID === Number(e.target.value));
-                                                    if (seleccionada) {
-                                                        handleSeleccionarPlantilla(seleccionada);
-                                                    }
-                                                }}
-                                            >
-                                                <MenuItem value="">
-                                                    <em>Seleccionar modelo...</em>
-                                                </MenuItem>
-                                                {opciones.map((plantilla) => (
-                                                    <MenuItem key={plantilla.ID} value={plantilla.ID}>
-                                                        {plantilla.Nombre}
-                                                    </MenuItem>
-                                                ))}
-                                            </TextField>
-                                        </Box>
-
-                                        {/* Indicador de plantilla seleccionada */}
-                                        {plantillaSeleccionadaEnCategoria && (
-                                            <Box mt={1} textAlign="center">
-                                                <Typography
-                                                    variant="body2"
-                                                    color="success.main"
-                                                    fontWeight="bold"
-                                                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}
-                                                >
-                                                    <span>✓</span> Plantilla seleccionada
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                    </Card>
-                                </Grid>
-                            );
-                        })}
-                    </Grid>
                 </Box>
 
                 {rfcValue && (
@@ -647,6 +432,100 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         </WithPermission>
                     </Box>
                 )}
+
+                <Box my={4}>
+                    <Typography variant="h6" gutterBottom>
+                        Seleccionar Plantilla
+                    </Typography>
+
+                    <Grid container spacing={2} columns={{ xs: 2, sm: 8, md: 12, lg: 10 }}>
+                        {plantillas.map((plantilla) => {
+                            const isSelected = plantilla.ID === plantillaSeleccionada;
+
+                            return (
+                                <Grid item xs={2} sm={4} md={4} lg={2} key={plantilla.ID}>
+                                    <Card
+                                        variant="outlined"
+                                        sx={{
+                                            p: 1,
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            borderRadius: 2,
+                                            border: isSelected ? '2px solid #04b2ca' : '1px solid #e0e0e0',
+                                            backgroundColor: isSelected ? '#f0fafa' : 'white',
+                                            transition: 'all 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: 2
+                                            }
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" fontWeight="bold" align="center" noWrap title={plantilla.Nombre} gutterBottom>
+                                            {plantilla.Nombre}
+                                        </Typography>
+
+                                        <CardActionArea
+                                            onClick={() => handleVerImagen(plantilla.VistaPrevia)}
+                                            sx={{ borderRadius: 1, flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}
+                                        >
+                                            <CardMedia
+                                                component="img"
+                                                height="120"
+                                                image={plantilla.VistaPrevia || '/placeholder-image.jpg'}
+                                                alt={plantilla.Nombre}
+                                                sx={{
+                                                    objectFit: 'contain',
+                                                    borderRadius: 1,
+                                                }}
+                                            />
+                                        </CardActionArea>
+
+                                        <Box mt="auto" display="flex" flexDirection="column" gap={1}>
+                                            <Box display="flex" justifyContent="center" gap={1}>
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => handleVerImagen(plantilla.VistaPrevia)}
+                                                    sx={{ fontSize: '0.7rem', minWidth: 'auto', px: 1 }}
+                                                >
+                                                    Ver
+                                                </Button>
+
+                                                {isSelected ? (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="success"
+                                                        sx={{ fontSize: '0.7rem', px: 1 }}
+                                                        disabled
+                                                    >
+                                                        Seleccionada
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="small"
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={() => handleSeleccionarPlantilla(plantilla)}
+                                                        sx={{
+                                                            fontSize: '0.7rem',
+                                                            backgroundColor: '#04b2ca',
+                                                            '&:hover': { backgroundColor: '#038a9e' },
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        Seleccionar
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    </Card>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                </Box>
 
                 <Box
                     my={4}
@@ -684,7 +563,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 </Box>
             </form>
 
-            {/* Modal para vista previa de imagen */}
             <Dialog
                 open={modalOpen}
                 onClose={handleCerrarModal}
