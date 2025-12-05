@@ -9,7 +9,8 @@ export function useAuth() {
     loading: true,
     permissions: [],
     isSuperUser: false,
-    permissionsLoaded: false, // Nuevo estado para controlar si los permisos se cargaron
+    isBOD: false,
+    permissionsLoaded: false,
   });
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -71,6 +72,8 @@ export function useAuth() {
       const rolId =
         localStorage.getItem("rolId") || sessionStorage.getItem("rolId");
 
+      const BOD = localStorage.getItem("BOD") === "true";
+
       if (!token) {
         setAuthState((prev) => ({ ...prev, loading: false }));
         return;
@@ -105,6 +108,7 @@ export function useAuth() {
         email,
         username,
         isSuperUser: sudo,
+        isBOD: BOD,
         token,
         rolId,
       };
@@ -114,6 +118,7 @@ export function useAuth() {
         loading: false,
         permissions,
         isSuperUser: sudo,
+        isBOD: BOD,
         permissionsLoaded: true, // Marcamos que los permisos están cargados
       });
     } catch (error) {
@@ -170,6 +175,7 @@ export function useAuth() {
       const nombreUsuario = credentials.usuario.split("@")[0];
       localStorage.setItem("usuario", nombreUsuario);
       localStorage.setItem("superUser", result.sudo);
+      localStorage.setItem("BOD", result.BOD);
 
       // Establecer 'newUser' solo si no existe en sessionStorage
       if (localStorage.getItem("newUser") === null) {
@@ -183,6 +189,7 @@ export function useAuth() {
         email: credentials.usuario,
         username: nombreUsuario,
         isSuperUser: result.sudo,
+        isBOD: result.BOD,
         token: result.token,
         rolId: result.RolID,
       };
@@ -192,6 +199,7 @@ export function useAuth() {
         loading: false,
         permissions: permissions,
         isSuperUser: result.sudo,
+        isBOD: result.BOD,
         permissionsLoaded: true,
       });
 
@@ -202,7 +210,7 @@ export function useAuth() {
       // Redirigir según el tipo de usuario
       router.push(result.sudo ? "/Dashboard" : "/Home");
 
-      return { success: true, isSuperUser: result.sudo };
+      return { success: true, isSuperUser: result.sudo, isBOD: result.BOD};
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -225,6 +233,7 @@ export function useAuth() {
       loading: false,
       permissions: [],
       isSuperUser: false,
+      isBOD: false,
       permissionsLoaded: false,
     });
 

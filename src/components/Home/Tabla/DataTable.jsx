@@ -13,7 +13,9 @@ import {
     LinearProgress,
     Chip,
     Menu,
-    MenuItem
+    MenuItem,
+    Typography,
+    Alert
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
@@ -27,21 +29,18 @@ import {
     MoreVert as MoreVertIcon,
     Email as EmailIcon,
     CloudUpload as TimbrarIcon,
-    CloudDownload as DescargarIcon,
-    Padding
+    CloudDownload as DescargarIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 const MUIDataTable = dynamic(() => import('mui-datatables'), { ssr: false });
-import Autocomplete from '@mui/material/Autocomplete';
-import TextField from '@mui/material/TextField';
-import { WithPermission } from '@/components/WithPermission';
 
 // Importación de componentes de modal
 import ModalExito from '@/components/Home/Modales/modalExito';
 import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';
+import PagoModal from '@/components/CompraTimbres/PagoModal'; // Importar el modal de pago
 
 // Utilidades
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -63,7 +62,7 @@ const RowActionMenu = React.memo(({
     handleEdit,
     handleClone,
     handleDelete,
-    router
+    isBOD
 }) => {
     return (
         <Menu
@@ -164,7 +163,7 @@ const RowActionMenu = React.memo(({
 
 RowActionMenu.displayName = 'RowActionMenu';
 
-export default function DataTable({ token }) {
+export default function DataTable({ token, isBOD }) {
     const router = useRouter();
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -176,6 +175,7 @@ export default function DataTable({ token }) {
     const [openModalTimbrar, setOpenModalTimbrar] = useState(false);
     const [openModalCancelar, setOpenModalCancelar] = useState(false);
     const [openModalConfirm, setOpenModalConfirm] = useState(false);
+    const [openPagoModal, setOpenPagoModal] = useState(false);
 
     // Estados para operaciones
     const [confirmationMessage, setConfirmationMessage] = useState('');
@@ -186,6 +186,12 @@ export default function DataTable({ token }) {
     const [menuRow, setMenuRow] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
+    
+    // Estados específicos para BOD
+    const [facturaParaTimbrarBOD, setFacturaParaTimbrarBOD] = useState(null);
+    const [pagoCompletado, setPagoCompletado] = useState(false);
+
+    console.log("DataTable - isBOD value:", isBOD);
 
     // Obtener datos de la API
     const fetchData = useCallback(async () => {
@@ -208,7 +214,6 @@ export default function DataTable({ token }) {
                         },
                         Emisor: item.Emisor || { Nombre: 'Desconocido', Rfc: '' },
                         Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' },
-                        // Normalizar MontoTotalPagos
                         MontoTotalPagos: item.Complemento?.Pagos?.Totales?.MontoTotalPagos || 0,
                     }));
 
@@ -226,6 +231,15 @@ export default function DataTable({ token }) {
         fetchData();
     }, [fetchData]);
 
+    // Si el pago se completó, timbrar la factura
+    useEffect(() => {
+        if (pagoCompletado && facturaParaTimbrarBOD) {
+            handleTimbrarBOD(facturaParaTimbrarBOD);
+            setPagoCompletado(false);
+            setFacturaParaTimbrarBOD(null);
+        }
+    }, [pagoCompletado, facturaParaTimbrarBOD]);
+
     // Manejar resultado de cancelación
     useEffect(() => {
         if (resultadoCancelar === "success") {
@@ -240,8 +254,8 @@ export default function DataTable({ token }) {
         setResultadoCancelar(null);
     }, [resultadoCancelar, fetchData]);
 
-    // Funciones de acción
-    const handleTimbrar = useCallback(async (ids) => {
+    // Función para timbrar en modo normal (NO BOD)
+    const handleTimbrarNormal = useCallback(async (ids) => {
         setLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/facturas/TimbrarFactura`, {
@@ -250,7 +264,7 @@ export default function DataTable({ token }) {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ids),
+                body: JSON.stringify({ Facturas_ID: ids }),
             });
 
             if (response.ok) {
@@ -271,6 +285,231 @@ export default function DataTable({ token }) {
         }
     }, [token, fetchData]);
 
+    // Función para timbrar en modo BOD (después de pago)
+    const handleTimbrarBOD = useCallback(async (id) => {
+        setLoading(true);
+        try {
+            console.log("Timbrando factura BOD después de pago:", id);
+            
+            const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativoBOD`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Facturas_ID: [id] }),
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Resultado timbrado BOD:", result);
+                
+                if (result.Facturas && result.Facturas.length > 0) {
+                    const factura = result.Facturas[0];
+                    
+                    if (factura.status === 'success') {
+                        setConfirmationMessage('Factura timbrada exitosamente.');
+                        setOpenModalSuccess(true);
+                        fetchData();
+                    } else {
+                        setConfirmationMessage(`Error al timbrar: ${factura.error || 'Error desconocido'}`);
+                        setOpenModalError(true);
+                    }
+                } else {
+                    setConfirmationMessage('Error en la respuesta del servidor.');
+                    setOpenModalError(true);
+                }
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                setConfirmationMessage(errorData.message || 'Error al timbrar la factura.');
+                setOpenModalError(true);
+            }
+        } catch (error) {
+            console.error('Error al timbrar BOD:', error);
+            setConfirmationMessage('Error de conexión al timbrar.');
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [token, fetchData]);
+
+    // Función principal para timbrar (determina el flujo según modo)
+    const handleTimbrar = useCallback(async (ids) => {
+        // Validación para BOD: solo una factura a la vez
+        if (isBOD && ids.length > 1) {
+            setConfirmationMessage('En modo BOD solo se puede timbrar una factura a la vez.');
+            setOpenModalError(true);
+            return;
+        }
+
+        // Si está en modo BOD, redirigir a pasarela de pago primero
+        if (isBOD) {
+            const facturaId = ids[0];
+            
+            // Guardar la factura que se va a timbrar después del pago
+            setFacturaParaTimbrarBOD(facturaId);
+            
+            // Abrir modal de pago
+            setOpenPagoModal(true);
+            return;
+        }
+
+        // Modo normal: timbrar directamente
+        await handleTimbrarNormal(ids);
+    }, [isBOD, handleTimbrarNormal]);
+
+    // Función para manejar éxito del pago en modo BOD
+    const handlePagoSuccess = useCallback(() => {
+        setConfirmationMessage('Pago realizado exitosamente. Procediendo a timbrar...');
+        setOpenModalSuccess(true);
+        setPagoCompletado(true);
+        
+        // Cerrar modal de pago
+        setTimeout(() => {
+            setOpenPagoModal(false);
+        }, 1500);
+    }, []);
+
+    // Función para timbrar y enviar (con lógica BOD)
+    const handleTimbrarYEnviar = useCallback(async (ids) => {
+        // Validación para BOD: solo una factura a la vez
+        if (isBOD && ids.length > 1) {
+            setConfirmationMessage('En modo BOD solo se puede timbrar una factura a la vez.');
+            setOpenModalError(true);
+            return;
+        }
+
+        // Si está en modo BOD, manejamos el flujo completo
+        if (isBOD) {
+            const facturaId = ids[0];
+            
+            // Guardar la factura
+            setFacturaParaTimbrarBOD(facturaId);
+            
+            // Abrir modal de pago
+            setOpenPagoModal(true);
+            return;
+        }
+
+        // Modo normal: timbrar y enviar
+        setLoading(true);
+        try {
+            // Primero timbrar
+            const timbradoResponse = await fetch(`${apiUrl}/api/facturas/TimbrarFactura`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Facturas_ID: ids }),
+            });
+
+            if (!timbradoResponse.ok) {
+                throw new Error('Error en el timbrado de facturas');
+            }
+
+            const timbradoData = await timbradoResponse.json();
+            
+            // Filtrar solo las facturas que se timbraron correctamente
+            const facturasTimbradasExitosas = timbradoData.Facturas?.filter(
+                factura => factura.status === 'success'
+            ) || [];
+
+            if (facturasTimbradasExitosas.length === 0) {
+                throw new Error('Ninguna factura se timbró correctamente');
+            }
+
+            // Enviar por correo las facturas timbradas
+            const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
+
+            const envioResponse = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(idsTimbrados),
+            });
+
+            if (!envioResponse.ok) {
+                throw new Error('Error al enviar facturas por correo');
+            }
+
+            // Procesar resultados
+            let message = '';
+            
+            if (facturasTimbradasExitosas.length === ids.length) {
+                message = 'Facturas timbradas y enviadas correctamente.';
+            } else {
+                const fallidas = ids.length - facturasTimbradasExitosas.length;
+                message = `${facturasTimbradasExitosas.length} factura(s) timbrada(s) y enviada(s). ${fallidas} fallaron.`;
+            }
+
+            setConfirmationMessage(message);
+            setOpenModalSuccess(true);
+            fetchData();
+
+        } catch (error) {
+            console.error('Error en timbrado y envío:', error);
+            setConfirmationMessage(`Error: ${error.message}`);
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [token, fetchData, isBOD]);
+
+    // Función para timbrar y enviar después de pago BOD
+    const handleTimbrarYEnviarBOD = useCallback(async (id) => {
+        setLoading(true);
+        try {
+            // Primero timbrar (endpoint BOD)
+            const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativoBOD`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Facturas_ID: [id] }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Error en el timbrado');
+            }
+
+            const result = await response.json();
+            
+            if (result.Facturas && result.Facturas[0]?.status === 'success') {
+                // Enviar por correo
+                const envioResponse = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify([id]),
+                });
+
+                if (!envioResponse.ok) {
+                    throw new Error('Error al enviar factura por correo');
+                }
+
+                setConfirmationMessage('Factura timbrada y enviada correctamente.');
+                setOpenModalSuccess(true);
+                fetchData();
+            } else {
+                throw new Error(result.Facturas?.[0]?.error || 'Error al timbrar');
+            }
+
+        } catch (error) {
+            console.error('Error en timbrado y envío BOD:', error);
+            setConfirmationMessage(`Error: ${error.message}`);
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
+        }
+    }, [token, fetchData]);
+
+    // Resto de funciones (descargar, enviar correo, ver PDF, etc.)
     const handleDownloadSelecteds = useCallback(async (ids) => {
         setLoading(true);
         try {
@@ -330,11 +569,6 @@ export default function DataTable({ token }) {
             setLoading(false);
         }
     }, [token]);
-
-    const handleTimbrarYEnviar = useCallback(async (ids) => {
-        await handleTimbrar(ids);
-        await handleEnviarCorreo(ids);
-    }, [handleTimbrar, handleEnviarCorreo]);
 
     const handleViewPdf = useCallback(async (id) => {
         setLoading(true);
@@ -483,7 +717,7 @@ export default function DataTable({ token }) {
         setMenuRow(null);
     }, []);
 
-    // Configuración de columnas memoizada
+    // Configuración de columnas (igual que antes)
     const columns = useMemo(() => [
         {
             name: "ID",
@@ -667,7 +901,7 @@ export default function DataTable({ token }) {
         }
     ], [data]);
 
-    // Opciones de la tabla memoizada
+    // Opciones de la tabla
     const options = useMemo(() => ({
         filterType: 'dropdown',
         responsive: 'standard',
@@ -682,33 +916,43 @@ export default function DataTable({ token }) {
         pagination: true,
         customToolbarSelect: (selectedRows, displayData, setSelectedRows) => {
             const selectedIds = selectedRows.data.map(index => data[index.dataIndex].ID);
+            
+            const isMultipleSelection = selectedIds.length > 1;
+            const isBODDisabled = isBOD && isMultipleSelection;
 
             return (
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <Button
                         startIcon={<EmailIcon />}
                         onClick={() => handleEnviarCorreo(selectedIds)}
+                        disabled={selectedIds.length === 0}
                     >
                         Enviar
                     </Button>
                     <Button
                         startIcon={<TimbrarIcon />}
                         onClick={() => handleTimbrar(selectedIds)}
+                        disabled={selectedIds.length === 0 || isBODDisabled}
+                        title={isBODDisabled ? "En modo BOD solo se puede timbrar una factura a la vez" : ""}
                     >
-                        Timbrar
+                        {isBOD ? "Timbrar Factura" : "Timbrar"}
                     </Button>
                     <Button
                         startIcon={<DescargarIcon />}
                         onClick={() => handleDownloadSelecteds(selectedIds)}
+                        disabled={selectedIds.length === 0}
                     >
                         Descargar
                     </Button>
-                    <Button
-                        startIcon={<TimbrarEnviarIcon />}
-                        onClick={() => handleTimbrarYEnviar(selectedIds)}
-                    >
-                        Timbrar y Enviar
-                    </Button>
+                    {!isBOD && (
+                        <Button
+                            startIcon={<TimbrarEnviarIcon />}
+                            onClick={() => handleTimbrarYEnviar(selectedIds)}
+                            disabled={selectedIds.length === 0}
+                        >
+                            Timbrar y Enviar
+                        </Button>
+                    )}
                 </div>
             );
         },
@@ -756,15 +1000,15 @@ export default function DataTable({ token }) {
                 deleteAria: "Borrar filas seleccionadas",
             },
         },
-    }), [data, handleEnviarCorreo, handleTimbrar, handleDownloadSelecteds, handleTimbrarYEnviar]);
+    }), [data, handleEnviarCorreo, handleTimbrar, handleDownloadSelecteds, handleTimbrarYEnviar, isBOD]);
 
-    // Tema personalizado para la tabla
+    // Tema personalizado
     const getMuiTheme = () => createTheme({
         components: {
             MUIDataTableBodyCell: {
                 styleOverrides: {
                     root: {
-                        fontSize: '11px',// MODIFICAR AQUÍ: Tamaño de fuente del cuerpo de la tabla
+                        fontSize: '11px',
                         padding: '0px 5px',
                     }
                 }
@@ -772,7 +1016,7 @@ export default function DataTable({ token }) {
             MUIDataTableHeadCell: {
                 styleOverrides: {
                     root: {
-                        fontSize: '12px', // MODIFICAR AQUÍ: Tamaño de fuente del encabezado
+                        fontSize: '12px',
                         fontWeight: 'bold',
                         color: '#000',
                         backgroundColor: '#f0f0f0',
@@ -792,6 +1036,28 @@ export default function DataTable({ token }) {
     return (
         <Box>
             {loading && <LinearProgress />}
+            
+            {/* Indicador de modo BOD */}
+            {isBOD && (
+                <Alert 
+                    severity="info" 
+                    sx={{ mb: 2 }}
+                    action={
+                        <Chip 
+                            label="MODO PAGO POR USO" 
+                            color="primary" 
+                            size="small"
+                        />
+                    }
+                >
+                    <Typography variant="body2" fontWeight="bold">
+                        Modo BOD Activado - Pago por transacción
+                    </Typography>
+                    <Typography variant="caption">
+                        Cada timbrado requiere pago previo. Seleccione solo una factura para proceder con el pago.
+                    </Typography>
+                </Alert>
+            )}
 
             <ThemeProvider theme={getMuiTheme()}>
                 <MUIDataTable
@@ -816,7 +1082,7 @@ export default function DataTable({ token }) {
                 handleEdit={handleEdit}
                 handleClone={handleClone}
                 handleDelete={handleDelete}
-                router={router}
+                isBOD={isBOD}
             />
 
             {/* Modales */}
@@ -846,6 +1112,26 @@ export default function DataTable({ token }) {
                 token={token}
                 setResultadoCancelar={setResultadoCancelar}
             />
+
+            {/* Modal de pago para BOD */}
+            {openPagoModal && (
+                <PagoModal
+                    open={openPagoModal}
+                    onClose={() => {
+                        setOpenPagoModal(false);
+                        setFacturaParaTimbrarBOD(null);
+                    }}
+                    token={token}
+                    setCompra={handlePagoSuccess}
+                    opcion={{
+                        ID: 'timbre_individual',
+                        Nombre: 'Timbre Individual',
+                        Costo: 10, // Precio por timbre individual
+                        CantidadTimbres: 1,
+                        Descripcion: 'Timbre de factura electrónica'
+                    }}
+                />
+            )}
 
             <Dialog
                 open={openModalConfirm}
