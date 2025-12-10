@@ -486,7 +486,7 @@ export default function DataTable({ token, isBOD }) {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify([id]),
+                    body: JSON.stringify(ids),
                 });
 
                 if (!envioResponse.ok) {
@@ -548,13 +548,13 @@ export default function DataTable({ token, isBOD }) {
     const handleEnviarCorreo = useCallback(async (ids) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFactura`, {
+            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ids),
+                body: JSON.stringify(idsTimbrados),
             });
 
             if (response.ok) {
