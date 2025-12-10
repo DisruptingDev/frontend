@@ -1,39 +1,45 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import Image from "next/image";
 import UserMenu from "./UserMenu";
+import FacturasPPD from "./FacturasPPD"
+import { useState, useEffect } from "react";
+import { isAuthenticated } from "@/utils/authRedirect";
+import { useRouter } from 'next/navigation';
+import Layout from "../Layout";
+import HelpIcon from '@mui/icons-material/Help';
+
 
 // Configuración de la fuente Inter
-const inter = Inter({
+const inter = DM_Sans({
   subsets: ["latin"],
   variable: "--font-inter",
 });
 
-// Configuración dinámica de enlaces
-const links = [
-  { href: "/CrearFactura", label: "Facturación +" },
-  { href: "/AltaCliente", label: "Clientes +" },
-  { href: "/Empresas", label: "Empresas +" },
-  { href: "/AltaSerie", label: "Series +" },
-  { href: "/Timbres", label: "Timbres +" },
-  { href: "/Conceptos", label: "Conceptos +" },
+
+// Opciones del dropdown para "Facturación"
+const facturacionOptions = [
+  { href: "/CrearFactura", label: "Nueva Factura" },
+  { href: "/ImportarFacturas", label: "Importar Facturas" },
 ];
 
-// Componente Header
 export default function Header() {
-  const pathname = usePathname();
+  const router = useRouter();
+  const [token, setToken] = useState("");
 
-  /**
-   * Verifica si una ruta está activa
-   * @param {string} path - La ruta a verificar
-   * @returns {boolean} - Retorna true si la ruta actual coincide
-   */
-  const isActive = (path) => pathname === path;
+  useEffect(() => {
+    const token = isAuthenticated();
+    if (!token) {
+      router.push("/IniciaSesion");
+    }
+    else {
+      setToken(token);
+    }
+  }, [router]);
 
   return (
-    <header className="flex m-2 bg-primary-dark-total items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-md">
+    <header className="flex m-2 bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-lg">
       {/* Logo de la aplicación */}
       <Link
         href="/Home"
@@ -41,33 +47,21 @@ export default function Header() {
         prefetch={false}
       >
         <Image
-          src="/images/logo.png"
+          src="/images/Log_blanco_wise_factura.png"
           alt="Descripción del logo"
           width={203}
           height={64}
         />
       </Link>
 
-      {/* Navegación principal */}
-      <nav className="flex gap-4 sm:gap-6 text-sm font-medium">
-        {links.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`text-white text-lg hover:underline underline-offset-4 ${
-              isActive(href)
-                ? "text-selected-color underline"
-                : "text-muted-foreground"
-            }`}
-            prefetch={false}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
-
       {/* Menú de usuario */}
-      <UserMenu />
+      <div className="ml-auto flex items-center">
+        <Layout>
+          <HelpIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }}/>
+          <FacturasPPD token={token} />
+          <UserMenu />
+        </Layout>
+      </div>
     </header>
   );
 }

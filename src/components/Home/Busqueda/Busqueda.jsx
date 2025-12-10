@@ -111,11 +111,10 @@ export default function SearchFilter({ setFiltro }) {
     return (
         <Box
             sx={{
-                backgroundColor: "#1d394d",
-                padding: "16px",
-                borderRadius: "8px",
+                backgroundColor: "#063F53",
+                padding: "14px",
+                borderRadius: "4px",
                 boxShadow: 1,
-                margin: 1,
                 mt: 1,
             }}
         >
@@ -123,7 +122,7 @@ export default function SearchFilter({ setFiltro }) {
                 <Box
                     sx={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(4, 1fr) auto",
+                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr) auto" }, // Responsivo
                         gap: 4,
                         alignItems: "center",
                     }}
@@ -132,7 +131,7 @@ export default function SearchFilter({ setFiltro }) {
                     <Box sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: "200px" }}>
                         <PickersMinMax register={register} setValue={setValue} resetCalendario={resetCalendario} setResetCalendario={setResetCalendario} />
                     </Box>
-
+    
                     {/* Selector de emisor */}
                     <Select
                         register={register}
@@ -147,7 +146,7 @@ export default function SearchFilter({ setFiltro }) {
                         value={emisor || ""}
                         onChange={handleEmisorChange}
                     />
-
+    
                     {/* Selector de receptor */}
                     <Select
                         register={register}
@@ -162,7 +161,7 @@ export default function SearchFilter({ setFiltro }) {
                         value={receptor || ""}
                         onChange={handleReceptorChange}
                     />
-
+    
                     {/* Selector de estatus */}
                     <FormControl fullWidth variant="filled" sx={{ background: "#e8e8e8", borderRadius: "5px", color: "black", minWidth: "200px" }}>
                         <InputLabel id="estatus-select-label">Estatus</InputLabel>
@@ -178,31 +177,36 @@ export default function SearchFilter({ setFiltro }) {
                             <MenuItem value="notimbrada">No timbrada</MenuItem>
                         </MuiSelect>
                     </FormControl>
-
+    
                     {/* Botones */}
-                    <Box>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            flexDirection: { xs: "column", sm: "row" }, // Responsivo
+                            gap: 2,
+                        }}
+                    >
                         <Button
                             type="button"
                             variant="contained"
                             sx={{
-                                background: "#04b2ca",
+                                background: "#10968A",
                                 color: "white",
-                                "&:hover": { backgroundColor: "#ffffff", color: "#04b2ca" },
-                                marginRight: "10px",
+                                "&:hover": { backgroundColor: "#ffffff", color: "#10968A" },
                             }}
                             onClick={onSubmit}
                         >
                             <SearchIcon />
                             Buscar
                         </Button>
-
+    
                         <Button
                             type="button"
                             variant="contained"
                             sx={{
                                 background: "#ffffff",
-                                color: "#10232f",
-                                "&:hover": { backgroundColor: "#10232f", color: "#ffffff" },
+                                color: "#10968A",
+                                "&:hover": { backgroundColor: "red", color: "#ffffff" },
                             }}
                             onClick={Limpiar}
                         >
@@ -212,7 +216,7 @@ export default function SearchFilter({ setFiltro }) {
                     </Box>
                 </Box>
             </form>
-
+    
             {/* Snackbar para errores */}
             <Snackbar
                 open={snackbarOpen}

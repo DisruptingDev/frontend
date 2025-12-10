@@ -1,20 +1,26 @@
-"use client"; // Indica que este componente se renderiza en el cliente
+"use client";
 
 // Importación de hooks y utilidades
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-
 // Importación de componentes personalizados
 import Header from "@/components/Header/Header.jsx";
-import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
-import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+
+import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
+// import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
+// import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+import DataTable from "@/components/Home/Tabla/DataTable.jsx";
 import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
-import { isAuthenticated } from "@/utils/authRedirect"; 
+import { isAuthenticated } from "@/utils/authRedirect";
 
 // Componente de diseño de Material-UI
-import { Box } from "@mui/material"; 
+import { Box, Button } from "@mui/material";
+import Grid from '@mui/material/Unstable_Grid2';
+
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 
 // Componente principal de la página Home
 export default function Home() {
@@ -24,12 +30,23 @@ export default function Home() {
 
     //Nuevo usuario
     const [newUser, setNewUser] = useState(null);
-    // const [newUser, setNewUser] = useState("true");
-    const [open, setOpen] = useState(false);
+    const [openWizard, setOpenWizard] = useState(false);
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const [setOpen] = useState(false);
+    const [isBOD, setIsBOD] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
-    const [filtro, setFiltro] = useState(null);
+    // const [filtro, setFiltro] = useState(null);
+
+    // Referencias para los elementos que serán destacados en el tour
+    const headerRef = useRef(null);
+    const sidebarRef = useRef(null);
+    const datatableRef = useRef(null);
+    const searchRef = useRef(null);
+
+    console.log("Token en Home:", token);
+
 
     // useEffect: se ejecuta al montar el componente
     useEffect(() => {
@@ -41,44 +58,131 @@ export default function Home() {
         } else {
             // Guarda el token en el estado
             setToken(token);
-            
-
         }
+
     }, [router]); // Se ejecuta cada vez que cambia el router
 
 
     useEffect(() => {
         // Solo se ejecuta en el cliente
-        const storedNewUser = sessionStorage.getItem('newUser');
+        const storedNewUser = localStorage.getItem('newUser');
         setNewUser(storedNewUser);
-      }, []);
+        const bodValue = localStorage.getItem('BOD');
+        setIsBOD(bodValue === 'true');
+    }, []);
+
     useEffect(() => {
-      console.log('newUser', newUser);
-       if (newUser === "true"){
-         setOpen(true);
-         sessionStorage.setItem('newUser', "false");
-       }
-      
+        if (newUser === "true") {
+            setOpenWizard(true);
+            localStorage.setItem('newUser', "false");
+            setDrawerOpen(true);
+        }
+    }, [newUser]);
 
-    }
-    , [newUser]);
+    const handleCloseWizard = () => {
+        setOpenWizard(false);
+        // Iniciar el tour después de cerrar el wizard
+        setTimeout(() => {
+            startTour();
+        }, 500);
+    };
+
+    const startTour = () => {
+        const driverObj = driver({
+            className: 'driverjs-theme',
+            animate: true,
+            opacity: 0.75,
+            padding: 10,
+            allowClose: true,
+            overlayClickNext: false,
+            doneBtnText: 'Finalizar',
+            closeBtnText: 'Cerrar',
+            nextBtnText: 'Siguiente',
+            prevBtnText: 'Anterior',
+            steps: [
+                {
+                    element: headerRef.current,
+                    popover: {
+                        title: 'Encabezado',
+                        description: 'Aquí puedes comprar timbres, ver tus órdenes, invitar miembros a tu equipo y cerrar sesión.',
+                        side: "bottom",
+                        align: 'end'
+                    }
+                },
+                {
+                    element: sidebarRef.current,
+                    popover: {
+                        title: 'Menú Lateral',
+                        description: 'Navega entre las diferentes secciones de la aplicación.',
+                        side: "right",
+                        align: 'start'
+                    }
+                },
+                {
+                    element: datatableRef.current,
+                    popover: {
+                        title: 'Tabla de Datos',
+                        description: 'Aquí puedes ver y gestionar la información principal.',
+                        position: 'top'
+                    }
+                }
+            ]
+        });
+
+        driverObj.drive();
+    };
 
 
-    // Renderizado del componente
     return (
-        <Box>
+        <div>
+            <div ref={headerRef}>
+                <Header token={token} />
+            </div>
+            <Grid container>
+                <Grid>
+                    <div ref={sidebarRef}>
+                        <SideBarMenu ref={sidebarRef} />
+                    </div>
+                </Grid>
 
-               
-             <ModalWizard  open={open} handleClose={() => setOpen(false)} token={token} />
-   
-            {/* Componente del encabezado */}
-            <Header />  
-            
-            {/* Componente para búsqueda y filtros */}
-            <SearchFilter setFiltro={setFiltro} />
+                <ModalWizard
+                    open={openWizard}
+                    handleClose={handleCloseWizard}
+                    token={token}
+                />
 
-            {/* Componente de la tabla, recibe el token y el filtro como props */}
-            <Tabla token={token} filtro={filtro} />
-        </Box>
+                {/* Contenedor principal que ocupa el espacio restante */}
+                <Grid
+                    minWidth={"100vw"}
+                    maxWidth={"100vw"}
+                >
+                    <Box
+                        //bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        //p={2}
+                        //boxShadow={3}
+                        borderRadius={2}
+                        //mb={6}
+                        mb={10}
+
+                    >
+                        {/* <SearchFilter setFiltro={setFiltro} />
+                        <Tabla token={token} filtro={filtro} /> */}
+                        <div ref={datatableRef}>
+                            <DataTable token={token} isBOD={isBOD} />
+                        </div>
+                        {/* <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={startTour}
+                            startIcon={<HelpIcon />}
+                        >
+                            Iniciar Tour
+                        </Button> */}
+                    </Box>
+                </Grid>
+            </Grid>
+        </div>
     );
 }

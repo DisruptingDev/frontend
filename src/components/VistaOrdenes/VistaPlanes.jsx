@@ -1,71 +1,176 @@
 import React from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Checkbox, Button } from '@mui/material';
-import { date } from 'valibot';
+import MUIDataTable from 'mui-datatables';
+import { Button } from '@mui/material';
 import { format } from 'date-fns';
-import es from 'date-fns/locale/es'; // Para formatear en español
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import es from 'date-fns/locale/es';
 
 const VistaPlanes = ({ planes, selectedRows, handleSelectRow, handleVerComprobante, origen }) => {
-    return (
-        <TableContainer component={Paper}>
-            <Table>
-                <TableHead>
-                    <TableRow sx={{ backgroundColor: '#04b2ca' }}>
-                        <TableCell padding="checkbox" sx={{ textAlign: 'center' }} />
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Opción</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Timbres</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Fecha Activación</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Monto</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Estatus</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Comprobante</TableCell>
+  // Configuración de columnas
+  const columns = [
+    {
+      name: 'ID',
+      label: 'ID',
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => <div style={{ textAlign: 'center' }}>{value}</div>
+      }
+    },
+    {
+      name: 'Plan.Nombre',
+      label: 'Opción',
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => <div style={{ textAlign: 'center' }}>{value}</div>
+      }
+    },
+    {
+      name: 'Plan.CantidadTimbres',
+      label: 'Timbres',
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => <div style={{ textAlign: 'center' }}>{value}</div>
+      }
+    },
+    {
+      name: 'FechaActivacion',
+      label: 'Fecha Activación',
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value, tableMeta) => {
+          const plan = planes[tableMeta.rowIndex];
+          return (
+            <div style={{ textAlign: 'center' }}>
+              {plan.Estatus === 'Aprobada' ? format(new Date(value), 'dd/MM/yyyy', { locale: es }) : ''}
+            </div>
+          );
+        }
+      }
+    },
+    {
+      name: 'Plan.Costo',
+      label: 'Monto',
+      options: {
+        filter: false,
+        sort: true,
+        customBodyRender: (value) => <div style={{ textAlign: 'center' }}>{value}</div>
+      }
+    },
+    {
+      name: 'Estatus',
+      label: 'Estatus',
+      options: {
+        filter: true,
+        sort: true,
+        customBodyRender: (value) => <div style={{ textAlign: 'center' }}>{value}</div>
+      }
+    },
+    {
+      name: 'ComprobantePath',
+      label: 'Comprobante',
+      options: {
+        filter: false,
+        sort: false,
+        customBodyRender: (value, tableMeta) => {
+          const plan = planes[tableMeta.rowIndex];
+          return value ? (
+            <div style={{ textAlign: 'center' }}>
+              <Button
+                variant="text"
+                onClick={() => handleVerComprobante(plan.ID)}
+              >
+                Ver
+              </Button>
+            </div>
+          ) : null;
+        }
+      }
+    }
+  ];
 
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {planes.map((plan) => (
-                        <TableRow key={plan.ID}>
-                            <TableCell padding="checkbox" sx={{ textAlign: 'center' }}>
-                                {origen === 'Pagos' ? (
-                                    plan.Estatus === 'En proceso de revisión' ? (
-                                        <Checkbox
-                                            color="primary"
-                                            checked={selectedRows.includes(plan.ID)}
-                                            onChange={() => handleSelectRow(plan)}
-                                            sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
-                                        />
-                                    ) : null
-                                ) : (
-                                    <Checkbox
-                                        color="primary"
-                                        checked={selectedRows.includes(plan.ID)}
-                                        onChange={() => handleSelectRow(plan)}
-                                        sx={{ color: '#04b2ca', '&.Mui-checked': { color: '#028596' } }}
-                                    />
-                                )}
-                            </TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.ID}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.Plan.Nombre}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.Plan.CantidadTimbres}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.Estatus ==='Aprobada'? format(new Date(plan.FechaActivacion), 'dd/MM/yyyy', { locale: es }):''}</TableCell>
-                          
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.Plan.Costo}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>{plan.Estatus}</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>
-                                {plan.ComprobantePath ? (
-                                    <Button
-                                        variant="text"
-                                        onClick={() => handleVerComprobante(plan.ID)}>
-                                        Ver
-                                    </Button>
-                                ) : null}
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
-    );
+  // Opciones de la tabla
+  const options = {
+    filterType: 'checkbox',
+    responsive: 'standard',
+    selectableRows: origen === 'Pagos' ? 'none' : 'multiple',
+    rowsSelected: selectedRows.map(id => 
+      planes.findIndex(plan => plan.ID === id)
+    ),
+    onRowSelectionChange: (currentRowsSelected, allRowsSelected, rowsSelected) => {
+      const selectedIds = rowsSelected.map(index => planes[index].ID);
+      const changedRow = planes[rowsSelected[rowsSelected.length - 1]];
+      handleSelectRow(changedRow);
+    },
+    textLabels: {
+      body: {
+        noMatch: "No se encontraron registros",
+        toolTip: "Ordenar",
+        columnHeaderTooltip: column => `Ordenar por ${column.label}`
+      },
+      pagination: {
+        next: "Siguiente",
+        previous: "Anterior",
+        rowsPerPage: "Filas por página:",
+        displayRows: "de",
+      },
+      toolbar: {
+        search: "Buscar",
+        downloadCsv: "Descargar CSV",
+        print: "Imprimir",
+        viewColumns: "Ver columnas",
+        filterTable: "Filtrar tabla",
+      },
+      filter: {
+        all: "Todos",
+        title: "FILTROS",
+        reset: "REINICIAR",
+      },
+      viewColumns: {
+        title: "Mostrar columnas",
+        titleAria: "Mostrar/Ocultar columnas",
+      },
+      selectedRows: {
+        text: "fila(s) seleccionada(s)",
+        delete: "Eliminar",
+        deleteAria: "Eliminar filas seleccionadas",
+      },
+    },
+    customToolbarSelect: selectedRows => {
+      // Puedes personalizar la barra de herramientas para filas seleccionadas aquí
+      return null;
+    },
+    rowsPerPageOptions: [5, 10, 20],
+    downloadOptions: {
+      filename: 'planes.csv',
+      separator: ',',
+    },
+    print: false,
+    viewColumns: true,
+    filter: true,
+  };
+
+  // Preparar datos para la tabla
+  const data = planes.map(plan => ({
+    ID: plan.ID,
+    'Plan.Nombre': plan.Plan.Nombre,
+    'Plan.CantidadTimbres': plan.Plan.CantidadTimbres,
+    FechaActivacion: plan.FechaActivacion,
+    'Plan.Costo': plan.Plan.Costo,
+    Estatus: plan.Estatus,
+    ComprobantePath: plan.ComprobantePath
+  }));
+
+  return (
+    <MUIDataTable
+      title={origen === 'Pagos' ? "Historial de Pagos" : "Planes Disponibles"}
+      data={data}
+      columns={columns}
+      options={options}
+    />
+  );
 };
 
 export default VistaPlanes;

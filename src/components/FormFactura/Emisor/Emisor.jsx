@@ -3,9 +3,11 @@ import React, { useState, useEffect, use } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
+import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import AutocompleteEmisor from '@/components/Autocompletes/AutocompleteEmisor';
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
     const [emisor, setEmisor] = useState({});
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
@@ -25,7 +27,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
         setMinDate(formatDate(threeDaysAgo));
         setMaxDate(formatDate(today));
-        // console.logh
 
     }, []);
     useEffect(() => {
@@ -80,7 +81,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
             setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);
             // Dispara la validación de estos campos
-            trigger(["Emisor", "RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha"]);
+            trigger(["Emisor", "RFCEmisor", "LugarExpedicion", "NombreEmisor", "RegimenFiscalEmisor", "Serie", "Fecha", "TipoCambio"]);
         }
     }, [emisorData, setValue, trigger, getValues]);
 
@@ -112,6 +113,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
         }
     }, [emisor, setLugarExpedicion, setValue, trigger]);
+
     useEffect(() => {
         // Establece el valor por defecto para 'Divisa'
         setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
@@ -124,25 +126,32 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             console.log(data);
             //Checar, si es correcto
             setValue("Serie", "");
+            setValue("TipoComprobante", "");
+            if (setEmisorID) {
+                setEmisorID(data.ID);
+            }
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     };
-    // const handleLugarExpedicionChange = (e) => {
-    //     setLugarExpedicion(e.target.value);
-    // };
+
     const handleSerieChange = (e) => {
         try {
             const data = JSON.parse(e.target.value);
-            console.log("SERie", data);
+            // console.log("Serie:", data);
             setValue("TipoComprobante", data.TipoComprobante);
+            // Actualiza el estado en el componente padre
+            if (setTipoComprobante) {
+                setTipoComprobante(data.TipoComprobante);
+            }
         } catch (error) {
             console.error("El valor de emisor no es un JSON válido:", e.target.value);
         }
     }
 
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}
+            sx={{ padding: '1rem', margin: 'auto', marginButtom: '1rem' }}>
             <Typography variant="h6" mb={4}>Datos del Emisor</Typography>
             <Box
                 display="grid"
@@ -152,11 +161,11 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                         xs: '1fr',
                         sm: 'repeat(2, 1fr)',
                         md: 'repeat(3, 1fr)',
-                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr '
+                        lg: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr'
                     }
                 }}
             >
-                <Select
+                {/* <Select
                     register={register}
                     trigger={trigger}
                     nombre="Emisor"
@@ -169,7 +178,23 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                     value={getValues("EmisorID") || ""}
                     disabled={disabled}
+                /> */}
+
+                <AutocompleteEmisor
+                    nombre="Emisor"
+                    label="Emisor"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                    id="ID"
+                    clave=""
+                    descripcion="Nombre"
+                    register={register}
+                    setValue={setValue}
+                    value={getValues("Emisor")}
+                    onChange={handleEmisorChange}
+                    error={!!errors.Emisor}
+                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
                 />
+
 
                 <TextField
                     label="RFC"
@@ -224,28 +249,47 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     label="Fecha"
                     type="date"
                     {...register("Fecha", {
-                        required: !disabled ? "La fecha es requerida." : false, // Solo aplica validación si no está deshabilitado
+                        required: !disabled ? "La fecha es requerida." : false,
                         validate: !disabled
                             ? {
                                 notTooOld: (value) => {
-                                    const currentDate = new Date();
                                     const inputDate = new Date(value);
-                                    const threeDaysAgo = new Date();
-                                    threeDaysAgo.setDate(currentDate.getDate() - 4);
-                                    return inputDate >= threeDaysAgo || "Fecha invalida";
+                                    const today = new Date();
+                                    const twoDaysAgo = new Date();
+                                    twoDaysAgo.setDate(today.getDate() - 2);
+
+                                    // Normalizar fechas a medianoche para evitar errores por horas
+                                    inputDate.setHours(0, 0, 0, 0);
+                                    today.setHours(0, 0, 0, 0);
+                                    twoDaysAgo.setHours(0, 0, 0, 0);
+
+                                    return (
+                                        (inputDate >= twoDaysAgo && inputDate <= today) ||
+                                        "Fecha inválida."
+                                    );
                                 },
                             }
-                            : undefined, // No se aplican validaciones si está deshabilitado
+                            : undefined,
                     })}
                     fullWidth
                     InputLabelProps={{
                         shrink: true,
                     }}
                     InputProps={{
-                        inputProps: { min: minDate, max: maxDate },
+                        inputProps: {
+                            min: (() => {
+                                const d = new Date();
+                                d.setDate(d.getDate() - 2);
+                                return d.toISOString().split("T")[0];
+                            })(),
+                            max: (() => {
+                                const d = new Date();
+                                return d.toISOString().split("T")[0];
+                            })(),
+                        },
                     }}
-                    error={!disabled && !!errors.Fecha} // Solo marca error si no está deshabilitado
-                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""} // No muestra mensaje si está deshabilitado
+                    error={!disabled && !!errors.Fecha}
+                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""}
                     disabled={disabled}
                 />
 
@@ -269,7 +313,9 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
                 <TextField
                     label="Tipo de cambio"
+                    {...register("TipoCambio", { required: "Campo obligatorio" })}
                     fullWidth
+                    defaultValue="1"
                     disabled
                     error={!!errors.TipoCambio}
                     helperText={errors.TipoCambio && errors.TipoCambio.message}

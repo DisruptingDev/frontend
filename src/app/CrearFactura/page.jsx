@@ -1,8 +1,8 @@
-"use client";
+'use client';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from 'react-hook-form';
-import { Snackbar, Alert, Modal, Box, Button } from '@mui/material';
+import { Snackbar, Alert, Modal, Box, Button, Grid } from '@mui/material';
 
 import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
@@ -13,9 +13,11 @@ import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
 import { isAuthenticated } from "@/utils/authRedirect";
 import GuardarFactura from "@/components/FormFactura/Timbrar";
-// import { JSONParser } from "formidable/parsers";
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
+import SeleccionarFacturas from "@/components/FormFactura/NotaCredito/SeleccionarFacturas.jsx";
+import { set } from "date-fns";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CrearFactura() {
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
@@ -29,6 +31,14 @@ export default function CrearFactura() {
     const [previewContent, setPreviewContent] = useState('');
     const router = useRouter();
     const [token, setToken] = useState("");
+    const [receptorData, setReceptorData] = useState(null);
+    const [tipoComprobante, setTipoComprobante] = useState("");
+    const [facturasRelacionadas, setFacturasRelacionadas] = useState([]);
+    const [motivoNotaCredito, setMotivoNotaCredito] = useState("");
+    const [emisorID, setEmisorID] = useState("");
+    const [receptorID, setReceptorID] = useState(null);
+
+    console.log("Token en GenerarEgreso:", token);
 
     useEffect(() => {
         const token = isAuthenticated();
@@ -41,15 +51,16 @@ export default function CrearFactura() {
     }, [router]);
 
     const onSubmit = (data) => {
-        console.log("Datos del formulario", data);
+        //console.log("Datos del formulario", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos ante de crear", conceptos);
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura");
+        //console.log("Conceptos antes de crear", conceptos);
+        console.log("Facturas relacionadas antes de crear", facturasRelacionadas);
+        const factura = FormatearFactura(data, data, conceptos, "", "Factura", facturasRelacionadas);
         console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
@@ -58,16 +69,16 @@ export default function CrearFactura() {
                 setSnackbarSeverity('success'); // Configura el Snackbar como éxito
                 setOpenSnackbar(true);
                 // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
-             setTimeout(() => {
-                router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-            }, 1000); // Espera 3 segundos antes de redirigir
+                setTimeout(() => {
+                    router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
+                }, 1000); // Espera 3 segundos antes de redirigir
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
                 setSnackbarSeverity('error'); // Configura el Snackbar como error
                 setOpenSnackbar(true);
             },
-            {token}
+            { token }
         );
     };
 
@@ -75,21 +86,21 @@ export default function CrearFactura() {
         const response = await fetch('/api/generate-pdf', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({ htmlContent }),
-          });
-        
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-        
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'generated.pdf';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        };
+        });
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'generated.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
 
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {
@@ -98,11 +109,11 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",);
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
-        // await generatePDF(vistaPrevia);
+        await generatePDF(vistaPrevia);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
     });
@@ -125,79 +136,127 @@ export default function CrearFactura() {
         setConceptos(prevConceptos => prevConceptos.filter((_, i) => i !== index));
     };
 
+    const handleFacturasSeleccionadas = (data) => {
+        console.log("Facturas relacionadas recibidas:", data);
+        if (data && data.CFDIRelacionados) {
+            setFacturasRelacionadas(data.CFDIRelacionados);
+            setSnackbarMessage('Facturas relacionadas correctamente.');
+            setSnackbarSeverity('success');
+            setOpenSnackbar(true);
+        }
+    };
+
+
+    const handleReceptorSelect = (receptor) => {
+        setReceptorData(receptor);
+    };
+
+    const handleTipoComprobanteChange = (tipo) => {
+        setTipoComprobante(tipo);
+        if (tipo !== "E") {
+            setFacturasRelacionadas([]); // Limpia si no es NC
+        }
+    };
+
     return (
         <div>
             <Header />
-            <form onSubmit={handleSubmit(onSubmit)} method="post">
-                <Emisor
-                    register={register}
-                    setLugarExpedicion={setLugarExpedicion}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    errors={errors}
-                />
-                <Receptor
-                    register={register}
-                    lugarExpedicion={lugarExpedicion}
-                    errors={errors}
-                    setValue={setValue}
-                    getValues={getValues}
-                    trigger={trigger}
-                    token={token}
-                />
-                <Conceptos
-                    trigger={trigger}
-                    register={register}
-                    watch={watch}
-                    setValue={setValue}
-                    getValues={getValues}
-                    setConceptos={setConceptos}
-                    conceptos={conceptos}
-                    editIndex={editIndex}
-                    setEditIndex={setEditIndex}
-                    token={token}
-                />
-                <Resumen
-                    conceptos={conceptos}
-                    subTotal={watch("Subtotal")}
-                    handleEditConcepto={handleEditConcepto}
-                    handleDeleteConcepto={handleDeleteConcepto}
-                >
-                    <div className="flex justify-end w-full space-x-2 mt-10">
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' }}} onClick={() => router.push("/Home")}>Cancelar</Button>
-                        {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
-                        <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca','&:hover': { backgroundColor: '#038a9e' }}} onClick={handlePreview}>Vista previa</Button>
-                        {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
-                        <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                        {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
-                    </div>
-                </Resumen>
-                {/* <pre>
-                    {JSON.stringify(watch(), null, 2)}
-                </pre> */}
-            </form>
-            <Modal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                aria-labelledby="modal-vista-previa"
-                aria-describedby="vista-previa-factura"
-            >
-                <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
-                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
-                </Box>
-            </Modal>
-            <Snackbar
-                open={openSnackbar}
-                autoHideDuration={3000}
-                onClose={() => setOpenSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            >
-                <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
-         
+            <Grid container>
+                <Grid>
+                    <SideBarMenu />
+                </Grid>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                        mb={6}
+                    >
+                        <form onSubmit={handleSubmit(onSubmit)} method="post">
+                            <Emisor
+                                register={register}
+                                setLugarExpedicion={setLugarExpedicion}
+                                setValue={setValue}
+                                getValues={getValues}
+                                trigger={trigger}
+                                errors={errors}
+                                token={token}
+                                setTipoComprobante={setTipoComprobante} // Nuevo prop
+                                setEmisorID={setEmisorID} // Nuevo prop
+                            />
+                            <Receptor
+                                register={register}
+                                lugarExpedicion={lugarExpedicion}
+                                errors={errors}
+                                setValue={setValue}
+                                getValues={getValues}
+                                trigger={trigger}
+                                token={token}
+                                setReceptorID={setReceptorID} // Nuevo prop
+                            />
+                            {tipoComprobante === "E" && receptorID != null && (
+                                <SeleccionarFacturas
+                                    receptor={receptorData}
+                                    token={token}
+                                    onFacturasSeleccionadas={handleFacturasSeleccionadas}
+                                    emisorID={emisorID}
+                                    receptorID={receptorID}
+                                />
+                            )}
+                            <Conceptos
+                                trigger={trigger}
+                                register={register}
+                                watch={watch}
+                                setValue={setValue}
+                                getValues={getValues}
+                                setConceptos={setConceptos}
+                                conceptos={conceptos}
+                                editIndex={editIndex}
+                                setEditIndex={setEditIndex}
+                                token={token}
+                                TipoComprobante={tipoComprobante} // Nuevo prop
+                                facturasRelacionadas={facturasRelacionadas} // Nuevo prop
+                                setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
+                            />
+                            <Resumen
+                                conceptos={conceptos}
+                                subTotal={watch("Subtotal")}
+                                handleEditConcepto={handleEditConcepto}
+                                handleDeleteConcepto={handleDeleteConcepto}
+                            >
+                                <div className="flex justify-end w-full space-x-2 mt-10">
+                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
+                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
+                                    <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                                </div>
+                            </Resumen>
+                        </form>
+                        <Modal
+                            open={openModal}
+                            onClose={() => setOpenModal(false)}
+                            aria-labelledby="modal-vista-previa"
+                            aria-describedby="vista-previa-factura"
+                        >
+                            <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                                <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                            </Box>
+                        </Modal>
+                        <Snackbar
+                            open={openSnackbar}
+                            autoHideDuration={3000}
+                            onClose={() => setOpenSnackbar(false)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                        >
+                            <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
+                                {snackbarMessage}
+                            </Alert>
+                        </Snackbar>
+                    </Box>
+                </Grid>
+            </Grid>
         </div>
     );
 }

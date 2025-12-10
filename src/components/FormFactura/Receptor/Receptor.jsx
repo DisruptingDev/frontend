@@ -4,10 +4,11 @@ import { Box, TextField, Button, Typography, Dialog, DialogTitle, DialogContent,
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Select from "@/components/Select/Select.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente"; // Importa el componente
+import AutocompleteReceptor from "@/components/Autocompletes/AutocompleteReceptor";
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled=false }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false, setReceptorID }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -32,9 +33,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     useEffect(() => {
         if (receptorData) {
-            console.log("Receptor data", receptorData);
+            //console.log("Receptor data", receptorData);
             setValue("ReceptorID", receptorData.ID);
-            setValue("Receptor",receptorData.ID);
+            setValue("Receptor", receptorData.ID);
             setRFC(receptorData.Rfc);
             setValue("RFCReceptor", receptorData.Rfc);
             setValue("NombreReceptor", receptorData.Nombre);
@@ -59,9 +60,13 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("UsoCFDI", receptorData.UsoCFDI);
             setValue("UsoCFDIDescripcion", receptorData.UsoCFDIDescripcion);
 
-            
+            // Notificar al padre el ID del receptor
+            if (setReceptorID) {
+                setReceptorID(receptorData.ID);
+            }
+
             if (rfc === "XAXX010101000") {
-                
+
                 setValue("Año", receptorData.InformacionGlobal.Año);
                 setValue("Meses", receptorData.InformacionGlobal.Meses);
                 setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
@@ -72,21 +77,46 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
                 setHiddeInfoGlobal(true);
-              
+
             } else {
                 setHiddeInfoGlobal(false);
             }
             setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
 
-            trigger("RFCReceptor");
-            trigger("DomicilioFiscalReceptor");
-            trigger("RegimenFiscal");
+            trigger(["RFCReceptor", "DomicilioFiscalReceptor", "RegimenFiscalReceptor"]);
         }
-    }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion]);
+    }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion, setReceptorID]);
+
+    const handleReceptorChange = (e) => {
+        console.log("Valor seleccionado:", e.target.value);
+        try {
+            const data = JSON.parse(e.target.value);
+            setReceptor(data); // tu estado local
+
+            // Actualiza el valor en el formulario
+            setValue("Receptor", data.ID);
+            setValue("ReceptorID", data.ID);
+
+            if (setReceptorID) {
+                setReceptorID(data.ID);
+            }
+        } catch (error) {
+            console.error("El valor de receptor no es un JSON válido:", e.target.value);
+        }
+    };
 
     useEffect(() => {
         if (receptor !== undefined) {
-            let data = JSON.parse(receptor);
+            let data = receptor;
+            // Notificar al padre el ID del receptor
+            if (setReceptorID) {
+                setReceptorID(data.ID);
+            }
+
+            // Actualizar los valores del formulario
+            setValue("Receptor", data.ID);
+            setValue("ReceptorID", data.ID);
+            
             if (data["Rfc"] !== "XAXX010101000") {
                 setDomicilioFiscal(data["DomicilioFiscalReceptor"]);
                 setValue("DomicilioFiscalReceptor", data["DomicilioFiscalReceptor"]);
@@ -98,7 +128,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setValue("DomicilioFiscalReceptor", lugarExpedicion);
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
-                
+
                 setHiddeInfoGlobal(true);
             }
             // setUsoCFDI("");
@@ -116,10 +146,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("Municipio", data["Municipio"]);
             setValue("Estado", data["Estado"]);
 
-
-            
-
-
             console.log("RFCReceptor", data["Rfc"]);
             // Dispara la validación de estos campos
             trigger("RFCReceptor");
@@ -127,19 +153,18 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             trigger("RegimenFiscal");
 
         }
-    }, [receptor, lugarExpedicion, trigger, setValue, rfc]);
+    }, [receptor, lugarExpedicion, trigger, setValue, rfc, setReceptorID]);
 
     useEffect(() => {
         if (metodoPago !== undefined) {
             let data = JSON.parse(metodoPago);
             setValue("MetodoPagoDescripcion", data["Descripcion"]);
             console.log("Forma de pago", data["Clave"]);
-            if(data["Clave"]==="PPD"){
+            if (data["Clave"] === "PPD") {
                 console.log("Forma de pago", data["Clave"]);
-                setValue("FormaPago", 99);
+                setValue("FormaPago", "99");
                 trigger("FormaPago");
             }
-           
         }
     }, [metodoPago, setValue, trigger])
 
@@ -147,8 +172,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (formaPago !== undefined) {
             let data = JSON.parse(formaPago);
             setValue("FormaPagoDescripcion", data["Descripcion"]);
-            
-                
         }
     }, [formaPago, setValue])
 
@@ -163,8 +186,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     useEffect(() => {
         async function fetchData() {
             if (regimenFiscal) {
-                console.log("REGIMEN", token);
-                // const token = localStorage.getItem('authToken');
                 fetch(`${apiUrl}/api/catalogos/Catalogos/RegimenFiscal`, {
                     // method: 'GET',
                     headers: {
@@ -172,22 +193,13 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         'Content-Type': 'application/json'
                     }
                 })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data);
-                    // console.log("TIPO", impuestoEditor.TipoFactor);
-                    
-                  const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
-                  if (opcionSeleccionada) {
-                //    setRegimenFiscal(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
-                setRegimenFiscalText(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
-                // setRegimenFiscal(opcionSeleccionada.Clave);
-                }
-                    
-                  
-
-                  // setValue(`impuestos[${index}].ImpuestoClave`, data[0].TasaOCuota || 0);
-                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const opcionSeleccionada = data.find(opt => opt.Clave == regimenFiscal);
+                        if (opcionSeleccionada) {
+                            setRegimenFiscalText(opcionSeleccionada.Clave + " - " + opcionSeleccionada.Descripcion);
+                        }
+                    })
 
             }
         }
@@ -201,35 +213,39 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const handleCloseModal = () => {
         setOpenModal(false);
         setIsModalClosed(true);
-        
+
     };
 
     return (
-        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
+            sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem', marginBottom: '1rem', }}>
             <Typography variant="h6" mb={4}>Datos del Receptor</Typography>
 
             <Box
                 display="grid"
                 gridTemplateColumns={{
                     xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: '1fr 0.5fr 0.5fr',
-                    lg: '1fr 0.6fr 0.3fr 0.8fr 1.1fr 0.2fr' //4.5
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: '1fr 0.5fr 0.5fr 0.5fr 1.1fr 0.2fr' //4.5
                 }}
                 gap={3}
             >
-                <Select
-                    register={register}
+
+                <AutocompleteReceptor
                     nombre="Receptor"
+                    label="Receptor"
                     url={`${apiUrl}/api/catalogos/Catalogos/Receptor`}
                     id="ID"
+                    clave=""
                     descripcion="Nombre"
-                    onChange={(e) => setReceptor(e.target.value)}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                    value={getValues("ReceptorID") || ""}
-                    reset={isModalClosed}  // Pasa el estado al componente Select
-                    disabled={disabled}
+                    register={register}
+                    setValue={setValue}
+                    value={getValues("Receptor")}
+                    onChange={handleReceptorChange}
+                    error={!!errors.Receptor}
+                    helperText={errors.Receptor ? "Este campo es obligatorio" : ""}
+                    onAddNewOption={(searchTerm) => handleOpenModal(searchTerm)} // Función para abrir el modal
                 />
 
                 <TextField
@@ -267,7 +283,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 />
                 <TextField
                     label="Regimen Fiscal"
-                    {...register("RegimenFiscal", { required: "Este campo es obligatorio." })}
+                    {...register("RegimenFiscal" || "616", { required: "Este campo es obligatorio." })}
                     value={regimenFiscalText}
                     fullWidth
                     sx={{
@@ -296,7 +312,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     }}
                     value={getValues("MetodoPago") || ""}
                     disabled={disabled}
-                    
+
 
                 />
 
@@ -315,6 +331,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     }}
                     onClick={handleOpenModal}
                     disabled={disabled}
+                    token={token}
                 >
                     <AddCircleIcon sx={{ fontSize: '30px' }} />
                 </Button>
@@ -324,9 +341,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 display="grid"
                 gridTemplateColumns={{
                     xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: '1fr 0.5fr 0.5fr',
-                    lg: '1.1fr 1.3fr 0.7fr 1.8fr'
+                    sm: 'repeat(2, 1fr)',
+                    md: 'repeat(3, 1fr)',
+                    lg: '1fr 1fr 1fr 3fr'
                 }}
                 gap={3}
                 mt={4}
@@ -358,14 +375,14 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     disabled={disabled}
                 />
                 <Select
-                        // register={register}
-                        nombre="Exportación"
-                       url={`${apiUrl}/api/catalogos/Catalogos/Exportaciones`}
-                        clave="Clave"
-                        value={exportacion}
-                        descripcion="Descripcion"
-                        disabled={disabled}
-                    />
+                    // register={register}
+                    nombre="Exportación"
+                    url={`${apiUrl}/api/catalogos/Catalogos/Exportaciones`}
+                    clave="Clave"
+                    value={exportacion}
+                    descripcion="Descripcion"
+                    disabled={disabled}
+                />
             </Box>
             {hiddeInfoGlobal && (
                 <Box
@@ -379,7 +396,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                     gap={3}
                     mt={4}
                 >
-                    
+
                     <Typography color="textSecondary" align='center'>Información Global</Typography>
 
                     <Select
@@ -404,7 +421,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                         value={getValues("Meses") || ""}
                     />
                     <TextField
-                        
+
                         label="Año"
                         type="number"
                         {...register("Año")}
@@ -437,12 +454,12 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             >
                 <DialogTitle>Alta de Cliente</DialogTitle>
                 <DialogContent>
-                    <AltaCliente register={register} onClose={handleCloseModal} />
+                    <AltaCliente register={register} token={token} onClose={handleCloseModal} />
                 </DialogContent>
             </Dialog>
             {/* <pre> {JSON.stringify(usoCFDIURL,null,2)}</pre>   */}
-             {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
+            {/* <pre> {JSON.stringify(getValues("Ser"),null,2)}</pre>   */}
         </Box>
-         
+
     );
 }

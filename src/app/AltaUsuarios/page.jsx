@@ -23,8 +23,6 @@ const AltaUsuarios = () => {
     const [formData, setFormData] = useState({
         nombre: '',
         correo: '',
-        contraseña: '',
-        confirmacionContraseña: ''
     });
 
     const handleSubmit = async (event) => {
@@ -56,50 +54,12 @@ const AltaUsuarios = () => {
                     //Despues de un tiempo redirige a la pagina de inicio
                     setTimeout(async () => {
                         try {
-                             // router.push('/');
-                        const response = await fetch(`${apiUrl}/api/login/Login`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                Email: formData.correo,
-                                Password: formData.password,
-                            }),
-                        });
-                        const text = await response.text();
-                        console.log('Respuesta del servidor:', text);
-                        if (response.ok) {
-                            const result = JSON.parse(text);
-                            console.log('Respuesta del servidor:', result);
-                            if (result.error) {
-                                setAlert({ open: true, message: result.error, severity: 'error' });
-                            } else {
-                                const currentDate = new Date().toISOString(); // Obtiene la fecha actual en formato ISO
-                                localStorage.setItem('correo', formData.correo);
-                                const nombreUsuario = formData.correo.split('@')[0];
-                                localStorage.setItem('usuario', nombreUsuario);
-                                localStorage.setItem('superUser', result.sudo);
-
-                                localStorage.removeItem("authToken");
-                                localStorage.removeItem("loginDate");
-                                sessionStorage.setItem('authToken', result.token); // Guarda en Session Storage
-
-                                setAlert({ open: true, message: 'Login exitoso', severity: 'success' });
-                                console.log('Login exitoso', result.token, currentDate);
-                                
-                                router.push('/Home');
-                                sessionStorage.setItem('newUser', 'true');
-                            }
-                        }
-                        else{
-                            setAlert({ open: true, message: 'Error en la solicitud', severity: 'error' });
-                            console.error('Error en la solicitud:', response);
-                        }
+                            // router.push('/');
+                            router.push('/ConfirmacionCorreo'); // Redirige a la página de confirmación de correo
                         } catch (error) {
-                            console.error('Error en la solicitud  de login:', error);
+                            console.error('Error en la solicitud de login:', error);
                         }
-                       
+
                     }, 1000);
 
 
@@ -110,7 +70,7 @@ const AltaUsuarios = () => {
 
                 }
             } else {
-                setAlert({ open: true, message: 'Error en el registro', severity: 'error' });
+                setAlert({ open: true, message: 'Correo electrónico ya registrado', severity: 'error' });
             }
         } catch (error) {
             console.error('Error en la solicitud:', error);
@@ -142,7 +102,7 @@ const AltaUsuarios = () => {
                     display="flex"
                     justifyContent="center"
                 >
-                    <Image src="/images/logo2.png" alt="Descripción de la imagen" width={300} height={64} />
+                    <Image src="/images/Logo_wise_factura.png" alt="Descripción de la imagen" width={300} height={64} />
                 </Box>
                 <Collapse in={alert.open}>
                     <Alert severity={alert.severity} onClose={() => setAlert({ ...alert, open: false })}>
@@ -219,7 +179,9 @@ const AltaUsuarios = () => {
                         }}
                     /> */}
                     <Button sx={{
-                        backgroundColor: 'rgba(29, 57, 77, var(--tw-bg-opacity, 1))',
+                        backgroundColor: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))', '&:hover': {
+                            backgroundColor: '#0398a6', // Color al hacer hover
+                        },
                     }} variant="contained" fullWidth type="submit">
                         Registrar
                     </Button>

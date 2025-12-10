@@ -6,7 +6,7 @@ export function CalculosFinales(conceptos) {
     let totalfinal = 0
 
     for (let concepto of conceptos) {
-        console.log(concepto);
+        //console.log(concepto);
         subtotalfinal += concepto.Subtotal
         descuentofinal += concepto.Descuento
         retencionesfinal += concepto.TotalRetenciones

@@ -3,39 +3,19 @@ import DoneIcon from '@mui/icons-material/Done';
 import PagoModal from './PagoModal';
 import { useState, useEffect, useCallback } from 'react';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Planes({ token, setCompra }) {
 
     const [openModal, setOpenModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [planes, setPlanes] = useState([]);
-
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('es-MX', {
-          style: 'currency',
-          currency: 'MXN',
-          minimumFractionDigits: 2,
+            style: 'currency',
+            currency: 'MXN',
+            minimumFractionDigits: 2,
         }).format(value);
-      }
-    // const planes = [
-    //     {
-    //         titulo: "Plan Básico",
-    //         timbres: "50 timbres mensuales",
-    //         precio: "$249.00",
-    //         beneficios: ["50 timbres mensuales", "Reinicio mensual a 50 timbres", "Pago Anual"],
-    //     },
-    //     {
-    //         titulo: "Plan Estándar",
-    //         timbres: "100 timbres mensuales",
-    //         precio: "$399.00",
-    //         beneficios: ["100 timbres mensuales", "Reinicio mensual a 100 timbres", "Pago Anual"],
-    //     },
-    //     {
-    //         titulo: "Plan Premium",
-    //         timbres: "250 timbres mensuales",
-    //         precio: "$899.00",
-    //         beneficios: ["250 timbres mensuales", "Reinicio mensual a 250 timbres", "Pago Anual"],
-    //     }
-    // ];
+    }
 
     const fetchPlanes = useCallback(async () => {
         if (token != '') {
@@ -131,7 +111,13 @@ export default function Planes({ token, setCompra }) {
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
-                <PagoModal open={openModal} onClose={handleCloseModal} opcion={selectedPlan} token={token} setCompra={setCompra}/>
+                <PagoModal
+                    open={openModal}
+                    onClose={handleCloseModal}
+                    opcion={selectedPlan}
+                    token={token}
+                    setCompra={setCompra}
+                />
             )}
         </Box>
     );

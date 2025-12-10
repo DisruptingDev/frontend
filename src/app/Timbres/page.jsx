@@ -3,32 +3,51 @@
 import AdministrarTimbres from "@/components/AdministraTimbres/AdministrarTimbres";
 import Header from "@/components/Header/Header";
 import { isAuthenticated } from "@/utils/authRedirect";
-import { Button, Snackbar, Alert, Modal, Box } from "@mui/material";
+import { Button, Snackbar, Alert, Modal, Box, Grid, Container } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 
 export default function Timbres() {
-    const router = useRouter(); // Inicializa el router
+    const router = useRouter();
     const [token, setToken] = useState("");
+    const [menuExpanded, setMenuExpanded] = useState(false); // Estado para controlar el ancho del menú
+
     useEffect(() => {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
-            router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
-        }
-        else{
+            router.push("/IniciaSesion");
+        } else {
             setToken(token);
         }
     }, [router]);
-    return(
+
+    const handleMenuToggle = () => {
+        setMenuExpanded(!menuExpanded); // Alterna el estado del menú
+    };
+
+    return (
         <div>
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                <AdministrarTimbres token={token} />
-            </Box>
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item xs>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                        width={"93%"}
+                    >
+                        <AdministrarTimbres token={token} />
+                    </Box>
+                </Grid>
+            </Grid>
         </div>
-    )
+    );
 }

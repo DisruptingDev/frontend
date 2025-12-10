@@ -1,56 +1,72 @@
 import { useState, useEffect, useCallback } from "react";
+import MUIDataTable from "mui-datatables";
+import { ThemeProvider, createTheme, Box, CircularProgress } from "@mui/material";
+import textLabels from "@/components/DataTables/datatablesTextLabels";
 
-import {
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Typography, IconButton,
-    Menu,
-    MenuItem,
-} from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-function createData(item) {
-    return { ...item };
-}
-
 const VistaConceptos = ({ token, actualizar, setActualizar }) => {
-
     const [conceptos, setConceptos] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    //Para el menu
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [menuRow, setMenuRow] = useState(null);
+    // Tema personalizado para la tabla
+    const getMuiTheme = () =>
+        createTheme({
+            components: {
+                MUIDataTable: {
+                    styleOverrides: {
+                        root: {
+                            backgroundColor: "#f5f5f5",
+                        },
+                        paper: {
+                            boxShadow: "none",
+                            overflowX: "auto",
+                        },
+                    },
+                },
+                MUIDataTableHeadCell: {
+                    styleOverrides: {
+                        root: {
+                            backgroundColor: "#1b384a",
+                            color: "white",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                        },
+                    },
+                },
+                MUIDataTableBodyCell: {
+                    styleOverrides: {
+                        root: {
+                            padding: "8px",
+                            textAlign: "center",
+                        },
+                    },
+                },
+            },
+        });
 
-    const handleMenuClick = (event, row) => {
-        setAnchorEl(event.currentTarget);
-        setMenuRow(row);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-        setMenuRow(null);
-    };
     const fetchConceptos = useCallback(async () => {
         if (token) {
-            console.log('Fetching conceptos', token);
+            setLoading(true);
             try {
                 const response = await fetch(`${apiUrl}/api/conceptos/ListarConceptos`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 });
                 const data = await response.json();
 
                 if (Array.isArray(data)) {
-                    const transformedData = data.map((item) => createData(item));
-                    const sortedData = transformedData.sort((a, b) => b.ID - a.ID);
+                    const sortedData = data.sort((a, b) => b.ID - a.ID);
                     setConceptos(sortedData);
-                }
-                else {
-                    console.error('Expected an array but received:', typeof data);
+                } else {
+                    console.error("Expected an array but received:", typeof data);
                 }
             } catch (error) {
-                console.error('Error fetching conceptos:', error);
+                console.error("Error fetching conceptos:", error);
+            } finally {
+                setLoading(false);
             }
         }
     }, [token]);
@@ -66,66 +82,121 @@ const VistaConceptos = ({ token, actualizar, setActualizar }) => {
         }
     }, [actualizar, setActualizar, fetchConceptos]);
 
+    // Preparar los datos para la tabla
+    const prepareData = () => {
+        return conceptos.map((concepto) => ({
+            ID: concepto.ID,
+            ClaveProdServ: concepto.ClaveProdServ,
+            ClaveUnidad: concepto.ClaveUnidad,
+            Nombre: concepto.Nombre,
+            Descripcion: concepto.Descripcion,
+            Traslados: concepto.Impuestos?.Traslados?.map(t => t.ImpuestoCatalogo?.Descripcion).join(", ") || "",
+            Retenciones: concepto.Impuestos?.Retenciones?.map(r => r.ImpuestoCatalogo?.Descripcion).join(", ") || ""
+        }));
+    };
+
+    // Columnas de la tabla
+    const columns = [
+        {
+            name: "ID",
+            label: "ID",
+            options: {
+                filter: true,
+                sort: true,
+            },
+        },
+        {
+            name: "ClaveProdServ",
+            label: "ClaveProdServ",
+            options: {
+                filter: true,
+                sort: true,
+            },
+        },
+        {
+            name: "ClaveUnidad",
+            label: "ClaveUnidad",
+            options: {
+                filter: true,
+                sort: true,
+            },
+        },
+        {
+            name: "Nombre",
+            label: "Nombre",
+            options: {
+                filter: true,
+                sort: true,
+            },
+        },
+        {
+            name: "Descripcion",
+            label: "Descripción",
+            options: {
+                filter: true,
+                sort: true,
+            },
+        },
+        {
+            name: "Traslados",
+            label: "Traslados",
+            options: {
+                filter: true,
+                sort: true,
+                customBodyRender: (value) => (
+                    <div style={{ whiteSpace: "normal" }}>{value}</div>
+                ),
+            },
+        },
+        {
+            name: "Retenciones",
+            label: "Retenciones",
+            options: {
+                filter: true,
+                sort: true,
+                customBodyRender: (value) => (
+                    <div style={{ whiteSpace: "normal" }}>{value}</div>
+                ),
+            },
+        },
+    ];
+
+    // Opciones de la tabla
+    const options = {
+        filterType: "dropdown",
+        responsive: "standard",
+        selectableRows: "none",
+        download: false,
+        print: false,
+        viewColumns: false,
+        rowsPerPage: 10,
+        rowsPerPageOptions: [10, 25, 50],
+        textLabels: textLabels,
+        setTableProps: () => ({
+            style: {
+                tableLayout: "fixed",
+            },
+        }),
+    };
+
     return (
-        <TableContainer component={Paper}>
-            <Table>
-                <TableHead>
-                    <TableRow sx={{ backgroundColor: '#04b2ca' }}>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ID</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ClaveProdServ</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>ClaveUnidad</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Nombre</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Descripción</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Traslados</TableCell>
-                        <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Retenciones</TableCell>
-                        {/* <TableCell sx={{ fontSize: '1rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Acciones</TableCell> */}
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {conceptos.map((row) => (
-                        <TableRow key={row.ID}>
-                            <TableCell align="center">{row.ID}</TableCell>
-                            <TableCell align="center">{row.ClaveProdServ}</TableCell>
-                            <TableCell align="center">{row.ClaveUnidad}</TableCell>
-                            <TableCell align="center">{row.Nombre}</TableCell>
-                            <TableCell align="center">{row.Descripcion}</TableCell>
+        <Box sx={{ width: "100%", overflow: "hidden", p: 2 }}>
+            <ThemeProvider theme={getMuiTheme()}>
+                {loading ? (
+                    <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <MUIDataTable
+                        title={"Lista de Conceptos"}
+                        data={prepareData()}
+                        columns={columns}
+                        options={options}
+                    />
+                )}
+            </ThemeProvider>
+        </Box>
+    );
+};
 
-                            {/* Mostrar descripciones de todos los Traslados */}
-                            <TableCell align="center">
-                                {row.Impuestos.Traslados.length > 0
-                                    ? row.Impuestos.Traslados.map((traslado) => traslado.ImpuestoCatalogo?.Descripcion).join(', ')
-                                    : ''}
-                            </TableCell>
-
-                            {/* Mostrar descripciones de todos los Retenciones */}
-                            <TableCell align="center">
-                                {row.Impuestos.Retenciones.length > 0
-                                    ? row.Impuestos.Retenciones.map((retencion) => retencion.ImpuestoCatalogo?.Descripcion).join(', ')
-                                    : ''}
-                            </TableCell>
-
-                            {/* <TableCell align="center">
-                                <IconButton onClick={(event) => handleMenuClick(event, row)}>
-                                    <MoreVertIcon />
-                                </IconButton>
-                                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                    <MenuItem onClick={handleMenuClose}>Editar</MenuItem>
-                                    <MenuItem onClick={handleMenuClose}>Eliminar</MenuItem>
-                                </Menu>
-                            </TableCell> */}
-                        </TableRow>
-                    ))}
-
-                </TableBody>
-            </Table>
-            {/* <pre>{JSON.stringify(conceptos, null, 2)}</pre> */}
-
-        </TableContainer>
-
-
-
-
-
-    )
-}
 export default VistaConceptos;

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import AltaEmpresa from "@/components/AltaEmpresa/AltaEmpresa.jsx";
 import CertificadoCSD from "@/components/AltaEmpresa/CertificadoCSD.jsx";
-import { Box } from "@mui/material";
+import { Box, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 
 export default function RegistroEmisores() {
     // Estados para gestionar el nombre y RFC del emisor
@@ -38,19 +39,25 @@ export default function RegistroEmisores() {
         <div>
             {/* Header del componente */}
             <Header />
-            
-            {/* Contenedor principal */}
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                {/* Componente para manejar el Certificado CSD */}
-                <CertificadoCSD onUpdateEmpresa={handleUpdateEmpresa} token={token} />
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid item sx={{ flexGrow: 1 }}>
+                    {/* Contenedor principal */}
+                    <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
+                        {/* Componente para manejar el Certificado CSD */}
+                        <CertificadoCSD onUpdateEmpresa={handleUpdateEmpresa} token={token} />
 
-                {/* Componente para manejar la alta de empresas */}
-                <AltaEmpresa 
-                    issuerName={issuerName} // Nombre del emisor seleccionado
-                    issuerRfc={issuerRfc}   // RFC del emisor seleccionado
-                    token={token}           // Token de autenticación
-                />
-            </Box>
+                        {/* Componente para manejar la alta de empresas */}
+                        <AltaEmpresa
+                            issuerName={issuerName} // Nombre del emisor seleccionado
+                            issuerRfc={issuerRfc}   // RFC del emisor seleccionado
+                            token={token}           // Token de autenticación
+                        />
+                    </Box>
+                </Grid>
+            </Grid>
         </div>
     );
 }

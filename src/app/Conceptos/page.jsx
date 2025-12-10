@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import VistaConceptos from "@/components/VistaConceptos/VistoConceptos";
-import { Box, Button, Dialog, DialogTitle, DialogContent, Snackbar, Alert } from "@mui/material";
+import { Box, Button, Dialog, Snackbar, Alert, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos";
-import Impuesto from "@/components/FormFactura/Impuesto/Impuesto";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ModuloConceptos() {
@@ -24,7 +25,6 @@ export default function ModuloConceptos() {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
@@ -37,7 +37,6 @@ export default function ModuloConceptos() {
             if (conceptos.length === 0) {
                 return;
             }
-            console.log('Conceptos Principal:', conceptos);
             try {
                 const Concepto = {
                     Nombre: conceptos[0].Nombre,
@@ -84,15 +83,16 @@ export default function ModuloConceptos() {
                 console.log('Concepto Prueba:', data);
                 console.log('Response:', response);
 
-                if (data.status ==='OK') {
-
-                    console.log('Concepto Agregado:', data);
-                    setConceptos([]);
-                    setActualizar(true);
+                if (response.ok) {
+                    console.log('Concepto agregado:', data);
                     setOpenAlert(true);
-                    setMensaje('Concepto agregado correctamente');
+                    setMensaje('Concepto agregado exitosamente');
                     setTipoAlert('success');
-
+                } else if (response.status === 401) {
+                    console.error('Error de autenticación:', data);
+                    setOpenAlert(true);
+                    setMensaje('El Rol actual no cuenta con los permisos necesarios para realizar esta acción.');
+                    setTipoAlert('error');
                 }
                 else {
                     console.error('Error al agregar el concepto:', data);
@@ -100,85 +100,80 @@ export default function ModuloConceptos() {
                     setMensaje('Error al agregar el concepto');
                     setTipoAlert('error');
                 }
-
-
-
             } catch (error) {
-
                 console.error('Error:', error);
                 setOpenAlert(true);
                 setMensaje('Error al agregar el concepto');
                 setTipoAlert('error');
             }
         }
-    
-        
-    
-
         fetchData();
-    console.log('Conceptos Principal:', conceptos);
-}, [conceptos, token]);
+        console.log('Conceptos Principal:', conceptos);
+    }, [conceptos, token]);
 
 
-const handleOpenModal = () => {
-    setOpenModal(true);
-};
+    const handleOpenModal = () => {
+        setOpenModal(true);
+    };
 
-const handleCloseModal = () => {
-
-    setOpenModal(false);
-    // setIsModalClosed(true);
-
-};
+    const handleCloseModal = () => {
+        setOpenModal(false);
+    };
 
 
-return (
-    <div>
-        <Header />
-        <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-            <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                <Button
-                    variant="contained"
-                    sx={{
-                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
+    return (
+        <div>
+            <Header />
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
+                    >
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <WithPermission permission="crear_conceptos">
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
 
-                    }}
-                    onClick={handleOpenModal}
-                >
-                    Agregar Concepto
-                </Button>
-            </Box>
-            <VistaConceptos token={token} actualizar={actualizar} setActualizar={setActualizar}/>
-        </Box>
-        <Dialog
-            open={openModal}
-            onClose={handleCloseModal}
-            fullWidth
-            maxWidth={false}
-        // PaperProps={{
-        //     sx: {
-        //         width: '80%',
-        //         margin: 'auto',
-        //     }
-        // }}
-        >
-            {/* <DialogTitle>Alta de Cliente</DialogTitle> */}
+                                    }}
+                                    onClick={handleOpenModal}
+                                >
+                                    Agregar Concepto
+                                </Button>
+                            </WithPermission>
+                        </Box>
+                        <VistaConceptos token={token} actualizar={actualizar} setActualizar={setActualizar} />
+                    </Box>
 
-            <Conceptos token={token} editIndex={null} modalAgregarConcepto={true} onClose={handleCloseModal} setConceptos={setConceptos} />
-
-        </Dialog>
-        <Snackbar open={openAlert} autoHideDuration={6000} onClose={() => setOpenAlert(false)}  anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-            <Alert onClose={() => setOpenAlert(false)} severity={tipoAlert} sx={{ width: '100%' }} variant="filled">
-                {mensaje}
-            </Alert>
-        </Snackbar>
-
-
-    </div>
-);
+                </Grid>
+            </Grid>
+            <Dialog
+                open={openModal}
+                onClose={handleCloseModal}
+                fullWidth
+                maxWidth={false}
+            >
+                <Conceptos token={token} editIndex={null} modalAgregarConcepto={true} onClose={handleCloseModal} setConceptos={setConceptos} />
+            </Dialog>
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={() => setOpenAlert(false)} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+                <Alert onClose={() => setOpenAlert(false)} severity={tipoAlert} sx={{ width: '100%' }} variant="filled">
+                    {mensaje}
+                </Alert>
+            </Snackbar>
+        </div>
+    );
 }
 
 

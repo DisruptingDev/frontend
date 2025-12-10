@@ -1,10 +1,10 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert, Typography, FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText } from '@mui/material';
+import { Button, TextField, Box, Snackbar, Alert, Typography, Select as MuiSelect, FormHelperText } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
-import Image from 'next/image';
 import { useRouter } from "next/navigation";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AltaSerie({ token }) {
@@ -19,10 +19,7 @@ export default function AltaSerie({ token }) {
         setToast({ ...toast, open: false });
     };
 
-
     const onSubmit = async (data) => {
-        // Construir el objeto de datos como lo espera la API
-        console.log(data);
         const datos = {
             Clave: data.Nombre,
             Descripcion: "Serie " + data.Nombre,
@@ -30,8 +27,9 @@ export default function AltaSerie({ token }) {
             TipoComprobante: data.TipoComprobante,
             TimbresDisponibles: 0,
             EmisorID: data.Empresa
-        }
-        console.log("Formateo", datos);
+        };
+
+        console.log('Datos a enviar:', datos);
 
         try {
             const response = await fetch(`${apiUrl}/api/series/CrearSerie`, {
@@ -44,28 +42,50 @@ export default function AltaSerie({ token }) {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Error al guardar:', errorData);
-                setToast({ open: true, message: 'Error al guardar los datos', severity: 'error' });
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    console.error('Error de autenticación:', errorData);
+                    setToast({
+                        open: true,
+                        message: 'El Rol actual no cuenta con los permisos necesarios para realizar esta acción.',
+                        severity: 'error'
+                    });
+                } else {
+                    const errorData = await response.json();
+                    console.error('Error al guardar:', errorData);
+                    setToast({
+                        open: true,
+                        message: errorData.error || 'Error al guardar los datos',
+                        severity: 'error'
+                    });
+                }
             } else {
                 const result = await response.json();
                 console.log('Guardado exitoso:', result);
-                setToast({ open: true, message: 'Serie guardada exitosamente', severity: 'success' });
-
+                setToast({
+                    open: true,
+                    message: 'Serie guardada exitosamente',
+                    severity: 'success'
+                });
             }
         } catch (error) {
             console.error('Error en la solicitud:', error);
-            setToast({ open: true, message: 'Ocurrió un error al guardar los datos', severity: 'error' });
+            setToast({
+                open: true,
+                message: 'Ocurrió un error al guardar los datos',
+                severity: 'error'
+            });
         }
     };
+
     return (
-        <Box bgcolor="white" my={6} mx={4} p={4} boxShadow={3} borderRadius={2}>
+        <Box>
             <Typography variant="h6" mb={4}>Alta de Serie</Typography>
             <form>
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="2fr 2fr 1fr 1fr 2fr"
+                    gridTemplateColumns="1fr 1fr 1fr 1fr"
                     gap={3}
                     alignItems="start"
                 >
@@ -96,29 +116,10 @@ export default function AltaSerie({ token }) {
                         error={!!errors.TipoComprobante}
                         helperText={errors.TipoComprobante ? "Campo requerido" : ""}
                     />
-                    {/*                     
-                    <FormControl fullWidth>
-                        <InputLabel id="demo-simple-select-label">Tipo de Comprobante</InputLabel>
-                        <MuiSelect
-                        {...register("TipoComprobante", {
-                            required: "Este campo es obligatorio",
-                            onChange: handleChange 
-                        })}
-                            labelId="demo-simple-select-label"
-                            id="demo-simple-select"
-                            value={selectedValue}
-                            label="Tipo de Comprobante"
-                            onChange={handleChange}
-                        >
-                            <MenuItem value={"I"}>Ingreso</MenuItem>
-                            
-                        </MuiSelect>
-                    </FormControl> */}
-
                     <TextField
                         label="Nombre"
                         fullWidth
-                        placeholder="F"
+                        placeholder="Ingresa el nombre"
                         margin="normal"
                         required
                         error={!!errors.Nombre}
@@ -150,55 +151,50 @@ export default function AltaSerie({ token }) {
                         }} // Elimina caracteres no numéricos
                     />
                 </Box>
-
-
-
-
-                <Box
-                    my={4}
-                    mx={0}
-                    display="flex"
-                    justifyContent="flex-end"
-                    gap={3}
-                >
-                    <Button
-                        variant="contained"
-                        color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
-                        type="button"
-                        onClick={() => router.push("/Home")}
+                <WithPermission permission="crear_series">
+                    <Box
+                        my={1}
+                        mx={0}
+                        display="flex"
+                        justifyContent="flex-end"
+                        gap={3}
                     >
-                        Cancelar
-                    </Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                            type="button"
+                            onClick={() => router.push("/Home")}
+                        >
+                            Cancelar
+                        </Button>
 
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        sx={{
-                            width: '250px',
-                            backgroundColor: '#04b2ca',
-                            '&:hover': { backgroundColor: '#038a9e' },
-                        }}
-                        type="button"
-                        onClick={handleSubmit(onSubmit)}
-
-                    >
-                        Guardar
-                    </Button>
-                </Box>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            sx={{
+                                width: '250px',
+                                backgroundColor: '#04b2ca',
+                                '&:hover': { backgroundColor: '#038a9e' },
+                            }}
+                            type="button"
+                            onClick={handleSubmit(onSubmit)}
+                        >
+                            Guardar
+                        </Button>
+                    </Box>
+                </WithPermission>
             </form>
             <Snackbar
                 open={toast.open}
                 autoHideDuration={6000}
                 onClose={handleClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
                 <Alert onClose={handleClose} severity={toast.severity} variant="filled" sx={{ width: '100%' }}>
                     {toast.message}
                 </Alert>
             </Snackbar>
-
-
         </Box>
     );
 }

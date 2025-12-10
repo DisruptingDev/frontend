@@ -1,13 +1,31 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert, Typography } from '@mui/material';
+import {
+    Button,
+    TextField,
+    Box,
+    Snackbar,
+    Alert,
+    Typography,
+    Grid,
+    Card,
+    CardMedia,
+    CardActionArea,
+    Dialog,
+    DialogContent,
+    IconButton
+} from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
+import { WithPermission } from '@/components/WithPermission';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa }) {
-    const { register, handleSubmit, setValue, getValues, formState: { errors }, watch, trigger } = useForm();
+export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, editar, token, setActualizar, setRegistroEmpresa, btnCancelar }) {
+    const { register, handleSubmit, setValue, getValues, formState: { errors }, watch } = useForm();
     const [loading, setLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -15,22 +33,24 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
     const [image, setImage] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
     const [imagePath, setImagePath] = useState('');
-
-    const rfcValue = watch("Rfc"); // Observar el valor del RFC
-
     const [regimenFiscal, setRegimenFiscal] = useState('');
 
+    // Estados para las plantillas
+    const [plantillas, setPlantillas] = useState([]);
+    const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [imagenModal, setImagenModal] = useState('');
+
+    const rfcValue = watch("Rfc");
+
     useEffect(() => {
-        console.log("cliente", empresa);
         if (empresa && Object.keys(empresa).length > 0) {
-            // setEditar(true);
-            console.log(empresa);
-            //Rellena los campos con los datos del cliente
             setValue('Nombre', empresa.Nombre);
             setValue('Rfc', empresa.Rfc);
             setValue('RegimenFiscal', empresa.RegimenFiscal);
             setRegimenFiscal(empresa.RegimenFiscal);
             setValue('LugarExpedicion', empresa.LugarExpedicion);
+            setValue('Email', empresa.Email);
             setValue('Calle', empresa.Calle);
             setValue('NumeroExterior', empresa.NumeroExterior);
             setValue('NumeroInterior', empresa.NumeroInterior);
@@ -39,8 +59,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('Estado', empresa.Estado);
             setImagePreview(empresa.LogoPath);
 
+            if (empresa.PlantillaID) {
+                setPlantillaSeleccionada(empresa.PlantillaID);
+            }
         }
-
     }, [empresa, setValue]);
 
     useEffect(() => {
@@ -48,14 +70,47 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue("Nombre", issuerName);
             setValue("Rfc", issuerRfc);
         }
-
     }, [issuerName, issuerRfc, setValue]);
 
+    useEffect(() => {
+        cargarPlantillas();
+    }, []);
+
+    const cargarPlantillas = async () => {
+        try {
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Plantillas`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setPlantillas(data);
+            }
+        } catch (error) {
+            console.error('Error al cargar plantillas:', error);
+        }
+    };
+
+    const handleSeleccionarPlantilla = (plantilla) => {
+        setPlantillaSeleccionada(plantilla.ID);
+        setValue('PlantillaID', plantilla.ID);
+    };
+
+    const handleVerImagen = (imagenUrl) => {
+        setImagenModal(imagenUrl);
+        setModalOpen(true);
+    };
+
+    const handleCerrarModal = () => {
+        setModalOpen(false);
+        setImagenModal('');
+    };
+
     const validateAndSubmit = (data) => {
-        // if (!issuerName || !issuerRfc) {
-        console.log("Nombre", getValues("Nombre"));
         if (!getValues("Nombre") || !getValues("Rfc")) {
-            console.log("Nombre", getValues("Nombre"));
             setSnackbarMessage('Se requiere subir el certificado CSD.');
             setSnackbarSeverity('error');
             setOpenSnackbar(true);
@@ -63,15 +118,14 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         }
         handleSubmit(onSubmit)(data);
     };
-    //Fuccion para reiniciar y cerrar si existe el onclose
-    const handleReset = () => {
 
-        console.log('Resetting form...', getValues("RegimenFiscal"));
+    const handleReset = () => {
         setValue("Nombre", "");
         setValue("Rfc", "");
         setValue("RegimenFiscal", "");
         setRegimenFiscal("");
         setValue("LugarExpedicion", "");
+        setValue("Email", "");
         setValue("Calle", "");
         setValue("NumeroExterior", "");
         setValue("NumeroInterior", "");
@@ -81,27 +135,25 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         setImage(null);
         setImagePreview('');
         setImagePath('');
-        console.log('Resetting form...', getValues("RegimenFiscal"));
+        setPlantillaSeleccionada(null);
         if (onClose) onClose();
     };
 
     const handleImageChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Crear vista previa de la imagen seleccionada
             setImage(file);
             setImagePreview(URL.createObjectURL(file));
 
-            // Subir imagen al servidor para obtener la ruta
             const formData = new FormData();
             formData.append('logo', file);
-            formData.append('rfcEmisor', rfcValue); // Añadir RFC al FormData
+            formData.append('rfcEmisor', rfcValue);
 
             try {
                 const response = await fetch(`${apiUrl}/api/gestores/SubirLogo`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`, // Agrega el token en los encabezados
+                        'Authorization': `Bearer ${token}`,
                     },
                     body: formData,
                 });
@@ -111,8 +163,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 }
 
                 const result = await response.json();
-                console.log('Ruta del archivo:', result.filePath);
-                setImagePath(result.filePath); // Guardar la ruta de la imagen
+                setImagePath(result.filePath);
                 setSnackbarMessage('Imagen subida correctamente.');
                 setSnackbarSeverity('success');
                 setOpenSnackbar(true);
@@ -131,33 +182,35 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue("RegimenFiscal", data.Clave);
             setRegimenFiscal(data.Clave);
         } catch (error) {
-
+            // Manejar error
         }
     };
 
     const onSubmit = async (data) => {
-        if (editar) {
-            const empresaData = {
+        const commonData = {
+            RegimenFiscal: data.RegimenFiscal,
+            LugarExpedicion: data.LugarExpedicion,
+            Email: data.Email,
+            LogoPath: imagePath,
+            Calle: data.Calle || "",
+            NumeroExterior: data.NumeroExterior || "",
+            NumeroInterior: data.NumeroInterior || "",
+            Colonia: data.Colonia || "",
+            Municipio: data.Municipio || "",
+            Estado: data.Estado || "",
+            PlantillaID: plantillaSeleccionada,
+        };
 
-                // Rfc: data.Rfc,
-                // Nombre: data.Nombre,
-                ID: empresa.ID,
-                RegimenFiscal: data.RegimenFiscal,
-                LugarExpedicion: data.LugarExpedicion,
-                LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
-                Calle: data.Calle || "",
-                NumeroExterior: data.NumeroExterior || "",
-                NumeroInterior: data.NumeroInterior || "",
-                Colonia: data.Colonia || "",
-                Municipio: data.Municipio || "",
-                Estado: data.Estado || "",
+        setLoading(true);
 
-            };
-            console.log('EmpresaData:', JSON.stringify(empresaData));
-            setLoading(true);
-
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/EditarEmisor`, {
+        try {
+            let response;
+            if (editar) {
+                const empresaData = {
+                    ID: empresa.ID,
+                    ...commonData
+                };
+                response = await fetch(`${apiUrl}/api/gestores/EditarEmisor`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -165,57 +218,15 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     },
                     body: JSON.stringify(empresaData),
                 });
-                const data = await response.json(); // Obtén la respuesta JSON
-                console.log('Data received from API:', data);
-                if (!response.ok) {
-
-                    setSnackbarMessage('Error al guardar los datos.');
-                    setSnackbarSeverity('error');
-                    setOpenSnackbar(true);
-                } else {
-                    setSnackbarMessage('Empresa guardada correctamente.');
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
-                    if(setActualizar)setActualizar(true);
-                    setTimeout(() => {
-
-                        
-                        if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
-                    }, 2000);
-                }
-            } catch (error) {
-                setSnackbarMessage('Ocurrió un error al guardar los datos.');
-                setSnackbarSeverity('error');
-                setOpenSnackbar(true);
-            } finally {
-                setLoading(false);
-            }
-
-
-        }
-        else {
-            const empresaData = {
-                Emisor: {
-                    Rfc: data.Rfc,
-                    Nombre: data.Nombre,
-                    RegimenFiscal: data.RegimenFiscal,
-                    LugarExpedicion: data.LugarExpedicion,
-                    LogoPath: imagePath, // Incluye la ruta de la imagen en los datos
-                    Calle: data.Calle || "",
-                    NumeroExterior: data.NumeroExterior || "",
-                    NumeroInterior: data.NumeroInterior || "",
-                    Colonia: data.Colonia || "",
-                    Municipio: data.Municipio || "",
-                    Estado: data.Estado || "",
-                }
-            };
-            console.log('EmpresaData:', JSON.stringify(empresaData));
-
-            setLoading(true);
-
-            try {
-                const response = await fetch(`${apiUrl}/api/gestores/RegistroEmisor`, {
+            } else {
+                const empresaData = {
+                    Emisor: {
+                        Rfc: data.Rfc,
+                        Nombre: data.Nombre,
+                        ...commonData
+                    }
+                };
+                response = await fetch(`${apiUrl}/api/gestores/RegistroEmisor`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -223,36 +234,31 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     },
                     body: JSON.stringify(empresaData),
                 });
-                const data = await response.json(); // Obtén la respuesta JSON
-                console.log('Data received from API:', data);
+            }
 
-                if (!response.ok) {
-
-                    setSnackbarMessage('Error al guardar los datos.');
-                    setSnackbarSeverity('error');
-                    setOpenSnackbar(true);
-                } else {
-                    setSnackbarMessage('Empresa guardada correctamente.');
-                    setSnackbarSeverity('success');
-                    setOpenSnackbar(true);
-                    if(setActualizar)setActualizar(true);
-                    setTimeout(() => {
-
-                        if(setRegistroEmpresa) setRegistroEmpresa(true);
-                        if (onClose) onClose();
-                        if(setActualizar)setActualizar(false);
-                    }, 2000);
-
-                }
-            } catch (error) {
-                setSnackbarMessage('Ocurrió un error al guardar los datos.');
+            if (!response.ok) {
+                setSnackbarMessage('Error al guardar los datos.');
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
-            } finally {
-                setLoading(false);
+            } else {
+                setSnackbarMessage('Empresa guardada correctamente.');
+                setSnackbarSeverity('success');
+                setOpenSnackbar(true);
+                if (setActualizar) setActualizar(true);
+                setTimeout(() => {
+                    if (setRegistroEmpresa) setRegistroEmpresa(true);
+                    if (onClose) onClose();
+                    if (setActualizar) setActualizar(false);
+                }, 2000);
             }
+        } catch (error) {
+            console.error('Error al guardar los datos:', error);
+            setSnackbarMessage('Ocurrió un error al guardar los datos.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+        } finally {
+            setLoading(false);
         }
-
     };
 
     return (
@@ -274,21 +280,11 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
-                        // onChange={(e) => setValue("Nombre", e.target.value)}
-                        // value={watch("Nombre", issuerName)}
+                        value={watch("Nombre", issuerName)}
+                        InputLabelProps={{ shrink: true }}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
-                    {/* <TextField
-                        label="Nombre del Cliente"
-                        fullWidth
-                        placeholder=""
-                        margin="normal"
-                        required
-                        error={!!errors.Nombre}
-                        helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
-                        {...register("Nombre", { required: true })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    /> */}
+
                     <TextField
                         label="R.F.C."
                         fullWidth
@@ -297,11 +293,12 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         disabled
                         error={!!errors.Rfc}
                         helperText={errors.Rfc ? "Este campo es obligatorio" : ""}
-                        {...register("Rfc", { required: "El RFC es obligatorio" })} // Añadir validación requerida
-                        // onChange={(e) => setValue("Rfc", e.target.value)}
-                        // value={watch("Rfc", issuerRfc)}
+                        {...register("Rfc", { required: "El RFC es obligatorio" })}
+                        value={watch("Rfc", issuerRfc)}
+                        InputLabelProps={{ shrink: true }}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
+
                     <Select
                         nombre="RegimenFiscal"
                         label={"Régimen Fiscal*"}
@@ -313,7 +310,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         value={regimenFiscal}
                         error={!!errors.RegimenFiscal}
                         helperText={errors.RegimenFiscal ? "Este campo es obligatorio" : ""}
-                        register={register} // Pasa register como prop
                         onChange={handleRegimenFiscalChange}
                         sx={{ alignSelf: 'start' }}
                     />
@@ -327,10 +323,27 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         helperText={errors.LugarExpedicion ? "Este campo es obligatorio" : ""}
                         {...register("LugarExpedicion", { required: true })}
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
-                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Acepta solo números
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                         onInput={(e) => {
                             e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                        }} // Elimina caracteres no numéricos
+                        }}
+                    />
+                    <TextField
+                        label="Email"
+                        fullWidth
+                        placeholder="Ej: ejemplo@correo.com"
+                        margin="normal"
+                        required
+                        error={!!errors.Email}
+                        helperText={errors.Email ? "Este campo es obligatorio" : ""}
+                        {...register("Email", {
+                            required: "El email es obligatorio",
+                            pattern: {
+                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                message: "Formato de email inválido"
+                            }
+                        })}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                 </Box>
                 <Box
@@ -381,7 +394,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                     <TextField
-                        label="Municipio"
+                        label="Municipio / Alcaldía"
                         fullWidth
                         placeholder="Ej: Benito Juárez"
                         margin="normal"
@@ -393,7 +406,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     <TextField
                         label="Estado"
                         fullWidth
-                        placeholder="Ej: Benito Juárez"
+                        placeholder="Ej: CDMX"
                         margin="normal"
                         error={!!errors.Estado}
                         helperText={errors.Estado ? "Este campo es obligatorio" : ""}
@@ -402,21 +415,117 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     />
                 </Box>
 
-                {rfcValue && ( // Mostrar input de subir imagen solo si RFC tiene valor
+                {rfcValue && (
                     <Box my={2}>
-                        <Typography variant="h6">Subir Logo</Typography>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                        />
-                        {imagePreview && (
-                            <Box mt={2}>
-                                <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
-                            </Box>
-                        )}
+                        <WithPermission permission="subir_logo">
+                            <Typography variant="h6">Subir Logo</Typography>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                            />
+                            {imagePreview && (
+                                <Box mt={2}>
+                                    <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
+                                </Box>
+                            )}
+                        </WithPermission>
                     </Box>
                 )}
+
+                <Box my={4}>
+                    <Typography variant="h6" gutterBottom>
+                        Seleccionar Plantilla
+                    </Typography>
+
+                    <Grid container spacing={2} columns={{ xs: 2, sm: 8, md: 12, lg: 10 }}>
+                        {plantillas.map((plantilla) => {
+                            const isSelected = plantilla.ID === plantillaSeleccionada;
+
+                            return (
+                                <Grid item xs={2} sm={4} md={4} lg={2} key={plantilla.ID}>
+                                    <Card
+                                        variant="outlined"
+                                        sx={{
+                                            p: 1,
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            borderRadius: 2,
+                                            border: isSelected ? '2px solid #04b2ca' : '1px solid #e0e0e0',
+                                            backgroundColor: isSelected ? '#f0fafa' : 'white',
+                                            transition: 'all 0.2s',
+                                            '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: 2
+                                            }
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" fontWeight="bold" align="center" noWrap title={plantilla.Nombre} gutterBottom>
+                                            {plantilla.Nombre}
+                                        </Typography>
+
+                                        <CardActionArea
+                                            onClick={() => handleVerImagen(plantilla.VistaPrevia)}
+                                            sx={{ borderRadius: 1, flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}
+                                        >
+                                            <CardMedia
+                                                component="img"
+                                                height="120"
+                                                image={plantilla.VistaPrevia || '/placeholder-image.jpg'}
+                                                alt={plantilla.Nombre}
+                                                sx={{
+                                                    objectFit: 'contain',
+                                                    borderRadius: 1,
+                                                }}
+                                            />
+                                        </CardActionArea>
+
+                                        <Box mt="auto" display="flex" flexDirection="column" gap={1}>
+                                            <Box display="flex" justifyContent="center" gap={1}>
+                                                <Button
+                                                    size="small"
+                                                    startIcon={<VisibilityIcon />}
+                                                    onClick={() => handleVerImagen(plantilla.VistaPrevia)}
+                                                    sx={{ fontSize: '0.7rem', minWidth: 'auto', px: 1 }}
+                                                >
+                                                    Ver
+                                                </Button>
+
+                                                {isSelected ? (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="success"
+                                                        sx={{ fontSize: '0.7rem', px: 1 }}
+                                                        disabled
+                                                    >
+                                                        Seleccionada
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="small"
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={() => handleSeleccionarPlantilla(plantilla)}
+                                                        sx={{
+                                                            fontSize: '0.7rem',
+                                                            backgroundColor: '#04b2ca',
+                                                            '&:hover': { backgroundColor: '#038a9e' },
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        Seleccionar
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    </Card>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                </Box>
 
                 <Box
                     my={4}
@@ -425,15 +534,17 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     justifyContent="flex-end"
                     gap={3}
                 >
-                    <Button
-                        variant="contained"
-                        color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
-                        type="button"
-                        onClick={handleReset}
-                    >
-                        Cancelar
-                    </Button>
+                    {btnCancelar == true && (
+                        <Button
+                            variant="contained"
+                            color="error"
+                            sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                            type="button"
+                            onClick={handleReset}
+                        >
+                            Cancelar
+                        </Button>
+                    )}
 
                     <Button
                         variant="contained"
@@ -452,6 +563,39 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 </Box>
             </form>
 
+            <Dialog
+                open={modalOpen}
+                onClose={handleCerrarModal}
+                maxWidth="lg"
+                fullWidth
+            >
+                <DialogContent sx={{ position: 'relative', p: 0 }}>
+                    <IconButton
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: 'white',
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            '&:hover': {
+                                backgroundColor: 'rgba(0,0,0,0.7)',
+                            },
+                            zIndex: 1
+                        }}
+                        onClick={handleCerrarModal}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                    {imagenModal && (
+                        <img
+                            src={imagenModal}
+                            alt="Vista previa completa"
+                            style={{ width: '100%', height: 'auto', display: 'block' }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <Snackbar
                 open={openSnackbar}
                 autoHideDuration={3000}
@@ -467,7 +611,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         fontSize: '1rem',
                         padding: '12px'
                     }}
-
                 >
                     {snackbarMessage}
                 </Alert>

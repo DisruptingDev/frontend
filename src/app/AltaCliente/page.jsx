@@ -3,9 +3,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header/Header.jsx";
 import AltaCliente from "@/components/AltaCliente/AltaCliente";
-import VistaClientes from "@/components/ViastaClientes/VistaClientes";
-import { Box, Button, Dialog, DialogTitle, DialogContent } from "@mui/material";
+import VistaClientes from "@/components/VistaClientes/VistaClientes";
+import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
+import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import { WithPermission } from '@/components/WithPermission';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 
@@ -75,30 +77,40 @@ export default function RegistroClientes() {
 
     return (
         <div>
-            {/* Encabezado */}
             <Header />
-            <Box bgcolor="white" my={4} mx={4} p={2} boxShadow={3} borderRadius={2}>
-                {/* Botón para abrir el modal de alta */}
-                <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-
-                        }}
-                        onClick={handleOpenModal}
+            <Grid container>
+                <Grid item>
+                    <SideBarMenu />
+                </Grid>
+                <Grid>
+                    <Box
+                        bgcolor="white"
+                        ml={10}
+                        mr={1}
+                        p={2}
+                        boxShadow={3}
+                        borderRadius={2}
                     >
-                        Agregar Cliente
-                    </Button>
-                </Box>
-                {/* Componente para listar clientes */}
-                <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
-
-            </Box>
-            {/* Modal para alta o edición de cliente */}
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                            <WithPermission permission="crear_receptores">
+                            <Button
+                                variant="contained"
+                                sx={{
+                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                }}
+                                onClick={handleOpenModal}
+                            >
+                                Agregar Cliente
+                            </Button>
+                            </WithPermission>
+                        </Box>
+                        <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />
+                    </Box>
+                </Grid>
+            </Grid>
             <Dialog
                 open={openModal}
                 onClose={handleCloseModal}
