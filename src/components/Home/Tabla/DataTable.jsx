@@ -186,7 +186,7 @@ export default function DataTable({ token, isBOD }) {
     const [menuRow, setMenuRow] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
-    
+
     // Estados específicos para BOD
     const [facturaParaTimbrarBOD, setFacturaParaTimbrarBOD] = useState(null);
     const [pagoCompletado, setPagoCompletado] = useState(false);
@@ -290,7 +290,7 @@ export default function DataTable({ token, isBOD }) {
         setLoading(true);
         try {
             console.log("Timbrando factura BOD después de pago:", id);
-            
+
             const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativoBOD`, {
                 method: 'POST',
                 headers: {
@@ -303,10 +303,10 @@ export default function DataTable({ token, isBOD }) {
             if (response.ok) {
                 const result = await response.json();
                 console.log("Resultado timbrado BOD:", result);
-                
+
                 if (result.Facturas && result.Facturas.length > 0) {
                     const factura = result.Facturas[0];
-                    
+
                     if (factura.status === 'success') {
                         setConfirmationMessage('Factura timbrada exitosamente.');
                         setOpenModalSuccess(true);
@@ -345,10 +345,10 @@ export default function DataTable({ token, isBOD }) {
         // Si está en modo BOD, redirigir a pasarela de pago primero
         if (isBOD) {
             const facturaId = ids[0];
-            
+
             // Guardar la factura que se va a timbrar después del pago
             setFacturaParaTimbrarBOD(facturaId);
-            
+
             // Abrir modal de pago
             setOpenPagoModal(true);
             return;
@@ -363,7 +363,7 @@ export default function DataTable({ token, isBOD }) {
         setConfirmationMessage('Pago realizado exitosamente. Procediendo a timbrar...');
         setOpenModalSuccess(true);
         setPagoCompletado(true);
-        
+
         // Cerrar modal de pago
         setTimeout(() => {
             setOpenPagoModal(false);
@@ -382,10 +382,10 @@ export default function DataTable({ token, isBOD }) {
         // Si está en modo BOD, manejamos el flujo completo
         if (isBOD) {
             const facturaId = ids[0];
-            
+
             // Guardar la factura
             setFacturaParaTimbrarBOD(facturaId);
-            
+
             // Abrir modal de pago
             setOpenPagoModal(true);
             return;
@@ -395,7 +395,7 @@ export default function DataTable({ token, isBOD }) {
         setLoading(true);
         try {
             // Primero timbrar
-            const timbradoResponse = await fetch(`${apiUrl}/api/facturas/TimbrarFactura`, {
+            const timbradoResponse = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -409,7 +409,7 @@ export default function DataTable({ token, isBOD }) {
             }
 
             const timbradoData = await timbradoResponse.json();
-            
+
             // Filtrar solo las facturas que se timbraron correctamente
             const facturasTimbradasExitosas = timbradoData.Facturas?.filter(
                 factura => factura.status === 'success'
@@ -422,7 +422,7 @@ export default function DataTable({ token, isBOD }) {
             // Enviar por correo las facturas timbradas
             const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
 
-            const envioResponse = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
+            const envioResponse = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -437,7 +437,7 @@ export default function DataTable({ token, isBOD }) {
 
             // Procesar resultados
             let message = '';
-            
+
             if (facturasTimbradasExitosas.length === ids.length) {
                 message = 'Facturas timbradas y enviadas correctamente.';
             } else {
@@ -477,10 +477,10 @@ export default function DataTable({ token, isBOD }) {
             }
 
             const result = await response.json();
-            
+
             if (result.Facturas && result.Facturas[0]?.status === 'success') {
                 // Enviar por correo
-                const envioResponse = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
+                const envioResponse = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -514,10 +514,13 @@ export default function DataTable({ token, isBOD }) {
         setLoading(true);
         try {
             for (const id of ids) {
-                const response = await fetch(`${apiUrl}/api/facturas/DescargarFactura/${id}`, {
+                const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
+                    method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
+                    body: JSON.stringify(ids),
                 });
 
                 if (response.ok) {
@@ -545,7 +548,7 @@ export default function DataTable({ token, isBOD }) {
     const handleEnviarCorreo = useCallback(async (ids) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/EnviarFactura`, {
+            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFactura`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -573,9 +576,10 @@ export default function DataTable({ token, isBOD }) {
     const handleViewPdf = useCallback(async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/VerPdf/${id}`, {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPdf/${id}`, {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
@@ -604,7 +608,7 @@ export default function DataTable({ token, isBOD }) {
     const handleAcuseCancelacion = useCallback(async (id) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/DescargarAcuse/${id}`, {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarAcuse/${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -916,7 +920,7 @@ export default function DataTable({ token, isBOD }) {
         pagination: true,
         customToolbarSelect: (selectedRows, displayData, setSelectedRows) => {
             const selectedIds = selectedRows.data.map(index => data[index.dataIndex].ID);
-            
+
             const isMultipleSelection = selectedIds.length > 1;
             const isBODDisabled = isBOD && isMultipleSelection;
 
@@ -1036,16 +1040,16 @@ export default function DataTable({ token, isBOD }) {
     return (
         <Box>
             {loading && <LinearProgress />}
-            
+
             {/* Indicador de modo BOD */}
             {isBOD && (
-                <Alert 
-                    severity="info" 
+                <Alert
+                    severity="info"
                     sx={{ mb: 2 }}
                     action={
-                        <Chip 
-                            label="MODO PAGO POR USO" 
-                            color="primary" 
+                        <Chip
+                            label="MODO PAGO POR USO"
+                            color="primary"
                             size="small"
                         />
                     }
