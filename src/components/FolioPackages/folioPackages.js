@@ -20,46 +20,49 @@ const highVolumePackagesData = [
   { nombre: 'Paquete 500,000', folios: 500000, precio: '$ 382,800.00' },
 ];
 
+import { useRouter } from 'next/navigation';
+
 const FolioPackages = () => {
+  const router = useRouter();
   return (
     <>
-      <Box 
+      <Box
         sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' }, 
-            width: '100%',
-            fontFamily: 'sans-serif', 
-            position: 'relative', // Necesario para el posicionamiento absoluto del botón
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          width: '100%',
+          fontFamily: 'sans-serif',
+          position: 'relative', // Necesario para el posicionamiento absoluto del botón
         }}
       >
-        <Box 
+        <Box
           className="section sectionNormal" // Aplicamos clase para fondo y estilos comunes
           sx={{
-              // padding, color, display, flexDirection, alignItems son manejados por la clase .section
-              flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
+            // padding, color, display, flexDirection, alignItems son manejados por la clase .section
+            flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
           }}
         >
           <h2 className="sectionTitle">Paquetes PyMEs de folios.</h2>
           <p className="sectionDescription">
-              Ideales para aquellos emprendedores y pequeñas empresas que tienen un volumen de facturación bajo
+            Ideales para aquellos emprendedores y pequeñas empresas que tienen un volumen de facturación bajo
           </p>
           <table className="table">
-              <thead>
+            <thead>
               <tr>
-                  <th className="th">Nombre</th>
-                  <th className="th">Folios</th>
-                  <th className="th">Precio</th>
+                <th className="th">Nombre</th>
+                <th className="th">Folios</th>
+                <th className="th">Precio</th>
               </tr>
-              </thead>
-              <tbody>
+            </thead>
+            <tbody>
               {folioPackagesData.map((pkg) => (
-                  <tr key={pkg.nombre} className="tr">
+                <tr key={pkg.nombre} className="tr">
                   <td className="td">{pkg.nombre}</td>
                   <td className="td">{pkg.folios}</td>
                   <td className="td">{pkg.precio}</td>
-                  </tr>
+                </tr>
               ))}
-              </tbody>
+            </tbody>
           </table>
         </Box>
 
@@ -72,32 +75,32 @@ const FolioPackages = () => {
         >
           <h2 className="sectionTitle">Paquetes de alto volumen</h2>
           <p className="sectionDescription">
-              Cumple con la demanda de folios en un alto volumen, dando un servicio de calidad apto para las empresas más exigentes.
+            Cumple con la demanda de folios en un alto volumen, dando un servicio de calidad apto para las empresas más exigentes.
           </p>
           <table className="table">
-              <thead>
+            <thead>
               <tr>
-                  <th className="th">Nombre</th>
-                  <th className="th">Folios</th>
-                  <th className="th">Precio</th>
+                <th className="th">Nombre</th>
+                <th className="th">Folios</th>
+                <th className="th">Precio</th>
               </tr>
-              </thead>
-              <tbody>
+            </thead>
+            <tbody>
               {highVolumePackagesData.map((pkg) => (
-                  <tr key={pkg.nombre} className="tr">
+                <tr key={pkg.nombre} className="tr">
                   <td className="td">{pkg.nombre}</td>
                   <td className="td">{pkg.folios}</td>
                   <td className="td">{pkg.precio}</td>
-                  </tr>
+                </tr>
               ))}
-              </tbody>
+            </tbody>
           </table>
         </Box>
 
         <div className="buttonContainer">
-          <button className="buyButton">
-              <span role="img" aria-label="cart icon" style={{ marginRight: '8px' }}>🛒</span>
-              Comprar un paquete
+          <button className="buyButton"
+            onClick={() => router.push("/AltaUsuarios")}>
+            Empezar a facturar
           </button>
         </div>
       </Box>

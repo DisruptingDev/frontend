@@ -91,7 +91,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
             
             const payload = opcion.Nombre.includes('Plan')
                 ? { PlanID: opcion.ID }
-                : { EmisorID: empresa, PaqueteID: opcion.ID };
+                : { EmisorID: parseInt(empresa), PaqueteID: parseInt(opcion.ID)};
 
             const endpoint = `${apiUrl}/api/compratimbres/CrearOrdenPayPal`;
 

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Agrega useEffect
 import {
   Drawer,
   List,
@@ -32,7 +32,8 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import { WithPermission } from '@/components/WithPermission';
 
-const menuItems = [
+// Define los items base del menú
+const baseMenuItems = [
   {
     title: "Vista Principal",
     icon: <HomeIcon />,
@@ -107,8 +108,25 @@ const menuItems = [
 
 const SideBarMenu = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [menuItems, setMenuItems] = useState(baseMenuItems); // Estado para los items del menú
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    // Verificar si estamos en el cliente antes de acceder a sessionStorage
+    if (typeof window !== 'undefined') {
+      const bodValue = localStorage.getItem('BOD');
+      const hideTimbres = bodValue === 'true';
+      
+      // Filtrar los items del menú según el valor de BOD
+      if (hideTimbres) {
+        const filteredItems = baseMenuItems.filter(item => item.title !== "Timbres");
+        setMenuItems(filteredItems);
+      } else {
+        setMenuItems(baseMenuItems);
+      }
+    }
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   const handleNavigation = (path) => {
     if (path) router.push(path);
@@ -174,10 +192,7 @@ const SideBarMenu = () => {
               >
                 <ListItemButton
                   selected={isSelected(item.path, item.subItems)}
-                  onClick={() => item.subItems
-                    ? handleSubMenuToggle(item.title)
-                    : handleNavigation(item.path)
-                  }
+                  onClick={() => handleNavigation(item.path)}
                   sx={{
                     minHeight: 48,
                     justifyContent: drawerOpen ? 'initial' : 'center',
@@ -196,28 +211,6 @@ const SideBarMenu = () => {
                   {drawerOpen && <ListItemText primary={item.title} />}
                 </ListItemButton>
               </Tooltip>
-
-              {item.subItems && (
-                <Collapse
-                  in={openSubMenu === item.title && drawerOpen}
-                  timeout="auto"
-                  unmountOnExit
-                >
-                  <List component="div" disablePadding>
-                    {item.subItems.map((subItem) => (
-                      <WithPermission permission={subItem.permission} key={subItem.title}>
-                        <ListItemButton
-                          sx={{ pl: 4 }}
-                          selected={pathname === subItem.path}
-                          onClick={() => handleNavigation(subItem.path)}
-                        >
-                          <ListItemText primary={subItem.title} />
-                        </ListItemButton>
-                      </WithPermission>
-                    ))}
-                  </List>
-                </Collapse>
-              )}
             </WithPermission>
           ))}
         </List>
@@ -226,4 +219,4 @@ const SideBarMenu = () => {
   );
 };
 
-export default SideBarMenu;
+export default SideBarMenu; 

@@ -22,8 +22,6 @@ import Grid from '@mui/material/Unstable_Grid2';
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
-import HelpIcon from '@mui/icons-material/Help';
-
 // Componente principal de la página Home
 export default function Home() {
 
@@ -35,6 +33,7 @@ export default function Home() {
     const [openWizard, setOpenWizard] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [setOpen] = useState(false);
+    const [isBOD, setIsBOD] = useState(false);
 
     // Estados para manejar el token de autenticación y el filtro de búsqueda
     const [token, setToken] = useState("");
@@ -68,6 +67,8 @@ export default function Home() {
         // Solo se ejecuta en el cliente
         const storedNewUser = localStorage.getItem('newUser');
         setNewUser(storedNewUser);
+        const bodValue = localStorage.getItem('BOD');
+        setIsBOD(bodValue === 'true');
     }, []);
 
     useEffect(() => {
@@ -151,7 +152,10 @@ export default function Home() {
                 />
 
                 {/* Contenedor principal que ocupa el espacio restante */}
-                <Grid>
+                <Grid
+                    minWidth={"100vw"}
+                    maxWidth={"100vw"}
+                >
                     <Box
                         //bgcolor="white"
                         ml={10}
@@ -161,11 +165,12 @@ export default function Home() {
                         borderRadius={2}
                         //mb={6}
                         mb={10}
+
                     >
                         {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}
                         <div ref={datatableRef}>
-                            <DataTable token={token} />
+                            <DataTable token={token} isBOD={isBOD} />
                         </div>
                         {/* <Button
                             variant="contained"
