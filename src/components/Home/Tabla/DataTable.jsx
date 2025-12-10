@@ -258,7 +258,7 @@ export default function DataTable({ token, isBOD }) {
     const handleTimbrarNormal = useCallback(async (ids) => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/TimbrarFactura`, {
+            const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
