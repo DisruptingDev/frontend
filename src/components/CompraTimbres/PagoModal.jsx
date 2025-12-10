@@ -103,7 +103,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                 },
                 body: JSON.stringify({
                     ...payload,
-                    monto: opcion.Costo,
+                    monto: parseFloat(opcion.Costo),
                     descripcion: opcion.Nombre
                 })
             });
