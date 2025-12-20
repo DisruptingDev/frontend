@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { TextField, Button, Alert, Collapse, Box } from "@mui/material";
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { Token } from "@mui/icons-material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -40,7 +41,8 @@ export default function PasswordResetPage({ params }) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    Password: data.password
+                    Password: data.password,
+                    Token: token
                 }),
             });
 
