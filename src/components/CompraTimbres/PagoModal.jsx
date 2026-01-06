@@ -22,6 +22,13 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const paypalSectionRef = useRef(null);
 
+    // Determine effective price and timbres
+    const costoPromocional = Number(opcion.CostoPromocional || opcion.costo_promocional || opcion.costoPromocional || 0);
+    const effectiveCost = costoPromocional > 0 ? costoPromocional : opcion.Costo;
+
+    const timbresPromocional = Number(opcion.CantidadTimbresPromocional || opcion.cantidad_timbres_promocional || opcion.cantidadTimbresPromocional || 0);
+    const effectiveTimbres = timbresPromocional > 0 ? timbresPromocional : opcion.CantidadTimbres;
+
     // Obtener empresas
     useEffect(() => {
         const fetchEmpresas = async () => {
@@ -59,9 +66,9 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     useEffect(() => {
         if (paymentMethod === 'paypal' && paypalSectionRef.current) {
             setTimeout(() => {
-                paypalSectionRef.current.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
+                paypalSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
                 });
             }, 100);
         }
@@ -88,10 +95,10 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const createPayPalOrder = async () => {
         try {
             setIsCreatingOrder(true);
-            
+
             const payload = opcion.Nombre.includes('Plan')
                 ? { PlanID: opcion.ID }
-                : { EmisorID: parseInt(empresa), PaqueteID: parseInt(opcion.ID)};
+                : { EmisorID: parseInt(empresa), PaqueteID: parseInt(opcion.ID) };
 
             const endpoint = `${apiUrl}/api/compratimbres/CrearOrdenPayPal`;
 
@@ -103,7 +110,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                 },
                 body: JSON.stringify({
                     ...payload,
-                    monto: parseFloat(opcion.Costo),
+                    monto: parseFloat(effectiveCost),
                     descripcion: opcion.Nombre
                 })
             });
@@ -130,7 +137,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
     const capturePayPalOrder = async (orderID) => {
         try {
             setIsProcessing(true);
-            
+
             const response = await fetch(`${apiUrl}/api/compratimbres/CapturarOrdenPayPal`, {
                 method: 'POST',
                 headers: {
@@ -145,7 +152,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
             }
 
             const result = await response.json();
-            
+
             setAlertMessage('¡Pago realizado con éxito!');
             setSeverity('success');
 
@@ -183,8 +190,8 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
             setSeverity('info');
 
             const payload = opcion.Nombre.includes('Plan')
-                ? { PlanID: opcion.ID }
-                : { EmisorID: empresa, PaqueteID: opcion.ID };
+                ? { PlanID: opcion.ID, Monto: effectiveCost }
+                : { EmisorID: empresa, PaqueteID: opcion.ID, Monto: effectiveCost };
 
             const endpoint = opcion.Nombre.includes('Plan')
                 ? `${apiUrl}/api/compratimbres/GenerarOrdenPlan`
@@ -257,15 +264,15 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                             value={paymentMethod}
                             onChange={handlePaymentMethodChange}
                         >
-                            <FormControlLabel 
-                                value="transferencia" 
-                                control={<Radio />} 
-                                label="Transferencia Bancaria" 
+                            <FormControlLabel
+                                value="transferencia"
+                                control={<Radio />}
+                                label="Transferencia Bancaria"
                             />
-                            <FormControlLabel 
-                                value="paypal" 
-                                control={<Radio />} 
-                                label="PayPal (Pago con tarjeta)" 
+                            <FormControlLabel
+                                value="paypal"
+                                control={<Radio />}
+                                label="PayPal (Pago con tarjeta)"
                             />
                         </RadioGroup>
                     </FormControl>
@@ -276,9 +283,37 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: '600' }}>Detalles de la compra</Typography>
                     <Box display="flex" justifyContent="space-between" mb={1}>
                         <Typography>{opcion.Nombre}</Typography>
-                        <Typography>{formatCurrency(opcion.Costo)}</Typography>
+                        <Typography>
+                            {/* Show strikethrough if different */}
+                            {costoPromocional > 0 ? (
+                                <Box component="span">
+                                    <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', mr: 2, fontSize: '0.6em' }}>
+                                        {formatCurrency(opcion.Costo)}
+                                    </Typography>
+                                    <Typography component="span" fontWeight="bold">
+                                        {formatCurrency(effectiveCost)}
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                formatCurrency(opcion.Costo)
+                            )}
+                        </Typography>
                     </Box>
-                    <Typography color="textSecondary" mb={2}>{opcion.CantidadTimbres} Timbres</Typography>
+                    <Typography color="textSecondary">
+                        {timbresPromocional > 0 ? (
+                            <>
+                                <Box component="span" sx={{ textDecoration: 'line-through', mr: 1 }}>
+                                    {opcion.CantidadTimbres}
+                                </Box>
+                                <Box component="span" fontWeight="bold">
+                                    {effectiveTimbres}
+                                </Box>
+                                <Box component="span" ml={0.5}>Timbres</Box>
+                            </>
+                        ) : (
+                            <>{opcion.CantidadTimbres} Timbres</>
+                        )}
+                    </Typography>
 
                     <Divider sx={{ my: 1 }} />
 
@@ -329,16 +364,16 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
                             <Grid item xs={7}><Typography fontWeight="medium">Wise Factura S.A. de C.V.</Typography></Grid>
                         </Grid>
                         <Divider sx={{ my: 2 }} />
-                        <Typography>Monto a pagar: <strong>{formatCurrency(opcion.Costo)}</strong></Typography>
+                        <Typography>Monto a pagar: <strong>{formatCurrency(effectiveCost)}</strong></Typography>
                     </Box>
                 )}
 
                 {/* Botón de PayPal (solo se muestra si se selecciona PayPal) */}
                 {paymentMethod === 'paypal' && (
-                    <Box 
-                        mb={2} 
-                        bgcolor="#f3f4f6" 
-                        p={2} 
+                    <Box
+                        mb={2}
+                        bgcolor="#f3f4f6"
+                        p={2}
                         borderRadius={1}
                         ref={paypalSectionRef}
                     >
@@ -413,7 +448,7 @@ const PagoModal = ({ open, onClose, opcion, token, setCompra }) => {
 const PagoModalWithPayPal = (props) => {
     const [{ isPending }] = usePayPalScriptReducer();
 
-    return ( 
+    return (
         <>
             {isPending && <div>Cargando PayPal...</div>}
             <PagoModal {...props} />

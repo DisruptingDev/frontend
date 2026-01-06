@@ -35,6 +35,7 @@ export default function Paquetes({ token, setCompra }) {
                 //console.log('Data:', data);
                 if (response.ok) {
                     //console.log('Paquetes:', data);
+                    console.log('Paquetes fetch result:', data);
                     setPaquetes(data);
                 } else {
                     console.error('Error fetching paquetes:', data);
@@ -71,51 +72,79 @@ export default function Paquetes({ token, setCompra }) {
             </Typography>
 
             <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px', mx: 'auto' }}>
-                {paquetes.map((paquete, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                        <Card sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3, borderRadius: 2 }}>
-                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                {/* Contenido del plan */}
-                                <Box>
-                                    <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {paquete.Nombre || 'Paquete'}
-                                    </Typography>
-                                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        {paquete.CantidadTimbres} Timbres
-                                    </Typography>
-                                    <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {formatCurrency(paquete.Costo)} <Typography variant="subtitle1" component="span">MXN</Typography>
-                                    </Typography>
-                                </Box>
+                {paquetes.map((paquete, index) => {
+                    const costoPromocional = Number(paquete.CostoPromocional || paquete.costo_promocional || paquete.costoPromocional || 0);
+                    const timbresPromocional = Number(paquete.CantidadTimbresPromocional || paquete.cantidad_timbres_promocional || paquete.cantidadTimbresPromocional || 0);
 
-                                {/* Beneficios */}
-                                <Box flexGrow={1} mb={2}>
+                    const priceDisplay = costoPromocional > 0 ? (
+                        <>
+                            <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', mr: 2, fontSize: '0.5em' }}>
+                                {formatCurrency(paquete.Costo)}
+                            </Typography>
+                            {formatCurrency(costoPromocional)}
+                        </>
+                    ) : (
+                        formatCurrency(paquete.Costo)
+                    );
 
-                                    <Box display="flex" alignItems="center" mb={1}>
-                                        <DoneIcon color="success" sx={{ mr: 1 }} />
-                                        <Typography variant="body2">Sin caducidad</Typography>
+                    return (
+                        <Grid item xs={12} sm={6} md={4} key={index}>
+                            <Card sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3, borderRadius: 2 }}>
+                                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    {/* Contenido del plan */}
+                                    <Box>
+                                        <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
+                                            {paquete.Nombre || 'Paquete'}
+                                        </Typography>
+                                        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                                            {timbresPromocional > 0 ? (
+                                                <>
+                                                    <span style={{ textDecoration: 'line-through', marginRight: '8px' }}>
+                                                        {paquete.CantidadTimbres}
+                                                    </span>
+                                                    <span style={{ fontWeight: 'bold', color: '#10968a' }}>
+                                                        {timbresPromocional} Timbres
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>{paquete.CantidadTimbres} Timbres</>
+                                            )}
+                                        </Typography>
+                                        <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600', display: 'flex', alignItems: 'baseline' }}>
+                                            {priceDisplay}
+                                            <Typography variant="subtitle1" component="span" sx={{ ml: 1 }}>MXN</Typography>
+                                        </Typography>
+                                    </Box>
+
+                                    {/* Beneficios */}
+                                    <Box flexGrow={1} mb={2}>
+
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <DoneIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">Sin caducidad</Typography>
+
+                                        </Box>
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <DoneIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">Pago único</Typography>
+                                        </Box>
 
                                     </Box>
-                                    <Box display="flex" alignItems="center" mb={1}>
-                                        <DoneIcon color="success" sx={{ mr: 1 }} />
-                                        <Typography variant="body2">Pago único</Typography>
+
+                                    {/* Botón y leyenda */}
+                                    <Box mt="auto">
+                                        <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth onClick={() => handleOpenModal(paquete)}>
+                                            Comprar Ahora
+                                        </Button>
+                                        <Typography variant="caption" display="block" align="center" mt={2}>
+                                            Sin expiración
+                                        </Typography>
                                     </Box>
-
-                                </Box>
-
-                                {/* Botón y leyenda */}
-                                <Box mt="auto">
-                                    <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth onClick={() => handleOpenModal(paquete)}>
-                                        Comprar Ahora
-                                    </Button>
-                                    <Typography variant="caption" display="block" align="center" mt={2}>
-                                        Sin expiración
-                                    </Typography>
-                                </Box>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    )
+                })}
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (
