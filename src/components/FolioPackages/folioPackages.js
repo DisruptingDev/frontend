@@ -1,5 +1,11 @@
 import React from 'react';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
+import TabContext from '@mui/lab/TabContext';
+import Button from "@mui/material/Button";
+import TabPanel from '@mui/lab/TabPanel';
+
 
 // Datos de los paquetes
 const folioPackagesData = [
@@ -22,88 +28,148 @@ const highVolumePackagesData = [
 
 import { useRouter } from 'next/navigation';
 
+const CustomTabPanel = (props) => {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+};
+
+const a11yProps = (index) => {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+};
+
 const FolioPackages = () => {
   const router = useRouter();
+  const [value, setValue] = React.useState(0);
+
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
+  };
+
   return (
     <>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          width: '100%',
-          fontFamily: 'sans-serif',
-          position: 'relative', // Necesario para el posicionamiento absoluto del botón
-        }}
-      >
-        <Box
-          className="section sectionNormal" // Aplicamos clase para fondo y estilos comunes
-          sx={{
-            // padding, color, display, flexDirection, alignItems son manejados por la clase .section
-            flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
-          }}
-        >
-          <h2 className="sectionTitle">Paquetes PyMEs de folios.</h2>
-          <p className="sectionDescription">
-            Ideales para aquellos emprendedores y pequeñas empresas que tienen un volumen de facturación bajo
-          </p>
-          <table className="table">
-            <thead>
-              <tr>
-                <th className="th">Nombre</th>
-                <th className="th">Folios</th>
-                <th className="th">Precio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {folioPackagesData.map((pkg) => (
-                <tr key={pkg.nombre} className="tr">
-                  <td className="td">{pkg.nombre}</td>
-                  <td className="td">{pkg.folios}</td>
-                  <td className="td">{pkg.precio}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <TabContext value={value}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={value} onChange={handleChange} centered >
+            <Tab sx={{ fontSize: '1.2rem', fontWeight: 'bold' }} label="Paquetes PyMEs" {...a11yProps(0)} />
+            <Tab sx={{ fontSize: '1.2rem', fontWeight: 'bold' }} label="Paquetes de alto volumen" {...a11yProps(1)} />
+          </Tabs>
         </Box>
-
-        <Box
-          component="section" // Mantenemos la semántica de <section>
-          className="section sectionHighVolume"
-          sx={{
-            flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
-          }}
-        >
-          <h2 className="sectionTitle">Paquetes de alto volumen</h2>
-          <p className="sectionDescription">
-            Cumple con la demanda de folios en un alto volumen, dando un servicio de calidad apto para las empresas más exigentes.
-          </p>
-          <table className="table">
-            <thead>
-              <tr>
-                <th className="th">Nombre</th>
-                <th className="th">Folios</th>
-                <th className="th">Precio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {highVolumePackagesData.map((pkg) => (
-                <tr key={pkg.nombre} className="tr">
-                  <td className="td">{pkg.nombre}</td>
-                  <td className="td">{pkg.folios}</td>
-                  <td className="td">{pkg.precio}</td>
+        <CustomTabPanel value={value} index={0}>
+          <Box
+            className="section sectionNormal" // Aplicamos clase para fondo y estilos comunes
+            sx={{
+              // padding, color, display, flexDirection, alignItems son manejados por la clase .section
+              flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
+            }}
+          >
+            <h2 className="sectionTitle">Paquetes PyMEs de folios.</h2>
+            <p className="sectionDescription">
+              Ideales para aquellos emprendedores y pequeñas empresas que tienen un volumen de facturación bajo
+            </p>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="th">Nombre</th>
+                  <th className="th">Folios</th>
+                  <th className="th">Precio</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Box>
-
-        <div className="buttonContainer">
-          <button className="buyButton"
-            onClick={() => router.push("/AltaUsuarios")}>
-            Empezar a facturar
-          </button>
-        </div>
-      </Box>
+              </thead>
+              <tbody>
+                {folioPackagesData.map((pkg) => (
+                  <tr key={pkg.nombre} className="tr">
+                    <td className="td">{pkg.nombre}</td>
+                    <td className="td">{pkg.folios}</td>
+                    <td className="td">{pkg.precio}</td>
+                    <td className="td">
+                      <Button
+                        variant="contained"
+                        sx={{
+                          backgroundColor: "#10968A",
+                          ml: 2,
+                          "&:hover": {
+                            backgroundColor: "#0398a6",
+                          },
+                        }}
+                        onClick={() => router.push("/AltaUsuarios")}
+                      >
+                        Comprar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Box>
+        </CustomTabPanel>
+        <CustomTabPanel value={value} index={1}>
+          <Box
+            component="section" // Mantenemos la semántica de <section>
+            className="section sectionHighVolume"
+            sx={{
+              flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
+            }}
+          >
+            <h2 className="sectionTitle">Paquetes de alto volumen</h2>
+            <p className="sectionDescription">
+              Cumple con la demanda de folios en un alto volumen, dando un servicio de calidad apto para las empresas más exigentes.
+            </p>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th className="th">Nombre</th>
+                  <th className="th">Folios</th>
+                  <th className="th">Precio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {highVolumePackagesData.map((pkg) => (
+                  <tr key={pkg.nombre} className="tr">
+                    <td className="td">{pkg.nombre}</td>
+                    <td className="td">{pkg.folios}</td>
+                    <td className="td">{pkg.precio}</td>
+                    <td className="td">
+                      <Button
+                        variant="outlined"
+                        color="inherit"
+                        sx={{
+                          ml: 2,
+                          borderColor: "#ffffff ",
+                          color: "#ffffff",
+                          "&:hover": {
+                            backgroundColor: "rgba(4, 75, 69, 1)",
+                            borderColor: "#ffffff",
+                          },
+                        }}
+                        onClick={() => router.push("/AltaUsuarios")}
+                      >
+                        Comprar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Box>
+        </CustomTabPanel>
+      </TabContext>
 
       <style>{`
         .section {

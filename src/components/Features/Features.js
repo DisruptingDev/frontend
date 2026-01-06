@@ -18,8 +18,8 @@ const items = [
     title: 'Control total de empresas y usuarios',
     description:
       'Gestiona múltiples empresas y usuarios desde una sola plataforma. Define roles y permisos para tu equipo, asegurando un flujo de trabajo organizado y seguro.',
-    imageLight: `url("${process.env.TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/dash-light.png")`,
-    imageDark: `url("${process.env.TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/dash-dark.png")`,
+    imageLight: `url("/images/features/1.png")`,
+
   },
   {
     icon: <EdgesensorHighRoundedIcon.default />,
@@ -34,9 +34,9 @@ const items = [
     title: 'Úsalo en cualquier dispositivo',
     description:
       'Accede a tu cuenta y genera facturas desde cualquier lugar y en cualquier momento. Nuestra plataforma es compatible con computadoras, tablets y smartphones, permitiéndote gestionar tu facturación sobre la marcha ',
-    imageLight: `url("${process.env.TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/devices-light.png")`,                    
+    imageLight: `url("/images/features/2.png")`,
   },
-  
+
 ];
 
 const Chip = styled(MuiChip)(({ theme }) => ({
@@ -98,9 +98,9 @@ function MobileLayout({ selectedItemIndex, handleItemClick, selectedFeature }) {
           style={
             items[selectedItemIndex]
               ? {
-                  '--items-imageLight': items[selectedItemIndex].imageLight,
-                  '--items-imageDark': items[selectedItemIndex].imageDark,
-                }
+                '--items-imageLight': items[selectedItemIndex].imageLight,
+                '--items-imageDark': items[selectedItemIndex].imageDark,
+              }
               : {}
           }
         />
@@ -144,13 +144,14 @@ export default function Features() {
   const selectedFeature = items[selectedItemIndex];
 
   return (
-    <Container id="features" sx={{ py: { xs: 8, sm: 16 } }}>
-      <Box sx={{ width: { sm: '100%', md: '60%' } }}>
+    <Container id="features" className='mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
+      <Box sx={{ width: 100 % { sm: '100%', md: '60%' } }}>
         <Typography
-          component="h2"
+          component="h1"
           variant="h4"
-          gutterBottom
-          sx={{ color: 'text.primary' }}
+          fontSize="clamp(4rem, 5vw, 4rem)"
+          fontWeight="bold"
+          sx={{ color: '#063F53', marginBottom: '1rem' }}
         >
           Ventajas de facturar con Wise
         </Typography>
@@ -158,7 +159,7 @@ export default function Features() {
           variant="body1"
           sx={{ color: 'text.secondary', mb: { xs: 2, sm: 4 } }}
         >
-         En Wise, sabemos que la facturación no debería ser un dolor de cabeza. Por eso, hemos creado una experiencia de usuario intuitiva y robusta que se adapta a las necesidades de tu negocio, sin importar su tamaño o complejidad. Descubre las ventajas que te ofrecemos:
+          En Wise, sabemos que la facturación no debería ser un dolor de cabeza. Por eso, hemos creado una experiencia de usuario intuitiva y robusta que se adapta a las necesidades de tu negocio, sin importar su tamaño o complejidad. Descubre las ventajas que te ofrecemos:
         </Typography>
       </Box>
       <Box
@@ -213,10 +214,11 @@ export default function Features() {
                     },
                   ]}
                 >
-                  {icon}
-
-                  <Typography variant="h6">{title}</Typography>
-                  <Typography variant="body2">{description}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#063F53' }}>
+                    {icon}
+                    <Typography variant="h5" color="inherit" fontWeight={600}>{title}</Typography>
+                  </Box>
+                  <Typography variant="body1">{description}</Typography>
                 </Box>
               </Box>
             ))}
@@ -241,14 +243,20 @@ export default function Features() {
               width: '100%',
               display: { xs: 'none', sm: 'flex' },
               pointerEvents: 'none',
+              backgroundColor: 'transparent',
+              border: 'none',
             }}
           >
             <Box
               sx={(theme) => ({
                 m: 'auto',
                 width: 420,
-                height: 500,
+                height: 420,
                 backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                borderRadius: '3rem',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                 backgroundImage: 'var(--items-imageLight)',
                 ...theme.applyStyles('dark', {
                   backgroundImage: 'var(--items-imageDark)',
@@ -257,9 +265,9 @@ export default function Features() {
               style={
                 items[selectedItemIndex]
                   ? {
-                      '--items-imageLight': items[selectedItemIndex].imageLight,
-                      '--items-imageDark': items[selectedItemIndex].imageDark,
-                    }
+                    '--items-imageLight': items[selectedItemIndex].imageLight,
+                    '--items-imageDark': items[selectedItemIndex].imageDark,
+                  }
                   : {}
               }
             />
