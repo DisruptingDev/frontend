@@ -139,7 +139,6 @@ export default function UserMenu({ token }) {
               <Box>
                 <Typography fontWeight="bold">Folio: {invoice.Folio}</Typography>
                 <Typography variant="body2">Emisor: {invoice.Emisor.Nombre}</Typography>
-                <Typography variant="body2">Saldo: ${invoice.SaldoInsoluto}</Typography>
               </Box>
             </MenuItem>
           ))

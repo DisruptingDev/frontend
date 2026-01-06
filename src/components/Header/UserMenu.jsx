@@ -225,9 +225,68 @@ export default function UserMenu() {
           </MenuItem>
         </WithPermission>
 
-        <WithPermission permission="crear_compras">
+        {(bod === 'false' || bod === undefined || bod === null || bod === '') && (
+          <>
+
+            <WithPermission permission="crear_compras">
+              <MenuItem
+                onClick={handleBuyClick}
+                sx={{
+                  padding: '10px 20px',
+                  "&:hover": {
+                    // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+                    backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                    color: '#fff',
+                    '& .MuiListItemIcon-root': {
+                      color: '#fff', // Cambiar color del ícono al hacer hover
+                    },
+                    '& MuiSvgIcon-root': {
+                      color: '#fff', // Cambiar color del ícono al hacer hover
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: '#333' }}>
+                  <ShoppingCartIcon /> {/* Cambiar color del ícono */}
+                </ListItemIcon>
+                <Typography noWrap sx={{ color: 'inherit', }}>
+                  Comprar Timbres
+                </Typography>
+              </MenuItem>
+            </WithPermission>
+
+            <WithPermission permission="ver_compras">
+              <MenuItem
+                onClick={handleViewOrdersClick}
+                sx={{
+                  padding: '10px 20px',
+                  "&:hover": {
+                    // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
+                    backgroundColor: '#1d394d', // Color de fondo al hacer hover
+                    color: '#fff',
+                    '& .MuiListItemIcon-root': {
+                      color: '#fff', // Cambiar color del ícono al hacer hover
+                    },
+                    '& MuiSvgIcon-root': {
+                      color: '#fff', // Cambiar color del ícono al hacer hover
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: '#333' }}>
+                  <ListAltIcon /> {/* Cambiar color del ícono */}
+                </ListItemIcon>
+                <Typography noWrap sx={{ color: 'inherit', }}>
+                  Ver órdenes
+                </Typography>
+              </MenuItem>
+            </WithPermission>
+          </>
+        )}
+
+        <WithPermission permission="invitar_usuarios">
           <MenuItem
-            onClick={handleBuyClick}
+            onClick={handleInviteTeamMembersClick}
             sx={{
               padding: '10px 20px',
               "&:hover": {
@@ -244,44 +303,19 @@ export default function UserMenu() {
             }}
           >
             <ListItemIcon sx={{ color: '#333' }}>
-              <ShoppingCartIcon /> {/* Cambiar color del ícono */}
+              <GroupAddIcon /> {/* Cambiar color del ícono */}
             </ListItemIcon>
             <Typography noWrap sx={{ color: 'inherit', }}>
-              Comprar Timbres
+              Invitar Miembros del Equipo
             </Typography>
           </MenuItem>
         </WithPermission>
 
-        <WithPermission permission="ver_compras">
-          <MenuItem
-            onClick={handleViewOrdersClick}
-            sx={{
-              padding: '10px 20px',
-              "&:hover": {
-                // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-                backgroundColor: '#1d394d', // Color de fondo al hacer hover
-                color: '#fff',
-                '& .MuiListItemIcon-root': {
-                  color: '#fff', // Cambiar color del ícono al hacer hover
-                },
-                '& MuiSvgIcon-root': {
-                  color: '#fff', // Cambiar color del ícono al hacer hover
-                },
-              },
-            }}
-          >
-            <ListItemIcon sx={{ color: '#333' }}>
-              <ListAltIcon /> {/* Cambiar color del ícono */}
-            </ListItemIcon>
-            <Typography noWrap sx={{ color: 'inherit', }}>
-              Ver órdenes
-            </Typography>
-          </MenuItem>
-        </WithPermission>
 
-      <WithPermission permission="invitar_usuarios">
+        <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
+
         <MenuItem
-          onClick={handleInviteTeamMembersClick}
+          onClick={handleLogout}
           sx={{
             padding: '10px 20px',
             "&:hover": {
@@ -298,42 +332,13 @@ export default function UserMenu() {
           }}
         >
           <ListItemIcon sx={{ color: '#333' }}>
-            <GroupAddIcon /> {/* Cambiar color del ícono */}
+            <LogoutIcon /> {/* Cambiar color del ícono */}
           </ListItemIcon>
           <Typography noWrap sx={{ color: 'inherit', }}>
-            Invitar Miembros del Equipo
+            Cerrar sesión
           </Typography>
         </MenuItem>
-      </WithPermission>
-
-
-      <Divider sx={{ margin: '10px 0', backgroundColor: '#1d394d' }} />
-
-      <MenuItem
-        onClick={handleLogout}
-        sx={{
-          padding: '10px 20px',
-          "&:hover": {
-            // backgroundColor: '#04b2ca', // Color de fondo al hacer hover
-            backgroundColor: '#1d394d', // Color de fondo al hacer hover
-            color: '#fff',
-            '& .MuiListItemIcon-root': {
-              color: '#fff', // Cambiar color del ícono al hacer hover
-            },
-            '& MuiSvgIcon-root': {
-              color: '#fff', // Cambiar color del ícono al hacer hover
-            },
-          },
-        }}
-      >
-        <ListItemIcon sx={{ color: '#333' }}>
-          <LogoutIcon /> {/* Cambiar color del ícono */}
-        </ListItemIcon>
-        <Typography noWrap sx={{ color: 'inherit', }}>
-          Cerrar sesión
-        </Typography>
-      </MenuItem>
-    </Menu >
+      </Menu >
       <ModalCorreos open={open} onClose={() => setOpen(false)} setOpen={setOpen} />
     </>
   );
