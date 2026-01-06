@@ -68,46 +68,74 @@ export default function Planes({ token, setCompra }) {
             </Typography>
 
             <Grid container spacing={3} justifyContent="center" sx={{ maxWidth: '1200px', mx: 'auto' }}>
-                {planes.map((plan, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                        <Card sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3, borderRadius: 2 }}>
-                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                {/* Contenido del plan */}
-                                <Box>
-                                    <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {plan.Nombre || 'Plan'}
-                                    </Typography>
-                                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                        {plan.CantidadTimbres} timbres mensuales
-                                    </Typography>
-                                    <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600' }}>
-                                        {formatCurrency(plan.Costo)} <Typography variant="subtitle1" component="span">MXN / mes</Typography>
-                                    </Typography>
-                                </Box>
+                {planes.map((plan, index) => {
+                    const costoPromocional = Number(plan.CostoPromocional || plan.costo_promocional || plan.costoPromocional || 0);
+                    const timbresPromocional = Number(plan.CantidadTimbresPromocional || plan.cantidad_timbres_promocional || plan.cantidadTimbresPromocional || 0);
 
-                                {/* Beneficios */}
-                                <Box flexGrow={1} mb={2}>
+                    const priceDisplay = costoPromocional > 0 ? (
+                        <>
+                            <Typography component="span" sx={{ textDecoration: 'line-through', color: 'text.secondary', mr: 2, fontSize: '0.5em' }}>
+                                {formatCurrency(plan.Costo)}
+                            </Typography>
+                            {formatCurrency(costoPromocional)}
+                        </>
+                    ) : (
+                        formatCurrency(plan.Costo)
+                    );
 
-                                    <Box display="flex" alignItems="center" mb={1}>
-                                        <DoneIcon color="success" sx={{ mr: 1 }} />
-                                        <Typography variant="body2">Reinicio mensual</Typography>
+                    return (
+                        <Grid item xs={12} sm={6} md={4} key={index}>
+                            <Card sx={{ maxWidth: 345, height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3, borderRadius: 2 }}>
+                                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    {/* Contenido del plan */}
+                                    <Box>
+                                        <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: '600' }}>
+                                            {plan.Nombre || 'Plan'}
+                                        </Typography>
+                                        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                                            {timbresPromocional > 0 ? (
+                                                <>
+                                                    <span style={{ textDecoration: 'line-through', marginRight: '8px' }}>
+                                                        {plan.CantidadTimbres}
+                                                    </span>
+                                                    <span style={{ fontWeight: 'bold', color: '#10968a' }}>
+                                                        {timbresPromocional} timbres men.
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <>{plan.CantidadTimbres} timbres mensuales</>
+                                            )}
+                                        </Typography>
+                                        <Typography variant="h4" component="div" gutterBottom sx={{ fontWeight: '600', display: 'flex', alignItems: 'baseline' }}>
+                                            {priceDisplay}
+                                            <Typography variant="subtitle1" component="span" sx={{ ml: 1 }}>MXN / mes</Typography>
+                                        </Typography>
                                     </Box>
 
-                                </Box>
+                                    {/* Beneficios */}
+                                    <Box flexGrow={1} mb={2}>
 
-                                {/* Botón y leyenda */}
-                                <Box mt="auto">
-                                    <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth onClick={() => handleOpenModal(plan)}>
-                                        Comprar Ahora
-                                    </Button>
-                                    <Typography variant="caption" display="block" align="center" mt={2}>
-                                        Renovación mensual automática
-                                    </Typography>
-                                </Box>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
+                                        <Box display="flex" alignItems="center" mb={1}>
+                                            <DoneIcon color="success" sx={{ mr: 1 }} />
+                                            <Typography variant="body2">Reinicio mensual</Typography>
+                                        </Box>
+
+                                    </Box>
+
+                                    {/* Botón y leyenda */}
+                                    <Box mt="auto">
+                                        <Button sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }} variant="contained" fullWidth onClick={() => handleOpenModal(plan)}>
+                                            Comprar Ahora
+                                        </Button>
+                                        <Typography variant="caption" display="block" align="center" mt={2}>
+                                            Renovación mensual automática
+                                        </Typography>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    )
+                })}
             </Grid>
             {/* Modal de Pago */}
             {selectedPlan && (

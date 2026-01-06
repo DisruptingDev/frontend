@@ -1,10 +1,10 @@
 import './globals.css'; // Importa tus estilos globales
-import {GoogleTagManager, GoogleAnalytics} from '@next/third-parties/google'
+import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google'
 
 export const metadata = {
   title: 'Wise Factura | Simple rapida y segura',
   description: 'Factura de manera facil, rapida y segura con nuestro sistema web, descubre los beneficiosde facturar con nosotros y ahora tiempo en tus proscesos',
-   keywords: [
+  keywords: [
     'facture',
     'facturacion electronica',
     'facturación electrónica',
@@ -40,8 +40,8 @@ export const metadata = {
     'wise sistema de facturacion electronica',
     'wise sistema de facturacion electronica',
     'wise factura'
-   ],
-     openGraph: {
+  ],
+  openGraph: {
     title: 'Wise facturacion - Facturacion electronica a la medida',
     description: 'Factura de manera facil, rapida y segura con nuestro sistema web, descubre los beneficiosde facturar con nosotros y ahora tiempo en tus proscesos',
     url: 'https://www.wisefacturacion.com', // Reemplaza con tu dominio final
@@ -62,9 +62,9 @@ export const metadata = {
 export default function VerticalLayout({ children }) {
   return (
     <html lang="es" >
-      <body >
-        <GoogleTagManager gtmId="G-NF68M2HCH2"/>
-        <GoogleAnalytics gaId="G-NF68M2HCH2"/>
+      <body className='bg-[#F5F5F5]'>
+        <GoogleTagManager gtmId="G-NF68M2HCH2" />
+        <GoogleAnalytics gaId="G-NF68M2HCH2" />
         {children}
       </body>
     </html>

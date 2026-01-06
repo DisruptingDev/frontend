@@ -2,19 +2,19 @@ const typography = fontFamily => ({
   fontFamily:
     typeof fontFamily === 'undefined' || fontFamily === ''
       ? [
-          'DM_Sans',
-          'sans-serif',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
-          'sans-serif',
-          '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
-          '"Segoe UI Symbol"'
-        ].join(',')
+        'DM_Sans',
+        'sans-serif',
+        '-apple-system',
+        'BlinkMacSystemFont',
+        '"Segoe UI"',
+        'Roboto',
+        '"Helvetica Neue"',
+        'Arial',
+        'sans-serif',
+        '"Apple Color Emoji"',
+        '"Segoe UI Emoji"',
+        '"Segoe UI Symbol"'
+      ].join(',')
       : fontFamily,
   fontSize: 13.125,
   h1: {
@@ -57,15 +57,15 @@ const typography = fontFamily => ({
     lineHeight: 1.53846154
   },
   body1: {
-    fontSize: '0.9375rem',
+    fontSize: '1.2rem',
     lineHeight: 1.46667
   },
   body2: {
-    fontSize: '0.8125rem',
+    fontSize: '1rem',
     lineHeight: 1.53846154
   },
   button: {
-    fontSize: '0.9375rem',
+    fontSize: '1rem',
     lineHeight: 1.46667,
     textTransform: 'none'
   },
