@@ -5,10 +5,8 @@ import Header from "@/components/Header/Header.jsx";
 import { isAuthenticated } from "@/utils/authRedirect";
 import { Box, Button, Grid } from "@mui/material";
 import ModalXML from "@/components/ImportarXML/ModalXML";
-import ModalFacturasError from "@/components/FacturasMasivas/Modal";
 import ModalError from "@/components/Home/Modales/modalError";
 import ModalExito from "@/components/Home/Modales/modalExito";
-import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
 import VistaXMLImportado from "@/components/ImportarXML/VistaXMLImportado";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
 import { formatearFacturaXML, formatearFacturaXMLSimple } from "@/components/ImportarXML/FormatearXML.js";
@@ -20,12 +18,9 @@ export default function ImportarFacturas() {
     const [openModal, setOpenModal] = useState(false);
     const [openModalExito, setOpenModalExito] = useState(false);
     const [openModalError, setOpenModalError] = useState(false);
-    const [openModalFacturasError, setOpenModalFacturasError] = useState(false);
-    const [respuestaModal, setRespuestaModal] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
     const [facturas, setFacturas] = useState([]);
     const [facturaXML, setFacturaXML] = useState(null);
-    const [facturasSinErrores, setFacturasSinErrores] = useState([]);
     const [token, setToken] = useState("");
     const [loading, setLoading] = useState(false);
     const [modoImportacion, setModoImportacion] = useState("masiva");
@@ -49,11 +44,9 @@ export default function ImportarFacturas() {
 
             let facturaFormateada = null;
 
-            console.log("Resultado recibido en handleUploadXML:", result);
 
             if (result.success) {
                 facturaFormateada = formatearFacturaXML(result.data, result.xmlContentOriginal);
-                console.log("Factura formateada con detección de timbrado:", facturaFormateada);
             } else {
                 facturaFormateada = formatearFacturaXMLSimple(result.data);
             }
@@ -136,8 +129,6 @@ export default function ImportarFacturas() {
                     console.warn("Se intentó guardar una factura no timbrada, se omitirá:", factura);
                     continue;
                 }
-
-                console.log("Guardando factura timbrada:", factura);
 
                 const endpoint = `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
 

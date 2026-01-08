@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, TextField, Box, Snackbar, Alert, FormControl, InputLabel, MenuItem, Select as MUISelect, FormHelperText } from '@mui/material';
-import Select from "@/components/Select/Select.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,7 +9,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const REGIMENES_FISICOS = new Set(["605", "606", "607", "608", "610", "611", "612", "614", "615", "616", "621", "625", "626"]);
 const REGIMENES_MORALES = new Set(["601", "603", "610", "620", "622", "623", "624", "626"]);
 
-export default function AltaCliente({ onClose, cliente, setActualizar, token }) {
+export default function AltaCliente({ onClose, cliente, setActualizar, token, data }) {
     const { register, reset, handleSubmit, setValue, watch, formState: { errors } } = useForm();
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
@@ -41,7 +40,6 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
                 const data = await response.json();
                 setCatalogoCompleto(data || []); // Ajuste aquí para el formato de respuesta
             } catch (error) {
-                console.error("Error al cargar el catálogo:", error);
                 setToast({
                     open: true,
                     message: "Error al cargar los regímenes fiscales",
@@ -71,49 +69,37 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
     // Efecto para filtrar regímenes cuando cambia el RFC o el catálogo
     useEffect(() => {
         effectRunCount.current += 1;
-        // console.log(`🔄 Efecto de filtrado ejecutado (${effectRunCount.current} veces)`);
-        // console.log("📌 Dependencias - RFC:", rfcValue, "Catálogo:", catalogoCompleto.length > 0);
 
         if (!catalogoCompleto || catalogoCompleto.length === 0) {
-            // console.log("⛔ Catálogo vacío - no se puede filtrar");
             setRegimenesFiltrados([]);
             return;
         }
 
         const tipoContribuyente = obtenerTipoContribuyente(rfcValue);
-        // console.log("🔍 Tipo de contribuyente:", tipoContribuyente);
-
         let filtrados = [];
         const rfcValido = tipoContribuyente !== null;
 
         if (rfcValido) {
             const regimenesPermitidos = tipoContribuyente === "F" ? REGIMENES_FISICOS : REGIMENES_MORALES;
-            // console.log("📋 Regímenes permitidos:", Array.from(regimenesPermitidos));
 
             filtrados = catalogoCompleto.filter(regimen => {
                 const clave = regimen.Clave.toString(); // Asegurar que es string
                 const incluido = regimenesPermitidos.has(clave);
-                // if (!incluido) {
-                //     console.log(`❌ Régimen excluido: ${clave} - ${regimen.Descripcion}`);
-                // }
                 return incluido;
             });
         }
 
-        // console.log("✅ Regímenes filtrados:", filtrados);
         setRegimenesFiltrados(filtrados);
 
         // Resetear valor si es necesario
         const regimenActual = watch("RegimenFiscal");
         if (regimenActual && !filtrados.some(r => r.Clave.toString() === regimenActual.toString())) {
-            console.log("🔄 Reseteando régimen fiscal seleccionado");
             setValue("RegimenFiscal", "");
         }
     }, [rfcValue, catalogoCompleto, setValue, watch]);
 
     // Efecto para rellenar los campos si se está editando un cliente
     useEffect(() => {
-        //console.log("Cliente recibido para editar:", cliente);
         if (cliente && Object.keys(cliente).length > 0) {
             setEditar(true);
             setValue('Nombre', cliente.Nombre);
@@ -129,6 +115,15 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             setValue('Email', cliente.Email);
         }
     }, [cliente, setValue]);
+
+    useEffect(() => {
+        if (data) {
+            setValue('Nombre', data.NombreReceptor || '');
+            setValue('Rfc', data.RFCReceptor || '');
+            setValue('RegimenFiscal', data.RegimenFiscalReceptor || '');
+            setValue('DomicilioFiscal', data.DomicilioFiscalReceptor || '');
+        }
+    }, [data, setValue]);
 
     // Cerrar el Snackbar
     const handleClose = () => {
@@ -182,9 +177,6 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
             };
 
         try {
-            console.log("Token:", token);
-            console.log("Cliente Data:", clienteData);
-
             const url = editar
                 ? `${apiUrl}/api/gestores/EditarReceptor`
                 : `${apiUrl}/api/gestores/RegistroReceptor`;
@@ -202,7 +194,6 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token }) 
 
             if (response.ok) {
                 const result = await response.json();
-                console.log("JSON obtenido para editar:", JSON.stringify(result, null, 2));
                 setToast({ open: true, message: 'Cliente guardado exitosamente', severity: 'success' });
                 if (setActualizar) setActualizar(true);
                 setTimeout(() => {

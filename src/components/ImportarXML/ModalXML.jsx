@@ -39,7 +39,6 @@ const ModalXML = ({ token, open, handleClose, handleUpload }) => {
             });
 
             const data = await response.json();
-            console.log("Respuesta completa:", data);
 
             if (response.ok) {
                 // ✅ NUEVA LÓGICA: Separar errores críticos de advertencias

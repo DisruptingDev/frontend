@@ -60,10 +60,17 @@ const VistaXMLImportado = ({
     const [clienteIdEditar, setClienteIdEditar] = useState('');
     const [actualizar, setActualizar] = useState(false);
 
+    const dataCliente = facturaXML ? {
+        RFCReceptor: facturaXML.ReceptorRFC || '',
+        NombreReceptor: facturaXML.ReceptorNombre || '',
+        DomicilioFiscalReceptor: facturaXML.ReceptorDomicilioFiscalReceptor || '',
+        RegimenFiscalReceptor: facturaXML.ReceptorRegimenFiscalReceptor || '',
+    } : null;
+
     // Efecto para realizar validaciones cuando llega una nueva factura
     useEffect(() => {
         if (facturaXML && facturaXML.EmisorID) {
-            console.log('useEffect - Iniciando validaciones:', {
+            console.log('Factura cargada con datos:', {
                 EmisorID: facturaXML.EmisorID,
                 Serie: facturaXML.Serie,
                 ReceptorID: facturaXML.ReceptorID
@@ -78,7 +85,6 @@ const VistaXMLImportado = ({
     // Efecto separado para recargar validaciones cuando cambian los IDs
     useEffect(() => {
         if (facturaXML?.EmisorID) {
-            console.log('useEffect - IDs actualizados, recargando validaciones');
             validarEmisor();
             validarReceptor();
             validarSerie();
@@ -118,7 +124,6 @@ const VistaXMLImportado = ({
                 }));
             }
         } catch (error) {
-            console.error("Error validando emisor:", error);
             setValidaciones(prev => ({
                 ...prev,
                 emisor: {
@@ -177,15 +182,12 @@ const VistaXMLImportado = ({
 
     const validarSerie = async () => {
         if (!facturaXML?.EmisorID) {
-            console.log('validarSerie - No hay EmisorID, cancelando validación');
             return;
         }
 
         setValidaciones(prev => ({ ...prev, serie: { ...prev.serie, cargando: true } }));
 
         try {
-            console.log('validarSerie - Iniciando búsqueda de series para emisor:', facturaXML.EmisorID);
-
             const response = await fetch(
                 `${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${facturaXML.EmisorID}`,
                 {
@@ -195,11 +197,8 @@ const VistaXMLImportado = ({
                 }
             );
 
-            console.log("validarSerie - Respuesta HTTP:", response.status, response.statusText);
-
             if (response.ok) {
                 const series = await response.json();
-                console.log('validarSerie - Series recibidas:', series);
 
                 // Normalizar valores para comparación
                 const serieBuscada = facturaXML.Serie || '';
@@ -283,7 +282,6 @@ const VistaXMLImportado = ({
 
     // Función para manejar la actualización después de crear/editar empresa
     const handleUpdateEmpresa = (empresaCreada) => {
-        console.log('handleUpdateEmpresa - Empresa creada:', empresaCreada);
 
         if (empresaCreada && empresaCreada.ID) {
             // Actualizar la factura con el nuevo ID del emisor
@@ -292,12 +290,10 @@ const VistaXMLImportado = ({
                 EmisorID: empresaCreada.ID
             };
 
-            console.log('handleUpdateEmpresa - Actualizando factura con nuevo EmisorID:', empresaCreada.ID);
             actualizarFacturas([facturaActualizada]);
 
             // Recargar validación del emisor y serie
             setTimeout(() => {
-                console.log('handleUpdateEmpresa - Recargando validaciones...');
                 validarEmisor();
                 validarSerie(); // ¡IMPORTANTE! Recargar validación de serie
             }, 1000);
@@ -309,7 +305,6 @@ const VistaXMLImportado = ({
 
     // Función para manejar la actualización después de crear/editar cliente
     const handleUpdateCliente = (clienteCreado) => {
-        console.log('handleUpdateCliente - Cliente creado:', clienteCreado);
 
         if (clienteCreado && clienteCreado.ID) {
             // Actualizar la factura con el nuevo ID del receptor
@@ -318,12 +313,10 @@ const VistaXMLImportado = ({
                 ReceptorID: clienteCreado.ID
             };
 
-            console.log('handleUpdateCliente - Actualizando factura con nuevo ReceptorID:', clienteCreado.ID);
             actualizarFacturas([facturaActualizada]);
 
             // Recargar validación del receptor
             setTimeout(() => {
-                console.log('handleUpdateCliente - Recargando validaciones...');
                 validarReceptor();
             }, 1000);
 
@@ -359,8 +352,6 @@ const VistaXMLImportado = ({
                 EmisorID: facturaXML.EmisorID
             };
 
-            console.log('Datos de serie a enviar:', nuevaSerie);
-
             const response = await fetch(`${apiUrl}/api/series/CrearSerie`, {
                 method: 'POST',
                 headers: {
@@ -384,7 +375,6 @@ const VistaXMLImportado = ({
             }
 
             const result = await response.json();
-            console.log('Serie creada exitosamente:', result);
 
             // Recargar validación de serie
             await validarSerie();
@@ -894,6 +884,7 @@ const VistaXMLImportado = ({
                             FormaPago: facturaXML.FormaPago || "99",
                             MetodoPago: facturaXML.MetodoPago || "PUE"
                         }}
+                        data={dataCliente}
                     />
                 </DialogContent>
             </Dialog>

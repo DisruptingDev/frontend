@@ -8,7 +8,7 @@ import AutocompleteReceptor from "@/components/Autocompletes/AutocompleteRecepto
 import { set } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false, setReceptorID }) {
+export default function Receptor({ register, watch, lugarExpedicion, getValues, trigger, errors, setValue, receptorData, token, disabled = false, setReceptorID, data }) {
     const [receptor, setReceptor] = useState();
     const [metodoPago, setMetodoPago] = useState();
     const [usoCFDI, setUsoCFDI] = useState();
@@ -22,6 +22,9 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [openModal, setOpenModal] = useState(false);
     const [isModalClosed, setIsModalClosed] = useState(false);  // Nuevo estado
     const [exportacion, setExportacion] = useState("01");
+    const [dataReceptor, setDataReceptor] = useState(data || {});
+
+    console.log("Data Receptor en Receptor.jsx", dataReceptor);
 
     // Reiniciar o recargar los datos del select cuando el modal se cierra
     useEffect(() => {
