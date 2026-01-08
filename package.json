@@ -19,7 +19,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "2.4.1",
     "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@floating-ui/react": "0.26.20",
     "@fullcalendar/react": "6.1.15",
     "@fullcalendar/timegrid": "6.1.15",
@@ -27,7 +27,7 @@
     "@mercadopago/sdk-react": "^0.0.21",
     "@mui/icons-material": "^6.1.0",
     "@mui/lab": "^5.0.0-alpha.150",
-    "@mui/material": "^6.1.0",
+    "@mui/material": "^6.5.0",
     "@mui/x-date-pickers": "^7.1.0",
     "@mui/x-date-pickers-pro": "^7.1.0",
     "@next/third-parties": "^15.5.4",
