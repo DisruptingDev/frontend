@@ -65,9 +65,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setReceptorID(receptorData.ID);
             }
 
+            console.log("Año de info global", receptorData.InformacionGlobal?.Año);
+
             if (rfc === "XAXX010101000") {
 
-                setValue("Anio", receptorData.InformacionGlobal.Anio);
+                setValue("Año", receptorData.InformacionGlobal.Año);
                 setValue("Meses", receptorData.InformacionGlobal.Meses);
                 setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
 
@@ -424,7 +426,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
                         label="Año"
                         type="number"
-                        {...register("Anio")}
+                        {...register("Año")}
                         fullWidth
                         inputProps={{
                             min: 1900,

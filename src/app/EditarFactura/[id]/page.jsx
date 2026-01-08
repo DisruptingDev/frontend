@@ -103,6 +103,7 @@ export default function EditarFactura() {
                     },
                 });
                 const data = await response.json();
+                console.log('Factura obtenida:', data);
                 const facturaConvertida = convertirCamposANumericos(data);
                 setFacturaEdit(facturaConvertida);
             } catch (error) {

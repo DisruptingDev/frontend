@@ -59,10 +59,10 @@ export default function FormatearFactura(
       MetodoPago: receptor.MetodoPago,
       LugarExpedicion: emisor.LugarExpedicion,
       Confirmacion: "",
-      ...(receptor.Anio || receptor.Meses || receptor.Periodicidad
+      ...(receptor.Año || receptor.Meses || receptor.Periodicidad
       ? {
         InformacionGlobal: {
-          Anio: receptor.Anio || "",
+          Anio: receptor.Año || "",
           Meses: receptor.Meses || "",
           Periodicidad: receptor.Periodicidad || "",
         },
