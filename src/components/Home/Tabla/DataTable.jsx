@@ -28,6 +28,10 @@ import {
     Payment as PaymentIcon,
     MoreVert as MoreVertIcon
 } from '@mui/icons-material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 import MUIDataTable from "mui-datatables";
 import Autocomplete from '@mui/material/Autocomplete';
@@ -62,6 +66,95 @@ const RowActionMenu = React.memo(({
     handleDelete,
     router
 }) => {
+    const menuItems = [];
+
+    if (menuRow?.Estatus === 'Cancelada') {
+        menuItems.push(
+            <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(menuRow.ID); handleClose(); }}>
+                <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Acuse de Cancelación
+            </MenuItem>
+        );
+    } else {
+        if (!menuRow?.uuid && menuRow?.TipoDeComprobante !== 'P') {
+            menuItems.push(
+                <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                </MenuItem>,
+                <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
+                </MenuItem>,
+                <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                </MenuItem>,
+                <MenuItem key="edit" onClick={handleEdit}>
+                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                </MenuItem>,
+                <MenuItem key="clone" onClick={handleClone}>
+                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                </MenuItem>,
+                <MenuItem key="delete" onClick={handleDelete}>
+                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                </MenuItem>
+            );
+        }
+
+        if (!menuRow?.uuid && menuRow?.TipoDeComprobante === 'P') {
+            menuItems.push(
+                <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
+                    <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                </MenuItem>,
+                <MenuItem key="edit-pago" onClick={handleEdit}>
+                    <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                </MenuItem>,
+                <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                </MenuItem>,
+                <MenuItem key="delete-pago" onClick={handleDelete}>
+                    <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                </MenuItem>
+            );
+        }
+
+        if (menuRow?.uuid && menuRow?.TipoDeComprobante !== "P") {
+            menuItems.push(
+                <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                </MenuItem>,
+                <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
+                    <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                </MenuItem>,
+                <MenuItem key="clone-timbrada" onClick={handleClone}>
+                    <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                </MenuItem>,
+                <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                </MenuItem>
+            );
+        }
+
+        if (menuRow?.uuid && menuRow?.TipoDeComprobante === "P") {
+            menuItems.push(
+                <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
+                    <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                </MenuItem>,
+                <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
+                    <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                </MenuItem>,
+                <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
+                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                </MenuItem>
+            );
+        }
+
+        if (menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && menuRow?.EstatusPagos != 'Liquidado') {
+            menuItems.push(
+                <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
+                    <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
+                </MenuItem>
+            );
+        }
+    }
+
     return (
         <Menu
             anchorEl={anchorEl}
@@ -77,84 +170,7 @@ const RowActionMenu = React.memo(({
                 horizontal: 'right',
             }}
         >
-            {menuRow?.Estatus === 'Cancelada' ? (
-                [
-                    <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(menuRow.ID); handleClose(); }}>
-                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Acuse de Cancelación
-                    </MenuItem>
-                ]
-            ) : (
-                <>
-                    {!menuRow?.uuid && menuRow?.TipoDeComprobante !== 'P' && [
-                        <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                            <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                        </MenuItem>,
-                        <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleClose(); }}>
-                            <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
-                        </MenuItem>,
-                        <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
-                        </MenuItem>,
-                        <MenuItem key="edit" onClick={handleEdit}>
-                            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                        </MenuItem>,
-                        <MenuItem key="clone" onClick={handleClone}>
-                            <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                        </MenuItem>,
-                        <MenuItem key="delete" onClick={handleDelete}>
-                            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
-                        </MenuItem>
-                    ]}
-
-                    {!menuRow?.uuid && menuRow?.TipoDeComprobante === 'P' && [
-                        <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleClose(); }}>
-                            <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
-                        </MenuItem>,
-                        <MenuItem key="edit-pago" onClick={handleEdit}>
-                            <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
-                        </MenuItem>,
-                        <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
-                        </MenuItem>,
-                        <MenuItem key="delete-pago" onClick={handleDelete}>
-                            <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
-                        </MenuItem>
-                    ]}
-
-                    {menuRow?.uuid && menuRow?.TipoDeComprobante !== "P" && [
-                        <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
-                        </MenuItem>,
-                        <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
-                            <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
-                        </MenuItem>,
-                        <MenuItem key="clone-timbrada" onClick={handleClone}>
-                            <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
-                        </MenuItem>,
-                        <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                            <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                        </MenuItem>
-                    ]}
-
-                    {menuRow?.uuid && menuRow?.TipoDeComprobante === "P" && [
-                        <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleClose(); }}>
-                            <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
-                        </MenuItem>,
-                        <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleClose(); }}>
-                            <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
-                        </MenuItem>,
-                        <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleClose(); }}>
-                            <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
-                        </MenuItem>,
-                    ]}
-
-                    {menuRow?.MetodoPago === 'PPD' && menuRow?.uuid && menuRow?.EstatusPagos != 'Liquidado' && [
-                        <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
-                            <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
-                        </MenuItem>
-                    ]}
-                </>
-            )}
+            {menuItems}
         </Menu>
     );
 });
@@ -207,6 +223,8 @@ export default function DataTable({ token }) {
                         Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' },
                         // Normalizar MontoTotalPagos
                         MontoTotalPagos: item.Complemento?.Pagos?.Totales?.MontoTotalPagos || 0,
+                        fullObject: item,
+                        statusObj: item
                     }));
 
                     setData(normalizedData.sort((a, b) => b.ID - a.ID));
@@ -583,7 +601,33 @@ export default function DataTable({ token }) {
         setMenuRow(null);
     }, []);
 
-    // Configuración de columnas memoizada
+    // Cálculo memoizado de opciones únicas para los filtros
+    const uniqueFolios = useMemo(() => {
+        return [...new Set(data.map(item => item.Folio).filter(Boolean))].sort();
+    }, [data]);
+
+    const uniqueUUIDs = useMemo(() => {
+        return [...new Set(data.map(item => item.uuid).filter(Boolean))].sort();
+    }, [data]);
+
+    // Para Emisor y Receptor guardamos el objeto completo o una cadena única para mostrar
+    // Aquí usaremos la cadena "Nombre (Rfc)" como valor para filtrar
+    const uniqueEmisores = useMemo(() => {
+        const emisores = data.map(item => {
+            const e = item.Emisor || { Nombre: 'Desconocido', Rfc: '' };
+            return `${e.Nombre} (${e.Rfc})`;
+        });
+        return [...new Set(emisores)].sort();
+    }, [data]);
+
+    const uniqueReceptores = useMemo(() => {
+        const receptores = data.map(item => {
+            const r = item.Receptor || { Nombre: 'Desconocido', Rfc: '' };
+            return `${r.Nombre} (${r.Rfc})`;
+        });
+        return [...new Set(receptores)].sort();
+    }, [data]);
+
     const columns = useMemo(() => [
         {
             name: "ID",
@@ -598,7 +642,8 @@ export default function DataTable({ token }) {
             name: "Folio",
             label: "Folio",
             options: {
-                filter: false,
+                filter: true,
+                filterType: 'textField',
                 sort: true,
             }
         },
@@ -607,6 +652,7 @@ export default function DataTable({ token }) {
             label: "UUID",
             options: {
                 filter: true,
+                filterType: 'textField',
                 sort: true,
                 customBodyRender: (value) => value || 'Sin timbrar'
             }
@@ -616,12 +662,41 @@ export default function DataTable({ token }) {
             label: "Emisor",
             options: {
                 filter: true,
+                filterType: 'custom',
                 sort: true,
-                customBodyRender: (value, tableMeta) => {
-                    const rowData = data[tableMeta.rowIndex];
-                    const emisor = rowData.Emisor || { Nombre: 'Desconocido', Rfc: '' };
+                customBodyRender: (value) => {
+                    const emisor = value || { Nombre: 'Desconocido', Rfc: '' };
                     return `${emisor.Nombre} (${emisor.Rfc})`;
-                }
+                },
+                customFilterListOptions: {
+                    render: (v) => v.Nombre ? `${v.Nombre} (${v.Rfc})` : v
+                },
+                filterOptions: {
+                    logic: (value, filterVal) => {
+                        if (!filterVal || filterVal.length === 0 || !filterVal[0]) return false;
+                        const emisorStr = `${value?.Nombre || ''} (${value?.Rfc || ''})`.toLowerCase();
+                        const filterStr = filterVal[0].toLowerCase();
+                        return !emisorStr.includes(filterStr);
+                    },
+                    display: (filterList, onChange, index, column) => (
+                        <Autocomplete
+                            freeSolo
+                            options={uniqueEmisores}
+                            value={filterList[index][0] || ''}
+                            onChange={(event, newValue) => {
+                                filterList[index][0] = newValue || '';
+                                onChange(filterList[index], index, column);
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                                filterList[index][0] = newInputValue || '';
+                                onChange(filterList[index], index, column);
+                            }}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Emisor" fullWidth />
+                            )}
+                        />
+                    ),
+                },
             }
         },
         {
@@ -629,12 +704,41 @@ export default function DataTable({ token }) {
             label: "Receptor",
             options: {
                 filter: true,
+                filterType: 'custom',
                 sort: true,
-                customBodyRender: (value, tableMeta) => {
-                    const rowData = data[tableMeta.rowIndex];
-                    const receptor = rowData.Receptor || { Nombre: 'Desconocido', Rfc: '' };
+                customBodyRender: (value) => {
+                    const receptor = value || { Nombre: 'Desconocido', Rfc: '' };
                     if (!receptor || !receptor.Nombre) return 'Desconocido';
                     return `${receptor.Nombre} (${receptor.Rfc})`;
+                },
+                customFilterListOptions: {
+                    render: (v) => v.Nombre ? `${v.Nombre} (${v.Rfc})` : v
+                },
+                filterOptions: {
+                    logic: (value, filterVal) => {
+                        if (!filterVal || filterVal.length === 0 || !filterVal[0]) return false;
+                        const receptorStr = `${value?.Nombre || ''} (${value?.Rfc || ''})`.toLowerCase();
+                        const filterStr = filterVal[0].toLowerCase();
+                        return !receptorStr.includes(filterStr);
+                    },
+                    display: (filterList, onChange, index, column) => (
+                        <Autocomplete
+                            freeSolo
+                            options={uniqueReceptores}
+                            value={filterList[index][0] || ''}
+                            onChange={(event, newValue) => {
+                                filterList[index][0] = newValue || '';
+                                onChange(filterList[index], index, column);
+                            }}
+                            onInputChange={(event, newInputValue) => {
+                                filterList[index][0] = newInputValue || '';
+                                onChange(filterList[index], index, column);
+                            }}
+                            renderInput={(params) => (
+                                <TextField {...params} label="Receptor" fullWidth />
+                            )}
+                        />
+                    ),
                 }
             }
         },
@@ -643,7 +747,31 @@ export default function DataTable({ token }) {
             label: "Fecha Emisión",
             options: {
                 filter: true,
+                filterType: 'custom',
                 sort: true,
+                filterOptions: {
+                    logic: (value, filterVal) => {
+                        if (!filterVal || filterVal.length === 0 || !filterVal[0]) return false;
+                        const dateSelected = filterVal[0];
+                        const dateRow = dayjs(value).format('YYYY-MM-DD');
+                        return dateRow !== dateSelected;
+                    },
+                    display: (filterList, onChange, index, column) => (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Fecha Emisión"
+                                value={filterList[index][0] ? dayjs(filterList[index][0]) : null}
+                                onChange={(newValue) => {
+                                    // Guardamos como string YYYY-MM-DD
+                                    filterList[index][0] = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                    onChange(filterList[index], index, column);
+                                }}
+                                slotProps={{ textField: { fullWidth: true } }}
+                                disableFuture
+                            />
+                        </LocalizationProvider>
+                    ),
+                }
             }
         },
         {
@@ -651,13 +779,42 @@ export default function DataTable({ token }) {
             label: "Fecha Timbrado",
             options: {
                 filter: true,
+                filterType: 'custom',
                 sort: true,
                 customBodyRender: (value, tableMeta) => {
-                    const rowData = data[tableMeta.rowIndex];
-                    if (!rowData.uuid) {
+                    // tableMeta.rowData es el arreglo de columnas visibles.
+                    // El UUID está en el índice 2.
+                    const uuid = tableMeta.rowData[2];
+                    if (!uuid) {
                         return <Chip label="Sin timbrar" color="warning" size="small" />;
                     }
                     return value || 'Sin timbrar';
+                },
+                filterOptions: {
+                    logic: (value, filterVal) => {
+                        if (!filterVal || filterVal.length === 0 || !filterVal[0]) return false;
+                        // Si no hay valor en la celda (sin timbrar) y se filtra algo, no mostrar
+                        if (!value) return true;
+
+                        const dateSelected = filterVal[0];
+                        const dateRow = dayjs(value).format('YYYY-MM-DD');
+                        return dateRow !== dateSelected;
+                    },
+                    display: (filterList, onChange, index, column) => (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                label="Fecha Timbrado"
+                                value={filterList[index][0] ? dayjs(filterList[index][0]) : null}
+                                onChange={(newValue) => {
+                                    // Guardamos como string YYYY-MM-DD
+                                    filterList[index][0] = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                    onChange(filterList[index], index, column);
+                                }}
+                                slotProps={{ textField: { fullWidth: true } }}
+                                disableFuture
+                            />
+                        </LocalizationProvider>
+                    ),
                 }
             }
         },
@@ -678,25 +835,42 @@ export default function DataTable({ token }) {
             }
         },
         {
-            name: "Estatus",
+            name: "statusObj", // Usamos statusObj para evitar nombres duplicados
             label: "Estatus",
             options: {
                 filter: true,
                 sort: true,
-                customBodyRender: (value, tableMeta) => {
-                    const rowData = data[tableMeta.rowIndex];
+                customBodyRender: (value) => {
+                    // value es el objeto completo
                     let status = 'No timbrada';
                     let color = 'default';
 
-                    if (rowData.Estatus === 'Cancelada') {
+                    if (value.Estatus === 'Cancelada') {
                         status = 'Cancelada';
                         color = 'error';
-                    } else if (rowData.uuid) {
+                    } else if (value.uuid) {
                         status = 'Timbrada';
                         color = 'success';
                     }
 
                     return <Chip label={status} color={color} size="small" />;
+                },
+                customFilterListOptions: {
+                    render: (v) => {
+                        if (v.Estatus === 'Cancelada') return 'Cancelada';
+                        if (v.uuid) return 'Timbrada';
+                        return 'No timbrada';
+                    }
+                },
+                filterOptions: {
+                    names: ['Timbrada', 'No timbrada', 'Cancelada'],
+                    logic: (value, filterVal) => {
+                        let status = 'No timbrada';
+                        if (value.Estatus === 'Cancelada') status = 'Cancelada';
+                        else if (value.uuid) status = 'Timbrada';
+
+                        return filterVal.indexOf(status) === -1;
+                    }
                 }
             }
         },
@@ -746,17 +920,16 @@ export default function DataTable({ token }) {
             }
         },
         {
-            name: "actions",
+            name: "fullObject",
             label: "Acciones",
             options: {
                 filter: false,
                 sort: false,
-                customBodyRender: (value, tableMeta) => {
-                    const rowData = data[tableMeta.rowIndex];
+                customBodyRender: (value) => {
                     return (
                         <IconButton onClick={(e) => {
                             e.stopPropagation();
-                            setMenuRow(rowData);
+                            setMenuRow(value);
                             setAnchorEl(e.currentTarget);
                         }}>
                             <MoreVertIcon />
@@ -765,7 +938,7 @@ export default function DataTable({ token }) {
                 }
             }
         }
-    ], [data]);
+    ], [uniqueEmisores, uniqueReceptores]);
 
     // Opciones de la tabla memoizada
     const options = useMemo(() => ({

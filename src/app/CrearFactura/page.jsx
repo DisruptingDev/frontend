@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from 'react-hook-form';
 import { Snackbar, Alert, Modal, Box, Button, Grid } from '@mui/material';
 
-import Header from "@/components/Header/Header.jsx";
+import Header from "@/components/Header/Header";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
 import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";

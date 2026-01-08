@@ -14,7 +14,7 @@ import ViewQuiltRoundedIcon from '@mui/icons-material/ViewQuiltRounded';
 
 const items = [
   {
-    icon: <ViewQuiltRoundedIcon.default />,
+    icon: <ViewQuiltRoundedIcon />,
     title: 'Control total de empresas y usuarios',
     description:
       'Gestiona múltiples empresas y usuarios desde una sola plataforma. Define roles y permisos para tu equipo, asegurando un flujo de trabajo organizado y seguro.',
@@ -22,7 +22,7 @@ const items = [
 
   },
   {
-    icon: <EdgesensorHighRoundedIcon.default />,
+    icon: <EdgesensorHighRoundedIcon />,
     title: 'Timbrado masivo',
     description:
       'Ahorra tiempo y esfuerzo timbrando múltiples facturas simultáneamente. Nuestra tecnología te permite procesar grandes volúmenes de facturas de forma rápida y eficiente.',
@@ -30,7 +30,7 @@ const items = [
     imageDark: `url("${process.env.TEMPLATE_IMAGE_URL || 'https://mui.com'}/static/images/templates/templates-images/mobile-dark.png")`,
   },
   {
-    icon: <DevicesRoundedIcon.default />,
+    icon: <DevicesRoundedIcon />,
     title: 'Úsalo en cualquier dispositivo',
     description:
       'Accede a tu cuenta y genera facturas desde cualquier lugar y en cualquier momento. Nuestra plataforma es compatible con computadoras, tablets y smartphones, permitiéndote gestionar tu facturación sobre la marcha ',

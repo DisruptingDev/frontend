@@ -10,6 +10,7 @@ import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 // import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
 // import Tabla from "@/components/Home/Tabla/Tabla.jsx";
 import DataTable from "@/components/Home/Tabla/DataTable.jsx";
+import DataTableMRT from "@/components/Home/Tabla/DataTableMRT.jsx";
 import ModalWizard from "@/components/Home/Modales/modalWizard";
 
 // Importación de utilidades para autenticación y diseño
@@ -17,7 +18,7 @@ import { isAuthenticated } from "@/utils/authRedirect";
 
 // Componente de diseño de Material-UI
 import { Box, Button } from "@mui/material";
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid2';
 
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
@@ -159,7 +160,7 @@ export default function Home() {
                     <Box
                         //bgcolor="white"
                         ml={10}
-                        mr={1}
+                        mr={3}
                         //p={2}
                         //boxShadow={3}
                         borderRadius={2}
@@ -170,8 +171,10 @@ export default function Home() {
                         {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}
                         <div ref={datatableRef}>
-                            <DataTable token={token} isBOD={isBOD} />
+
+                            <DataTableMRT token={token} isBOD={isBOD} />
                         </div>
+
                         {/* <Button
                             variant="contained"
                             color="primary"

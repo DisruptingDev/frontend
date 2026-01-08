@@ -25,11 +25,11 @@
     "@fullcalendar/timegrid": "6.1.15",
     "@hookform/resolvers": "3.9.0",
     "@mercadopago/sdk-react": "^0.0.21",
-    "@mui/icons-material": "^5.16.14",
+    "@mui/icons-material": "^6.1.0",
     "@mui/lab": "^5.0.0-alpha.150",
-    "@mui/material": "^5.16.14",
-    "@mui/x-date-pickers": "^6.0.0",
-    "@mui/x-date-pickers-pro": "^6.0.0",
+    "@mui/material": "^6.1.0",
+    "@mui/x-date-pickers": "^7.1.0",
+    "@mui/x-date-pickers-pro": "^7.1.0",
     "@next/third-parties": "^15.5.4",
     "@paypal/react-paypal-js": "^8.9.1",
     "@prisma/client": "5.17.0",
@@ -65,6 +65,7 @@
     "jszip": "^3.10.1",
     "keen-slider": "6.8.6",
     "mapbox-gl": "3.5.2",
+    "material-react-table": "^3.2.1",
     "mui-datatables": "^4.3.0",
     "negotiator": "0.6.3",
     "next": "^15.5.4",
@@ -96,6 +97,7 @@
     "@iconify/json": "2.2.230",
     "@iconify/tools": "4.0.4",
     "@iconify/utils": "2.1.25",
+    "@types/react": "18.3.27",
     "autoprefixer": "10.4.19",
     "consola": "3.2.3",
     "dotenv-cli": "7.4.2",
@@ -121,7 +123,11 @@
     "@tiptap/core": "^2.0.0"
   },
   "overrides": {
-    "rimraf": "^5.0.7"
+    "rimraf": "^5.0.7",
+    "mui-datatables": {
+      "@mui/material": "$@mui/material",
+      "@mui/icons-material": "$@mui/icons-material"
+    }
   },
   "prisma": {
     "schema": "./src/prisma/schema.prisma"

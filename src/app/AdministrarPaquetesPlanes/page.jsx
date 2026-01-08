@@ -3,12 +3,12 @@ Página para administrar los paquetes y planes
 */
 "use client"
 
-import Header from "@/components/Header/Header"
-import SideBar from '@/components/Dashborard/SideBar';
-import Paquetes from "@/components/AdministrarPaquetesPlanes/Paquetes";
-import Planes from "@/components/AdministrarPaquetesPlanes/Planes";
-import ModalPaquete from "@/components/AdministrarPaquetesPlanes/ModalPaquete";
-import ModalPlan from "@/components/AdministrarPaquetesPlanes/ModalPlan";
+import Header from "@/components/Header/Header.jsx"
+import SideBar from '@/components/Dashborard/SideBar.jsx';
+import Paquetes from "@/components/AdministrarPaquetesPlanes/Paquetes.jsx";
+import Planes from "@/components/AdministrarPaquetesPlanes/Planes.jsx";
+import ModalPaquete from "@/components/AdministrarPaquetesPlanes/ModalPaquete.jsx";
+import ModalPlan from "@/components/AdministrarPaquetesPlanes/ModalPlan.jsx";
 
 import { Box, Tabs, Tab, Typography, Button } from '@mui/material';
 

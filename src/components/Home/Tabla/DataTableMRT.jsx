@@ -1,0 +1,903 @@
+'use client';
+
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+    MaterialReactTable,
+    useMaterialReactTable,
+    MRT_Localization_ES
+} from 'material-react-table';
+import {
+    Box,
+    IconButton,
+    Chip,
+    Menu,
+    MenuItem,
+    LinearProgress,
+    Button,
+    Tooltip
+} from '@mui/material';
+import {
+    MoreVert as MoreVertIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
+    Payment as PaymentIcon,
+    Email as EmailIcon,
+    CloudUpload as TimbrarIcon,
+    CloudDownload as DescargarIcon,
+    Send as TimbrarEnviarIcon,
+    PictureAsPdf as PdfIcon,
+    ContentCopy as CloneIcon,
+    Cancel as CancelIcon
+} from '@mui/icons-material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import dayjs from 'dayjs';
+import { useRouter } from 'next/navigation';
+import { WithPermission } from '@/components/WithPermission';
+
+// Modals
+import ModalExito from '@/components/Home/Modales/modalExito';
+import ModalError from '@/components/Home/Modales/modalError';
+import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
+import ModalCancelar from '../Modales/modalCancelar'; // Relative path from original file structure
+import ModalConfirm from '@/components/Home/Modales/modalConfirm'; // Assuming this exists based on usage in original
+
+// Utils
+import { formatCurrency } from '@/utils/formatCurrency';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+const DataTableMRT = ({ token }) => {
+    const router = useRouter();
+    const [data, setData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Action Menu State
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [menuRow, setMenuRow] = useState(null);
+
+    // Modal States
+    const [openModalSuccess, setOpenModalSuccess] = useState(false);
+    const [openModalError, setOpenModalError] = useState(false);
+    const [openModalTimbrar, setOpenModalTimbrar] = useState(false);
+    const [openModalCancelar, setOpenModalCancelar] = useState(false);
+    const [openModalConfirm, setOpenModalConfirm] = useState(false);
+
+    // Operation States
+    const [confirmationMessage, setConfirmationMessage] = useState('');
+    const [facturasTimbrar, setFacturasTimbrar] = useState([]);
+    const [facturasRemplazo, setFacturasRemplazo] = useState([]);
+    const [IDFacturaCancelada, setIDFacturaCancelada] = useState(null);
+    const [resultadoCancelar, setResultadoCancelar] = useState(null);
+    const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
+
+    // -- Data Fetching --
+    const fetchData = useCallback(async () => {
+        if (token) {
+            setIsLoading(true);
+            try {
+                const response = await fetch(`${apiUrl}/api/facturas/ListarFacturas`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const responseData = await response.json();
+
+                if (Array.isArray(responseData)) {
+                    const normalizedData = responseData.map(item => ({
+                        ...item,
+                        Conceptos: item.Conceptos || {
+                            TotalImpuestosTrasladados: 0,
+                            TotalImpuestosRetenidos: 0
+                        },
+                        Emisor: item.Emisor || { Nombre: 'Desconocido', Rfc: '' },
+                        Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' },
+                        MontoTotalPagos: item.Complemento?.Pagos?.Totales?.MontoTotalPagos || 0,
+                        fullObject: item,
+                        statusObj: item
+                    }));
+                    setData(normalizedData.sort((a, b) => b.ID - a.ID));
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    }, [token]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // -- Action Handlers --
+
+    // Handle Cancel Results
+    useEffect(() => {
+        if (resultadoCancelar === "success") {
+            setOpenModalSuccess(true);
+            setConfirmationMessage('Factura cancelada exitosamente.');
+            setIDFacturaCancelada(null);
+            fetchData();
+        } else if (resultadoCancelar === "error") {
+            setOpenModalError(true);
+            setConfirmationMessage('Error al cancelar facturas.');
+            setIDFacturaCancelada(null);
+            fetchData();
+        }
+    }, [resultadoCancelar, fetchData]);
+
+    const handleEnviarCorreo = useCallback(async (ids) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(ids),
+            });
+
+            if (response.ok) {
+                setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
+                setOpenModalSuccess(true);
+            }
+        } catch (error) {
+            setConfirmationMessage('Error al enviar las facturas por correo.');
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token]);
+
+    const handleTimbrar = useCallback(async (ids) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Facturas_ID: ids }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.Facturas.length > 1) {
+                    setOpenModalTimbrar(true);
+                    setFacturasTimbrar(data.Facturas.map(factura => ({
+                        id: factura.facturaID,
+                        status: factura.status,
+                        error: factura.error || null,
+                    })));
+                } else if (data.Facturas.length === 1) {
+                    const factura = data.Facturas[0];
+                    if (factura.status === 'success') {
+                        setConfirmationMessage('Facturas timbradas exitosamente.');
+                        setOpenModalSuccess(true);
+                    } else {
+                        setConfirmationMessage('Error al timbrar facturas: ' + (factura.error || ''));
+                        setOpenModalError(true);
+                    }
+                }
+            }
+        } catch (error) {
+            setConfirmationMessage('Error en la conexión o en el timbrado.');
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+            fetchData();
+        }
+    }, [token, fetchData]);
+
+    const handleDownloadSelecteds = useCallback(async (ids) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(ids),
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const getFileNameFromHeaders = (headers) => {
+                    const contentDisposition = headers.get('Content-Disposition');
+                    if (!contentDisposition) return null;
+                    const matches = contentDisposition.match(/filename\*?=["']?([^"']+)["']?/i) ||
+                        contentDisposition.match(/filename=["']?([^"']+)["']?/i);
+                    if (matches && matches[1]) {
+                        let fileName = matches[1];
+                        if (fileName.startsWith("UTF-8''")) {
+                            fileName = decodeURIComponent(fileName.substring(7));
+                        }
+                        return fileName.replace(/"/g, '');
+                    }
+                    return null;
+                };
+                const fileName = getFileNameFromHeaders(response.headers) ||
+                    (ids.length === 1 ? 'Factura.zip' : 'Facturas.zip');
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
+                setOpenModalSuccess(true);
+            } else {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Error en la respuesta del servidor');
+            }
+        } catch (error) {
+            console.error('Error al descargar:', error);
+            setConfirmationMessage(error.message || 'Error al descargar la factura.');
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token]);
+
+    const handleTimbrarYEnviar = useCallback(async (ids) => {
+        setIsLoading(true);
+        setConfirmationMessage('Procesando timbrado y envío de facturas...');
+        try {
+            const timbradoResponse = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ Facturas_ID: ids }),
+            });
+
+            if (!timbradoResponse.ok) throw new Error('Error en el timbrado');
+            const timbradoData = await timbradoResponse.json();
+            const facturasTimbradasExitosas = timbradoData.Facturas.filter(
+                factura => factura.status === 'success'
+            );
+
+            if (facturasTimbradasExitosas.length === 0) {
+                throw new Error('Ninguna factura se timbró correctamente');
+            }
+
+            const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
+            await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(idsTimbrados),
+            });
+
+            let message = '';
+            if (facturasTimbradasExitosas.length === ids.length) {
+                message = 'Todas las facturas se timbraron y enviaron correctamente.';
+            } else {
+                const fallidas = ids.length - facturasTimbradasExitosas.length;
+                message = `${facturasTimbradasExitosas.length} facturas timbradas y enviadas correctamente. ${fallidas} facturas no se pudieron procesar.`;
+            }
+
+            setConfirmationMessage(message);
+            setOpenModalSuccess(true);
+
+            if (facturasTimbradasExitosas.length > 0 && facturasTimbradasExitosas.length < ids.length) {
+                setFacturasTimbrar(timbradoData.Facturas.map(factura => ({
+                    id: factura.facturaID,
+                    status: factura.status,
+                    error: factura.error || null,
+                })));
+                setOpenModalTimbrar(true);
+            }
+        } catch (error) {
+            setConfirmationMessage(`Error al procesar las facturas: ${error.message}`);
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+            fetchData();
+        }
+    }, [token, fetchData]);
+
+    const handleViewPdf = useCallback(async (id) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const pdfUrl = URL.createObjectURL(blob);
+                window.open(pdfUrl, '_blank');
+            }
+        } catch (error) {
+            setConfirmationMessage('Error al visualizar la factura: ' + error.message);
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token]);
+
+    const handleCancelarFactura = useCallback((row) => {
+        const filtro = {
+            Emisor: row.Emisor.Rfc,
+            Receptor: row.Receptor.Rfc,
+            Estatus: 'timbrada'
+        };
+        const registros = data.filter(r =>
+            r.Emisor.Rfc === filtro.Emisor &&
+            r.Receptor.Rfc === filtro.Receptor &&
+            r.uuid
+        );
+        setIDFacturaCancelada(row.ID);
+        setFacturasRemplazo(registros);
+        setOpenModalCancelar(true);
+    }, [data]);
+
+    const handleAcuseCancelacion = useCallback(async (id) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                const blob = await response.blob();
+                const pdfUrl = URL.createObjectURL(blob);
+                window.open(pdfUrl, '_blank');
+            }
+        } catch (error) {
+            setConfirmationMessage('Error al visualizar el acuse de cancelación: ' + error.message);
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token]);
+
+    const handleDeleteFactura = useCallback(async () => {
+        if (!facturaIdToDelete) return;
+        try {
+            const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                setConfirmationMessage('La factura se ha eliminado correctamente.');
+                setOpenModalSuccess(true);
+                fetchData();
+            } else {
+                setConfirmationMessage('Error al eliminar la factura.');
+                setOpenModalError(true);
+            }
+        } catch (error) {
+            console.error('Error en la solicitud DELETE:', error);
+            setConfirmationMessage('Error al eliminar la factura.');
+            setOpenModalError(true);
+        } finally {
+            setOpenModalConfirm(false);
+            setMenuRow(null);
+            setFacturaIdToDelete(null);
+        }
+    }, [facturaIdToDelete, token, fetchData]);
+
+    const handleFacturaPago = useCallback(async (row) => {
+        try {
+            const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${row.Emisor.ID}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const opciones = data.filter(opcion => opcion.TipoComprobante === 'P');
+                if (opciones.length > 0) {
+                    router.push(`/FacturaPago/${row.ID}`);
+                } else {
+                    setConfirmationMessage('No existe serie de pago, validar');
+                    setOpenModalError(true);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching serie:', error);
+        }
+    }, [token, router]);
+
+    // -- Unique Lists for Autocomplete --
+    const uniqueEmisores = useMemo(() => {
+        const emisores = data.map(item => item.Emisor).filter(Boolean);
+        const unique = Array.from(new Set(emisores.map(e => JSON.stringify({ Nombre: e.Nombre, Rfc: e.Rfc }))))
+            .map(s => JSON.parse(s));
+        return unique.sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
+    }, [data]);
+
+    const uniqueReceptores = useMemo(() => {
+        const receptores = data.map(item => item.Receptor).filter(Boolean);
+        const unique = Array.from(new Set(receptores.map(r => JSON.stringify({ Nombre: r.Nombre, Rfc: r.Rfc }))))
+            .map(s => JSON.parse(s));
+        return unique.sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
+    }, [data]);
+
+    // -- Columns Definition --
+    const columns = useMemo(() => [
+        {
+            accessorKey: 'ID',
+            header: 'ID',
+            enableColumnFilter: false,
+            size: 80,
+        },
+        {
+            accessorKey: 'Folio',
+            header: 'Folio',
+            size: 100,
+            filterFn: 'contains',
+        },
+        {
+            accessorKey: 'uuid',
+            header: 'UUID',
+            size: 250,
+            filterFn: 'contains',
+            Cell: ({ cell }) => cell.getValue() || 'Sin timbrar',
+        },
+        {
+            accessorKey: 'Emisor',
+            header: 'Emisor',
+            size: 250,
+            Cell: ({ cell }) => {
+                const emisor = cell.getValue();
+                return emisor ? `${emisor.Nombre} (${emisor.Rfc})` : '';
+            },
+            filterFn: (row, id, filterValue) => {
+                const emisor = row.getValue(id);
+                const str = `${emisor?.Nombre || ''} (${emisor?.Rfc || ''})`.toLowerCase();
+                return str.includes(filterValue.toLowerCase());
+            },
+            Filter: ({ column, table }) => {
+                return (
+                    <Autocomplete
+                        options={uniqueEmisores}
+                        getOptionLabel={(option) => `${option.Nombre} (${option.Rfc})`}
+                        onChange={(e, value) => {
+                            column.setFilterValue(value ? `${value.Nombre} (${value.Rfc})` : '');
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                variant="standard"
+                                placeholder="Filtrar Emisor"
+                            />
+                        )}
+                    />
+                );
+            }
+        },
+        {
+            accessorKey: 'Receptor',
+            header: 'Receptor',
+            size: 250,
+            Cell: ({ cell }) => {
+                const receptor = cell.getValue();
+                return receptor ? `${receptor.Nombre} (${receptor.Rfc})` : '';
+            },
+            filterFn: (row, id, filterValue) => {
+                const receptor = row.getValue(id);
+                const str = `${receptor?.Nombre || ''} (${receptor?.Rfc || ''})`.toLowerCase();
+                return str.includes(filterValue.toLowerCase());
+            },
+            Filter: ({ column }) => (
+                <Autocomplete
+                    options={uniqueReceptores}
+                    getOptionLabel={(option) => `${option.Nombre} (${option.Rfc})`}
+                    onChange={(e, value) => {
+                        column.setFilterValue(value ? `${value.Nombre} (${value.Rfc})` : '');
+                    }}
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            variant="standard"
+                            placeholder="Filtrar Receptor"
+                        />
+                    )}
+                />
+            )
+        },
+        {
+            accessorKey: 'Fecha',
+            header: 'Fecha Emisión',
+            size: 150,
+            filterFn: (row, id, filterValue) => {
+                if (!filterValue) return true;
+                const dateRow = dayjs(row.getValue(id)).format('YYYY-MM-DD');
+                return dateRow === filterValue;
+            },
+            Filter: ({ column }) => (
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        onChange={(newValue) => {
+                            column.setFilterValue(newValue ? newValue.format('YYYY-MM-DD') : undefined);
+                        }}
+                        slotProps={{
+                            textField: {
+                                variant: 'standard',
+                                placeholder: 'Filtrar Fecha'
+                            }
+                        }}
+                        disableFuture
+                    />
+                </LocalizationProvider>
+            ),
+            Cell: ({ cell }) => dayjs(cell.getValue()).format('DD/MM/YYYY HH:mm')
+        },
+        {
+            accessorKey: 'fechaTimbrado',
+            header: 'Fecha Timbrado',
+            size: 150,
+            filterFn: (row, id, filterValue) => {
+                if (!filterValue) return true;
+                const val = row.getValue(id);
+                if (!val) return false;
+                const dateRow = dayjs(val).format('YYYY-MM-DD');
+                return dateRow === filterValue;
+            },
+            Filter: ({ column }) => (
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        onChange={(newValue) => {
+                            column.setFilterValue(newValue ? newValue.format('YYYY-MM-DD') : undefined);
+                        }}
+                        slotProps={{
+                            textField: {
+                                variant: 'standard',
+                                placeholder: 'Filtrar Fecha'
+                            }
+                        }}
+                        disableFuture
+                    />
+                </LocalizationProvider>
+            ),
+            Cell: ({ cell }) => {
+                const val = cell.getValue();
+                return val ? dayjs(val).format('DD/MM/YYYY HH:mm') : <Chip label="Sin timbrar" color="warning" size="small" />;
+            }
+        },
+        {
+            accessorKey: 'Serie',
+            header: 'Serie',
+            size: 100,
+            filterFn: 'contains',
+        },
+        {
+            id: 'Estatus',
+            accessorFn: (row) => row.statusObj,
+            header: 'Estatus',
+            size: 150,
+            Cell: ({ row }) => {
+                const value = row.original;
+                let status = 'No timbrada';
+                let color = 'default';
+
+                if (value.Estatus === 'Cancelada') {
+                    status = 'Cancelada';
+                    color = 'error';
+                } else if (value.uuid) {
+                    status = 'Timbrada';
+                    color = 'success';
+                }
+                return <Chip label={status} color={color} size="small" />;
+            },
+            filterVariant: 'select',
+            filterSelectOptions: ['Timbrada', 'No timbrada', 'Cancelada'],
+            filterFn: (row, id, filterValue) => {
+                const value = row.original;
+                let status = 'No timbrada';
+                if (value.Estatus === 'Cancelada') status = 'Cancelada';
+                else if (value.uuid) status = 'Timbrada';
+                return status === filterValue;
+            }
+        },
+        {
+            accessorKey: 'SubTotal',
+            header: 'Subtotal',
+            size: 120,
+            Cell: ({ cell }) => formatCurrency(cell.getValue() || 0),
+            enableColumnFilter: false,
+        },
+        {
+            accessorKey: 'Total',
+            header: 'Total',
+            size: 120,
+            Cell: ({ cell }) => formatCurrency(cell.getValue() || 0),
+            enableColumnFilter: false,
+        },
+    ], [uniqueEmisores, uniqueReceptores]);
+
+    // -- Row Menu Helpers --
+    const handleCloseMenu = () => {
+        setAnchorEl(null);
+        setMenuRow(null);
+    };
+
+    const handleEdit = () => {
+        if (menuRow?.TipoDeComprobante === 'P') {
+            router.push(`/EditarComplementoPago/${menuRow.ID}`);
+        } else {
+            router.push(`/EditarFactura/${menuRow.ID}`);
+        }
+        handleCloseMenu();
+    };
+
+    const handleClone = () => {
+        router.push(`/CrearFactura/${menuRow.ID}`);
+        handleCloseMenu();
+    };
+
+    const handleDelete = () => {
+        setFacturaIdToDelete(menuRow.ID);
+        setConfirmationMessage('¿Estás seguro de que deseas eliminar esta factura?');
+        setOpenModalConfirm(true);
+        handleCloseMenu();
+    };
+
+
+    const table = useMaterialReactTable({
+        columns,
+        data,
+        enableRowSelection: true,
+        enableColumnFiltering: true,
+        enableGlobalFilter: true,
+        enableSorting: true,
+        muiTableBodyCellProps: {
+            sx: {
+                fontSize: '11px',
+            },
+        },
+        enableRowVirtualization: true,
+        initialState: { density: 'comfortable' },
+        localization: MRT_Localization_ES,
+        state: {
+            isLoading: isLoading,
+            showProgressBars: isLoading,
+        },
+        enableRowActions: true,
+        positionActionsColumn: 'last',
+        displayColumnDefOptions: {
+            'mrt-row-actions': {
+                header: 'Acciones',
+                size: 100,
+            },
+        },
+        renderRowActions: ({ row }) => (
+            <IconButton onClick={(e) => {
+                setAnchorEl(e.currentTarget);
+                setMenuRow(row.original);
+            }}>
+                <MoreVertIcon />
+            </IconButton>
+        ),
+        renderTopToolbarCustomActions: ({ table }) => {
+            const selectedRows = table.getSelectedRowModel().flatRows;
+            const selectedIds = selectedRows.map(row => row.original.ID);
+
+            if (selectedIds.length === 0) return null;
+
+            return (
+                <Box sx={{ display: 'flex', gap: '8px', p: '4px' }}>
+                    <Tooltip title="Enviar por Correo">
+                        <Button
+                            color="primary"
+                            startIcon={<EmailIcon />}
+                            onClick={() => handleEnviarCorreo(selectedIds)} // Helper function needed or use existing
+                            variant="contained"
+                            size="small"
+                        >
+                            Enviar
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Timbrar">
+                        <Button
+                            color="secondary"
+                            startIcon={<TimbrarIcon />}
+                            onClick={() => handleTimbrar(selectedIds)}
+                            variant="contained"
+                            size="small"
+                        >
+                            Timbrar
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Descargar">
+                        <Button
+                            color="info"
+                            startIcon={<DescargarIcon />}
+                            onClick={() => handleDownloadSelecteds(selectedIds)}
+                            variant="contained"
+                            size="small"
+                        >
+                            Descargar
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Timbrar y Enviar">
+                        <Button
+                            color="success"
+                            startIcon={<TimbrarEnviarIcon />}
+                            onClick={() => handleTimbrarYEnviar(selectedIds)}
+                            variant="contained"
+                            size="small"
+                        >
+                            Timbrar y Enviar
+                        </Button>
+                    </Tooltip>
+                </Box>
+            );
+        },
+    });
+
+    // -- Render Menu Items --
+    const renderMenuItems = () => {
+        if (!menuRow) return null;
+        const menuItems = [];
+
+        if (menuRow.Estatus === 'Cancelada') {
+            menuItems.push(
+                <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(menuRow.ID); handleCloseMenu(); }}>
+                    <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Acuse de Cancelación
+                </MenuItem>
+            );
+        } else {
+            // Logic derived from original RowActionMenu
+            if (!menuRow.uuid && menuRow.TipoDeComprobante !== 'P') {
+                menuItems.push(
+                    <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
+                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                    </MenuItem>,
+                    <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleCloseMenu(); }}>
+                        <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
+                    </MenuItem>,
+                    <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                    </MenuItem>,
+                    <MenuItem key="edit" onClick={handleEdit}>
+                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                    </MenuItem>,
+                    <MenuItem key="clone" onClick={handleClone}>
+                        <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                    </MenuItem>,
+                    <MenuItem key="delete" onClick={handleDelete}>
+                        <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                    </MenuItem>
+                );
+            }
+
+            if (!menuRow.uuid && menuRow.TipoDeComprobante === 'P') {
+                menuItems.push(
+                    <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
+                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                    </MenuItem>,
+                    <MenuItem key="edit-pago" onClick={handleEdit}>
+                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                    </MenuItem>,
+                    <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                    </MenuItem>,
+                    <MenuItem key="delete-pago" onClick={handleDelete}>
+                        <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
+                    </MenuItem>
+                );
+            }
+
+            if (menuRow.uuid && menuRow.TipoDeComprobante !== "P") {
+                menuItems.push(
+                    <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                    </MenuItem>,
+                    <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleCloseMenu(); }}>
+                        <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                    </MenuItem>,
+                    <MenuItem key="clone-timbrada" onClick={handleClone}>
+                        <CloneIcon fontSize="small" sx={{ mr: 1 }} /> Clonar
+                    </MenuItem>,
+                    <MenuItem key="cancelar" onClick={() => { handleCancelarFactura(menuRow); handleCloseMenu(); }}>
+                        <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                    </MenuItem>
+                );
+            }
+
+            if (menuRow.uuid && menuRow.TipoDeComprobante === "P") {
+                menuItems.push(
+                    <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleCloseMenu(); }}>
+                        <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
+                    </MenuItem>,
+                    <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleCloseMenu(); }}>
+                        <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
+                    </MenuItem>,
+                    <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                    </MenuItem>
+                );
+            }
+
+            if (menuRow.MetodoPago === 'PPD' && menuRow.uuid && menuRow.EstatusPagos != 'Liquidado') {
+                menuItems.push(
+                    <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleCloseMenu(); }}>
+                        <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
+                    </MenuItem>
+                );
+            }
+        }
+        return menuItems;
+    };
+
+    return (
+        <WithPermission permission="Facturacion">
+            <Box sx={{ width: '100%' }}>
+                <MaterialReactTable table={table} />
+
+                {/* --- MENUS --- */}
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleCloseMenu}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                >
+                    {renderMenuItems()}
+                </Menu>
+
+                {/* --- MODALS --- */}
+                <ModalExito
+                    openModalSuccess={openModalSuccess}
+                    handleCloseModal={() => setOpenModalSuccess(false)}
+                    confirmationMessage={confirmationMessage}
+                />
+                <ModalError
+                    openModalError={openModalError}
+                    handleCloseModal={() => setOpenModalError(false)}
+                    confirmationMessage={confirmationMessage}
+                />
+                <ModalTimbrar
+                    openModalTimbrar={openModalTimbrar}
+                    handleCloseModal={() => setOpenModalTimbrar(false)}
+                    facturasTimbradas={facturasTimbrar}
+                />
+                <ModalCancelar
+                    openModalCancelar={openModalCancelar}
+                    handleCloseModal={() => setOpenModalCancelar(false)}
+                    facturasRemplazo={facturasRemplazo}
+                    IDFacturaCancelada={IDFacturaCancelada}
+                    token={token}
+                    setResultadoCancelar={setResultadoCancelar}
+                />
+                {openModalConfirm && (
+                    <ModalConfirm
+                        open={openModalConfirm}
+                        onClose={() => setOpenModalConfirm(false)}
+                        onConfirm={handleDeleteFactura}
+                        title="Eliminar Factura"
+                        message={confirmationMessage}
+                    />
+                )}
+            </Box>
+        </WithPermission>
+    );
+};
+
+export default DataTableMRT;

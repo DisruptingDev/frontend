@@ -183,7 +183,7 @@ const AltaUsuarios = () => {
                             <Box sx={{ bgcolor: 'white', p: 3, borderRadius: 2, textAlign: 'center', minHeight: '600px', borderRadius: 10 }}>
                                 <TaskOutlinedIcon sx={{ fontSize: 150, color: 'rgba(16, 150, 138, var(--tw-bg-opacity, 1))', marginBottom: 5 }} />
                                 <Typography variant="h4" sx={{ marginBottom: 2 }}>Paso 2</Typography>
-                                <Typography variant="h3">Inicia session, y registra tu empresa</Typography>
+                                <Typography variant="h3">Inicia sesión, y registra tu empresa</Typography>
                             </Box>
                         </Grid>
                         <Grid item xs={12} md={4}>

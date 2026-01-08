@@ -2,9 +2,16 @@ import './globals.css'; // Importa tus estilos globales
 import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google'
 
 export const metadata = {
-  title: 'Wise Factura | Simple rapida y segura',
-  description: 'Factura de manera facil, rapida y segura con nuestro sistema web, descubre los beneficiosde facturar con nosotros y ahora tiempo en tus proscesos',
+  title: 'Facturación en Línea CFDI 4.0 | Wise Facturación México',
+  description: 'Genera tus facturas electrónicas de forma simple, rápida y segura. Cumplimiento total con el SAT, timbrado masivo y soporte técnico. ¡Prueba Wise Facturación hoy!',
   keywords: [
+    'facturación en línea',
+    'facturación electrónica',
+    'proveedor de timbrado masivo México',
+    'plataforma de facturación económica',
+    'facturación electrónica multi-RFC',
+    'facturación electrónica multi-RFC',
+    'sistema de facturación en línea',
     'facture',
     'facturacion electronica',
     'facturación electrónica',
