@@ -44,6 +44,7 @@ import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar'; // Relative path from original file structure
 import ModalConfirm from '@/components/Home/Modales/modalConfirm'; // Assuming this exists based on usage in original
+import PagoModalWithPayPal from '@/components/CompraTimbres/PagoModal';
 
 // Utils
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -73,6 +74,21 @@ const DataTableMRT = ({ token }) => {
     const [IDFacturaCancelada, setIDFacturaCancelada] = useState(null);
     const [resultadoCancelar, setResultadoCancelar] = useState(null);
     const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
+
+    // --- BOD ---
+    const [isBOD] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('BOD')) === true;
+        } catch {
+            return false;
+        }
+    });
+
+    const [openPagoModal, setOpenPagoModal] = useState(false);
+    const [idsPendientesTimbrar, setIdsPendientesTimbrar] = useState([]);
+    const [pagoConfirmado, setPagoConfirmado] = useState(false);
+    const [accionPostPago, setAccionPostPago] = useState(null);
+
 
     // -- Data Fetching --
     const fetchData = useCallback(async () => {
@@ -156,6 +172,15 @@ const DataTableMRT = ({ token }) => {
     }, [token]);
 
     const handleTimbrar = useCallback(async (ids) => {
+
+        if (isBOD) {
+            setIdsPendientesTimbrar(ids);
+            setAccionPostPago('TIMBRAR');
+            setOpenPagoModal(true);
+            return;
+        }
+
+        // 🔽 flujo normal (el que ya tenías)
         setIsLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
@@ -171,30 +196,58 @@ const DataTableMRT = ({ token }) => {
                 const data = await response.json();
                 if (data.Facturas.length > 1) {
                     setOpenModalTimbrar(true);
-                    setFacturasTimbrar(data.Facturas.map(factura => ({
-                        id: factura.facturaID,
-                        status: factura.status,
-                        error: factura.error || null,
+                    setFacturasTimbrar(data.Facturas.map(f => ({
+                        id: f.facturaID,
+                        status: f.status,
+                        error: f.error || null,
                     })));
-                } else if (data.Facturas.length === 1) {
+                } else {
                     const factura = data.Facturas[0];
-                    if (factura.status === 'success') {
-                        setConfirmationMessage('Facturas timbradas exitosamente.');
-                        setOpenModalSuccess(true);
-                    } else {
-                        setConfirmationMessage('Error al timbrar facturas: ' + (factura.error || ''));
-                        setOpenModalError(true);
-                    }
+                    factura.status === 'success'
+                        ? setOpenModalSuccess(true)
+                        : setOpenModalError(true);
                 }
             }
+        } catch {
+            setOpenModalError(true);
+        } finally {
+            setIsLoading(false);
+            fetchData();
+        }
+    }, [token, fetchData, isBOD]);
+
+
+    const handleTimbrarBOD = useCallback(async (ids) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(
+                `${apiUrl}/api/timbradocorporativo/TimbradoCorporativoBOD`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ Facturas_ID: ids }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Error en timbrado BOD');
+            }
+
+            setConfirmationMessage('Facturas timbradas correctamente.');
+            setOpenModalSuccess(true);
+
         } catch (error) {
-            setConfirmationMessage('Error en la conexión o en el timbrado.');
+            setConfirmationMessage(error.message || 'Error en timbrado BOD');
             setOpenModalError(true);
         } finally {
             setIsLoading(false);
             fetchData();
         }
     }, [token, fetchData]);
+
 
     const handleDownloadSelecteds = useCallback(async (ids) => {
         setIsLoading(true);
@@ -422,6 +475,53 @@ const DataTableMRT = ({ token }) => {
             console.error('Error fetching serie:', error);
         }
     }, [token, router]);
+
+    useEffect(() => {
+        if (!pagoConfirmado || idsPendientesTimbrar.length === 0) return;
+
+        const procesarPostPago = async () => {
+            try {
+                if (accionPostPago === 'TIMBRAR') {
+                    await handleTimbrarBOD(idsPendientesTimbrar);
+                }
+
+                if (accionPostPago === 'TIMBRAR_Y_ENVIAR') {
+                    await handleTimbrarBOD(idsPendientesTimbrar);
+                    await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(idsPendientesTimbrar),
+                    });
+
+                    setConfirmationMessage('Facturas timbradas y enviadas correctamente.');
+                    setOpenModalSuccess(true);
+                }
+            } catch (error) {
+                setConfirmationMessage(
+                    error.message || 'Error al procesar facturas después del pago.'
+                );
+                setOpenModalError(true);
+            } finally {
+                setPagoConfirmado(false);
+                setIdsPendientesTimbrar([]);
+                setAccionPostPago(null);
+                fetchData();
+            }
+        };
+
+        procesarPostPago();
+    }, [
+        pagoConfirmado,
+        idsPendientesTimbrar,
+        accionPostPago,
+        handleTimbrarBOD,
+        token,
+        fetchData
+    ]);
+
 
     // -- Unique Lists for Autocomplete --
     const uniqueEmisores = useMemo(() => {
@@ -847,7 +947,7 @@ const DataTableMRT = ({ token }) => {
     };
 
     return (
-        <WithPermission permission="Facturacion">
+        <WithPermission permission="ver_facturas">
             <Box sx={{ width: '100%' }}>
                 <MaterialReactTable table={table} />
 
@@ -886,6 +986,25 @@ const DataTableMRT = ({ token }) => {
                     token={token}
                     setResultadoCancelar={setResultadoCancelar}
                 />
+
+                <PagoModalWithPayPal
+                    open={openPagoModal}
+                    onClose={() => setOpenPagoModal(false)}
+                    opcion={{
+                        Nombre: 'Paquete Timbrado BOD',
+                        Costo: 10,
+                        CantidadTimbres: idsPendientesTimbrar.length,
+                        Emisor: 94,
+                    }}
+                    token={token}
+                    setCompra={(success) => {
+                        if (success) {
+                            setPagoConfirmado(true);
+                            setOpenPagoModal(false);
+                        }
+                    }}
+                />
+
                 {openModalConfirm && (
                     <ModalConfirm
                         open={openModalConfirm}

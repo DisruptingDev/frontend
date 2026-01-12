@@ -1219,9 +1219,11 @@ export default function DataTable({ token }) {
                 open={openPagoModal}
                 onClose={() => setOpenPagoModal(false)}
                 opcion={{
-                    Nombre: 'Timbrado BOD',
-                    Costo: 10, // o lo que aplique
-                    CantidadTimbres: idsPendientesTimbrar.length
+                    Nombre: 'Paquete Timbrado BOD',
+                    Costo: 10,
+                    CantidadTimbres: idsPendientesTimbrar.length,
+                    Emisor: 94
+
                 }}
                 token={token}
                 setCompra={(success) => {
