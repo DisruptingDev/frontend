@@ -180,7 +180,6 @@ const DataTableMRT = ({ token }) => {
             return;
         }
 
-        // 🔽 flujo normal (el que ya tenías)
         setIsLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/timbradocorporativo/TimbradoCorporativo`, {
@@ -203,9 +202,13 @@ const DataTableMRT = ({ token }) => {
                     })));
                 } else {
                     const factura = data.Facturas[0];
-                    factura.status === 'success'
-                        ? setOpenModalSuccess(true)
-                        : setOpenModalError(true);
+                    if (factura.status === 'success') {
+                        setConfirmationMessage('Facturas timbradas exitosamente.');
+                        setOpenModalSuccess(true);
+                    } else {
+                        setConfirmationMessage('Error al timbrar facturas: ' + (factura.error || ''));
+                        setOpenModalError(true);
+                    }
                 }
             }
         } catch {

@@ -1,7 +1,7 @@
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export default async function GuardarFactura(factura, onSuccess, onError, {token}) {
     try {
-        console.log("factura",factura);
+        // console.log("factura",factura);
             // Continúa con el uso de token 
             const response = await fetch(`${apiUrl}/api/facturas/EditarFactura`, {
                 method: 'PUT',
@@ -16,7 +16,7 @@ export default async function GuardarFactura(factura, onSuccess, onError, {token
             }
 
             const result = await response.json();
-            console.log('Factura actualizada con éxito:', result);
+            // console.log('Factura actualizada con éxito:', result);
             onSuccess('Factura actualizada con éxito'); // Llama al callback de éxito
         
     } catch (error) {

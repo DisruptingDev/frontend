@@ -68,7 +68,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setReceptorID(receptorData.ID);
             }
 
-            console.log("Año de info global", receptorData.InformacionGlobal?.Año);
+            console.log("Año de info global", receptorData.InformacionGlobal?.Anio);
 
             if (rfc === "XAXX010101000") {
 
