@@ -216,6 +216,8 @@ export default function Impuesto({
                         label='Tasa o Cuota'
                         descripcion="Valor"
                         url={getValues(`impuestos.${index}.TasaUrl`)}
+                        error={objetoImpuestoError}
+                        helperText={objetoImpuestoError ? "La tasa o cuota es requerida." : ""}
                         onChange={handleTasaChange}
                         value={currentTasaValue}
                         sx={{ minWidth: 120 }}

@@ -40,10 +40,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     const [facturaSeleccionada, setFacturaSeleccionada] = useState(null);
     const [initialLoad, setInitialLoad] = useState(false);
 
-    //console.log("Facturas seleccionadas: ", facturasRelacionadas);
-    // console.log("Tipo Comprobante: ", tipoComprobanteValue);
-    // console.log("isNotaCredito: ", isNotaCredito);
-
     const { control, register, reset, getValues, setValue, watch, trigger } = useForm({
         defaultValues: {
             Descripcion: '',
@@ -59,10 +55,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control,
         name: 'impuestos',
     });
+
 
     const fetchConceptos = useCallback(async () => {
         if (!token) return;
@@ -72,7 +69,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await response.json();
-            console.log("Conceptos:", data);
+            // console.log("Conceptos:", data);
             setConceptoOptions(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error al buscar Conceptos:', error);
@@ -92,7 +89,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
         if (!shouldProcess) return;
 
-        console.log("Procesando facturas relacionadas:", facturasRelacionadas);
+        // console.log("Procesando facturas relacionadas:", facturasRelacionadas);
 
         // 1. Prellenar descripción con UUIDs - Ahora accedemos directamente a ListaCFDIRelacionados
         const uuids = facturasRelacionadas.ListaCFDIRelacionados
@@ -168,7 +165,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     useEffect(() => {
         if (selectedClaveUnidad) {
-            console.log("Selección:", selectedClaveUnidad.Descripcion);
+            // console.log("Selección:", selectedClaveUnidad.Descripcion);
             setValue("Unidad", selectedClaveUnidad.Descripcion);
         }
 
@@ -217,12 +214,12 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         if ((editIndex !== null && conceptos[editIndex]) || conceptoSeleccionado) {
             let concepto
             if (conceptoSeleccionado) {
-                console.log("Concepto seleccionado: ", conceptoSeleccionado);
+                // console.log("Concepto seleccionado: ", conceptoSeleccionado);
                 concepto = conceptoSeleccionado;
             } else {
 
                 concepto = conceptos[editIndex];
-                console.log('Concepto seleccionado para editar:', concepto);
+                // console.log('Concepto seleccionado para editar:', concepto);
             }
 
             // Establecer valores del concepto
@@ -237,36 +234,38 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setValue("ObjetoImpuesto", concepto.ObjetoImpuesto || "02");
             setObjetoImpuesto(concepto.ObjetoImpuesto || "02");
 
-            concepto.Impuestos.forEach((impuesto, index) => {
-                setValue(`impuestos.${index}.Impuesto`, impuesto.Impuesto || '');
-                setValue(`impuestos.${index}.ImpuestoClave`, impuesto.ImpuestoClave || '');
-                setValue(`impuestos.${index}.Tasa`, impuesto.Tasa || 0);
-                setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
-                setValue(`impuestos.${index}.BaseImpuesto`, impuesto.BaseImpuesto || 0);
-                setValue(`impuestos.${index}.NombreImpuesto`, impuesto.NombreImpuesto || '');
-                setValue(`impuestos.${index}.Tipo`, impuesto.Tipo || '');
-                console.log("MONT", impuesto.Monto)
-                setValue(`impuestos.${index}.Monto`, impuesto.Monto || 0);
-                fetch(`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data);
-
+            if (concepto.Impuestos?.length) {
+                Promise.all(
+                    concepto.Impuestos.map(async (impuesto) => {
+                        const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/ImpuestoClave`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        const data = await response.json();
                         const opcionSeleccionada = data.find(opt => opt.ID == impuesto.Impuesto);
-                        if (opcionSeleccionada) {
-                            setValue(`impuestos.${index}.TasaUrl`, `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`)
-                            setValue(`impuestos.${index}.Tipo`, opcionSeleccionada["Tipo"]);
-                            setValue(`impuestos.${index}.TasaOCuota`, impuesto.TasaOCuota || 0);
-                        }
+
+                        return {
+                            Impuesto: impuesto.Impuesto || '',
+                            ImpuestoClave: impuesto.ImpuestoClave || '',
+                            Tasa: impuesto.Tasa || 0,
+                            TasaOCuota: impuesto.TasaOCuota || 0,
+                            BaseImpuesto: impuesto.BaseImpuesto || '',
+                            NombreImpuesto: impuesto.NombreImpuesto || '',
+                            Tipo: opcionSeleccionada ? opcionSeleccionada["Tipo"] : (impuesto.Tipo || ''),
+                            Monto: impuesto.Monto || '',
+                            TasaUrl: opcionSeleccionada
+                                ? `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${opcionSeleccionada["Impuesto"]}&tipo=${opcionSeleccionada["Tipo"]}`
+                                : `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${impuesto.NombreImpuesto}&tipo=${impuesto.Tipo}`
+                        };
                     })
-                console.log('Concepto editado:', getValues(`impuestos.${index}`));
-            });
+                ).then((impuestosActualizados) => {
+                    replace(impuestosActualizados);
+                });
+            }
+
             console.log('Concepto editado:', getValues(`impuestos`));
             if (!conceptoOptions.some(opt => opt.ID === concepto.ID)) {
                 console.log(`Consultando opciones de Conceptos para: ${concepto.ID}`);
@@ -276,11 +275,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 })
                     .then(response => response.json())
                     .then(data => {
-                        console.log("Opciones recibidas de Conceptos:", data);
+
                         setConceptoOptions(prevOptions => [...prevOptions, ...data]);
                         const selectedConcepto = data.find(opt => opt.ID == concepto.ID);
                         if (selectedConcepto) {
-                            console.log("Concepto seleccionado tras la consulta:", selectedConcepto);
+
                             setSelectedConcepto(selectedConcepto || null);
                         }
                         else {
@@ -289,53 +288,41 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     })
                     .catch(error => console.error('Error al buscar Conceptos:', error));
             } else {
-                console.log("Opciones Conceptos ya disponibles:", conceptoOptions);
                 const selectedConcepto = conceptoOptions.find(opt => opt.ID == concepto.ID);
-                console.log("Concepto seleccionado:", selectedConcepto);
                 setSelectedConcepto(selectedConcepto || null);
             }
             // Fetch ClaveProdServ options if needed
             if (!claveProdServOptions.some(opt => opt.Clave === concepto.ClaveProdServ)) {
-                console.log(`Consultando opciones de ClaveProdServ para: ${concepto.ClaveProdServ}`);
                 fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveProdServ?query=${concepto.ClaveProdServ}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 })
                     .then(response => response.json())
                     .then(data => {
-                        console.log("Opciones recibidas de ClaveProdServ:", data);
                         setClaveProdServOptions(prevOptions => [...prevOptions, ...data]);
                         const selectedProdServ = data.find(opt => opt.Clave == concepto.ClaveProdServ);
-                        console.log("ClaveProdServ seleccionada tras la consulta:", selectedProdServ);
                         setSelectedClaveProdServ(selectedProdServ || null);
                     })
                     .catch(error => console.error('Error al buscar ClaveProdServ:', error));
             } else {
-                console.log("Opciones ClaveProdServ ya disponibles:", claveProdServOptions);
                 const selectedProdServ = claveProdServOptions.find(opt => opt.Clave == concepto.ClaveProdServ);
-                console.log("ClaveProdServ seleccionada:", selectedProdServ);
                 setSelectedClaveProdServ(selectedProdServ || null);
             }
             // Fetch ClaveUnidad options if needed
             if (!claveUnidadOptions.some(opt => opt.Clave === concepto.ClaveUnidad)) {
-                console.log(`Consultando opciones de ClaveUnidad para: ${concepto.ClaveUnidad}`);
                 fetch(`${apiUrl}/api/catalogos/Catalogos/ClaveUnidad?query=${concepto.ClaveUnidad}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
                 })
                     .then(response => response.json())
                     .then(data => {
-                        console.log("Opciones recibidas de ClaveUnidad:", data);
                         setClaveUnidadOptions(prevOptions => [...prevOptions, ...data]);
                         const selectedUnidad = data.find(opt => opt.Clave == concepto.ClaveUnidad);
-                        console.log("ClaveUnidad seleccionada tras la consulta:", selectedUnidad);
                         setSelectedClaveUnidad(selectedUnidad || null);
                     })
                     .catch(error => console.error('Error al buscar ClaveUnidad:', error));
             } else {
-                console.log("Opciones ClaveUnidad ya disponibles:", claveUnidadOptions);
                 const selectedUnidad = claveUnidadOptions.find(opt => opt.Clave == concepto.ClaveUnidad);
-                console.log("ClaveUnidad seleccionada:", selectedUnidad);
                 setSelectedClaveUnidad(selectedUnidad || null);
             }
 
@@ -430,7 +417,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             return;
         }
 
-        console.log('ImpuestosENVIANDOS', getValues("impuestos"));
         const nuevoConcepto = CrearConcepto(getValues, getValues("impuestos"));
 
         if (nuevoConcepto !== "Error") {
@@ -475,15 +461,11 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
     };
 
     const handleConcepto = (event, value) => {
-        console.log("VALUE", value);
         if (typeof value === 'string') {
-            console.log("VALUE STRING", value);
             handleAddNewOption(value);
             setValue('Descripcion', value);
         } else {
             if (value) {
-                console.log("VALUE", value);
-
                 const impuestos = [
                     ...(value.Impuestos?.Retenciones || []), // Incluye las retenciones si existen
                     ...(value.Impuestos?.Traslados || [])   // Incluye los traslados si existen
@@ -510,7 +492,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                         Tipo: impuesto.TipoFactor
                     })),
                 }
-                console.log("CONCEPTO", concepto);
                 setConceptoSeleccionado(concepto);
             }
             else {
@@ -521,10 +502,8 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         }
     }
     const formatImpuestoClave = (value) => {
-        console.log("VALUE rellenar", value);
         // Verifica si el valor es un número o se puede convertir a número
         if (!isNaN(value)) {
-            console.log("VALUE rellenar2", value);
             // Convierte a string y rellena con ceros al inicio hasta que tenga al menos 3 caracteres
             return value.toString().padStart(3, '0');
         }
@@ -686,7 +665,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     isOptionEqualToValue={(option, value) => option.Clave === value.Clave}
                     onInputChange={(event, newInputValue) => setQueryUnidad(newInputValue)}
                     onChange={(event, value) => {
-                        //console.log("Unidad seleccionada:", value?.Descripcion);
                         setSelectedClaveUnidad(value);
                         setValue('ClaveUnidad', value?.Clave || '');
                         setClaveUnidadError(false);
@@ -800,32 +778,29 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 />
             </Box>
             {objetoImpuesto !== "01" && (
-                // console.log("NO ES 01", objetoImpuesto),
                 <Box display="grid" gridTemplateColumns="repeat(6, 1fr)" gap={3} mt={4}>
 
-                    {(fields.length > 0 ? fields : [{}]).map((field, index) => {
+                    {fields.map((field, index) => (
+                        <Box key={field.id} gridColumn="span 6">
+                            <Impuesto
+                                watch={watch}
+                                register={register}
+                                setValue={setValue}
+                                getValues={getValues}
+                                index={index}
+                                baseImpuesto={watch('Subtotal') || 0}
+                                remove={remove}
+                                fieldsLength={fields.length}
+                                objetoImpuestoError={objetoImpuestoError}
+                                impuestoError={impuestoError}
+                                setObjetoImpuestoError={setObjetoImpuestoError}
+                                setImpuestoError={setImpuestoError}
+                                isNotaCredito={isNotaCredito}
+                                impuestoEditor={getValues('impuestos')?.[index]}
+                            />
+                        </Box>
+                    ))}
 
-                        return (
-                            <Box key={field.id || index} gridColumn="span 6">
-                                <Impuesto
-                                    watch={watch}
-                                    register={register}
-                                    setValue={setValue}
-                                    getValues={getValues}
-                                    index={index}
-                                    baseImpuesto={watch('Subtotal') || 0}
-                                    remove={remove}
-                                    fieldsLength={fields.length}
-                                    objetoImpuestoError={objetoImpuestoError}
-                                    impuestoError={impuestoError}
-                                    setObjetoImpuestoError={setObjetoImpuestoError}
-                                    setImpuestoError={setImpuestoError}
-                                    isNotaCredito={isNotaCredito}
-                                // impuestoEditor={getValues(`impuestos.${index}`)} // Pass the specific impuesto object
-                                />
-                            </Box>
-                        );
-                    })}
 
                     <Box gridColumn="7 / 8" display="flex" justifyContent="start" alignItems="start">
                         <Button
