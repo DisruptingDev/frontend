@@ -225,7 +225,7 @@ export default function UserMenu() {
           </MenuItem>
         </WithPermission>
 
-        {(bod === 'false' || bod === undefined || bod === null || bod === '') && (
+        {(bod === 'false' || bod === undefined || bod === null || bod === '' || bod === 'undefined') && (
           <>
 
             <WithPermission permission="crear_compras">
