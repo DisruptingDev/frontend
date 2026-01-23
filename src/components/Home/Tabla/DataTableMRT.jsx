@@ -27,8 +27,10 @@ import {
     Send as TimbrarEnviarIcon,
     PictureAsPdf as PdfIcon,
     ContentCopy as CloneIcon,
-    Cancel as CancelIcon
+    Cancel as CancelIcon,
+    FileDownload as ExportIcon
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -626,7 +628,7 @@ const DataTableMRT = ({ token }) => {
         },
         {
             accessorKey: 'Fecha',
-            header: 'Fecha Emisión',
+            header: 'Fecha\nEmisión',
             size: 150,
             filterFn: (row, id, filterValue) => {
                 if (!filterValue) return true;
@@ -653,7 +655,7 @@ const DataTableMRT = ({ token }) => {
         },
         {
             accessorKey: 'fechaTimbrado',
-            header: 'Fecha Timbrado',
+            header: 'Fecha\nTimbrado',
             size: 150,
             filterFn: (row, id, filterValue) => {
                 if (!filterValue) return true;
@@ -682,6 +684,12 @@ const DataTableMRT = ({ token }) => {
                 const val = cell.getValue();
                 return val ? dayjs(val).format('DD/MM/YYYY HH:mm') : <Chip label="Sin timbrar" color="warning" size="small" />;
             }
+        },
+        {
+            accessorKey: 'MetodoPago',
+            header: 'Método de\nPago',
+            size: 100,
+            filterFn: 'contains',
         },
         {
             accessorKey: 'Serie',
@@ -765,6 +773,7 @@ const DataTableMRT = ({ token }) => {
     const table = useMaterialReactTable({
         columns,
         data,
+        enableColumnActions: false,
         enableRowSelection: true,
         enableColumnFiltering: true,
         enableGlobalFilter: true,
@@ -772,6 +781,20 @@ const DataTableMRT = ({ token }) => {
         muiTableBodyCellProps: {
             sx: {
                 fontSize: '11px',
+            },
+        },
+        muiTableHeadCellProps: {
+            sx: {
+                backgroundColor: '#10968a',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '10.5px',
+                verticalAlign: 'bottom',
+                whiteSpace: 'normal',
+                lineHeight: 'normal',
+                '& .Mui-TableHeadCell-Content': {
+                    justifyContent: 'center',
+                },
             },
         },
         enableRowVirtualization: true,
@@ -801,54 +824,91 @@ const DataTableMRT = ({ token }) => {
             const selectedRows = table.getSelectedRowModel().flatRows;
             const selectedIds = selectedRows.map(row => row.original.ID);
 
-            if (selectedIds.length === 0) return null;
-
             return (
-                <Box sx={{ display: 'flex', gap: '8px', p: '4px' }}>
-                    <Tooltip title="Enviar por Correo">
+                <Box sx={{ display: 'flex', gap: '8px', p: '4px', alignItems: 'center' }}>
+                    <Tooltip title="Exportar a CSV">
                         <Button
                             color="primary"
-                            startIcon={<EmailIcon />}
-                            onClick={() => handleEnviarCorreo(selectedIds)} // Helper function needed or use existing
-                            variant="contained"
+                            startIcon={<ExportIcon />}
+                            onClick={() => {
+                                const rows = table.getFilteredRowModel().rows;
+                                const json = rows.map((row) => ({
+                                    ID: row.original.ID,
+                                    Folio: row.original.Folio,
+                                    UUID: row.original.uuid,
+                                    EmisorNombre: row.original.Emisor?.Nombre,
+                                    EmisorRFC: row.original.Emisor?.Rfc,
+                                    ReceptorNombre: row.original.Receptor?.Nombre,
+                                    ReceptorRFC: row.original.Receptor?.Rfc,
+                                    Fecha: dayjs(row.original.Fecha).format('DD/MM/YYYY HH:mm'),
+                                    FechaTimbrado: row.original.fechaTimbrado ? dayjs(row.original.fechaTimbrado).format('DD/MM/YYYY HH:mm') : '',
+                                    SubTotal: row.original.SubTotal,
+                                    TotalImpuestosTrasladados: row.original.Conceptos?.TotalImpuestosTrasladados || 0,
+                                    TotalImpuestosRetenidos: row.original.Conceptos?.TotalImpuestosRetenidos || 0,
+                                    Total: row.original.Total,
+                                    Moneda: row.original.Moneda,
+                                    MetodoPago: row.original.MetodoPago,
+                                    Estatus: row.original.Estatus
+                                }));
+                                const worksheet = XLSX.utils.json_to_sheet(json);
+                                const workbook = XLSX.utils.book_new();
+                                XLSX.utils.book_append_sheet(workbook, worksheet, "Facturas");
+                                XLSX.writeFile(workbook, "Facturas.csv");
+                            }}
+                            variant="outlined"
                             size="small"
                         >
-                            Enviar
+                            Exportar CSV
                         </Button>
                     </Tooltip>
-                    <Tooltip title="Timbrar">
-                        <Button
-                            color="secondary"
-                            startIcon={<TimbrarIcon />}
-                            onClick={() => handleTimbrar(selectedIds)}
-                            variant="contained"
-                            size="small"
-                        >
-                            Timbrar
-                        </Button>
-                    </Tooltip>
-                    <Tooltip title="Descargar">
-                        <Button
-                            color="info"
-                            startIcon={<DescargarIcon />}
-                            onClick={() => handleDownloadSelecteds(selectedIds)}
-                            variant="contained"
-                            size="small"
-                        >
-                            Descargar
-                        </Button>
-                    </Tooltip>
-                    <Tooltip title="Timbrar y Enviar">
-                        <Button
-                            color="success"
-                            startIcon={<TimbrarEnviarIcon />}
-                            onClick={() => handleTimbrarYEnviar(selectedIds)}
-                            variant="contained"
-                            size="small"
-                        >
-                            Timbrar y Enviar
-                        </Button>
-                    </Tooltip>
+                    {selectedIds.length > 0 && (
+                        <>
+                            <Tooltip title="Enviar por Correo">
+                                <Button
+                                    color="primary"
+                                    startIcon={<EmailIcon />}
+                                    onClick={() => handleEnviarCorreo(selectedIds)}
+                                    variant="contained"
+                                    size="small"
+                                >
+                                    Enviar
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Timbrar">
+                                <Button
+                                    color="secondary"
+                                    startIcon={<TimbrarIcon />}
+                                    onClick={() => handleTimbrar(selectedIds)}
+                                    variant="contained"
+                                    size="small"
+                                >
+                                    Timbrar
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Descargar">
+                                <Button
+                                    color="info"
+                                    startIcon={<DescargarIcon />}
+                                    onClick={() => handleDownloadSelecteds(selectedIds)}
+                                    variant="contained"
+                                    size="small"
+                                >
+                                    Descargar
+                                </Button>
+                            </Tooltip>
+                            <Tooltip title="Timbrar y Enviar">
+                                <Button
+                                    color="success"
+                                    startIcon={<TimbrarEnviarIcon />}
+                                    onClick={() => handleTimbrarYEnviar(selectedIds)}
+                                    variant="contained"
+                                    size="small"
+                                >
+                                    Timbrar y Enviar
+                                </Button>
+                            </Tooltip>
+                        </>
+                    )}
                 </Box>
             );
         },

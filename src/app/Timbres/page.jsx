@@ -37,12 +37,12 @@ export default function Timbres() {
                 <Grid item xs>
                     <Box
                         bgcolor="white"
-                        ml={10}
+                        ml={{ xs: 10, md: 10 }}
                         mr={1}
                         p={2}
                         boxShadow={3}
                         borderRadius={2}
-                        width={"93%"}
+                        width={{ xs: "80%", md: "95%" }}
                     >
                         <AdministrarTimbres token={token} />
                     </Box>

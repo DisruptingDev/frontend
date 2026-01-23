@@ -165,97 +165,98 @@ export default function CrearFactura() {
                 <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid>
-                    <Box
-                        bgcolor="white"
-                        ml={10}
-                        mr={1}
-                        p={2}
-                        boxShadow={3}
-                        borderRadius={2}
-                        mb={6}
+
+                <Box
+                    bgcolor="white"
+                    ml={{ xs: 10, md: 10 }}
+
+                    p={2}
+                    boxShadow={3}
+                    borderRadius={2}
+                    mb={6}
+                    width={{ xs: "80%", md: "95%" }}
+                >
+                    <form onSubmit={handleSubmit(onSubmit)} method="post">
+                        <Emisor
+                            register={register}
+                            setLugarExpedicion={setLugarExpedicion}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            errors={errors}
+                            token={token}
+                            setTipoComprobante={setTipoComprobante} // Nuevo prop
+                            setEmisorID={setEmisorID} // Nuevo prop
+                        />
+                        <Receptor
+                            register={register}
+                            lugarExpedicion={lugarExpedicion}
+                            errors={errors}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            token={token}
+                            setReceptorID={setReceptorID} // Nuevo prop
+                        />
+                        {tipoComprobante === "E" && receptorID != null && (
+                            <SeleccionarFacturas
+                                receptor={receptorData}
+                                token={token}
+                                onFacturasSeleccionadas={handleFacturasSeleccionadas}
+                                emisorID={emisorID}
+                                receptorID={receptorID}
+                            />
+                        )}
+                        <Conceptos
+                            trigger={trigger}
+                            register={register}
+                            watch={watch}
+                            setValue={setValue}
+                            getValues={getValues}
+                            setConceptos={setConceptos}
+                            conceptos={conceptos}
+                            editIndex={editIndex}
+                            setEditIndex={setEditIndex}
+                            token={token}
+                            TipoComprobante={tipoComprobante} // Nuevo prop
+                            facturasRelacionadas={facturasRelacionadas} // Nuevo prop
+                            setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
+                        />
+                        <Resumen
+                            conceptos={conceptos}
+                            subTotal={watch("Subtotal")}
+                            handleEditConcepto={handleEditConcepto}
+                            handleDeleteConcepto={handleDeleteConcepto}
+                        >
+                            <div className="flex justify-end w-full space-x-2 mt-10">
+                                <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
+                                <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
+                                <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
+                            </div>
+                        </Resumen>
+                    </form>
+                    <Modal
+                        open={openModal}
+                        onClose={() => setOpenModal(false)}
+                        aria-labelledby="modal-vista-previa"
+                        aria-describedby="vista-previa-factura"
                     >
-                        <form onSubmit={handleSubmit(onSubmit)} method="post">
-                            <Emisor
-                                register={register}
-                                setLugarExpedicion={setLugarExpedicion}
-                                setValue={setValue}
-                                getValues={getValues}
-                                trigger={trigger}
-                                errors={errors}
-                                token={token}
-                                setTipoComprobante={setTipoComprobante} // Nuevo prop
-                                setEmisorID={setEmisorID} // Nuevo prop
-                            />
-                            <Receptor
-                                register={register}
-                                lugarExpedicion={lugarExpedicion}
-                                errors={errors}
-                                setValue={setValue}
-                                getValues={getValues}
-                                trigger={trigger}
-                                token={token}
-                                setReceptorID={setReceptorID} // Nuevo prop
-                            />
-                            {tipoComprobante === "E" && receptorID != null && (
-                                <SeleccionarFacturas
-                                    receptor={receptorData}
-                                    token={token}
-                                    onFacturasSeleccionadas={handleFacturasSeleccionadas}
-                                    emisorID={emisorID}
-                                    receptorID={receptorID}
-                                />
-                            )}
-                            <Conceptos
-                                trigger={trigger}
-                                register={register}
-                                watch={watch}
-                                setValue={setValue}
-                                getValues={getValues}
-                                setConceptos={setConceptos}
-                                conceptos={conceptos}
-                                editIndex={editIndex}
-                                setEditIndex={setEditIndex}
-                                token={token}
-                                TipoComprobante={tipoComprobante} // Nuevo prop
-                                facturasRelacionadas={facturasRelacionadas} // Nuevo prop
-                                setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
-                            />
-                            <Resumen
-                                conceptos={conceptos}
-                                subTotal={watch("Subtotal")}
-                                handleEditConcepto={handleEditConcepto}
-                                handleDeleteConcepto={handleDeleteConcepto}
-                            >
-                                <div className="flex justify-end w-full space-x-2 mt-10">
-                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
-                                    <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
-                                    <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                                </div>
-                            </Resumen>
-                        </form>
-                        <Modal
-                            open={openModal}
-                            onClose={() => setOpenModal(false)}
-                            aria-labelledby="modal-vista-previa"
-                            aria-describedby="vista-previa-factura"
-                        >
-                            <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
-                                <div dangerouslySetInnerHTML={{ __html: previewContent }} />
-                            </Box>
-                        </Modal>
-                        <Snackbar
-                            open={openSnackbar}
-                            autoHideDuration={3000}
-                            onClose={() => setOpenSnackbar(false)}
-                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                        >
-                            <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
-                                {snackbarMessage}
-                            </Alert>
-                        </Snackbar>
-                    </Box>
-                </Grid>
+                        <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                            <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                        </Box>
+                    </Modal>
+                    <Snackbar
+                        open={openSnackbar}
+                        autoHideDuration={3000}
+                        onClose={() => setOpenSnackbar(false)}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    >
+                        <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} variant="filled">
+                            {snackbarMessage}
+                        </Alert>
+                    </Snackbar>
+                </Box>
+
             </Grid>
         </div>
     );

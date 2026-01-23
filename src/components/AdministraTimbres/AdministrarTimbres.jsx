@@ -97,10 +97,18 @@ export default function AdministrarTimbres({ token }) {
     };
 
     const onSubmit = async (data) => {
+        // Calcular totales para el mensaje
+        let totalAsignados = 0;
+        let totalRecuperados = 0;
+
         const series = empresasConSeries.map((empresa) => {
-            const timbresAsignados = data.timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-            const timbresRecuperados = data.timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
-            const nuevoTotal = (empresa.TimbresDisponibles || 0) - timbresRecuperados + timbresAsignados;
+            const asignados = data.timbresAsignar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+            const recuperados = data.timbresRecuperar[`${empresa.ID}-${empresa.SerieClave}`] || 0;
+
+            totalAsignados += asignados;
+            totalRecuperados += recuperados;
+
+            const nuevoTotal = (empresa.TimbresDisponibles || 0) - recuperados + asignados;
             return {
                 ID: empresa.SerieID,
                 TimbresDisponibles: nuevoTotal,
@@ -121,10 +129,17 @@ export default function AdministrarTimbres({ token }) {
                 body: JSON.stringify(datosCompletos),
             });
             if (response.ok) {
-                setToast({ open: true, message: 'Los cambios se han aplicado correctamente.', severity: 'success' });
-                setTimeout(() => {
-                    router.push("/Home");
-                }, 1500);
+                let message = 'Cambios aplicados exitosamente.';
+                if (totalRecuperados > 0 && totalAsignados === 0) {
+                    message = `${totalRecuperados} Timbres recuperados exitosamente.`;
+                } else if (totalAsignados > 0 && totalRecuperados === 0) {
+                    message = `${totalAsignados} Timbres asignados exitosamente.`;
+                } else if (totalAsignados > 0 && totalRecuperados > 0) {
+                    message = `${totalAsignados} Timbres asignados y ${totalRecuperados} recuperados exitosamente.`;
+                }
+
+                localStorage.setItem('successMessage', message);
+                window.location.reload();
             } else {
                 setToast({ open: true, message: 'Error al aplicar los cambios.', severity: 'error' });
             }
@@ -133,6 +148,17 @@ export default function AdministrarTimbres({ token }) {
             setToast({ open: true, message: 'Error al aplicar los cambios.', severity: 'error' });
         }
     };
+
+    useEffect(() => {
+        const message = localStorage.getItem('successMessage');
+        if (message) {
+            setToast({ open: true, message: message, severity: 'success' });
+            localStorage.removeItem('successMessage');
+        }
+    }, []);
+
+    // Calculate sum of all available stamps in series
+    const totalSeriesTimbres = empresasConSeries.reduce((acc, curr) => acc + (curr.TimbresDisponibles || 0), 0);
 
     return (
         <Box>
@@ -145,20 +171,25 @@ export default function AdministrarTimbres({ token }) {
                     gap={3}
                     alignItems="start"
                 >
-                    <Typography variant="subtitle1" sx={{ color: "#00ACC1" }}>
-                        <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Disponibles: <strong>{timbresDisponibles}</strong>
+                    <Box
+                        display="flex"
+                        flexDirection={{ xs: 'column', md: 'row' }}
+                        gap={{ xs: 1, md: 3 }}
+                        sx={{ color: "#00ACC1" }}
+                    >
+                        <Box>
+                            Timbres Disponibles: <strong>{totalSeriesTimbres}</strong>
                         </Box>
-                        <Box component="span" sx={{ marginRight: 2 }}>
+                        <Box>
                             Timbres Distribuidos: <strong>{Object.values(watch('timbresAsignar')).reduce((a, b) => a + (b || 0), 0)}</strong>
                         </Box>
-                        <Box component="span" sx={{ marginRight: 2 }}>
-                            Timbres Recuperados: <strong>{Object.values(watch('timbresRecuperar')).reduce((a, b) => a + (b || 0), 0)}</strong>
+                        <Box>
+                            Timbres Recuperados: <strong>{timbresDisponibles}</strong>
                         </Box>
-                        <Box component="span" sx={{ marginRight: 2 }}>
+                        <Box>
                             Timbres Restantes: <strong>{timbresRestantes}</strong>
                         </Box>
-                    </Typography>
+                    </Box>
 
                     {empresasConSeries.map((empresa) => {
                         const timbresAsignados = watch(`timbresAsignar.${empresa.ID}-${empresa.SerieClave}`) || 0;
@@ -173,10 +204,8 @@ export default function AdministrarTimbres({ token }) {
                                 my={2}
                                 sx={{
                                     gridTemplateColumns: {
-                                        xs: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
-                                        sm: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
-                                        md: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
-                                        lg: '1fr 0.25fr 0.25fr 0.25fr 0.25fr 0.25fr',
+                                        xs: '1fr',
+                                        md: '1fr 0.5fr 0.5fr 0.5fr 0.5fr 0.5fr',
                                     }
                                 }}
                             >
@@ -233,7 +262,18 @@ export default function AdministrarTimbres({ token }) {
                                         e.target.value = e.target.value.replace(/[^0-9]/g, '');
                                     }}
                                 />
-                                <TextField label="Nuevo total de timbres" fullWidth disabled value={totalTimbresRestantes} />
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{
+                                        width: '250px',
+                                        backgroundColor: '#04b2ca',
+                                        '&:hover': { backgroundColor: '#038a9e' },
+                                    }}
+                                    type="submit"
+                                >
+                                    Aplicar
+                                </Button>
                             </Box>
                         );
                     })}

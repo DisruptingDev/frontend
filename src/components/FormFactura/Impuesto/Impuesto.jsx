@@ -39,7 +39,7 @@ export default function Impuesto({
                 Tipo: 'Tasa',
                 Tasa: 0.16,
             };
-            
+
             setValue(`impuestos[${index}].Impuesto`, JSON.stringify(defaultImpuesto));
             setValue(`impuestos[${index}].NombreImpuesto`, 'IVA');
             setValue(`impuestos[${index}].Tipo`, 'Tasa');
@@ -104,32 +104,32 @@ export default function Impuesto({
         if (tasaCuota) {
             let resultado;
             let nuevaBase;
-            
+
             if (isNotaCredito) {
                 // Para nota de crédito: base = monto total - monto impuesto
                 const taxRate = parseFloat(tasaCuota);
                 const montoTotal = baseImpuesto * 1.16; // Este es el monto total de la nota
-                
+
                 // Calcular el monto del impuesto
                 resultado = montoTotal * (taxRate / (1 + taxRate));
-                
+
                 // Calcular la nueva base (monto total - impuesto)
                 nuevaBase = montoTotal - resultado;
-                
+
                 // Redondear valores
                 resultado = Math.round((resultado + Number.EPSILON) * 100) / 100;
                 nuevaBase = Math.round((nuevaBase + Number.EPSILON) * 100) / 100;
-                
+
                 // Actualizar la base impuesto
                 setValue(`impuestos[${index}].BaseImpuesto`, nuevaBase);
             } else {
                 // Cálculo normal para facturas
                 resultado = parseFloat(tasaCuota) * baseImpuesto;
             }
-            
+
             // Redondeo para evitar errores de precisión
             const montoRedondeado = Math.round((resultado + Number.EPSILON) * 100) / 100;
-            
+
             setMonto(montoRedondeado);
             setValue(`impuestos[${index}].Monto`, montoRedondeado);
         } else {
@@ -150,7 +150,7 @@ export default function Impuesto({
             setTasa(data.ID);
             setValue(`impuestos[${index}].Tasa`, data.ID);
             setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor));
-            
+
             // Si es nota de crédito, forzar recálculo
             if (isNotaCredito) {
                 const currentBase = getValues(`impuestos[${index}].BaseImpuesto`);
@@ -163,12 +163,12 @@ export default function Impuesto({
 
     const formatCurrency = (value) => {
         if (value === undefined || value === null) return '$0.00';
-        
+
         // Convertir a número (siempre positivo)
-        const num = typeof value === 'string' ? 
-            Math.abs(parseFloat(value.replace(/[^0-9.-]/g, ''))) : 
+        const num = typeof value === 'string' ?
+            Math.abs(parseFloat(value.replace(/[^0-9.-]/g, ''))) :
             Math.abs(value);
-        
+
         // Formatear el valor
         return num.toLocaleString('es-MX', {
             style: 'currency',
@@ -179,18 +179,18 @@ export default function Impuesto({
     };
 
     // Obtener valor actual del select de impuesto para renderizado
-    const currentImpuestoValue = isNotaCredito && isInitialLoad 
+    const currentImpuestoValue = isNotaCredito && isInitialLoad
         ? JSON.stringify({ ID: '2', Clave: '002', Impuesto: 'IVA', Tipo: 'Tasa' })
         : getValues(`impuestos[${index}].Impuesto`) || '';
 
     // Obtener valor actual del select de tasa para renderizado
-    const currentTasaValue = isNotaCredito && isInitialLoad 
+    const currentTasaValue = isNotaCredito && isInitialLoad
         ? JSON.stringify({ ID: '21', Valor: '0.160000', Descripcion: '16%' })
         : getValues(`impuestos[${index}].Tasa`) || '';
 
     return (
         <Box>
-            <Box display="flex" flexDirection="row" alignItems="start" gap={2}>
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="start" gap={2}>
                 <Box flex={1}>
                     <Select
                         register={register}

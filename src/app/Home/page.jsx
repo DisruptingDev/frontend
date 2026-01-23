@@ -153,29 +153,27 @@ export default function Home() {
                 />
 
                 {/* Contenedor principal que ocupa el espacio restante */}
-                <Grid
-                    minWidth={"100vw"}
-                    maxWidth={"100vw"}
+
+                <Box
+                    //bgcolor="white"
+                    ml={{ xs: 10, md: 10 }}
+
+                    //p={2}
+                    //boxShadow={3}
+                    borderRadius={2}
+                    //mb={6}
+                    mb={10}
+                    width={{ xs: "80%", md: "95%" }}
+
                 >
-                    <Box
-                        //bgcolor="white"
-                        ml={10}
-                        mr={3}
-                        //p={2}
-                        //boxShadow={3}
-                        borderRadius={2}
-                        //mb={6}
-                        mb={10}
-
-                    >
-                        {/* <SearchFilter setFiltro={setFiltro} />
+                    {/* <SearchFilter setFiltro={setFiltro} />
                         <Tabla token={token} filtro={filtro} /> */}
-                        <div ref={datatableRef}>
+                    <div ref={datatableRef}>
 
-                            <DataTableMRT token={token} isBOD={isBOD} />
-                        </div>
+                        <DataTableMRT token={token} isBOD={isBOD} />
+                    </div>
 
-                        {/* <Button
+                    {/* <Button
                             variant="contained"
                             color="primary"
                             onClick={startTour}
@@ -183,8 +181,8 @@ export default function Home() {
                         >
                             Iniciar Tour
                         </Button> */}
-                    </Box>
-                </Grid>
+                </Box>
+
             </Grid>
         </div>
     );
