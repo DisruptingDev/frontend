@@ -118,54 +118,219 @@ export default function ImportarFacturas() {
 
     // Guardar facturas timbradas
     const guardarFacturasTimbradas = async (facturasAGuardar) => {
-        setLoading(true);
-        let exito = 0;
+    setLoading(true);
+    let exito = 0;
 
-        try {
-            for (const factura of facturasAGuardar) {
+    try {
+        for (const factura of facturasAGuardar) {
+            if (!factura.estaTimbrado) {
+                console.warn("Se intentó guardar una factura no timbrada, se omitirá:", factura);
+                continue;
+            }
 
-                // Validar que la factura esté timbrada antes de enviar
-                if (!factura.estaTimbrado) {
-                    console.warn("Se intentó guardar una factura no timbrada, se omitirá:", factura);
-                    continue;
-                }
+            const endpoint = factura.es_complemento_pago 
+                ? `${apiUrl}/api/facturas/GuardarFactura`
+                : `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
 
-                const endpoint = `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
+            // Preparar datos según el tipo
+            let datosEnvio;
+            if (factura.es_complemento_pago) {
+                datosEnvio = prepararComplementoPago(factura);
+            } else {
+                datosEnvio = prepararFacturaNormal(factura);
+            }
 
-                const response = await fetch(endpoint, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(factura),
+            console.log("Datos a enviar:", datosEnvio);
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(datosEnvio),
+            });
+
+            if (response.ok) {
+                exito++;
+            } else {
+                const errorData = await response.json();
+                console.error("Error al guardar:", errorData);
+                alert(`Error: ${errorData.error || "Error desconocido"}`);
+            }
+        }
+
+        if (exito > 0) {
+            const tipo = facturasAGuardar[0]?.es_complemento_pago ? "complemento de pago" : "factura";
+            setConfirmationMessage(`Se importó el ${tipo} timbrado correctamente.`);
+            setOpenModalExito(true);
+            setTimeout(() => router.push("/Home"), 2000);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        setConfirmationMessage("Error de conexión");
+        setOpenModalError(true);
+    } finally {
+        setLoading(false);
+    }
+};
+
+// Función específica para complementos de pago
+const prepararComplementoPago = (factura) => {
+    // Clonar y convertir tipos
+    const datos = JSON.parse(JSON.stringify(factura));
+    
+    // 1. Convertir campos numéricos (soluciona errores anteriores)
+    if (datos.Complemento?.Pagos?.Pagos) {
+        datos.Complemento.Pagos.Pagos.forEach(pago => {
+            if (pago.DoctosRelacionados) {
+                pago.DoctosRelacionados.forEach(docto => {
+                    // NumParcialidad: string → uint32
+                    if (docto.NumParcialidad) {
+                        docto.NumParcialidad = parseInt(docto.NumParcialidad) || 1;
+                    }
+                    // Campos numéricos
+                    if (docto.ImpSaldoAnt) docto.ImpSaldoAnt = parseFloat(docto.ImpSaldoAnt);
+                    if (docto.ImpPagado) docto.ImpPagado = parseFloat(docto.ImpPagado);
+                    if (docto.ImpSaldoInsoluto) docto.ImpSaldoInsoluto = parseFloat(docto.ImpSaldoInsoluto);
                 });
-
-                if (response.ok) {
-                    exito++;
-                } else {
-                    const errorData = await response.json();
-                    console.error("Error al guardar la factura timbrada:", errorData);
-                    alert(`Error al guardar factura timbrada: ${errorData.error || "Error desconocido"}`);
+            }
+            
+            // Convertir impuestos
+            if (pago.Impuestos) {
+                if (pago.Impuestos.Traslados) {
+                    pago.Impuestos.Traslados.forEach(tras => {
+                        if (tras.ImpuestoCatalogoID) tras.ImpuestoCatalogoID = parseInt(tras.ImpuestoCatalogoID) || 0;
+                        if (tras.TasaCatalogoID) tras.TasaCatalogoID = parseInt(tras.TasaCatalogoID) || 0;
+                        if (tras.Base) tras.Base = parseFloat(tras.Base);
+                        if (tras.Importe) tras.Importe = parseFloat(tras.Importe);
+                        if (tras.TasaOCuota) tras.TasaOCuota = parseFloat(tras.TasaOCuota);
+                    });
                 }
-
-                if (exito > 0) {
-                    setConfirmationMessage(`Se importó la factura ${factura.UUID} timbrada correctamente.`);
-                    setOpenModalExito(true);
-                    // Redirigir después de mostrar el modal
-                    setTimeout(() => {
-                        router.push("/Home");
-                    }, 2000);
+                if (pago.Impuestos.Retenciones) {
+                    pago.Impuestos.Retenciones.forEach(ret => {
+                        if (ret.ImpuestoCatalogoID) ret.ImpuestoCatalogoID = parseInt(ret.ImpuestoCatalogoID) || 0;
+                        if (ret.TasaCatalogoID) ret.TasaCatalogoID = parseInt(ret.TasaCatalogoID) || 0;
+                        if (ret.Base) ret.Base = parseFloat(ret.Base);
+                        if (ret.Importe) ret.Importe = parseFloat(ret.Importe);
+                        if (ret.TasaOCuota) ret.TasaOCuota = parseFloat(ret.TasaOCuota);
+                    });
                 }
             }
-        } catch (error) {
-            console.error("Error en guardarFacturasTimbradas:", error);
-            setConfirmationMessage("Error de conexión al guardar las facturas timbradas");
-            setOpenModalError(true);
-        } finally {
-            setLoading(false);
-        }
+        });
+    }
+    
+    // 2. Añadir campos obligatorios para el backend Go
+    // Basado en la estructura de ComprobanteRequest que espera el backend
+    return {
+        // Campos del comprobante
+        TipoDeComprobante: datos.TipoDeComprobante || "P",
+        Version: datos.Version || "4.0",
+        Serie: datos.Serie || "",
+        Folio: datos.Folio || "",
+        Fecha: datos.Fecha,
+        LugarExpedicion: datos.LugarExpedicion || "",
+        Moneda: datos.Moneda || "XXX",
+        Total: datos.Total || 0,
+        SubTotal: datos.SubTotal || 0,
+        Descuento: datos.Descuento || 0,
+        TipoCambio: datos.TipoCambio || "1",
+        Exportacion: datos.Exportacion || "01",
+        Confirmacion: datos.Confirmacion || "",
+        UsoCFDI: datos.Receptor?.UsoCFDI || "P01", // P01 para complementos
+        Conceptos: {
+        ListaConceptos: [
+          {
+            ClaveProdServ: "84111506",
+            Cantidad: 1,
+            ClaveUnidad: "ACT",
+            Unidad: "Actividad",
+            Descripcion: "Pago",
+            ValorUnitario: 0,
+            Importe: 0,
+            Descuento: 0,
+            ValorUnitarioString: "0",
+            ImporteString: "0",
+            DescuentoString: "0",
+            ObjetoImp: "01",
+            Impuestos: {
+              Traslados: [],
+              Retenciones: [],
+            },
+          },
+        ],
+        TotalImpuestosTrasladados: 0,
+        TotalImpuestosRetenidos: 0,
+      },
+        
+        // Campos requeridos (poner valores por defecto)
+        FormaPago: datos.FormaPago || "99", // 99 = Por definir (para complementos)
+        MetodoPago: datos.MetodoPago || "PUE", // PUE = Pago en una sola exhibición
+        
+        // IDs ficticios (el backend deberá buscar/crear los registros reales)
+        EmisorID: datos.EmisorID || 0, // 0 indica que no está registrado
+        ReceptorID: datos.ReceptorID || 0,
+        
+        // Información del emisor y receptor
+        Emisor: datos.Emisor || {
+            RFC: datos.Emisor?.RFC || "",
+            Nombre: datos.Emisor?.Nombre || ""
+        },
+        Receptor: datos.Receptor || {
+            RFC: datos.Receptor?.RFC || "",
+            Nombre: datos.Receptor?.Nombre || "",
+            UsoCFDI: datos.Receptor?.UsoCFDI || "P01", // P01 para complementos
+            DomicilioFiscalReceptor: datos.Receptor?.DomicilioFiscalReceptor || "",
+            RegimenFiscalReceptor: datos.Receptor?.RegimenFiscalReceptor || ""
+        },
+        
+        // Información de timbrado
+        UUID: datos.UUID || datos.infoTimbrado?.UUID,
+        FechaTimbrado: datos.infoTimbrado?.FechaTimbrado,
+        NoCertificadoSAT: datos.infoTimbrado?.NoCertificadoSAT,
+        SelloSAT: datos.infoTimbrado?.SelloSAT,
+        RfcProvCertif: datos.infoTimbrado?.RfcProvCertif,
+        
+        // Complemento específico
+        es_complemento_pago: true,
+        Complemento: datos.Complemento,
+        
+        // XML original
+        xml_content: datos.xmlContent || datos.xmlContentOriginal,
+        
+        // Campos adicionales para validación
+        CondicionesDePago: datos.CondicionesDePago || "",
+        Descripcion: datos.Descripcion || "",
+        
+        // Para búsqueda de factura original
+        facturaOriginalUUID: datos.facturaOriginalUUID,
+        facturaOriginalSerie: datos.facturaOriginalSerie,
+        facturaOriginalFolio: datos.facturaOriginalFolio,
+        
+        // Validaciones
+        validaciones: datos.validaciones || {},
+        errores: datos.errores || []
     };
+};
+
+// Función para facturas normales (mantener tu lógica actual)
+const prepararFacturaNormal = (factura) => {
+    // Clonar para no modificar el original
+    const datos = JSON.parse(JSON.stringify(factura));
+    
+    // Asegurar campos obligatorios
+    return {
+        ...datos,
+        FormaPago: datos.FormaPago || "99",
+        MetodoPago: datos.MetodoPago || "PUE",
+        EmisorID: datos.EmisorID || 0,
+        ReceptorID: datos.ReceptorID || 0,
+        Emisor: datos.Emisor || {},
+        Receptor: datos.Receptor || {},
+        UUID: datos.UUID || datos.infoTimbrado?.UUID,
+        UsoCFDI: datos.Receptor?.UsoCFDI || "G03",
+    };
+};
 
     const handleGuardarFacturas = async () => {
         if (modoImportacion === "xml" && facturaXML) {

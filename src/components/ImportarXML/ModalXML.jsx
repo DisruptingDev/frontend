@@ -40,6 +40,8 @@ const ModalXML = ({ token, open, handleClose, handleUpload }) => {
 
             const data = await response.json();
 
+            console.log("Respuesta del servidor:", data);
+
             if (response.ok) {
                 // ✅ NUEVA LÓGICA: Separar errores críticos de advertencias
                 setFacturaCompletaTemp(data.factura_completa || data.comprobante);
