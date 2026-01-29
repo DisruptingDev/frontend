@@ -67,6 +67,8 @@ const VistaXMLImportado = ({
         RegimenFiscalReceptor: facturaXML.ReceptorRegimenFiscalReceptor || '',
     } : null;
 
+    console.log('VistaXMLImportado - facturaXML:', facturaXML);
+
     // Efecto para realizar validaciones cuando llega una nueva factura
     useEffect(() => {
         if (facturaXML && facturaXML.EmisorID) {
@@ -816,6 +818,194 @@ const VistaXMLImportado = ({
                                             {new Date(facturaXML.timbre.FechaTimbrado).toLocaleString()}
                                         </Typography>
                                     </Grid>
+                                </Grid>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Sección Complemento de Pago (si está timbrado) */}
+                    {facturaXML.es_complemento_pago && (
+                        <Card sx={{ mt: 2, backgroundColor: '#f8f9fa' }}>
+                            <CardContent>
+                                <Typography variant="h6" gutterBottom color="primary">
+                                    Información de Complemento de Pago
+                                </Typography>
+
+                                <Grid container spacing={2}>
+                                    {/* Información general del pago */}
+                                    <Grid item xs={12}>
+                                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                                            Información General del Pago
+                                        </Typography>
+                                    </Grid>
+
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="textSecondary">UUID Factura Madre:</Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography variant="body2" sx={{ wordBreak: 'break-all', fontWeight: 'medium' }}>
+                                            {facturaXML.factura_original?.uuid || facturaXML.timbre.UUID}
+                                        </Typography>
+                                    </Grid>
+
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="textSecondary">Total de Pagos:</Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                            {facturaXML.complemento_pago?.total_pagos || 1}
+                                        </Typography>
+                                    </Grid>
+
+                                    <Grid item xs={4}>
+                                        <Typography variant="body2" color="textSecondary">Monto Total Pagado:</Typography>
+                                    </Grid>
+                                    <Grid item xs={8}>
+                                        <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                            ${parseFloat(facturaXML.complemento_pago?.suma_montos || 0).toFixed(2)}
+                                        </Typography>
+                                    </Grid>
+
+                                    {/* Detalles del pago específico */}
+                                    {facturaXML.complemento_pago?.pagos?.map((pago, index) => (
+                                        <React.Fragment key={index}>
+                                            <Grid item xs={12} sx={{ mt: 1 }}>
+                                                <Divider />
+                                                <Typography variant="subtitle2" color="textSecondary" sx={{ mt: 1, mb: 1 }}>
+                                                    Pago {index + 1}
+                                                </Typography>
+                                            </Grid>
+
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" color="textSecondary">Fecha de Pago:</Typography>
+                                            </Grid>
+                                            <Grid item xs={8}>
+                                                <Typography variant="body2">
+                                                    {new Date(pago.fecha_pago).toLocaleString()}
+                                                </Typography>
+                                            </Grid>
+
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" color="textSecondary">Forma de Pago:</Typography>
+                                            </Grid>
+                                            <Grid item xs={8}>
+                                                <Typography variant="body2">
+                                                    {pago.forma_de_pago_p === '03' ? 'Transferencia electrónica de fondos' :
+                                                        pago.forma_de_pago_p === '01' ? 'Efectivo' :
+                                                            pago.forma_de_pago_p === '04' ? 'Tarjeta de crédito' :
+                                                                pago.forma_de_pago_p || 'No especificada'}
+                                                </Typography>
+                                            </Grid>
+
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" color="textSecondary">Monto:</Typography>
+                                            </Grid>
+                                            <Grid item xs={8}>
+                                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                                    ${parseFloat(pago.monto || 0).toFixed(2)} {pago.moneda_p}
+                                                </Typography>
+                                            </Grid>
+
+                                            {/* Documentos relacionados */}
+                                            {pago.documentos_relacionados?.map((doc, docIndex) => (
+                                                <React.Fragment key={docIndex}>
+                                                    <Grid item xs={12} sx={{ mt: 1 }}>
+                                                        <Typography variant="subtitle2" color="textSecondary">
+                                                            Documento Relacionado {docIndex + 1}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">UUID Documento:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2" sx={{ wordBreak: 'break-all', fontSize: '0.875rem' }}>
+                                                            {doc.id_documento}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">Parcialidad:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2">
+                                                            {doc.num_parcialidad}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">Saldo Anterior:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2">
+                                                            ${parseFloat(doc.imp_saldo_ant || 0).toFixed(2)}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">Monto Pagado:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'success.main' }}>
+                                                            ${parseFloat(doc.imp_pagado || 0).toFixed(2)}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">Saldo Insoluto:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2" sx={{ color: doc.imp_saldo_insoluto > 0 ? 'warning.main' : 'success.main' }}>
+                                                            ${parseFloat(doc.imp_saldo_insoluto || 0).toFixed(2)}
+                                                        </Typography>
+                                                    </Grid>
+                                                </React.Fragment>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+
+                                    {/* Impuestos del complemento de pago */}
+                                    {facturaXML.Complemento?.Pagos?.Totales && (
+                                        <>
+                                            <Grid item xs={12} sx={{ mt: 1 }}>
+                                                <Divider />
+                                                <Typography variant="subtitle2" color="textSecondary" sx={{ mt: 1, mb: 1 }}>
+                                                    Impuestos del Pago
+                                                </Typography>
+                                            </Grid>
+
+                                            {facturaXML.Complemento.Pagos.Totales.TotalTrasladosBaseIVA16 > 0 && (
+                                                <>
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">Base IVA 16%:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2">
+                                                            ${parseFloat(facturaXML.Complemento.Pagos.Totales.TotalTrasladosBaseIVA16 || 0).toFixed(2)}
+                                                        </Typography>
+                                                    </Grid>
+
+                                                    <Grid item xs={4}>
+                                                        <Typography variant="body2" color="textSecondary">IVA 16%:</Typography>
+                                                    </Grid>
+                                                    <Grid item xs={8}>
+                                                        <Typography variant="body2">
+                                                            ${parseFloat(facturaXML.Complemento.Pagos.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2)}
+                                                        </Typography>
+                                                    </Grid>
+                                                </>
+                                            )}
+
+                                            <Grid item xs={4}>
+                                                <Typography variant="body2" color="textSecondary">Total Monto Pagos:</Typography>
+                                            </Grid>
+                                            <Grid item xs={8}>
+                                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                    ${parseFloat(facturaXML.Complemento.Pagos.Totales.MontoTotalPagos || 0).toFixed(2)}
+                                                </Typography>
+                                            </Grid>
+                                        </>
+                                    )}
                                 </Grid>
                             </CardContent>
                         </Card>
