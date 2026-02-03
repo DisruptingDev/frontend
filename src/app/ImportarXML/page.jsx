@@ -129,7 +129,7 @@ export default function ImportarFacturas() {
             }
 
             const endpoint = factura.es_complemento_pago 
-                ? `${apiUrl}/api/facturas/GuardarFactura`
+                ? `${apiUrl}/api/facturas/GuardarFacturaTimbrada`
                 : `${apiUrl}/api/facturas/GuardarFacturaTimbrada`;
 
             // Preparar datos según el tipo
@@ -228,6 +228,9 @@ const prepararComplementoPago = (factura) => {
         Version: datos.Version || "4.0",
         Serie: datos.Serie || "",
         Folio: datos.Folio || "",
+        NoCertificado : datos.NoCertificado || "",
+        Certificado: datos.Certificado || "",
+        Sello: datos.Sello || "",
         Fecha: datos.Fecha,
         LugarExpedicion: datos.LugarExpedicion || "",
         Moneda: datos.Moneda || "XXX",
@@ -290,6 +293,7 @@ const prepararComplementoPago = (factura) => {
         NoCertificadoSAT: datos.infoTimbrado?.NoCertificadoSAT,
         SelloSAT: datos.infoTimbrado?.SelloSAT,
         RfcProvCertif: datos.infoTimbrado?.RfcProvCertif,
+        CadenaOriginalSAT: datos.infoTimbrado?.CadenaOriginalSAT || "cadena_original_ficticia",
         
         // Complemento específico
         es_complemento_pago: true,
