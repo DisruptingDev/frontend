@@ -9,6 +9,7 @@ import Precios from '@/components/Pricing/Precios';
 import FolioPackages from '@/components/FolioPackages/folioPackages';
 import Contact from '@/components/contact/contact';
 import Footer from '@/components/Footer/Footer';
+import WhatsAppButton from '@/components/WhatsAppButton/WhatsAppButton';
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ export default function HomePage() {
             <FolioPackages />
             <Contact />
             <Footer />
+            <WhatsAppButton />
         </div>
     );
 }

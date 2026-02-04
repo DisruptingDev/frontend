@@ -1,4 +1,4 @@
-import React, { use, useState, useEffect} from 'react';
+import React, { use, useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, Box, Typography, Table, TableBody, TableCell, TableRow, TextField, Grid, Divider, Snackbar,
@@ -19,7 +19,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
     const handleFileUpload = (event) => {
         const file = event.target.files[0];
         const allowedExtensions = /(\.pdf|\.jpg|\.jpeg|\.png)$/i;
-    
+
         if (file && allowedExtensions.test(file.name)) {
             setArchivo(file);
             setAlertMessage(''); // Limpiar mensaje de error si el archivo es válido
@@ -29,7 +29,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
             setSeverity('error');
         }
     };
-    
+
     // Función para formatear como moneda
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('es-MX', {
@@ -59,7 +59,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                 if (response.ok) {
                     setAlertMessage('Comprobante subido correctamente');
                     setSeverity('success');
-            
+
                     setTimeout(() => {
                         setActualizar(true);
                         setArchivo(null);
@@ -158,7 +158,7 @@ const ResumenOrdenesDialog = ({ open, onClose, ordenesSeleccionadas, totalAPagar
                                 <Typography color="text.secondary">Beneficiario:</Typography>
                             </Grid>
                             <Grid item xs={7}>
-                                <Typography color="text.primary" fontWeight="medium">CFDITotal S.A. de C.V.</Typography>
+                                <Typography color="text.primary" fontWeight="medium">Idea.ly. S.A.S. de C.V.</Typography>
                             </Grid>
                         </Grid>
                         <Divider sx={{ my: 1 }} />
