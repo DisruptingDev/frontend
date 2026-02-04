@@ -634,28 +634,69 @@ const DataTableMRT = ({ token }) => {
         {
             accessorKey: 'Fecha',
             header: 'Fecha\nEmisión',
-            size: 150,
+            size: 250,
             filterFn: (row, id, filterValue) => {
                 if (!filterValue) return true;
-                const dateRow = dayjs(row.getValue(id)).format('YYYY-MM-DD');
-                return dateRow === filterValue;
+                // filterValue expects [start, end] strings in YYYY-MM-DD format
+                const [start, end] = Array.isArray(filterValue) ? filterValue : [null, null];
+                if (!start && !end) return true;
+
+                const rowDate = dayjs(row.getValue(id));
+                if (!rowDate.isValid()) return false;
+
+                const s = start ? dayjs(start) : null;
+                const e = end ? dayjs(end) : null;
+
+                if (s && e) {
+                    return rowDate.isSame(s, 'day') || rowDate.isSame(e, 'day') || (rowDate.isAfter(s) && rowDate.isBefore(e));
+                } else if (s) {
+                    return rowDate.isSame(s, 'day') || rowDate.isAfter(s);
+                } else if (e) {
+                    return rowDate.isSame(e, 'day') || rowDate.isBefore(e);
+                }
+                return true;
             },
-            Filter: ({ column }) => (
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                        onChange={(newValue) => {
-                            column.setFilterValue(newValue ? newValue.format('YYYY-MM-DD') : undefined);
-                        }}
-                        slotProps={{
-                            textField: {
-                                variant: 'standard',
-                                placeholder: 'Filtrar Fecha'
-                            }
-                        }}
-                        disableFuture
-                    />
-                </LocalizationProvider>
-            ),
+            Filter: ({ column }) => {
+                const filterValue = column.getFilterValue() || [null, null];
+                const [startDate, endDate] = filterValue;
+
+                return (
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <DatePicker
+                                value={startDate ? dayjs(startDate) : null}
+                                onChange={(newValue) => {
+                                    const newStart = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                    column.setFilterValue([newStart, endDate]);
+                                }}
+                                slotProps={{
+                                    textField: {
+                                        variant: 'standard',
+                                        placeholder: 'De',
+                                        sx: { minWidth: '100px' }
+                                    }
+                                }}
+                                disableFuture
+                            />
+                            <DatePicker
+                                value={endDate ? dayjs(endDate) : null}
+                                onChange={(newValue) => {
+                                    const newEnd = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                    column.setFilterValue([startDate, newEnd]);
+                                }}
+                                slotProps={{
+                                    textField: {
+                                        variant: 'standard',
+                                        placeholder: 'Hasta',
+                                        sx: { minWidth: '100px' }
+                                    }
+                                }}
+                                disableFuture
+                            />
+                        </Box>
+                    </LocalizationProvider>
+                );
+            },
             Cell: ({ cell }) => dayjs(cell.getValue()).format('DD/MM/YYYY HH:mm')
         },
         {
@@ -701,6 +742,18 @@ const DataTableMRT = ({ token }) => {
             header: 'Serie',
             size: 100,
             filterFn: 'contains',
+        },
+        {
+            accessorKey: 'MontoTotalPagos',
+            header: 'Monto Pago',
+            size: 120,
+            Cell: ({ row }) => {
+                if (row.original.TipoDeComprobante === 'P') {
+                    return formatCurrency(row.original.MontoTotalPagos || 0);
+                }
+                return '-';
+            },
+            enableColumnFilter: false,
         },
         {
             id: 'Estatus',
@@ -840,6 +893,7 @@ const DataTableMRT = ({ token }) => {
                                 const json = rows.map((row) => ({
                                     ID: row.original.ID,
                                     Folio: row.original.Folio,
+                                    Serie: row.original.Serie,
                                     UUID: row.original.uuid,
                                     EmisorNombre: row.original.Emisor?.Nombre,
                                     EmisorRFC: row.original.Emisor?.Rfc,
@@ -847,13 +901,15 @@ const DataTableMRT = ({ token }) => {
                                     ReceptorRFC: row.original.Receptor?.Rfc,
                                     Fecha: dayjs(row.original.Fecha).format('DD/MM/YYYY HH:mm'),
                                     FechaTimbrado: row.original.fechaTimbrado ? dayjs(row.original.fechaTimbrado).format('DD/MM/YYYY HH:mm') : '',
+                                    MontoPago: row.original.TipoDeComprobante === 'P' ? row.original.MontoTotalPagos : '',
                                     SubTotal: row.original.SubTotal,
                                     TotalImpuestosTrasladados: row.original.Conceptos?.TotalImpuestosTrasladados || 0,
                                     TotalImpuestosRetenidos: row.original.Conceptos?.TotalImpuestosRetenidos || 0,
                                     Total: row.original.Total,
                                     Moneda: row.original.Moneda,
                                     MetodoPago: row.original.MetodoPago,
-                                    Estatus: row.original.Estatus
+                                    Estatus: row.original.Estatus === 'Cancelada' ? 'Cancelada' : (row.original.uuid ? 'Timbrada' : 'No timbrada'),
+                                    TipoDeComprobante: row.original.TipoDeComprobante,
                                 }));
                                 const worksheet = XLSX.utils.json_to_sheet(json);
                                 const workbook = XLSX.utils.book_new();
