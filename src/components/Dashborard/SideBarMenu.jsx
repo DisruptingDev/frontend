@@ -27,7 +27,8 @@ import {
   Close as CloseIcon,
   FileUpload as ImportarXMLIcon,
   ExpandLess,
-  ExpandMore
+  ExpandMore,
+  Email as BuzonIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { WithPermission } from '@/components/WithPermission';
@@ -103,6 +104,13 @@ const baseMenuItems = [
     path: "/Conceptos",
     permission: "ver_conceptos",
     subItems: null
+  },
+  {
+    title: "Buzón Tributario",
+    icon: <BuzonIcon />,
+    path: "/BuzonTributario",
+    permission: "ver_emisores",
+    subItems: null
   }
 ];
 
@@ -117,7 +125,7 @@ const SideBarMenu = () => {
     if (typeof window !== 'undefined') {
       const bodValue = localStorage.getItem('BOD');
       const hideTimbres = bodValue === 'true';
-      
+
       // Filtrar los items del menú según el valor de BOD
       if (hideTimbres) {
         const filteredItems = baseMenuItems.filter(item => item.title !== "Timbres");
