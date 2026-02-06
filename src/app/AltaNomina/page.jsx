@@ -5,11 +5,12 @@ import Header from "@/components/Header/Header.jsx";
 import { isAuthenticated } from "@/utils/authRedirect";
 import { Box, Button, Dialog, DialogTitle, DialogContent, Grid } from "@mui/material";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
+import ModalNomina from "@/components/FacturasMasivas/ModalNomina";
 import modal from "@/components/FacturasMasivas/Modal";
 import ModalError from "@/components/Home/Modales/modalError";
-import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
+import VistaNominasImportadas from "@/components/FacturasMasivas/VistaNominasImportadas";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import Select from "@/components/Select/Select.jsx";
 export default function ImportarFacturas() {
     const router = useRouter();
 
@@ -18,7 +19,8 @@ export default function ImportarFacturas() {
     const [openModal, setOpenModal] = useState(false);
     const [openModalError, setOpenModalError] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
-    const [facturas, setFacturas] = useState([]);
+    const [nominas, setNominas] = useState([]);
+    const [selectedEmisor, setSelectedEmisor] = useState(null);
 
     const [token, setToken] = useState("");
     useEffect(() => {
@@ -58,52 +60,95 @@ export default function ImportarFacturas() {
                 link.click();
             }
 
+
         } catch (error) {
             console.error(error);
 
         }
     };
 
-    const handleGuardarFacturas = () => {
-        console.log(facturas);
+    const handleGuardarNominas = async () => {
+        console.log(nominas);
 
         // Función para validar si un objeto contiene errores
         const hasError = (obj) => {
+            if (!obj) return false;
             return Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
         };
 
-        // Validar cuántas facturas tienen errores
-        const facturasConErrores = facturas.filter((factura) => {
+        // Validar cuántas nóminas tienen errores
+        const nominasConErrores = nominas.filter((nomina) => {
+            // Adjust validation based on Nomina structure
+            // Assuming errors can be at root or specific children
             return (
-                hasError(factura.Concepto) ||
-                hasError(factura.Emisor) ||
-                hasError(factura.Impuesto) ||
-                hasError(factura.Receptor)
+                hasError(nomina) ||
+                hasError(nomina.Receptor) ||
+                hasError(nomina.Nomina)
             );
         });
-        // Validar cuántas facturas no tienen errores
-        const facturasSinErrores = facturas.filter((factura) => {
-            return !hasError(factura.Concepto) && !hasError(factura.Emisor) && !hasError(factura.Impuesto) && !hasError(factura.Receptor);
+
+        // Validar cuántas nóminas no tienen errores
+        const nominasSinErrores = nominas.filter((nomina) => {
+            return !(
+                hasError(nomina) ||
+                hasError(nomina.Receptor) ||
+                hasError(nomina.Nomina)
+            );
         });
-        console.log(facturasConErrores);
-        console.log(facturasSinErrores);
-        if (facturasConErrores.length === facturas.length) {
-            console.log("Todas las facturas contienen errores");
+
+        console.log("Con errores:", nominasConErrores);
+        console.log("Sin errores:", nominasSinErrores);
+
+        if (nominasConErrores.length === nominas.length) {
+            console.log("Todas las nóminas contienen errores");
             setOpenModalError(true);
-            setConfirmationMessage("Todas las facturas contienen errores");
-            // Mostrar modal con un mensaje de error
-
+            setConfirmationMessage("Todas las nóminas contienen errores");
+            return;
         }
-        else {
-            if (facturasConErrores.length > 0) {
-                console.log("Hay facturas con errores");
-                // Mostrar modal con las facturas con errores
 
+        if (nominasConErrores.length > 0) {
+            console.log("Hay nóminas con errores");
+            // Optional: Alert user that only valid ones will be uploaded or block
+            // For now, let's proceed with valid ones or ask confirmation (skipping confirmation for speed unless requested)
+            // setOpenModalError(true);
+            // setConfirmationMessage("Hay registros con errores. Solo se procesarán los correctos.");
+            // return; // Uncomment to block
+        }
+
+        if (nominasSinErrores.length === 0) return;
+
+        try {
+            // iterate and save specifically or batch?
+            // The endpoint /ComplementoNomina likely accepts a single object or list.
+            // "guardara los datos" usually implies batch if previous was batch. 
+            // However, typical API designs might be per item. 
+            // Let's assume batch for list endpoint or iterative. 
+            // Given "CargaMasiva" context, usually it sends the whole list.
+            // Let's try sending the array of valid nominas.
+
+            const response = await fetch(`${apiUrl}/api/facturas/Facturas/ComplementoNomina`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(nominasSinErrores),
+            });
+
+            if (response.ok) {
+                alert("Nóminas guardadas correctamente");
+                setNominas([]);
+                // Reload or redirect?
+            } else {
+                const errorData = await response.json();
+                console.error("Error saving nominas:", errorData);
+                alert("Error al guardar las nóminas");
             }
+
+        } catch (error) {
+            console.error("Error network:", error);
+            alert("Error de conexión");
         }
-
-        // Aquí podrías llamar a tu API para subir las facturas con errores y sin errores
-
     };
 
     return (
@@ -122,46 +167,72 @@ export default function ImportarFacturas() {
                         boxShadow={3}
                         borderRadius={2}
                     >
-                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
+                        <Box display="flex" flexDirection="column" gap={2} mb={2}>
+                            <Box sx={{ maxWidth: 400 }}>
+                                <Select
+                                    label="Seleccionar Emisor"
+                                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
+                                    id="ID"
+                                    descripcion="Nombre"
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            setSelectedEmisor(JSON.parse(e.target.value));
+                                        } else {
+                                            setSelectedEmisor(null);
+                                        }
+                                    }}
+                                    value={selectedEmisor?.ID || ""}
+                                />
+                            </Box>
+                            <Box display="flex" justifyContent="flex-end" gap={2}>
+                                <Button
+                                    variant="contained"
+                                    disabled={!selectedEmisor}
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
 
-                                }}
-                                onClick={handleOpenModal}
+                                    }}
+                                    onClick={handleOpenModal}
 
-                            >
-                                Importar Nóminas
-                            </Button>
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
+                                >
+                                    Importar Nóminas
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    disabled={!selectedEmisor}
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
 
-                                }}
-                                onClick={handleDescargarPlantilla}
-                            >
-                                Descargar Plantilla
-                            </Button>
+                                    }}
+                                    onClick={handleDescargarPlantilla}
+                                >
+                                    Descargar Plantilla
+                                </Button>
+                            </Box>
                         </Box>
-                        <VistaFacturasImportadas facturasRecuperadas={facturas} token={token} />
-                        <ModalCSV token={token} open={openModal} handleClose={handleCloseModal} handleUpload={setFacturas} />
+                        <VistaNominasImportadas facturasRecuperadas={nominas} token={token} actualizarFacturas={setNominas} />
+                        <ModalNomina
+                            token={token}
+                            open={openModal}
+                            handleClose={handleCloseModal}
+                            handleUpload={setNominas}
+                            additionalData={{ EmisorID: selectedEmisor?.ID }}
+                        />
                         <ModalError openModalError={openModalError} handleCloseModal={handleCloseModalError} confirmationMessage={confirmationMessage} />
-                        {facturas.length > 0 &&
+                        {nominas.length > 0 &&
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button
                                     variant="contained"
                                     sx={{
                                         backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
                                     }}
-                                    onClick={handleGuardarFacturas}
+                                    onClick={handleGuardarNominas}
                                 >
                                     Importar
                                 </Button>

@@ -14,7 +14,11 @@ import {
     MenuItem,
     LinearProgress,
     Button,
-    Tooltip
+    Tooltip,
+    Typography,
+    useTheme,
+    useMediaQuery,
+    Grid
 } from '@mui/material';
 import {
     MoreVert as MoreVertIcon,
@@ -546,6 +550,41 @@ const DataTableMRT = ({ token }) => {
     // -- Columns Definition --
     const columns = useMemo(() => [
         {
+            id: 'MobileSummary',
+            header: 'Resumen',
+            enableColumnFilter: false,
+            enableSorting: false,
+            Cell: ({ row }) => (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="caption" fontWeight="bold">#{row.original.ID}</Typography>
+                        {(() => {
+                            const value = row.original;
+                            let status = 'No timbrada';
+                            let color = 'default';
+                            if (value.Estatus === 'Cancelada') {
+                                status = 'Cancelada';
+                                color = 'error';
+                            } else if (value.uuid) {
+                                status = 'Timbrada';
+                                color = 'success';
+                            }
+                            return <Chip label={status} color={color} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />;
+                        })()}
+                    </Box>
+                    <Typography variant="caption" sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                        <b>Emisor:</b> {row.original.Emisor?.Nombre || 'Desconocido'}
+                    </Typography>
+                    <Typography variant="caption" sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                        <b>Receptor:</b> {row.original.Receptor?.Nombre || 'Desconocido'}
+                    </Typography>
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ mt: 0.5 }}>
+                        Total: {formatCurrency(row.original.Total || 0)}
+                    </Typography>
+                </Box>
+            ),
+        },
+        {
             accessorKey: 'ID',
             header: 'ID',
             enableColumnFilter: false,
@@ -823,6 +862,10 @@ const DataTableMRT = ({ token }) => {
     };
 
 
+    // --- Responsive Logic ---
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
     const table = useMaterialReactTable({
         columns,
         data,
@@ -853,9 +896,28 @@ const DataTableMRT = ({ token }) => {
         enableRowVirtualization: true,
         initialState: { density: 'comfortable' },
         localization: MRT_Localization_ES,
+        enableTableHead: !isMobile,
         state: {
             isLoading: isLoading,
             showProgressBars: isLoading,
+            columnVisibility: isMobile ? {
+                MobileSummary: true,
+                ID: false,
+                Folio: false,
+                uuid: false,
+                Emisor: false,
+                Receptor: false,
+                Fecha: false,
+                fechaTimbrado: false,
+                MetodoPago: false,
+                Serie: false,
+                MontoTotalPagos: false,
+                Estatus: false,
+                SubTotal: false,
+                Total: false,
+            } : {
+                MobileSummary: false,
+            },
         },
         enableRowActions: true,
         positionActionsColumn: 'last',
@@ -865,6 +927,50 @@ const DataTableMRT = ({ token }) => {
                 size: 100,
             },
         },
+        renderDetailPanel: isMobile ? ({ row }) => (
+            <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: '1rem',
+                p: 2,
+                backgroundColor: '#f5f5f5'
+            }}>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Folio:</Typography>
+                    <Typography variant="body2">{row.original.Folio || '-'}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">UUID:</Typography>
+                    <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{row.original.uuid || 'Sin timbrar'}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Fecha Emisión:</Typography>
+                    <Typography variant="body2">{dayjs(row.original.Fecha).format('DD/MM/YYYY HH:mm')}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Fecha Timbrado:</Typography>
+                    <Typography variant="body2">{row.original.fechaTimbrado ? dayjs(row.original.fechaTimbrado).format('DD/MM/YYYY HH:mm') : '-'}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Método de Pago:</Typography>
+                    <Typography variant="body2">{row.original.MetodoPago || '-'}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Serie:</Typography>
+                    <Typography variant="body2">{row.original.Serie || '-'}</Typography>
+                </Box>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Subtotal:</Typography>
+                    <Typography variant="body2">{formatCurrency(row.original.SubTotal || 0)}</Typography>
+                </Box>
+                {row.original.TipoDeComprobante === 'P' && (
+                    <Box>
+                        <Typography variant="subtitle2" color="textSecondary">Monto Pago:</Typography>
+                        <Typography variant="body2">{formatCurrency(row.original.MontoTotalPagos || 0)}</Typography>
+                    </Box>
+                )}
+            </Box>
+        ) : undefined,
         renderRowActions: ({ row }) => (
             <IconButton onClick={(e) => {
                 setAnchorEl(e.currentTarget);

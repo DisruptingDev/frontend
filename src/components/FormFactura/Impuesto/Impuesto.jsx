@@ -190,8 +190,8 @@ export default function Impuesto({
 
     return (
         <Box>
-            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="start" gap={2}>
-                <Box flex={1}>
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} alignItems="start" gap={2} width={{ xs: '100%' }}>
+                <Box flex={1} width={{ xs: '100%' }}>
                     <Select
                         register={register}
                         clave='Clave'
@@ -207,7 +207,7 @@ export default function Impuesto({
                     />
                 </Box>
 
-                <Box flex={1}>
+                <Box flex={1} width={{ xs: '100%' }}>
                     <Select
                         register={register}
                         clave=""
@@ -224,7 +224,7 @@ export default function Impuesto({
                     />
                 </Box>
 
-                <Box flex={1}>
+                <Box flex={1} width={{ xs: '100%' }}>
                     <TextField
                         label="Base Impuesto"
                         type="text"
@@ -232,10 +232,11 @@ export default function Impuesto({
                         value={formatCurrency(getValues(`impuestos[${index}].BaseImpuesto`) || 0)}
                         fullWidth
                         InputProps={{ readOnly: true }}
+                        InputLabelProps={{ shrink: true }}
                     />
                 </Box>
 
-                <Box flex={1}>
+                <Box flex={1} width={{ xs: '100%' }}>
                     <TextField
                         label="Monto"
                         type="text"
@@ -243,11 +244,12 @@ export default function Impuesto({
                         value={formatCurrency(monto)}
                         fullWidth
                         InputProps={{ readOnly: true }}
+                        InputLabelProps={{ shrink: true }}
                     />
                 </Box>
 
                 {fieldsLength > 1 && (
-                    <Box>
+                    <Box width={{ xs: '100%' }}>
                         <Button
                             variant="contained"
                             sx={{
