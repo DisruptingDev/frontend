@@ -212,7 +212,12 @@ const DataTableMRT = ({ token }) => {
                         setConfirmationMessage('Facturas timbradas exitosamente.');
                         setOpenModalSuccess(true);
                     } else {
-                        setConfirmationMessage('Error al timbrar facturas: ' + (factura.error || ''));
+                        const errorMensaje =
+                            factura?.error ||
+                            data?.servicioTimbrado?.mensaje ||
+                            data?.mensaje ||
+                            'Error desconocido al timbrar';
+                        setConfirmationMessage('Error al timbrar facturas: ' + errorMensaje);
                         setOpenModalError(true);
                     }
                 }

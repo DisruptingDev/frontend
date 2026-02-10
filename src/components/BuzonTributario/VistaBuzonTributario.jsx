@@ -27,7 +27,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 const mainApiUrl = process.env.NEXT_PUBLIC_API_URL;
 // Assuming the microservice runs on port 8082 locally or properly configured in prod
 // Ideally this should be an environment variable like NEXT_PUBLIC_BUZON_URL
-const buzonApiUrl = "http://localhost:8082";
+const buzonApiUrl = "https://api.wisefacturacion.com/";
 
 const VistaBuzonTributario = ({ token }) => {
     const [empresas, setEmpresas] = useState([]);
@@ -96,7 +96,7 @@ const VistaBuzonTributario = ({ token }) => {
         setStatusError('');
         setCfdiStatus(null);
         try {
-            const response = await fetch(`${buzonApiUrl}/buzontributario/status/${cfdiUuid}`, {
+            const response = await fetch(`${buzonApiUrl}api/buzontributario/consultarEstatusComprobante/${cfdiUuid}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`, // Passing token if needed by microservice
                 },
@@ -126,7 +126,7 @@ const VistaBuzonTributario = ({ token }) => {
             // checking router again: v1.GET("/petitions/pending", prodigiaController.ConsultarSolicitudesPendientes)
             // The service method signature takes RFC, so the controller likely reads it from Query or Token.
             // I'll assume Query param for now: ?rfc=...
-            const response = await fetch(`${buzonApiUrl}/buzontributario/petitions/pending?rfc=${rfc}`, {
+            const response = await fetch(`${buzonApiUrl}api/buzontributario/consultarPeticionesPendientes?rfc=${rfc}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
