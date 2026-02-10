@@ -97,12 +97,16 @@ const VistaBuzonTributario = ({ token }) => {
         setCfdiStatus(null);
         try {
             const response = await fetch(`${buzonApiUrl}api/buzontributario/consultarEstatusComprobante/${cfdiUuid}`, {
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`, // Passing token if needed by microservice
                 },
             });
             if (!response.ok) {
-                throw new Error('Error consultando el status');
+                console.error('Error fetching status:', response.status, response.statusText);
+                const errorText = await response.text();
+                console.error('Error body:', errorText);
+                throw new Error(`Error consultando el status: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
             setCfdiStatus(data);
@@ -127,6 +131,7 @@ const VistaBuzonTributario = ({ token }) => {
             // The service method signature takes RFC, so the controller likely reads it from Query or Token.
             // I'll assume Query param for now: ?rfc=...
             const response = await fetch(`${buzonApiUrl}api/buzontributario/consultarPeticionesPendientes?rfc=${rfc}`, {
+                method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -221,10 +226,29 @@ const VistaBuzonTributario = ({ token }) => {
 
                             {statusError && <Alert severity="error">{statusError}</Alert>}
 
-                            {cfdiStatus && (
+                            {cfdiStatus && cfdiStatus.servicioConsultaComprobante && (
                                 <Box mt={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
-                                    <Typography variant="subtitle2">Resultado:</Typography>
-                                    <pre>{JSON.stringify(cfdiStatus, null, 2)}</pre>
+                                    <Typography variant="subtitle2" gutterBottom>Resultado de la Consulta:</Typography>
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={6}>
+                                            <Typography variant="body2" color="textSecondary">Estado:</Typography>
+                                            <Typography variant="body1" fontWeight="bold">
+                                                {cfdiStatus.servicioConsultaComprobante.estado}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={6}>
+                                            <Typography variant="body2" color="textSecondary">Es Cancelable:</Typography>
+                                            <Typography variant="body1">
+                                                {cfdiStatus.servicioConsultaComprobante.esCancelable}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Typography variant="body2" color="textSecondary">Código Estatus:</Typography>
+                                            <Typography variant="body2">
+                                                {cfdiStatus.servicioConsultaComprobante.codigoEstatus}
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
                                 </Box>
                             )}
                         </CardContent>
