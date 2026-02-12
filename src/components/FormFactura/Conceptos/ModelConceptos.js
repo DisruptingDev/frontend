@@ -2,8 +2,8 @@ import validarConcepto from "./ValidarConcepto.js"
 import separarImpuestos from "./SepararImpuestos.js"
 
 export default function CrearConcepto(getValues, impuestos) {
+    console.log("Impuestos en CrearConcepto", impuestos);
 
-    console.log("Creando concepto objeto impuesto", getValues("ObjetoImpuesto"));
     let concepto = {
         Nombre: getValues("Nombre"),
         ClaveProdServ: getValues("ClaveProdServ"),
@@ -22,7 +22,6 @@ export default function CrearConcepto(getValues, impuestos) {
         TotalRetenciones: 0,
         TotalTraslados: 0
     };
-    console.log("Conceptos",concepto);
 
     const resultado = validarConcepto(concepto);
 

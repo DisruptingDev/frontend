@@ -151,6 +151,8 @@ export default function Impuesto({
             setValue(`impuestos[${index}].Tasa`, data.ID);
             setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor));
 
+            console.log("Valor de tasa guardado:", parseFloat(data.Valor));
+
             // Si es nota de crédito, forzar recálculo
             if (isNotaCredito) {
                 const currentBase = getValues(`impuestos[${index}].BaseImpuesto`);

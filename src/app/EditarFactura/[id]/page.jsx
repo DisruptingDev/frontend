@@ -39,14 +39,10 @@ export default function EditarFactura() {
     const router = useRouter(); // Inicializa el router
     const [token, setToken] = useState(""); // Estado para almacenar el token
 
-    // console.log(token);
-    // console.log(conceptos);
-
     useEffect(() => {
         // Verifica la autenticación al montar el componente
         const token = isAuthenticated();
         if (!token) {
-            // console.log("SEsion",!isAuthenticated());
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         }
         else {
@@ -103,7 +99,6 @@ export default function EditarFactura() {
                     },
                 });
                 const data = await response.json();
-                console.log('Factura obtenida:', data);
                 const facturaConvertida = convertirCamposANumericos(data);
                 setFacturaEdit(facturaConvertida);
             } catch (error) {
@@ -118,11 +113,9 @@ export default function EditarFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            //console.log("Factura editada", facturaEdit);
             const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
-                console.log("Conceptos", Conceptos);
                 setConceptos(Conceptos);
             }
             if (Emisor) {
@@ -140,16 +133,13 @@ export default function EditarFactura() {
 
 
     const onSubmit = (data) => {
-        console.log("Datos enviados:", data);
         if (conceptos.length === 0) {
             setSnackbarMessage('Debe agregar al menos un concepto antes de crear la factura.');
             setSnackbarSeverity('error'); // Configura el Snackbar como error
             setOpenSnackbar(true);
             return;
         }
-        console.log("Conceptos ante de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, id, "Factura");
-        console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito
@@ -177,8 +167,6 @@ export default function EditarFactura() {
             setOpenSnackbar(true);
             return;
         }
-        //console.log("Data", data);
-        //console.log("Conceptos antes de crear", conceptos);
         const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
