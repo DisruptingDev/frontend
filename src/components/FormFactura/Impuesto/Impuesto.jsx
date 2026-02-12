@@ -249,7 +249,7 @@ export default function Impuesto({
                 </Box>
 
                 {fieldsLength > 1 && (
-                    <Box width={{ xs: '100%' }}>
+                    <Box width={{ xs: '100%', md: 'auto' }}>
                         <Button
                             variant="contained"
                             sx={{

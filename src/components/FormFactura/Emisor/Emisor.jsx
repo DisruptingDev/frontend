@@ -12,6 +12,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     const [minDate, setMinDate] = useState('');
     const [maxDate, setMaxDate] = useState('');
     const [serieUrl, setSerieUrl] = useState('');
+    const [isMXN, setIsMXN] = useState(false);
 
     useEffect(() => {
         const today = new Date();
@@ -115,9 +116,52 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     }, [emisor, setLugarExpedicion, setValue, trigger]);
 
     useEffect(() => {
-        // Establece el valor por defecto para 'Divisa'
-        setValue('Divisa', 'MXN'); // Por ejemplo, 'MXN' como valor por defecto
-    }, [setValue]);
+        const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+
+        // Fetch Monedas to set default MXN and check initial value
+        const fetchMonedas = async () => {
+            try {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Moneda`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    // Try to find MXN (check both lowercase and uppercase properties just in case)
+                    const mxn = data.find(m => m.clave === 'MXN' || m.Clave === 'MXN');
+                    if (mxn) {
+                        // Access id/clave based on which property exists
+                        // const id = mxn.id || mxn.ID;
+                        const clave = mxn.clave || mxn.Clave;
+
+                        const currentDivisa = getValues("Divisa");
+
+                        // If no value set, set default to MXN
+                        if (!currentDivisa) {
+                            setValue('Divisa', clave);
+                            if (clave === 'MXN') {
+                                setValue("TipoCambio", "1");
+                                setIsMXN(true);
+                            }
+                        } else {
+                            // If value exists (e.g. edit mode), check if it is MXN
+                            // We compare string values (e.g. "MXN")
+                            if (String(currentDivisa) === String(clave)) {
+                                setIsMXN(true);
+                                setValue("TipoCambio", "1");
+                            } else {
+                                setIsMXN(false);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching monedas:", error);
+            }
+        };
+        if (token) {
+            fetchMonedas();
+        }
+    }, [setValue, getValues]);
 
     const handleEmisorChange = (e) => {
         try {
@@ -294,21 +338,39 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 />
 
 
-                <TextField
+                <Select
+                    register={register}
+                    nombre="Divisa"
                     label="Divisa"
-                    {...register("Divisa", { required: "Campo obligatorio" })}
-                    fullWidth
-                    defaultValue="MXN"
-                    disabled
+                    url={`${apiUrl}/api/catalogos/Catalogos/Moneda`}
+                    id="Clave"
+                    clave="Clave"
+                    descripcion="Clave"
                     error={!!errors.Divisa}
-                    helperText={errors.Divisa && errors.Divisa.message}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            '&.Mui-error fieldset': {
-                                borderColor: '#d32f2f',
+                    helperText={errors.Divisa ? "Este campo es obligatorio" : ""}
+                    value={getValues("Divisa") || ""}
+                    onChange={(e) => {
+                        try {
+                            const val = JSON.parse(e.target.value);
+                            // console.log("Moneda seleccionada:", val);
+                            const id = val.id || val.ID;
+                            const clave = val.clave || val.Clave;
+
+                            setValue("Divisa", clave);
+
+                            if (clave === 'MXN' || clave === 'XXX') {
+                                setValue("TipoCambio", "1");
+                                setIsMXN(true);
+                            } else {
+                                setValue("TipoCambio", "");
+                                setIsMXN(false);
                             }
+                            trigger("Divisa");
+                        } catch (err) {
+                            console.error(err);
                         }
                     }}
+                    disabled={disabled}
                 />
 
                 <TextField
@@ -316,7 +378,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     {...register("TipoCambio", { required: "Campo obligatorio" })}
                     fullWidth
                     defaultValue="1"
-                    disabled
+                    disabled={disabled || isMXN}
                     error={!!errors.TipoCambio}
                     helperText={errors.TipoCambio && errors.TipoCambio.message}
                     sx={{
@@ -327,6 +389,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                         }
                     }}
                 />
+
             </Box>
         </Box>
     );

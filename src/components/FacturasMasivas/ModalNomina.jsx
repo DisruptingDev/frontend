@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography } from '@mui/material';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+import * as XLSX from 'xlsx';
+
 const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, uploadUrl }) => {
     const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
 
     const handleFileChange = (event) => {
         setFile(event.target.files[0]);
@@ -12,44 +15,71 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
 
     const handleSubmit = async () => {
         if (!file) return;
+        setLoading(true);
 
-        const formData = new FormData();
-        formData.append("ExcelFile", file, file.name);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-        if (additionalData) {
-            Object.entries(additionalData).forEach(([key, value]) => {
-                formData.append(key, value);
-            });
-        }
+                // Map Excel data to the structure expected by VistaNominasImportadas and Backend
+                const mappedData = jsonData.map((row, index) => {
+                    // Try to be flexible with column names (case insensitive or common variations) if possible, 
+                    // but for now, we'll assume standard headers based on the previous analysis or standard templates.
+                    // If the user has a specific template, we should match those headers.
+                    // Based on "VistaNominasImportadas", we need fields like:
+                    // Rfc, Nombre, Curp, NumEmpleado, TipoContrato, TipoRegimen, PeriodicidadPago, etc.
 
-        // Default endpoint or custom one
-        const url = uploadUrl || `${apiUrl}/api/facturas/Facturas/ComplementoNomina`; // Guessing logic or waiting for user
+                    // Helper to get value ignoring case if needed, or just direct access
+                    const getVal = (key) => row[key] || row[key.toUpperCase()] || row[key.toLowerCase()] || "";
 
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: formData,
-            });
-            const data = await response.json();
-            console.log("Respuesta:", data);
+                    // Construct the object structure:
+                    // { Receptor: { ... }, Nomina: { ... } }
+                    return {
+                        Receptor: {
+                            Rfc: getVal('rfc_empleado') || getVal('rfc_empleado'),
+                            Nombre: getVal('nombre'),
+                            Curp: getVal('CURP') || getVal('Curp'),
+                            NumEmpleado: getVal('No. Empleado') || getVal('NumEmpleado') || getVal('num_empleado'),
+                            NoSeguroSocial: getVal('nss'),
+                            TipoContrato: getVal('tipo_contrato') || getVal('TipoContrato'),
+                            TipoRegimen: getVal('tipo_régimen') || getVal('TipoRegimen'),
+                            TipoJornada: getVal('tipo_jornada') || getVal('TipoJornada'),
+                            PeriodicidadPago: getVal('Periodicidad Pago') || getVal('PeriodicidadPago'),
+                            // Add other fields as necessary from the excel
+                        },
+                        Nomina: {
+                            FechaPago: getVal('Fecha Pago') || getVal('FechaPago'),
+                            FechaInicialPago: getVal('Fecha Inicial Pago') || getVal('FechaInicialPago'),
+                            FechaFinalPago: getVal('Fecha Final Pago') || getVal('FechaFinalPago'),
+                            NumDiasPagados: getVal('Días Pagados') || getVal('NumDiasPagados'),
+                        }
+                    };
+                });
 
-            if (response.ok) {
-                handleUpload(data);
+                console.log("Datos de nómina parseados:", mappedData);
+                handleUpload(mappedData);
                 handleClose();
                 setFile(null);
-            } else {
-                console.error("Error response from server:", data);
-                const errorMsg = data?.message || data?.error || "Hubo un problema al subir la nómina. Verifica el endpoint o el archivo.";
-                alert(`Error: ${errorMsg}`);
-                setFile(null);
+            } catch (error) {
+                console.error("Error parsing Excel file:", error);
+                alert("Error al procesar el archivo. Asegúrate de que es un Excel válido.");
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Error en la solicitud:", error);
-            alert("Hubo un problema de conexión al subir la nómina.");
-        }
+        };
+
+        reader.onerror = (error) => {
+            console.error("Error reading file:", error);
+            alert("Error al leer el archivo.");
+            setLoading(false);
+        };
+
+        reader.readAsBinaryString(file);
     };
 
     return (
