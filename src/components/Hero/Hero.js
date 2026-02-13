@@ -16,12 +16,14 @@ const StyledBox = styled("div")(({ theme }) => ({
   width: "100%",
   height: 350,
   marginTop: '1rem',
+  marginBottom: '-150px', // Pull image down on mobile
   borderRadius: "5rem",
   boxShadow: "4px 4px 8px 8px hsla(0, 0%, 24%, 0.20)",
   backgroundImage: 'url(../../images/cover-wise-IA.jpg)',
   backgroundSize: "cover",
   [theme.breakpoints.up("sm")]: {
     marginTop: theme.spacing(0),
+    marginBottom: 0, // Reset margin on desktop
     height: 450,
   },
 }));
@@ -30,10 +32,10 @@ export default function Hero() {
   return (
     <Box
       id="hero"
-      className="bg-gradient-to-bl from-teal-400 to-cyan-700 mb-52"
+      className="bg-gradient-to-bl from-teal-400 to-cyan-700 mb-20" // Restore spacing to accommodate protruding image
       sx={(theme) => ({
         width: "100%",
-        height: "650px",
+        height: { xs: "100vh", sm: "75vh" },
       })}
     >
       <Container
@@ -42,7 +44,7 @@ export default function Hero() {
           flexDirection: "column",
           alignItems: "center",
           pt: { xs: 14, sm: 20 },
-          pb: { xs: 8, sm: 12 },
+          pb: { xs: 0, sm: 12 }, // Remove padding on mobile so background ends earlier
         }}
       >
         <Stack
@@ -90,6 +92,7 @@ export default function Hero() {
               variant="contained"
               color="primary"
               size="large"
+              href="#paquetes"
               sx={{ minWidth: "fit-content", backgroundColor: '#ffffff', color: '#10968A', marginBottom: '1rem' }}
             >
               Ver paquetes

@@ -82,7 +82,7 @@ export default function RegistroClientes() {
                 <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid>
+                <Grid item xs>
                     <Box
                         bgcolor="white"
                         ml={10}
@@ -91,20 +91,20 @@ export default function RegistroClientes() {
                         boxShadow={3}
                         borderRadius={2}
                     >
-                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2}>
+                        <Box display="flex" justifyContent="flex-end" mb={2} gap={2} width="100%">
                             <WithPermission permission="crear_receptores">
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                }}
-                                onClick={handleOpenModal}
-                            >
-                                Agregar Cliente
-                            </Button>
+                                <Button
+                                    variant="contained"
+                                    sx={{
+                                        backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}
+                                    onClick={handleOpenModal}
+                                >
+                                    Agregar Cliente
+                                </Button>
                             </WithPermission>
                         </Box>
                         <VistaClientes setClienteIdEditar={setClienteIdEditar} actualizar={actualizar} token={token} />

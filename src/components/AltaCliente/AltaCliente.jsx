@@ -1,7 +1,8 @@
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, TextField, Box, Snackbar, Alert, FormControl, InputLabel, MenuItem, Select as MUISelect, FormHelperText } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Button, TextField, Box, Snackbar, Alert, FormControl, InputLabel, MenuItem, Select as MUISelect, FormHelperText, Accordion, AccordionSummary, AccordionDetails, Typography } from '@mui/material';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -220,7 +221,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token, da
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="1.5fr 1fr 1.5fr 1fr "
+                    gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1.5fr 1fr 1.5fr 1fr" }}
                     gap={3}
                     alignItems="start"
                 >
@@ -293,74 +294,6 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token, da
                             e.target.value = e.target.value.replace(/[^0-9]/g, '');
                         }} // Elimina caracteres no numéricos
                     />
-                </Box>
-                <Box
-                    my={2}
-                    display="grid"
-                    gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr "
-                    gap={3}
-                    alignItems="end"
-                >
-                    <TextField
-                        label="Calle"
-                        fullWidth
-                        placeholder="Ej: Av. Siempre Viva"
-                        margin="normal"
-                        error={!!errors.Calle}
-                        helperText={errors.Calle ? "Este campo es obligatorio" : ""}
-                        {...register("Calle", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
-                    <TextField
-                        label="Número exterior"
-                        fullWidth
-                        placeholder="Ej: 742"
-                        margin="normal"
-                        error={!!errors.NumeroExterior}
-                        helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroExterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
-                    <TextField
-                        label="Número interior"
-                        fullWidth
-                        placeholder="Ej: 5"
-                        margin="normal"
-                        error={!!errors.NumeroInterior}
-                        helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroInterior", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
-                    <TextField
-                        label="Colonia"
-                        fullWidth
-                        placeholder="Ej: Centro"
-                        margin="normal"
-                        error={!!errors.Colonia}
-                        helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
-                        {...register("Colonia", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
-                    <TextField
-                        label="Municipio"
-                        fullWidth
-                        placeholder="Ej: Benito Juárez"
-                        margin="normal"
-                        error={!!errors.Municipio}
-                        helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
-                        {...register("Municipio", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
-                    <TextField
-                        label="Estado"
-                        fullWidth
-                        placeholder="Ej: Benito Juárez"
-                        margin="normal"
-                        error={!!errors.Estado}
-                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Estado", { required: false })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
-                    />
                     <TextField
                         label="Correo electrónico *"
                         fullWidth
@@ -372,11 +305,98 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token, da
                         sx={{ alignSelf: 'start', 'marginTop': '0px' }}
                     />
                 </Box>
-                <Box my={4} display="flex" justifyContent="flex-end" gap={3}>
+                <Accordion sx={{ mt: 2 }}>
+                    <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        aria-controls="panel1a-content"
+                        id="panel1a-header"
+                    >
+                        <Typography>Dirección</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Box
+                            display="grid"
+                            gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.4fr" }}
+                            gap={3}
+                            alignItems="end"
+                        >
+                            <TextField
+                                label="Calle"
+                                fullWidth
+                                placeholder="Ej: Av. Siempre Viva"
+                                margin="normal"
+                                error={!!errors.Calle}
+                                helperText={errors.Calle ? "Este campo es obligatorio" : ""}
+                                {...register("Calle", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+                            <TextField
+                                label="Número exterior"
+                                fullWidth
+                                placeholder="Ej: 742"
+                                margin="normal"
+                                error={!!errors.NumeroExterior}
+                                helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
+                                {...register("NumeroExterior", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+                            <TextField
+                                label="Número interior"
+                                fullWidth
+                                placeholder="Ej: 5"
+                                margin="normal"
+                                error={!!errors.NumeroInterior}
+                                helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
+                                {...register("NumeroInterior", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+                            <TextField
+                                label="Colonia"
+                                fullWidth
+                                placeholder="Ej: Centro"
+                                margin="normal"
+                                error={!!errors.Colonia}
+                                helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
+                                {...register("Colonia", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+                            <TextField
+                                label="Municipio"
+                                fullWidth
+                                placeholder="Ej: Benito Juárez"
+                                margin="normal"
+                                error={!!errors.Municipio}
+                                helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
+                                {...register("Municipio", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+                            <TextField
+                                label="Estado"
+                                fullWidth
+                                placeholder="Ej: Benito Juárez"
+                                margin="normal"
+                                error={!!errors.Estado}
+                                helperText={errors.Estado ? "Este campo es obligatorio" : ""}
+                                {...register("Estado", { required: false })}
+                                sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                            />
+
+
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
+
+                <Box
+                    my={4}
+                    display="flex"
+                    justifyContent="flex-end"
+                    gap={3}
+                    flexDirection={{ xs: "column", sm: "row" }}
+                >
                     <Button
                         variant="contained"
                         color="error"
-                        sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                        sx={{ width: { xs: '100%', sm: '150px' }, backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
                         type="button"
                         onClick={handleCancelar}
                     >
@@ -387,7 +407,7 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token, da
                         variant="contained"
                         color="primary"
                         sx={{
-                            width: '250px',
+                            width: { xs: '100%', sm: '250px' },
                             backgroundColor: '#04b2ca',
                             '&:hover': { backgroundColor: '#038a9e' },
                         }}

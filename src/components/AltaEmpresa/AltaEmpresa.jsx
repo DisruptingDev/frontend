@@ -14,13 +14,18 @@ import {
     CardActionArea,
     Dialog,
     DialogContent,
-    IconButton
+    IconButton,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Select from "@/components/Select/Select.jsx";
 import Image from 'next/image';
 import { WithPermission } from '@/components/WithPermission';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
+import FileInput from "@/components/FileInput/FileInput";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -267,7 +272,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 <Box
                     my={2}
                     display="grid"
-                    gridTemplateColumns="1.5fr 1fr 1.5fr 1fr"
+                    gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1.5fr 1fr 1.5fr 1fr" }}
                     gap={3}
                     alignItems="start"
                 >
@@ -346,92 +351,100 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
                 </Box>
-                <Box
-                    my={2}
-                    display="grid"
-                    gridTemplateColumns="0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.7fr "
-                    gap={3}
-                    alignItems="end"
-                >
-                    <TextField
-                        label="Calle"
-                        fullWidth
-                        placeholder="Ej: Av. Siempre Viva"
-                        margin="normal"
-                        error={!!errors.Calle}
-                        helperText={errors.Calle ? "Este campo es obligatorio" : ""}
-                        {...register("Calle", { required: false })}
-                        sx={{ alignSelf: 'start', margin: '0px' }}
-                    />
-                    <TextField
-                        label="Número exterior"
-                        fullWidth
-                        placeholder="Ej: 742"
-                        margin="normal"
-                        error={!!errors.NumeroExterior}
-                        helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroExterior", { required: false })}
-                        sx={{ alignSelf: 'start', marginTop: '0px' }}
-                    />
-                    <TextField
-                        label="Número interior"
-                        fullWidth
-                        placeholder="Ej: 5"
-                        margin="normal"
-                        error={!!errors.NumeroInterior}
-                        helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
-                        {...register("NumeroInterior", { required: false })}
-                        sx={{ alignSelf: 'start', marginTop: '0px' }}
-                    />
-                    <TextField
-                        label="Colonia"
-                        fullWidth
-                        placeholder="Ej: Centro"
-                        margin="normal"
-                        error={!!errors.Colonia}
-                        helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
-                        {...register("Colonia", { required: false })}
-                        sx={{ alignSelf: 'start', marginTop: '0px' }}
-                    />
-                    <TextField
-                        label="Municipio / Alcaldía"
-                        fullWidth
-                        placeholder="Ej: Benito Juárez"
-                        margin="normal"
-                        error={!!errors.Municipio}
-                        helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
-                        {...register("Municipio", { required: false })}
-                        sx={{ alignSelf: 'start', marginTop: '0px' }}
-                    />
-                    <TextField
-                        label="Estado"
-                        fullWidth
-                        placeholder="Ej: CDMX"
-                        margin="normal"
-                        error={!!errors.Estado}
-                        helperText={errors.Estado ? "Este campo es obligatorio" : ""}
-                        {...register("Estado", { required: false })}
-                        sx={{ alignSelf: 'start', marginTop: '0px' }}
-                    />
-                </Box>
-
-                {rfcValue && (
-                    <Box my={2}>
-                        <WithPermission permission="subir_logo">
-                            <Typography variant="h6">Subir Logo</Typography>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageChange}
+                <Accordion sx={{ mt: 2 }}>
+                    <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        aria-controls="panel1a-content"
+                        id="panel1a-header"
+                    >
+                        <Typography>Dirección</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Box
+                            display="grid"
+                            gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "0.7fr 0.4fr 0.4fr 0.4fr 0.4fr 0.7fr" }}
+                            gap={3}
+                            alignItems="end"
+                        >
+                            <TextField
+                                label="Calle"
+                                fullWidth
+                                placeholder="Ej: Av. Siempre Viva"
+                                margin="normal"
+                                error={!!errors.Calle}
+                                helperText={errors.Calle ? "Este campo es obligatorio" : ""}
+                                {...register("Calle", { required: false })}
+                                sx={{ alignSelf: 'start', margin: '0px' }}
                             />
-                            {imagePreview && (
-                                <Box mt={2}>
-                                    <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
-                                </Box>
-                            )}
-                        </WithPermission>
-                    </Box>
-                )}
+                            <TextField
+                                label="Número exterior"
+                                fullWidth
+                                placeholder="Ej: 742"
+                                margin="normal"
+                                error={!!errors.NumeroExterior}
+                                helperText={errors.NumeroExterior ? "Este campo es obligatorio" : ""}
+                                {...register("NumeroExterior", { required: false })}
+                                sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                            <TextField
+                                label="Número interior"
+                                fullWidth
+                                placeholder="Ej: 5"
+                                margin="normal"
+                                error={!!errors.NumeroInterior}
+                                helperText={errors.NumeroInterior ? "Este campo es obligatorio" : ""}
+                                {...register("NumeroInterior", { required: false })}
+                                sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                            <TextField
+                                label="Colonia"
+                                fullWidth
+                                placeholder="Ej: Centro"
+                                margin="normal"
+                                error={!!errors.Colonia}
+                                helperText={errors.Colonia ? "Este campo es obligatorio" : ""}
+                                {...register("Colonia", { required: false })}
+                                sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                            <TextField
+                                label="Municipio / Alcaldía"
+                                fullWidth
+                                placeholder="Ej: Benito Juárez"
+                                margin="normal"
+                                error={!!errors.Municipio}
+                                helperText={errors.Municipio ? "Este campo es obligatorio" : ""}
+                                {...register("Municipio", { required: false })}
+                                sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                            <TextField
+                                label="Estado"
+                                fullWidth
+                                placeholder="Ej: CDMX"
+                                margin="normal"
+                                error={!!errors.Estado}
+                                helperText={errors.Estado ? "Este campo es obligatorio" : ""}
+                                {...register("Estado", { required: false })}
+                                sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
+
+                <Box my={2}>
+                    <WithPermission permission="subir_logo">
+                        {/* <Typography variant="h6">Subir Logo</Typography> */}
+                        <FileInput
+                            name="Subir Logo"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                        />
+                        {imagePreview && (
+                            <Box mt={2}>
+                                <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
+                            </Box>
+                        )}
+                    </WithPermission>
+                </Box>
 
                 <Box my={4}>
                     <Typography variant="h6" gutterBottom>
@@ -533,12 +546,13 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     display="flex"
                     justifyContent="flex-end"
                     gap={3}
+                    flexDirection={{ xs: "column", sm: "row" }}
                 >
                     {btnCancelar == true && (
                         <Button
                             variant="contained"
                             color="error"
-                            sx={{ width: '150px', backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
+                            sx={{ width: { xs: '100%', sm: '150px' }, backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }}
                             type="button"
                             onClick={handleReset}
                         >
@@ -550,7 +564,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         variant="contained"
                         color="primary"
                         sx={{
-                            width: '250px', backgroundColor: '#04b2ca', '&:hover': {
+                            width: { xs: '100%', sm: '250px' }, backgroundColor: '#04b2ca', '&:hover': {
                                 backgroundColor: '#038a9e',
                             },
                         }}

@@ -21,7 +21,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
             <Typography variant="h6" mb={4}>Resumen</Typography>
 
             <Grid container spacing={1} sx={{ width: '100%', margin: 'auto' }}>
-                <Grid item xs={12} md={8}>
+                <Grid item xs={12} xl={8}>
                     {/* Vista Escritorio */}
                     <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                         <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
@@ -138,7 +138,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                 </Grid>
 
                 {/* Tabla de resumen */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} xl={4}>
                     <Table sx={{ width: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
                         <TableBody>
                             <TableRow>

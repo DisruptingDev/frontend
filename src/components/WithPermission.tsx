@@ -11,11 +11,11 @@ interface WithPermissionProps {
 
 export function WithPermission({ permission, children, fallback = null }: WithPermissionProps) {
   const { hasPermission } = useAuth();
-  
+
   if (hasPermission(permission)) {
     return <>{children}</>;
   }
-  
+
   return <>{fallback}</>;
 }
 

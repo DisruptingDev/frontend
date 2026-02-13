@@ -64,12 +64,12 @@ const FolioPackages = () => {
   };
 
   return (
-    <>
+    <Box id="paquetes" sx={{ scrollMarginTop: '100px' }}>
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={value} onChange={handleChange} centered >
-            <Tab sx={{ fontSize: '1.2rem', fontWeight: 'bold' }} label="Paquetes PyMEs" {...a11yProps(0)} />
-            <Tab sx={{ fontSize: '1.2rem', fontWeight: 'bold' }} label="Paquetes de alto volumen" {...a11yProps(1)} />
+            <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes</span><span>PyMEs</span></Box>} {...a11yProps(0)} />
+            <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes de</span><span>alto volumen</span></Box>} {...a11yProps(1)} />
           </Tabs>
         </Box>
         <CustomTabPanel value={value} index={0}>
@@ -170,6 +170,7 @@ const FolioPackages = () => {
           </Box>
         </CustomTabPanel>
       </TabContext>
+
 
       <style>{`
         .section {
@@ -302,7 +303,7 @@ const FolioPackages = () => {
         }
       `}
       </style>
-    </>
+    </Box>
   );
 };
 

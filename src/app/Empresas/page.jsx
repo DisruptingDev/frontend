@@ -87,10 +87,10 @@ export default function AdministraEmpresas() {
         <div>
             <Header />
             <Grid container>
-                <Grid>
+                <Grid item>
                     <SideBarMenu />
                 </Grid>
-                <Grid >
+                <Grid item xs>
                     <Box
                         bgcolor="white"
                         ml={10}

@@ -55,13 +55,13 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
         formData.append('CSD', csdFile);
         formData.append('KEY', keyFile);
         formData.append('PASS', password);
-        
-        console.log('Editar1',formData);
+
+        console.log('Editar1', formData);
         if (editar) {
             formData.append('EmisorID', empresaIdEditar);
-            console.log('Editar',formData);
+            console.log('Editar', formData);
             try {
-               
+
 
                 const response = await fetch(`${apiUrl}/api/certificados/EditarCertificado`, {
                     method: 'PUT',
@@ -75,9 +75,9 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
 
                     const data = await response.json();
                     console.log(data);
-                        setSnackbarMessage("Certificado actualizado correctamente");
-                        setSnackbarSeverity('success');
-                        setOpenSnackbar(true);
+                    setSnackbarMessage("Certificado actualizado correctamente");
+                    setSnackbarSeverity('success');
+                    setOpenSnackbar(true);
 
                 }
                 else {
@@ -99,7 +99,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                 setOpenSnackbar(true);
             }
         }
-        else{
+        else {
             try {
                 const response = await fetch(`${apiUrl}/api/certificados/SubirCSD`, {
                     method: 'POST',
@@ -109,8 +109,8 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                     body: formData,
                 });
 
-                console.log('Response',response);
-                console.log('Token',token);
+                console.log('Response', response);
+                console.log('Token', token);
 
                 if (response.ok) {
 
@@ -160,10 +160,10 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
     return (
         <Box>
             {editar ? <Typography variant="h8">Actualizar Certificado</Typography> : ''}
-            
+
             <Box
                 display="grid"
-                gridTemplateColumns="3fr 3fr 1.5fr 1.5fr 0.5fr"
+                gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "3fr 3fr 1.5fr 1.5fr 0.5fr" }}
                 gap={3}
                 alignItems="start"
             >
@@ -193,7 +193,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                     }}
                     error={passwordError} // Resalta el campo si hay un error
                     helperText={passwordError && "Por favor, ingrese la contraseña."}
-                    sx={{ marginTop: '36px' }}
+                    sx={{ marginTop: { xs: '16px', md: '36px' } }}
                 />
 
                 <Button
@@ -201,7 +201,7 @@ export default function CertificadoCSD({ onUpdateEmpresa, editar, empresaIdEdita
                     color="primary"
                     fullWidth
                     sx={{
-                        height: '56px', fontSize: '14px', backgroundColor: '#04b2ca', marginTop: '36px',
+                        height: '56px', fontSize: '14px', backgroundColor: '#04b2ca', marginTop: { xs: '16px', md: '36px' },
                         '&:hover': {
                             backgroundColor: '#038a9e',
                         },

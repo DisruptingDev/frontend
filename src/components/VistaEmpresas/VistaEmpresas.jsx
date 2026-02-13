@@ -1,8 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import MUIDataTable from "mui-datatables";
-import { ThemeProvider, createTheme, Box, CircularProgress, IconButton, Menu, MenuItem } from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import textLabels from "@/components/DataTables/datatablesTextLabels";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+    MaterialReactTable,
+    useMaterialReactTable,
+    MRT_Localization_ES,
+} from 'material-react-table';
+import {
+    Box,
+    IconButton,
+    Menu,
+    MenuItem,
+    CircularProgress,
+    Typography,
+    Drawer,
+    Button,
+    TextField,
+    Tooltip,
+    useTheme,
+    useMediaQuery,
+    Chip
+} from '@mui/material';
+import {
+    MoreVert as MoreVertIcon,
+    Edit as EditIcon,
+    FilterList as FilterListIcon,
+    Cancel as CancelIcon,
+    CheckCircle as CheckCircleIcon,
+} from '@mui/icons-material';
 import { WithPermission } from '@/components/WithPermission';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -12,66 +35,12 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
     const [loading, setLoading] = useState(true);
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
+    const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
 
-    // Tema personalizado para la tabla
-    const getMuiTheme = () =>
-        createTheme({
-            components: {
-                MUIDataTable: {
-                    styleOverrides: {
-                        root: {
-                            backgroundColor: "#f5f5f5",
-                        },
-                        paper: {
-                            boxShadow: "none",
-                            overflowX: "auto",
-                            width: "100%"
-                        },
-                    },
-                },
-                MUIDataTableHeadCell: {
-                    styleOverrides: {
-                        root: {
-                            backgroundColor: "#1b384a",
-                            color: "white",
-                            fontWeight: "bold",
-                            textAlign: "center",
-                            whiteSpace: "nowrap",
-                            padding: "12px"
-                        },
-                    },
-                },
-                MUIDataTableBodyCell: {
-                    styleOverrides: {
-                        root: {
-                            padding: "12px",
-                            textAlign: "center",
-                            whiteSpace: "nowrap"
-                        },
-                    },
-                },
-            },
-        });
-
-    const handleMenuClick = (event, rowData) => {
-        setAnchorEl(event.currentTarget);
-        setMenuRow(rowData);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-        setMenuRow(null);
-    };
-
-    const handleEditar = () => {
-        if (menuRow) {
-            setEmpresaIdEditar(menuRow.ID);
-            handleMenuClose();
-        }
-    };
-
+    // Fetch Data
     const fetchEmisores = useCallback(async () => {
         if (token) {
+            setLoading(true);
             try {
                 const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
                     headers: {
@@ -79,15 +48,16 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                     },
                 });
                 const data = await response.json();
-
                 if (Array.isArray(data)) {
                     const sortedData = data.sort((a, b) => b.ID - a.ID);
                     setEmisores(sortedData);
                 } else {
                     console.error('Expected an array but received:', typeof data);
+                    setEmisores([]);
                 }
             } catch (error) {
                 console.error('Error fetching emisores:', error);
+                setEmisores([]);
             } finally {
                 setLoading(false);
             }
@@ -104,135 +74,238 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
         }
     }, [actualizar, fetchEmisores]);
 
-    // Columnas de la tabla
-    const columns = [
-        {
-            name: "ID",
-            label: "ID",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
-            }
-        },
-        {
-            name: "Nombre",
-            label: "Nombre",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
-            }
-        },
-        {
-            name: "Rfc",
-            label: "RFC",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
-            }
-        },
-        {
-            name: "Timbres",
-            label: "Timbres Disponibles",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } })
-            }
-        },
-        {
-            name: "Estatus",
-            label: "Estatus",
-            options: {
-                filter: true,
-                sort: true,
-                setCellProps: () => ({ style: { textAlign: 'center' } }),
-                customBodyRender: () => "Activa"
-            }
-        },
-        {
-            name: "Acciones",
-            label: "Acción",
-            options: {
-                filter: false,
-                sort: false,
-                setCellProps: () => ({ style: { textAlign: 'center' } }),
-                customBodyRender: (value, tableMeta) => {
-                    const emisor = emisores[tableMeta.rowIndex];
-                    return (
-                        <div>
+    // Menu Handlers
+    const handleMenuClick = (event, rowOriginal) => {
+        setAnchorEl(event.currentTarget);
+        setMenuRow(rowOriginal);
+    };
 
-                            <IconButton onClick={(event) => handleMenuClick(event, emisor)}>
-                                <MoreVertIcon />
-                            </IconButton>
-                            <WithPermission permission="editar_emisores">
-                                <Menu
-                                    anchorEl={anchorEl}
-                                    open={Boolean(anchorEl) && menuRow?.ID === emisor.ID}
-                                    onClose={handleMenuClose}
-                                >
-                                    <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                </Menu>
-                            </WithPermission>
-                        </div>
-                    );
-                }
-            }
-        }
-    ];
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setMenuRow(null);
+    };
 
-    // Preparación de datos para la tabla
-    const tableData = emisores.map(emisor => [
-        emisor.ID,
-        emisor.Nombre,
-        emisor.Rfc,
-        emisor.Grupo?.TimbresDisponiblesPaquetes || 0,
-        "Activa", // Estatus fijo
-        null // Acciones (se renderiza con customBodyRender)
-    ]);
-
-    // Opciones de la tabla
-    const options = {
-        filterType: 'dropdown',
-        fixedHeader: true,
-        fixedSelectColumn: false,
-        responsive: 'standard',
-        selectableRows: 'none',
-        download: false,
-        print: false,
-        viewColumns: false,
-        rowsPerPage: 10,
-        rowsPerPageOptions: [10, 25, 50],
-        textLabels: textLabels,
-        setTableProps: () => ({
-            style: {
-                tableLayout: 'fixed',
-                width: '100%'
-            }
-        }),
-        onTableInit: (action, state) => {
-            console.log('Tabla inicializada:', state);
+    const handleEditar = () => {
+        if (menuRow) {
+            setEmpresaIdEditar(menuRow.ID);
+            handleMenuClose();
         }
     };
 
-    return (
-        <Box sx={{ width: '100%', overflow: 'hidden', p: 2 }}>
-            <ThemeProvider theme={getMuiTheme()}>
-                {loading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" height="200px">
-                        <CircularProgress />
+    // Columns
+    const columns = useMemo(() => [
+        {
+            id: 'MobileSummary',
+            header: 'Resumen',
+            enableColumnFilter: false,
+            enableSorting: false,
+            Cell: ({ row }) => (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            {row.original.Nombre || 'Sin Nombre'}
+                        </Typography>
+                        <Chip label={`ID: ${row.original.ID}`} size="small" variant="outlined" />
                     </Box>
-                ) : (
-                    <MUIDataTable
-                        title={"Lista de Empresas"}
-                        data={tableData}
-                        columns={columns}
-                        options={options}
+                    <Typography variant="body2" color="textSecondary">
+                        RFC: {row.original.Rfc}
+                    </Typography>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <CheckCircleIcon color="success" fontSize="small" />
+                        <Typography variant="caption" color="textSecondary">
+                            Activa
+                        </Typography>
+                    </Box>
+                </Box>
+            ),
+        },
+        {
+            accessorKey: 'ID',
+            header: 'ID',
+            size: 80,
+            enableColumnFilter: true,
+        },
+        {
+            accessorKey: 'Nombre',
+            header: 'Nombre',
+            size: 250,
+            enableColumnFilter: true,
+        },
+        {
+            accessorKey: 'Rfc',
+            header: 'RFC',
+            size: 150,
+            enableColumnFilter: true,
+        },
+        {
+            accessorFn: (row) => row.Grupo?.TimbresDisponiblesPaquetes || 0,
+            id: 'Timbres',
+            header: 'Timbres Disponibles',
+            size: 180,
+            enableColumnFilter: true,
+        },
+        {
+            id: 'Estatus',
+            header: 'Estatus',
+            size: 120,
+            enableColumnFilter: true,
+            Cell: () => "Activa" // Estatus fijo por ahora, igual que en el original
+        },
+    ], []);
+
+    // Responsive Logic
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    const table = useMaterialReactTable({
+        columns,
+        data: emisores,
+        enableColumnActions: false,
+        enableRowSelection: false,
+        enableColumnFiltering: false, // Hide inline filters
+        enableGlobalFilter: true,
+        enableSorting: true,
+        enableRowVirtualization: true,
+        localization: MRT_Localization_ES,
+        initialState: { density: 'comfortable' },
+        muiTableBodyCellProps: {
+            sx: { fontSize: '12px' },
+        },
+        muiTableHeadCellProps: {
+            sx: {
+                backgroundColor: '#1b384a',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '12px',
+            },
+        },
+        state: {
+            isLoading: loading,
+            showProgressBars: loading,
+            columnVisibility: isMobile ? {
+                MobileSummary: true,
+                ID: false,
+                Nombre: false,
+                Rfc: false,
+                Timbres: false,
+                Estatus: false,
+            } : {
+                MobileSummary: false,
+            },
+        },
+        enableTableHead: !isMobile,
+        enableRowActions: true,
+        positionActionsColumn: 'last',
+        displayColumnDefOptions: {
+            'mrt-row-actions': {
+                header: 'Acciones',
+                size: 80,
+            },
+        },
+        renderRowActions: ({ row }) => {
+            return (
+                <IconButton onClick={(e) => handleMenuClick(e, row.original)}>
+                    <MoreVertIcon />
+                </IconButton>
+            );
+        },
+        renderDetailPanel: isMobile ? ({ row }) => (
+            <Box sx={{
+                display: 'grid',
+                gap: '0.5rem',
+                p: 2,
+                backgroundColor: '#f5f5f5'
+            }}>
+                <Box>
+                    <Typography variant="subtitle2" color="textSecondary">Timbres Disponibles:</Typography>
+                    <Typography variant="body2">{row.original.Grupo?.TimbresDisponiblesPaquetes || 0}</Typography>
+                </Box>
+            </Box>
+        ) : undefined,
+        renderTopToolbarCustomActions: () => {
+            // Show button on both mobile and desktop
+            return (
+                <Button
+                    color="primary"
+                    startIcon={<FilterListIcon />}
+                    onClick={() => setOpenFilterDrawer(true)}
+                    variant="contained"
+                    size="small"
+                    // fullWidth // Only full width on mobile if needed, or adjust via sx
+                    sx={{ width: { xs: '100%', sm: 'auto' } }}
+                >
+                    Filtros
+                </Button>
+            );
+        }
+    });
+
+    return (
+        <Box sx={{ width: '100%' }}>
+            <MaterialReactTable table={table} />
+
+            {/* --- MOBILE FILTER DRAWER --- */}
+            <Drawer
+                anchor="right"
+                open={openFilterDrawer}
+                onClose={() => setOpenFilterDrawer(false)}
+            >
+                <Box sx={{ width: 300, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6">Filtros</Typography>
+                        <IconButton onClick={() => setOpenFilterDrawer(false)}>
+                            <CancelIcon />
+                        </IconButton>
+                    </Box>
+
+                    <TextField
+                        label="Nombre"
+                        variant="outlined"
+                        size="small"
+                        value={table.getColumn('Nombre')?.getFilterValue() || ''}
+                        onChange={(e) => table.getColumn('Nombre').setFilterValue(e.target.value)}
                     />
-                )}
-            </ThemeProvider>
+
+                    <TextField
+                        label="RFC"
+                        variant="outlined"
+                        size="small"
+                        value={table.getColumn('Rfc')?.getFilterValue() || ''}
+                        onChange={(e) => table.getColumn('Rfc').setFilterValue(e.target.value)}
+                    />
+                    <TextField
+                        label="ID"
+                        variant="outlined"
+                        size="small"
+                        value={table.getColumn('ID')?.getFilterValue() || ''}
+                        onChange={(e) => table.getColumn('ID').setFilterValue(e.target.value)}
+                    />
+
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => {
+                            table.resetColumnFilters();
+                            setOpenFilterDrawer(false);
+                        }}
+                    >
+                        Limpiar Filtros
+                    </Button>
+                </Box>
+            </Drawer>
+
+            {/* --- MENUS --- */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+            >
+                <WithPermission permission="editar_emisores">
+                    <MenuItem onClick={handleEditar}>
+                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                    </MenuItem>
+                </WithPermission>
+            </Menu>
         </Box>
     );
 };
