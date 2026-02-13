@@ -83,7 +83,7 @@ export default function FormatearFactura(
       LugarExpedicion: data.LugarExpedicion || "00000",
       EmisorID: data.EmisorID || "",
       ReceptorID: data.ReceptorID,
-      UsoCFDI: "P01",
+      UsoCFDI: "CP01",
       Conceptos: {
         ListaConceptos: [
           {

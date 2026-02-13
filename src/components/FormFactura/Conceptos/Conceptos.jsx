@@ -69,7 +69,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 headers: { 'Authorization': `Bearer ${token}` },
             });
             const data = await response.json();
-            // console.log("Conceptos:", data);
             setConceptoOptions(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error al buscar Conceptos:', error);
@@ -88,8 +87,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             Object.keys(facturasRelacionadas).length > 0;
 
         if (!shouldProcess) return;
-
-        // console.log("Procesando facturas relacionadas:", facturasRelacionadas);
 
         // 1. Prellenar descripción con UUIDs - Ahora accedemos directamente a ListaCFDIRelacionados
         const uuids = facturasRelacionadas.ListaCFDIRelacionados
@@ -165,14 +162,12 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
     useEffect(() => {
         if (selectedClaveUnidad) {
-            // console.log("Selección:", selectedClaveUnidad.Descripcion);
             setValue("Unidad", selectedClaveUnidad.Descripcion);
         }
 
     }, [selectedClaveUnidad, setValue])
 
     useEffect(() => {
-        //console.log("Entre a la funcion");
         fetchOptions();
     }, [queryProdServ, queryUnidad, token]);
 
@@ -214,12 +209,10 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
         if ((editIndex !== null && conceptos[editIndex]) || conceptoSeleccionado) {
             let concepto
             if (conceptoSeleccionado) {
-                // console.log("Concepto seleccionado: ", conceptoSeleccionado);
                 concepto = conceptoSeleccionado;
             } else {
 
                 concepto = conceptos[editIndex];
-                // console.log('Concepto seleccionado para editar:', concepto);
             }
 
             // Establecer valores del concepto
@@ -266,9 +259,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                 });
             }
 
-            console.log('Concepto editado:', getValues(`impuestos`));
             if (!conceptoOptions.some(opt => opt.ID === concepto.ID)) {
-                console.log(`Consultando opciones de Conceptos para: ${concepto.ID}`);
                 fetch(`${apiUrl}/api/catalogos/Catalogos/Conceptos?descripcion=${concepto.Descripcion}`, {
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -450,7 +441,6 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             }
 
         } else {
-            console.log("Ocurrió un error en el concepto");
         }
     };
 
