@@ -39,7 +39,7 @@ export default function Header() {
   }, [router]);
 
   return (
-    <header className="flex m-2 bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-lg">
+    <header className="flex bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-none md:rounded-lg md:m-2">
       {/* Logo de la aplicación */}
       <Link
         href="/Home"
@@ -57,7 +57,7 @@ export default function Header() {
       {/* Menú de usuario */}
       <div className="ml-auto flex items-center">
         <Layout>
-          <HelpIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }}/>
+          <HelpIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }} />
           <FacturasPPD token={token} />
           <UserMenu />
         </Layout>

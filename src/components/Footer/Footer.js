@@ -6,7 +6,7 @@ import { Facebook, Twitter, Instagram, LinkedIn, Email, Phone, LocationOn, Whats
 const Footer = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   return (
     <Box
       component="footer"
@@ -19,15 +19,15 @@ const Footer = () => {
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={4}>
+        <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
           {/* Sección de Información */}
           <Grid item xs={12} md={4}>
-             <Image
-                      src="/images/Log_blanco_wise_factura.png"
-                      alt="Descripción del logo"
-                      width={203}
-                      height={64}
-                    />
+            <Image
+              src="/images/Log_blanco_wise_factura.png"
+              alt="Descripción del logo"
+              width={203}
+              height={64}
+            />
             <Typography variant="body2" sx={{ mb: 2 }}>
               Sistema integral de facturación electrónica y gestión empresarial.
             </Typography>
@@ -85,9 +85,9 @@ const Footer = () => {
         </Grid>
 
         {/* Derechos de autor */}
-        <Box sx={{ 
-          mt: 4, 
-          pt: 2, 
+        <Box sx={{
+          mt: 4,
+          pt: 2,
           borderTop: `1px solid ${theme.palette.primary.light}`,
           textAlign: 'center'
         }}>

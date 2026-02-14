@@ -71,6 +71,8 @@ function MobileLayout({ selectedItemIndex, handleItemClick, selectedFeature }) {
         '-webkit-overflow-scrolling': 'touch',
         pb: 2,
         '&::-webkit-scrollbar': { display: 'none' },
+        width: '100%',
+        maxWidth: '100vw',
       }}
     >
       {items.map((item, index) => (
@@ -79,7 +81,8 @@ function MobileLayout({ selectedItemIndex, handleItemClick, selectedFeature }) {
           variant="outlined"
           sx={{
             minWidth: '280px',
-            width: '85vw',
+            width: '80vw', // Reduced from 85vw to prevent overflow with gaps
+            maxWidth: '350px',
             snapAlign: 'center',
             flexShrink: 0,
             display: 'flex',
@@ -136,7 +139,7 @@ export default function Features() {
   const selectedFeature = items[selectedItemIndex];
 
   return (
-    <Container id="features" className='mt-10 md:mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
+    <Container id="features" className='mt-30 md:mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
       <Box sx={{ width: 100 % { sm: '100%', md: '60%' } }}>
         <Typography
           component="h1"

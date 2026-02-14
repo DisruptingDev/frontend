@@ -35,6 +35,9 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     : alpha(theme.palette.background.default, 0.4),
   boxShadow: (theme.vars || theme).shadows[1],
   padding: "8px 12px",
+  [theme.breakpoints.down("md")]: {
+    padding: "8px 0px",
+  },
 }));
 
 export default function AppAppBar() {
@@ -58,7 +61,7 @@ export default function AppAppBar() {
         mt: "calc(var(--template-frame-height, 0px) + 28px)",
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ px: { xs: 0, md: 2 } }}>
         <StyledToolbar variant="dense" disableGutters>
           <Link
             href="#"

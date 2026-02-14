@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 export default function HomePage() {
     const router = useRouter();
     return (
-        <div>
+        <div className="w-full overflow-x-hidden">
             <AppAppBar />
             <Hero />
             <Featured />

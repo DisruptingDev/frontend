@@ -66,7 +66,7 @@ const FolioPackages = () => {
   return (
     <Box id="paquetes" sx={{ scrollMarginTop: '100px' }}>
       <TabContext value={value}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', width: '100%' }}>
           <Tabs value={value} onChange={handleChange} centered >
             <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes</span><span>PyMEs</span></Box>} {...a11yProps(0)} />
             <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes de</span><span>alto volumen</span></Box>} {...a11yProps(1)} />
@@ -74,7 +74,7 @@ const FolioPackages = () => {
         </Box>
         <CustomTabPanel value={value} index={0}>
           <Box
-            className="section sectionNormal" // Aplicamos clase para fondo y estilos comunes
+            className="section sectionNormal w-full" // Aplicamos clase para fondo y estilos comunes
             sx={{
               // padding, color, display, flexDirection, alignItems son manejados por la clase .section
               flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
