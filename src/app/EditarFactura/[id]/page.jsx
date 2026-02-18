@@ -168,9 +168,6 @@ export default function EditarFactura() {
             return;
         }
 
-        console.log("LogoPath en preview:", data.LogoPath);
-        console.log("Datos del emisor",emisorData);
-
         const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
