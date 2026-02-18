@@ -426,7 +426,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                             />
                             {imagePreview && (
                                 <Box mt={2}>
-                                    <Image src={imagePreview} alt="Vista previa" width={120} height={70} />
+                                    <img src={imagePreview} alt="Vista previa" width={120} height={70} />
                                 </Box>
                             )}
                         </WithPermission>
