@@ -1,5 +1,4 @@
 "use client";
-import { ConstructionOutlined, PagesOutlined } from "@mui/icons-material";
 // import html2pdf from 'html2pdf.js';
 import QRCode from "qrcode";
 
@@ -59,8 +58,6 @@ function numeroALetras(num, moneda = 'pesos') {
   return monedaLetra.toUpperCase();
 }
 
-// Prueba
-//console.log(numeroALetras(171.68)); // Debería imprimir "CIENTO SETENTA Y UN PESOS CON SESENTA Y OCHO CENTAVOS"
 // Función para cargar la plantilla HTML desde un archivo
 const loadTemplate = async (path) => {
   try {
@@ -81,10 +78,8 @@ const fillTemplate = async (template, data) => {
 
   if (data.factura) {
     factura = data.factura;
-    //console.log("Factura contenido:",factura);
   } else {
     factura = data;
-    //console.log("Factura contenido:",factura);
   }
   // Generar HTML para conceptos
   const conceptosHTML = factura.Conceptos.ListaConceptos.map((concepto) => {
@@ -145,8 +140,6 @@ const fillTemplate = async (template, data) => {
     )
     .join("");
 
-  const impuestos = retencionesHTML + trasladosHTML;
-
   let direccionEmisor = "";
   if (factura.Emisor.Calle) {
     direccionEmisor += factura.Emisor.Calle;
@@ -163,9 +156,6 @@ const fillTemplate = async (template, data) => {
       direccionEmisor += ", " + factura.Emisor.Municipio;
     }
   }
-
-  //console.log("direccionEmisor", direccionEmisor);
-
   let direccionReceptor = "";
   console.log("factura.Receptor", factura.Receptor);
   if (factura.Receptor.Calle) {
@@ -186,7 +176,6 @@ const fillTemplate = async (template, data) => {
       direccionReceptor += ", " + factura.Receptor.Estado;
     }
   }
-  //console.log("direccionReceptor", direccionReceptor);
 
   if (direccionEmisor.includes("undefined")) {
     direccionEmisor = "";
@@ -201,7 +190,6 @@ const fillTemplate = async (template, data) => {
     const firma = factura.Certificado;
     const ultimos8 = firma.slice(-8);
     const cadenaQr = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?&id=${factura.uuid}&re=${factura.Emisor.Rfc}&rr=${factura.Receptor.Rfc}&tt=${factura.Total}&fe=${ultimos8}`;
-    // Generar código QR dinámico desde la cadena
     try {
       qrImageBase64 = await QRCode.toDataURL(cadenaQr, {
         errorCorrectionLevel: "H",
@@ -237,6 +225,8 @@ const fillTemplate = async (template, data) => {
       factura.Receptor.UsoCFDI + " " + factura.Receptor.UsoCFDIDescripcion;
   }
 
+  console.log("Logo:",factura.Emisor);
+
   // Reemplazar los placeholders en la plantilla con los valores correspondientes
   return (
     template
@@ -250,7 +240,7 @@ const fillTemplate = async (template, data) => {
         "{{logo}}",
         factura.Emisor.LogoPath
           ? `<img src="${factura.Emisor.LogoPath}" alt="Logo">`
-          : '<img src="/images/Logo_wise_factura.png" alt="Logo">'
+          : '<img src="" alt="Logo">'
       )
       .replace("{{nombreEmisor}}", factura.Emisor.Nombre)
       .replace("{{rfcEmisor}}", factura.Emisor.Rfc)
@@ -310,40 +300,16 @@ const fillTemplate = async (template, data) => {
   );
 };
 
-// const fillDescription = async (template, formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI) => {
-//     console.log('fillDescription', formaPago, metodoPago, regimenFiscalEmisor, RegimenFiscalReceptor, usoCFDI);
-//     return template
-//         .replace('{{formaPago}}', formaPago.Clave + ' ' + formaPago.Descripcion)
-//         .replace('{{metodoPago}}', metodoPago.Clave + ' ' + metodoPago.Descripcion)
-//         // .replace('{{regimenFiscalEmisor}}', regimenFiscalEmisor.Clave + ' ' + regimenFiscalEmisor.Descripcion)
-//         .replace('{{regimenFiscal}}', RegimenFiscalReceptor.Clave + ' ' + RegimenFiscalReceptor.Descripcion)
-//         .replace('{{usoCFDI}}', usoCFDI.Clave + ' ' + usoCFDI.Descripcion)
-// };
 // Función para generar el PDF usando html2pdf
 const generarVistaPrevia = async (factura) => {
-  //console.log("Ejecutando generatePDF con la factura:", factura); // Agrega este log
   try {
     let filledTemplate;
     const template = await loadTemplate("/plantillas/plantilla.html");
-    // const template = await loadTemplate('/plantillas/cancelado.html');
     if (!template) {
       throw new Error("No se pudo cargar la plantilla para la vista previa.");
     }
-    // if (factura) {
-
-    //     const templateFactura = String(await fillTemplate(template, data));
-    //     if (typeof templateFactura === 'string') {
-    //         // console.log('templateFactura', templateFactura);
-    //            filledTemplate = await fillDescription((templateFactura), factura.forma_pago, factura.metodo_pago, factura.regimen_fiscal_emisor, factura.regimen_fiscal_receptor, factura.uso_cfdi);
-    //         console.log('filledTemplate .factura', filledTemplate);
-    //         }
-
-    // }
-    // else {
     filledTemplate = await fillTemplate(template, factura);
 
-    // }
-    // console.log('filledTemplate', filledTemplate);
     return filledTemplate;
   } catch (error) {
     console.error("Error al mostrar la vista previa: ", error);

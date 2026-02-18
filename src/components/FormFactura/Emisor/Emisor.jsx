@@ -65,7 +65,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("MunicipioEmisor", emisorData.Municipio);
             setValue("EstadoEmisor", emisorData.Estado);
             setValue("RegimenFiscalEmisor", emisorData.RegimenFiscal);
-            setValue("LogoEmisor", emisorData.LogoPath);
+            setValue("LogoPath", emisorData.LogoPath);
             setValue("Serie", emisorData.Serie);
             setValue("TipoComprobante", emisorData.TipoComprobante);
 
@@ -101,15 +101,14 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("MunicipioEmisor", emisor.Municipio)
             setValue("EstadoEmisor", emisor.Estado)
             setValue("RegimenFiscalEmisor", emisor.RegimenFiscal)
-            setValue("LogoEmisor", emisor.LogoPath)
+            setValue("LogoPath", emisor.LogoPath)
 
             setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisor.ID}`);
 
             setLugarExpedicion(emisor.LugarExpedicion);
 
             // Dispara la validación de estos campos
-            trigger("RFCEmisor");
-            trigger("LugarExpedicion");
+            trigger(["RFCEmisor", "LugarExpedicion", "LogoPath"]);
 
 
         }
@@ -165,17 +164,41 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
     const handleEmisorChange = (e) => {
         try {
-            const data = JSON.parse(e.target.value);
+            // Obtener el valor y limpiarlo
+            let value = e.target.value;
+
+            value = value.replace(/[\n\r\t]/g, ' ') 
+                .replace(/\s+/g, ' ')       
+                .trim();
+
+            let data;
+            try {
+                data = JSON.parse(value);
+            } catch (parseError) {
+                console.log("Error en parseo inicial, intentando limpieza más profunda:", parseError);
+                value = value.replace(/[^\x20-\x7E]/g, ''); 
+                // Intentar de nuevo
+                data = JSON.parse(value);
+            }
+
+            // console.log("Datos parseados exitosamente:", data);
+            // console.log("LogoPath específicamente:", data.LogoPath);
+
             setEmisor(data);
-            console.log(data);
+            // console.log(data);
             //Checar, si es correcto
             setValue("Serie", "");
             setValue("TipoComprobante", "");
+            setValue("LogoPath", data.LogoPath)
             if (setEmisorID) {
                 setEmisorID(data.ID);
             }
+            trigger("LogoPath");
         } catch (error) {
-            console.error("El valor de emisor no es un JSON válido:", e.target.value);
+            console.error("Error crítico parseando JSON:", error);
+            console.error("Tipo de error:", error.name);
+            console.error("Mensaje:", error.message);
+            console.error("Primeros 500 caracteres del valor:", e.target.value.substring(0, 500));
         }
     };
 

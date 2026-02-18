@@ -185,7 +185,7 @@ export default function FormatearFactura(
         Nombre: emisor.NombreEmisor,
         RegimenFiscal: emisor.RegimenFiscal,
         LugarExpedicion: emisor.LugarExpedicion,
-        LogoPath: emisor.LogoEmisor,
+        LogoPath: emisor.LogoPath,
         Calle: emisor.CalleEmisor,
         NumeroExterior: emisor.NoExteriorEmisor,
         NumeroInterior: emisor.NoInteriorEmisor,
@@ -193,11 +193,6 @@ export default function FormatearFactura(
         Municipio: emisor.MunicipioEmisor,
         Estado: emisor.EstadoEmisor,
       },
-      // EmisorNombre: emisor.NombreEmisor,
-      // EmisorRFC: emisor.RFCEmisor,
-      // EmisorDireccion: emisor.Calle + " # " + emisor.NoExterior + "," + emisor.ColoniaEmisor + "," + emisor.MunicipioEmisor + "," + emisor.EstadoEmisor,
-      // EmisorRegimenFiscal: emisor.RegimenFiscal,
-      // EmisorLogo: emisor.LogoEmisor,
       Receptor: {
         Rfc: receptor.RFCReceptor,
         Nombre: receptor.NombreReceptor,
@@ -263,7 +258,6 @@ export default function FormatearFactura(
         GrupoID: 1,
       },
     };
-    //console.log("Factura Vista Previa:", factura);
   } else if (modo === "Pago") {
     factura = {
       Version: "4.0",

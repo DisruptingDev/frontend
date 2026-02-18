@@ -8,6 +8,12 @@ const nextConfig = {
                 port: '',
                 pathname: '/logos/**',
             },
+            {
+                protocol: 'https',
+                hostname: 'api.wisefacturacion.com',
+                port: '',
+                pathname: '/logos/**',
+            },
         ],
     },
     webpack: (config) => {
