@@ -178,6 +178,101 @@ const RowActionMenu = React.memo(({
 
 RowActionMenu.displayName = 'RowActionMenu';
 
+const CustomToolbarSelect = ({
+    selectedRows,
+    handleEnviarCorreo,
+    handleTimbrar,
+    handleDownloadSelecteds,
+    handleTimbrarYEnviar
+}) => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleClick = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    return (
+        <div style={{ display: 'flex', gap: '8px', marginRight: '24px', alignItems: 'center' }}>
+            {/* Desktop View */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1 }}>
+                <Button
+                    variant="contained"
+                    size="small"
+                    color="secondary"
+                    startIcon={<EmailIcon />}
+                    onClick={handleEnviarCorreo}
+                    sx={{ color: 'white' }}
+                >
+                    Enviar
+                </Button>
+                <Button
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    startIcon={<TimbrarIcon />}
+                    onClick={handleTimbrar}
+                >
+                    Timbrar
+                </Button>
+                <Button
+                    variant="contained"
+                    size="small"
+                    color="info"
+                    startIcon={<DescargarIcon />}
+                    onClick={handleDownloadSelecteds}
+                >
+                    Descargar
+                </Button>
+                <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    startIcon={<TimbrarEnviarIcon />}
+                    onClick={handleTimbrarYEnviar}
+                >
+                    Timbrar y Enviar
+                </Button>
+            </Box>
+
+            {/* Mobile View */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+                <Button
+                    onClick={handleClick}
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    endIcon={<MoreVertIcon />}
+                >
+                    Acciones
+                </Button>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={open}
+                    onClose={handleClose}
+                >
+                    <MenuItem onClick={() => { handleEnviarCorreo(); handleClose(); }}>
+                        <EmailIcon fontSize="small" sx={{ mr: 1 }} /> Enviar
+                    </MenuItem>
+                    <MenuItem onClick={() => { handleTimbrar(); handleClose(); }}>
+                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                    </MenuItem>
+                    <MenuItem onClick={() => { handleDownloadSelecteds(); handleClose(); }}>
+                        <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
+                    </MenuItem>
+                    <MenuItem onClick={() => { handleTimbrarYEnviar(); handleClose(); }}>
+                        <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
+                    </MenuItem>
+                </Menu>
+            </Box>
+        </div>
+    );
+};
+
 export default function DataTable({ token }) {
     const router = useRouter();
     const [data, setData] = useState([]);
@@ -1083,34 +1178,14 @@ export default function DataTable({ token }) {
         pagination: true,
         customToolbarSelect: (selectedRows, displayData, setSelectedRows) => {
             const selectedIds = selectedRows.data.map(index => data[index.dataIndex].ID);
-
             return (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <Button
-                        startIcon={<EmailIcon />}
-                        onClick={() => handleEnviarCorreo(selectedIds)}
-                    >
-                        Enviar
-                    </Button>
-                    <Button
-                        startIcon={<TimbrarIcon />}
-                        onClick={() => handleTimbrar(selectedIds)}
-                    >
-                        Timbrar
-                    </Button>
-                    <Button
-                        startIcon={<DescargarIcon />}
-                        onClick={() => handleDownloadSelecteds(selectedIds)}
-                    >
-                        Descargar
-                    </Button>
-                    <Button
-                        startIcon={<TimbrarEnviarIcon />}
-                        onClick={() => handleTimbrarYEnviar(selectedIds)}
-                    >
-                        Timbrar y Enviar
-                    </Button>
-                </div>
+                <CustomToolbarSelect
+                    selectedRows={selectedRows}
+                    handleEnviarCorreo={() => handleEnviarCorreo(selectedIds)}
+                    handleTimbrar={() => handleTimbrar(selectedIds)}
+                    handleDownloadSelecteds={() => handleDownloadSelecteds(selectedIds)}
+                    handleTimbrarYEnviar={() => handleTimbrarYEnviar(selectedIds)}
+                />
             );
         },
         onRowSelectionChange: (currentRowsSelected, allRowsSelected, rowsSelected) => {

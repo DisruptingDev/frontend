@@ -60,77 +60,72 @@ const Chip = styled(MuiChip)(({ theme }) => ({
 }));
 
 function MobileLayout({ selectedItemIndex, handleItemClick, selectedFeature }) {
-  if (!items[selectedItemIndex]) {
-    return null;
-  }
-
   return (
     <Box
       sx={{
         display: { xs: 'flex', sm: 'none' },
-        flexDirection: 'column',
         gap: 2,
+        overflow: 'auto',
+        snapType: 'x mandatory',
+        scrollBehavior: 'smooth',
+        '-webkit-overflow-scrolling': 'touch',
+        pb: 2,
+        '&::-webkit-scrollbar': { display: 'none' },
+        width: '100%',
+        maxWidth: '100vw',
       }}
     >
-      <Box sx={{ display: 'flex', gap: 2, overflow: 'auto' }}>
-        {items.map(({ title }, index) => (
-          <Chip
-            size="medium"
-            key={index}
-            label={title}
-            onClick={() => handleItemClick(index)}
-            selected={selectedItemIndex === index}
+      {items.map((item, index) => (
+        <Card
+          key={index}
+          variant="outlined"
+          sx={{
+            minWidth: '280px',
+            width: '80vw', // Reduced from 85vw to prevent overflow with gaps
+            maxWidth: '350px',
+            snapAlign: 'center',
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Box
+            sx={(theme) => ({
+              mb: 2,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              minHeight: 200, // Reduced height for mobile
+              backgroundImage: 'var(--items-imageLight)',
+              ...theme.applyStyles('dark', {
+                backgroundImage: 'var(--items-imageDark)',
+              }),
+            })}
+            style={{
+              '--items-imageLight': item.imageLight,
+              '--items-imageDark': item.imageDark || item.imageLight,
+            }}
           />
-        ))}
-      </Box>
-      <Card variant="outlined">
-        <Box
-          sx={(theme) => ({
-            mb: 2,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            minHeight: 280,
-            backgroundImage: 'var(--items-imageLight)',
-            ...theme.applyStyles('dark', {
-              backgroundImage: 'var(--items-imageDark)',
-            }),
-          })}
-          style={
-            items[selectedItemIndex]
-              ? {
-                '--items-imageLight': items[selectedItemIndex].imageLight,
-                '--items-imageDark': items[selectedItemIndex].imageDark,
-              }
-              : {}
-          }
-        />
-        <Box sx={{ px: 2, pb: 2 }}>
-          <Typography
-            gutterBottom
-            sx={{ color: 'text.primary', fontWeight: 'medium' }}
-          >
-            {selectedFeature.title}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-            {selectedFeature.description}
-          </Typography>
-        </Box>
-      </Card>
+          <Box sx={{ px: 2, pb: 2, flexGrow: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+              {item.icon}
+              <Typography
+                gutterBottom
+                sx={{ color: 'text.primary', fontWeight: 'bold', m: 0 }}
+              >
+                {item.title}
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+              {item.description}
+            </Typography>
+          </Box>
+        </Card>
+      ))}
     </Box>
   );
 }
 
-MobileLayout.propTypes = {
-  handleItemClick: PropTypes.func.isRequired,
-  selectedFeature: PropTypes.shape({
-    description: PropTypes.string.isRequired,
-    icon: PropTypes.element,
-    imageDark: PropTypes.string.isRequired,
-    imageLight: PropTypes.string.isRequired,
-    title: PropTypes.string.isRequired,
-  }).isRequired,
-  selectedItemIndex: PropTypes.number.isRequired,
-};
+
 
 export { MobileLayout };
 
@@ -144,7 +139,7 @@ export default function Features() {
   const selectedFeature = items[selectedItemIndex];
 
   return (
-    <Container id="features" className='mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
+    <Container id="features" className='mt-30 md:mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
       <Box sx={{ width: 100 % { sm: '100%', md: '60%' } }}>
         <Typography
           component="h1"
@@ -223,11 +218,7 @@ export default function Features() {
               </Box>
             ))}
           </Box>
-          <MobileLayout
-            selectedItemIndex={selectedItemIndex}
-            handleItemClick={handleItemClick}
-            selectedFeature={selectedFeature}
-          />
+          <MobileLayout />
         </div>
         <Box
           sx={{

@@ -9,6 +9,8 @@ import { isAuthenticated } from "@/utils/authRedirect";
 import { useRouter } from 'next/navigation';
 import Layout from "../Layout";
 import HelpIcon from '@mui/icons-material/Help';
+import BadgeIcon from '@mui/icons-material/Badge';
+import { Button, Tooltip, IconButton } from "@mui/material";
 
 
 // Configuración de la fuente Inter
@@ -39,7 +41,7 @@ export default function Header() {
   }, [router]);
 
   return (
-    <header className="flex m-2 bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-lg">
+    <header className="flex bg-gradient-wise items-center h-20 px-4 border-b shrink-0 md:px-6 rounded-none md:rounded-lg md:m-2">
       {/* Logo de la aplicación */}
       <Link
         href="/Home"
@@ -55,9 +57,20 @@ export default function Header() {
       </Link>
 
       {/* Menú de usuario */}
-      <div className="ml-auto flex items-center">
+      <div className="ml-auto flex items-center gap-4">
         <Layout>
-          <HelpIcon fontSize="large" sx={{ color: "white", marginLeft: "auto" }}/>
+          <Tooltip title="Obtener Constancia de Datos fiscales">
+            <IconButton
+              component={Link}
+              href="https://www.cloudb.sat.gob.mx/datos_fiscales/"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ color: "white" }}
+            >
+              <BadgeIcon fontSize="large" />
+            </IconButton>
+          </Tooltip>
+          <HelpIcon fontSize="large" sx={{ color: "white" }} />
           <FacturasPPD token={token} />
           <UserMenu />
         </Layout>

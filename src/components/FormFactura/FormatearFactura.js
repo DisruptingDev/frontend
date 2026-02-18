@@ -64,29 +64,29 @@ export default function FormatearFactura(
       Confirmacion: "",
       ...(receptor.Año || receptor.Meses || receptor.Periodicidad
         ? {
-            InformacionGlobal: {
-              Anio: receptor.Año || "",
-              Meses: receptor.Meses || "",
-              Periodicidad: receptor.Periodicidad || "",
-            },
-          }
+          InformacionGlobal: {
+            Anio: receptor.Año || "",
+            Meses: receptor.Meses || "",
+            Periodicidad: receptor.Periodicidad || "",
+          },
+        }
         : {}),
       EmisorID: emisor.Emisor,
       ReceptorID: receptor.Receptor,
       UsoCFDI: receptor.UsoCFDI,
       ...(facturasRelacionadas &&
-      facturasRelacionadas.TipoRelacion &&
-      facturasRelacionadas.ListaCFDIRelacionados &&
-      facturasRelacionadas.ListaCFDIRelacionados.length > 0
+        facturasRelacionadas.TipoRelacion &&
+        facturasRelacionadas.ListaCFDIRelacionados &&
+        facturasRelacionadas.ListaCFDIRelacionados.length > 0
         ? {
-            CFDIRelacionados: {
-              TipoRelacion: facturasRelacionadas.TipoRelacion,
-              ListaCFDIRelacionados:
-                facturasRelacionadas.ListaCFDIRelacionados.map((uuidObj) => ({
-                  UUID: uuidObj.UUID,
-                })),
-            },
-          }
+          CFDIRelacionados: {
+            TipoRelacion: facturasRelacionadas.TipoRelacion,
+            ListaCFDIRelacionados:
+              facturasRelacionadas.ListaCFDIRelacionados.map((uuidObj) => ({
+                UUID: uuidObj.UUID,
+              })),
+          },
+        }
         : {}),
       Conceptos: {
         ListaConceptos: conceptos.map((concepto) => ({
@@ -108,35 +108,35 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                  Base: Number(Number(retencion.BaseImpuesto).toFixed(2)),
-                  BaseString: String(Number(retencion.BaseImpuesto).toFixed(2)),
-                  ImpuestoCatalogoID: retencion.Impuesto,
-                  ImpuestoClave: String(retencion.ImpuestoClave),
-                  TipoFactor: "Tasa",
-                  TasaOCuota: Number(Number(retencion.TasaOCuota)),
-                  TasaOCuotaString: String(
-                    Number(retencion.TasaOCuota)
-                  ),
-                  TasaCatalogoID: retencion.Tasa,
-                  Importe: Number(Number(retencion.Monto).toFixed(2)),
-                  ImporteString: String(Number(retencion.Monto).toFixed(2)),
-                }))
+                Base: Number(Number(retencion.BaseImpuesto).toFixed(2)),
+                BaseString: String(Number(retencion.BaseImpuesto).toFixed(2)),
+                ImpuestoCatalogoID: retencion.Impuesto,
+                ImpuestoClave: String(retencion.ImpuestoClave),
+                TipoFactor: "Tasa",
+                TasaOCuota: Number(Number(retencion.TasaOCuota)),
+                TasaOCuotaString: String(
+                  Number(retencion.TasaOCuota)
+                ),
+                TasaCatalogoID: retencion.Tasa,
+                Importe: Number(Number(retencion.Monto).toFixed(2)),
+                ImporteString: String(Number(retencion.Monto).toFixed(2)),
+              }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                  Base: Number(Number(traslado.BaseImpuesto).toFixed(2)),
-                  BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
-                  ImpuestoCatalogoID: traslado.Impuesto,
-                  ImpuestoClave: String(traslado.ImpuestoClave),
-                  TipoFactor: "Tasa",
-                  TasaOCuota: Number(Number(traslado.TasaOCuota)),
-                  TasaOCuotaString: String(
-                    Number(traslado.TasaOCuota)
-                  ),
-                  TasaCatalogoID: traslado.Tasa,
-                  Importe: Number(Number(traslado.Monto).toFixed(2)),
-                  ImporteString: String(Number(traslado.Monto).toFixed(2)),
-                }))
+                Base: Number(Number(traslado.BaseImpuesto).toFixed(2)),
+                BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
+                ImpuestoCatalogoID: traslado.Impuesto,
+                ImpuestoClave: String(traslado.ImpuestoClave),
+                TipoFactor: "Tasa",
+                TasaOCuota: Number(Number(traslado.TasaOCuota)),
+                TasaOCuotaString: String(
+                  Number(traslado.TasaOCuota)
+                ),
+                TasaCatalogoID: traslado.Tasa,
+                Importe: Number(Number(traslado.Monto).toFixed(2)),
+                ImporteString: String(Number(traslado.Monto).toFixed(2)),
+              }))
               : [],
           },
         })),
@@ -183,7 +183,7 @@ export default function FormatearFactura(
       Emisor: {
         Rfc: emisor.RFCEmisor,
         Nombre: emisor.NombreEmisor,
-        RegimenFiscal: emisor.RegimenFiscal,
+        RegimenFiscal: emisor.RegimenFiscal || emisor.RegimenFiscalEmisor,
         LugarExpedicion: emisor.LugarExpedicion,
         LogoPath: emisor.LogoPath,
         Calle: emisor.CalleEmisor,
@@ -231,23 +231,23 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                  NombreImpuesto: retencion.NombreImpuesto,
-                  Base: retencion.BaseImpuesto,
-                  ImpuestoClave: String(retencion.Impuesto),
-                  TipoFactor: retencion.Tipo,
-                  TasaOCuota: retencion.Tasa,
-                  Importe: retencion.Monto,
-                }))
+                NombreImpuesto: retencion.NombreImpuesto,
+                Base: retencion.BaseImpuesto,
+                ImpuestoClave: String(retencion.Impuesto),
+                TipoFactor: retencion.Tipo,
+                TasaOCuota: retencion.Tasa,
+                Importe: retencion.Monto,
+              }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                  NombreImpuesto: traslado.NombreImpuesto,
-                  Base: parseFloat(traslado.BaseImpuesto),
-                  ImpuestoClave: String(traslado.Impuesto),
-                  TipoFactor: traslado.Tipo,
-                  TasaOCuota: traslado.Tasa,
-                  Importe: traslado.Monto,
-                }))
+                NombreImpuesto: traslado.NombreImpuesto,
+                Base: parseFloat(traslado.BaseImpuesto),
+                ImpuestoClave: String(traslado.Impuesto),
+                TipoFactor: traslado.Tipo,
+                TasaOCuota: traslado.Tasa,
+                Importe: traslado.Monto,
+              }))
               : [],
           },
         })),
@@ -462,23 +462,23 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                  NombreImpuesto: retencion.NombreImpuesto,
-                  Base: retencion.BaseImpuesto,
-                  ImpuestoClave: String(retencion.Impuesto),
-                  TipoFactor: retencion.Tipo,
-                  TasaOCuota: retencion.Tasa,
-                  Importe: retencion.Monto,
-                }))
+                NombreImpuesto: retencion.NombreImpuesto,
+                Base: retencion.BaseImpuesto,
+                ImpuestoClave: String(retencion.Impuesto),
+                TipoFactor: retencion.Tipo,
+                TasaOCuota: retencion.Tasa,
+                Importe: retencion.Monto,
+              }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                  NombreImpuesto: traslado.NombreImpuesto,
-                  Base: traslado.BaseImpuesto,
-                  ImpuestoClave: String(traslado.Impuesto),
-                  TipoFactor: traslado.Tipo,
-                  TasaOCuota: traslado.Tasa,
-                  Importe: traslado.Monto,
-                }))
+                NombreImpuesto: traslado.NombreImpuesto,
+                Base: traslado.BaseImpuesto,
+                ImpuestoClave: String(traslado.Impuesto),
+                TipoFactor: traslado.Tipo,
+                TasaOCuota: traslado.Tasa,
+                Importe: traslado.Monto,
+              }))
               : [],
           },
         })),

@@ -87,7 +87,7 @@ export default function Highlights() {
             En Wise facturación, entendemos que la facturación es una parte crucial de tu negocio. Por eso, hemos diseñado un servicio que no solo cumple con tus necesidades, sino que las supera, brindándote una experiencia única y eficiente.
           </Typography>
         </Box>
-        <Grid container spacing={1} >
+        <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
           {items.map((item, index) => (
             <Grid item sm={6} md={4} key={index}>
               <Stack

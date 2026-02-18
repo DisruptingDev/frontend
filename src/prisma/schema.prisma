@@ -1,54 +1,618 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider        = "prisma-client-js"
-  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-1.1.x", "rhel-openssl-3.0.x"]
+model Concepto {
+  id                    BigInt      @id @default(autoincrement())
+  clave_prod_serv       String?
+  no_identificacion     String?
+  cantidad              BigInt?
+  clave_unidad          String?
+  unidad                String?
+  descripcion           String?
+  valor_unitario        Decimal?    @db.Decimal
+  importe               Decimal?    @db.Decimal
+  descuento             Decimal?    @db.Decimal
+  objeto_imp            String?
+  conceptos_id          BigInt?
+  valor_unitario_string String?
+  importe_string        String?
+  descuento_string      String?
+  Conceptos             Conceptos?  @relation(fields: [conceptos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Conceptos_lista_conceptos")
+  impuestos             impuestos[]
 }
 
-model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+model Conceptos {
+  id                                 BigInt        @id @default(autoincrement())
+  total_impuestos_trasladados        Decimal?      @db.Decimal
+  total_impuestos_retenidos          Decimal?      @db.Decimal
+  grupo_id                           BigInt?
+  comprobante_id                     BigInt?
+  total_impuestos_trasladados_string String?
+  total_impuestos_retenidos_string   String?
+  Concepto                           Concepto[]
+  grupos                             grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_Conceptos_grupo")
+  comprobantes                       comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_conceptos")
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Pago {
+  id                 BigInt               @id @default(autoincrement())
+  fecha_pago         String?
+  forma_de_pago_p    String?
+  moneda_p           String?
+  monto              Decimal?             @db.Decimal
+  pagos_id           BigInt?
+  monto_string       String?
+  Pagos              Pagos?               @relation(fields: [pagos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Pagos_pagos")
+  docto_relacionados docto_relacionados[]
+  impuestos          impuestos[]
 }
 
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
+model Pagos {
+  id             BigInt        @id @default(autoincrement())
+  version        String?
+  complemento_id BigInt?
+  Pago           Pago[]
+  complementos   complementos? @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_pagos")
+  totales        totales[]
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
+model acuse_cancelacions {
+  id                BigInt    @id @default(autoincrement())
+  created_at        DateTime? @db.Timestamptz(6)
+  updated_at        DateTime? @db.Timestamptz(6)
+  deleted_at        DateTime? @db.Timestamptz(6)
+  uuid              String    @unique(map: "uni_acuse_cancelacions_uuid") @db.Char(36)
+  rfc_emisor        String    @db.VarChar(13)
+  rfc_receptor      String    @db.VarChar(13)
+  fecha_cancelacion DateTime  @db.Timestamptz(6)
+  motivo            String?   @db.VarChar(255)
+  folio_fiscal      String?   @db.VarChar(50)
+  acuse_base64      String?
+  comprobante_id    BigInt
 
-  @@unique([identifier, token])
+  @@index([deleted_at], map: "idx_acuse_cancelacions_deleted_at")
+}
+
+model catalogo_plans {
+  id               BigInt   @id @default(autoincrement())
+  cantidad_timbres BigInt?
+  costo            Decimal? @db.Decimal
+  nombre           String?
+  open_pay_id      String?
+  ordens           ordens[]
+  plans            plans[]
+}
+
+model cfdi_relacionado {
+  id                   BigInt    @id @default(autoincrement())
+  created_at           DateTime? @db.Timestamptz(6)
+  updated_at           DateTime? @db.Timestamptz(6)
+  deleted_at           DateTime? @db.Timestamptz(6)
+  uuid                 String?
+  cfdi_relacionados_id BigInt?
+
+  @@index([deleted_at], map: "idx_cfdi_relacionado_deleted_at")
+}
+
+model cfdi_relacionados {
+  id             BigInt    @id @default(autoincrement())
+  created_at     DateTime? @db.Timestamptz(6)
+  updated_at     DateTime? @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  tipo_relacion  String?
+  comprobante_id BigInt?
+
+  @@index([deleted_at], map: "idx_cfdi_relacionados_deleted_at")
+}
+
+model clave_prod_servs {
+  id                     BigInt                   @id @default(autoincrement())
+  clave                  String?
+  descripcion            String?
+  usuario_claveprodservs usuario_claveprodservs[]
+}
+
+model clave_unidads {
+  id                  BigInt                @id @default(autoincrement())
+  clave               String?
+  descripcion         String?
+  usuario_claveunidad usuario_claveunidad[]
+}
+
+model complementos {
+  id             BigInt        @id @default(autoincrement())
+  comprobante_id BigInt?
+  Pagos          Pagos[]
+  comprobantes   comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_complemento")
+}
+
+model comprobantes {
+  id                  BigInt                @id @default(autoincrement())
+  uuid                String?
+  version             String?
+  serie               String?
+  folio               String?
+  fecha               String?
+  sello               String?
+  forma_pago          String?
+  no_certificado      String?
+  certificado         String?
+  condiciones_de_pago String?               @default("Condiciones de Pago")
+  sub_total           Decimal?              @db.Decimal
+  descripcion         String?
+  moneda              String?
+  tipo_cambio         String?
+  total               Decimal?              @db.Decimal
+  tipo_de_comprobante String?
+  exportacion         String?
+  metodo_pago         String?
+  lugar_expedicion    String?
+  confirmacion        String?
+  emisor_id           BigInt?
+  receptor_id         BigInt?
+  grupo_id            BigInt?
+  uso_cfdi            String?
+  sello_sat           String?
+  qr_code             String?
+  fecha_timbrado      String?
+  cadena_original_sat String?
+  estatus             String?
+  xml_cancelacion     String?
+  estatus_pagos       String?
+  descuento           Decimal?              @db.Decimal
+  sub_total_string    String?
+  total_string        String?
+  descuento_string    String?
+  xml_timbrado        String?
+  Conceptos           Conceptos[]
+  complementos        complementos[]
+  emisors             emisors?              @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_emisor")
+  grupos              grupos?               @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_grupo")
+  receptors           receptors?            @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_receptor")
+  informacion_globals informacion_globals[]
+}
+
+model conceptos {
+  id                BigInt      @id @default(autoincrement())
+  nombre            String?
+  clave_prod_serv   String?
+  no_identificacion String?
+  cantidad          BigInt?
+  clave_unidad      String?
+  unidad            String?
+  descripcion       String?
+  valor_unitario    Decimal?    @db.Decimal
+  importe           Decimal?    @db.Decimal
+  descuento         Decimal?    @db.Decimal
+  objeto_imp        String?
+  grupo_id          BigInt?
+  grupos            grupos?     @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_conceptos_guardados")
+  impuestos         impuestos[]
+}
+
+model docto_relacionados {
+  id                        BigInt   @id @default(autoincrement())
+  id_documento              String?
+  serie                     String?
+  folio                     String?
+  moneda_dr                 String?
+  num_parcialidad           BigInt?
+  imp_saldo_ant             Decimal? @db.Decimal
+  imp_pagado                Decimal? @db.Decimal
+  imp_saldo_insoluto        Decimal? @db.Decimal
+  objeto_imp_dr             String?
+  pago_id                   BigInt?
+  imp_saldo_ant_string      String?
+  imp_pagado_string         String?
+  imp_saldo_insoluto_string String?
+  Pago                      Pago?    @relation(fields: [pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Pago_doctos_relacionados")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model emisors {
+  id               BigInt         @id @default(autoincrement())
+  rfc              String?
+  nombre           String?
+  regimen_fiscal   String?
+  fac_atr_adquire  String?
+  lugar_expedicion String?
+  grupo_id         BigInt?
+  calle            String?
+  numero_exterior  String?
+  numero_interior  String?
+  colonia          String?
+  municipio        String?
+  estado           String?
+  no_certificado   String?
+  certificado      String?
+  certificado_path String?
+  key_path         String?
+  password         String?
+  logo_path        String?
+  email            String?
+  plantilla_id     BigInt?        @default(1)
+  comprobantes     comprobantes[]
+  grupos           grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
+  ordens           ordens[]
+  series           series[]
+}
+
+model forma_pagos {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model gasolineras {
+  id                           BigInt   @id @default(autoincrement())
+  nombre                       String?
+  timbres_disponibles_paquetes Int?
+  grupos                       grupos[]
+}
+
+model grupos {
+  id                           BigInt         @id @default(autoincrement())
+  nombre                       String?
+  plan_id                      BigInt?
+  timbres_disponibles_paquetes BigInt?
+  timbres_disponibles_plan     BigInt?
+  gasolinera_id                BigInt?
+  Conceptos                    Conceptos[]
+  comprobantes                 comprobantes[]
+  conceptos                    conceptos[]
+  emisors                      emisors[]
+  gasolineras                  gasolineras?   @relation(fields: [gasolinera_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_gasolineras_grupos")
+  plans                        plans?         @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_plan")
+  ordens                       ordens[]
+  receptors                    receptors[]
+  usuarios                     usuarios[]
+}
+
+model impuesto_claves {
+  id          BigInt       @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+  tipo        String?
+  tasa        Decimal?     @db.Decimal
+  impuesto    String?
+  retencions  retencions[]
+  traslados   traslados[]
+}
+
+model impuestos {
+  id                    BigInt       @id @default(autoincrement())
+  concepto_id           BigInt?
+  catalogo_conceptos_id BigInt?
+  pago_id               BigInt?
+  Concepto              Concepto?    @relation(fields: [concepto_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Concepto_impuestos")
+  Pago                  Pago?        @relation(fields: [pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Pago_impuestos")
+  conceptos             conceptos?   @relation(fields: [catalogo_conceptos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_conceptos_impuestos")
+  retencions            retencions[]
+  traslados             traslados[]
+}
+
+model informacion_globals {
+  id             BigInt        @id @default(autoincrement())
+  periodicidad   String?
+  meses          String?
+  anio           String?
+  comprobante_id BigInt?
+  comprobantes   comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_informacion_global")
+}
+
+model mes {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model metodo_pagos {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model migrations {
+  id String @id @db.VarChar(255)
+}
+
+model monedas {
+  id    BigInt  @id @default(autoincrement())
+  clave String?
+}
+
+model objeto_impuestos {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model ordens {
+  id               BigInt          @id @default(autoincrement())
+  comprobante_path String?
+  estatus          String?
+  plan_id          BigInt?
+  paquete_id       BigInt?
+  emisor_id        BigInt?
+  grupo_id         BigInt?
+  fecha_activacion DateTime?       @db.Timestamptz(6)
+  uuid             String?
+  pay_pal_order_id String?         @db.VarChar(255)
+  emisors          emisors?        @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_ordenes")
+  grupos           grupos?         @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_ordenes")
+  paquetes         paquetes?       @relation(fields: [paquete_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ordens_paquete")
+  catalogo_plans   catalogo_plans? @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ordens_plan")
+}
+
+model pagos {
+  id              BigInt   @id @default(autoincrement())
+  fecha_pago      String?
+  forma_de_pago_p String?
+  moneda_p        String?
+  monto           Decimal? @db.Decimal
+  pagos_id        BigInt?
+  pagos           pagos?   @relation("pagosTopagos", fields: [pagos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagos_pagos")
+  other_pagos     pagos[]  @relation("pagosTopagos")
+}
+
+model paquetes {
+  id                           BigInt   @id @default(autoincrement())
+  costo                        Decimal? @db.Decimal
+  cantidad_timbres             Int?
+  nombre                       String?
+  costo_promocional            String?
+  cantidad_timbres_promocional BigInt?
+  ordens                       ordens[]
+}
+
+model periodicidads {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model permisos {
+  id           BigInt         @id @default(autoincrement())
+  created_at   DateTime?      @db.Timestamptz(6)
+  updated_at   DateTime?      @db.Timestamptz(6)
+  deleted_at   DateTime?      @db.Timestamptz(6)
+  clave        String         @unique(map: "idx_permisos_clave") @db.VarChar(50)
+  descripcion  String?        @db.VarChar(255)
+  seccion_id   BigInt?
+  rol_permisos rol_permisos[]
+
+  @@index([deleted_at], map: "idx_permisos_deleted_at")
+}
+
+model plans {
+  id               BigInt          @id @default(autoincrement())
+  catalogo_plan_id BigInt?
+  fecha_activacion DateTime?       @db.Timestamptz(6)
+  grupos           grupos[]
+  catalogo_plans   catalogo_plans? @relation(fields: [catalogo_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_plans_catalogo_plan")
+}
+
+model plantillas {
+  id           BigInt    @id @default(autoincrement())
+  created_at   DateTime? @db.Timestamptz(6)
+  updated_at   DateTime? @db.Timestamptz(6)
+  deleted_at   DateTime? @db.Timestamptz(6)
+  nombre       String?
+  descripcion  String?
+  path         String?
+  categoria    String?
+  vista_previa String?
+  path_pagos   String?
+
+  @@index([deleted_at], map: "idx_plantillas_deleted_at")
+}
+
+model receptors {
+  id                        BigInt         @id @default(autoincrement())
+  rfc                       String
+  nombre                    String
+  domicilio_fiscal_receptor String?
+  residencia_fiscal         String?
+  num_reg_id_trib           String?
+  regimen_fiscal_receptor   String?
+  uso_cfdi                  String?
+  grupo_id                  BigInt?
+  calle                     String?
+  numero_exterior           String?
+  numero_interior           String?
+  colonia                   String?
+  municipio                 String?
+  estado                    String?
+  email                     String?
+  comprobantes              comprobantes[]
+  grupos                    grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_receptors_grupo")
+}
+
+model regimen_fiscals {
+  id                    BigInt                  @id @default(autoincrement())
+  clave                 String?
+  descripcion           String?
+  usocfdi_regimenfiscal usocfdi_regimenfiscal[]
+}
+
+model retencions {
+  id                   BigInt           @id @default(autoincrement())
+  base                 Decimal?         @db.Decimal
+  impuesto_clave       String?
+  tipo_factor          String?
+  tasa_o_cuota         Decimal?         @db.Decimal
+  importe              Decimal?         @db.Decimal
+  impuestos_id         BigInt?
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     Int?             @db.SmallInt
+  base_string          String?
+  tasa_o_cuota_string  String?
+  importe_string       String?
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_impuestos_impuestoclaves")
+  impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_retenciones")
+}
+
+model rol_permisos {
+  rol_id     BigInt
+  permiso_id BigInt
+  permisos   permisos @relation(fields: [permiso_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rol_permiso_permiso")
+  rols       rols     @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rol_permiso_rol")
+
+  @@id([rol_id, permiso_id], map: "rol_permiso_pkey")
+}
+
+model rols {
+  id           BigInt         @id @default(autoincrement())
+  created_at   DateTime?      @db.Timestamptz(6)
+  updated_at   DateTime?      @db.Timestamptz(6)
+  deleted_at   DateTime?      @db.Timestamptz(6)
+  clave        String         @db.VarChar(50)
+  descripcion  String?        @db.VarChar(255)
+  grupo_id     BigInt?
+  rol_permisos rol_permisos[]
+
+  @@index([deleted_at], map: "idx_rols_deleted_at")
+}
+
+model seccion_permisos {
+  id          BigInt    @id @default(autoincrement())
+  created_at  DateTime? @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  clave       String?   @unique(map: "idx_seccion_permisos_clave")
+  descripcion String?
+
+  @@index([deleted_at], map: "idx_seccion_permisos_deleted_at")
+}
+
+model series {
+  id                  BigInt   @id @default(autoincrement())
+  clave               String?
+  descripcion         String?
+  ultimo_folio        BigInt?
+  emisor_id           BigInt?
+  timbres_disponibles BigInt?
+  tipo_comprobante    String?
+  emisors             emisors? @relation(fields: [emisor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_emisors_series")
+}
+
+model tasa_o_cuota {
+  id        BigInt   @id @default(autoincrement())
+  impuesto  String?
+  factor    String?
+  valor     Decimal? @db.Decimal
+  traslado  Boolean?
+  retencion Boolean?
+}
+
+model tipo_comprobantes {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model tipo_relacions {
+  id          BigInt  @id @default(autoincrement())
+  clave       String?
+  descripcion String?
+}
+
+model totales {
+  id                                     BigInt   @id @default(autoincrement())
+  total_retenciones_iva                  Decimal? @db.Decimal
+  total_retenciones_isr                  Decimal? @db.Decimal
+  total_retenciones_ieps                 Decimal? @db.Decimal
+  total_traslados_base_iva16             Decimal? @db.Decimal
+  total_traslados_impuesto_iva16         Decimal? @db.Decimal
+  total_traslados_base_iva8              Decimal? @db.Decimal
+  total_traslados_impuesto_iva8          Decimal? @db.Decimal
+  total_traslados_base_iva0              Decimal? @db.Decimal
+  total_traslados_impuesto_iva0          Decimal? @db.Decimal
+  total_traslados_base_iva_exento        Decimal? @db.Decimal
+  monto_total_pagos                      Decimal? @db.Decimal
+  pagos_id                               BigInt?
+  total_retenciones_iva_string           String?
+  total_retenciones_isr_string           String?
+  total_retenciones_ieps_string          String?
+  total_traslados_base_iva16_string      String?
+  total_traslados_impuesto_iva16_string  String?
+  total_traslados_base_iva8_string       String?
+  total_traslados_impuesto_iva8_string   String?
+  total_traslados_base_iva0_string       String?
+  total_traslados_impuesto_iva0_string   String?
+  total_traslados_base_iva_exento_string String?
+  monto_total_pagos_string               String?
+  Pagos                                  Pagos?   @relation(fields: [pagos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Pagos_totales")
+}
+
+model traslados {
+  id                   BigInt           @id @default(autoincrement())
+  base                 Decimal?         @db.Decimal
+  impuesto_clave       String?
+  tipo_factor          String?
+  tasa_o_cuota         Decimal?         @db.Decimal
+  importe              Decimal?         @db.Decimal
+  impuestos_id         BigInt?
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     Int?             @db.SmallInt
+  base_string          String?
+  tasa_o_cuota_string  String?
+  importe_string       String?
+  impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_traslados")
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_traslados_impuesto_catalogo")
+}
+
+model uso_cfdis {
+  id                    BigInt                  @id @default(autoincrement())
+  clave                 String?
+  descripcion           String?
+  regimen_fiscal        String?                 @db.VarChar(100)
+  usocfdi_regimenfiscal usocfdi_regimenfiscal[]
+}
+
+model usocfdi_regimenfiscal {
+  regimen_fiscal_id BigInt
+  uso_cfdi_id       BigInt
+  regimen_fiscals   regimen_fiscals @relation(fields: [regimen_fiscal_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usocfdi_regimenfiscal_regimen_fiscal")
+  uso_cfdis         uso_cfdis       @relation(fields: [uso_cfdi_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usocfdi_regimenfiscal_uso_cfdi")
+
+  @@id([regimen_fiscal_id, uso_cfdi_id])
+}
+
+model usuario_claveprodservs {
+  usuario_id         BigInt
+  clave_prod_serv_id BigInt
+  clave_prod_servs   clave_prod_servs @relation(fields: [clave_prod_serv_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_claveprodservs_clave_prod_serv")
+  usuarios           usuarios         @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_claveprodservs_usuario")
+
+  @@id([usuario_id, clave_prod_serv_id])
+}
+
+model usuario_claveunidad {
+  usuario_id      BigInt
+  clave_unidad_id BigInt
+  clave_unidads   clave_unidads @relation(fields: [clave_unidad_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_claveunidad_clave_unidad")
+  usuarios        usuarios      @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_claveunidad_usuario")
+
+  @@id([usuario_id, clave_unidad_id])
+}
+
+model usuarios {
+  id                     BigInt                   @id @default(autoincrement())
+  nombre                 String?
+  tipo_usuario           String?
+  grupo_id               BigInt?
+  email                  String                   @unique(map: "unique_email")
+  password               String?
+  rol_id                 BigInt?
+  open_pay_id            String?
+  usuario_claveprodservs usuario_claveprodservs[]
+  usuario_claveunidad    usuario_claveunidad[]
+  grupos                 grupos?                  @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_usuarios")
 }

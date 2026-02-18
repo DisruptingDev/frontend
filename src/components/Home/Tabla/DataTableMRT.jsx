@@ -18,7 +18,9 @@ import {
     Typography,
     useTheme,
     useMediaQuery,
-    Grid
+    Grid,
+    Drawer,
+    Stack
 } from '@mui/material';
 import {
     MoreVert as MoreVertIcon,
@@ -32,7 +34,8 @@ import {
     PictureAsPdf as PdfIcon,
     ContentCopy as CloneIcon,
     Cancel as CancelIcon,
-    FileDownload as ExportIcon
+    FileDownload as ExportIcon,
+    FilterList as FilterListIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -61,6 +64,7 @@ const DataTableMRT = ({ token }) => {
     const router = useRouter();
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
 
     // Action Menu State
     const [anchorEl, setAnchorEl] = useState(null);
@@ -989,11 +993,39 @@ const DataTableMRT = ({ token }) => {
             const selectedIds = selectedRows.map(row => row.original.ID);
 
             return (
-                <Box sx={{ display: 'flex', gap: '8px', p: '4px', alignItems: 'center' }}>
+
+                <Box sx={{
+                    display: isMobile ? 'grid' : 'flex',
+                    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
+                    gap: '8px',
+                    p: '4px',
+                    alignItems: 'center',
+                    width: isMobile ? '100%' : 'auto'
+                }}>
+                    {/* Main Toolbar Buttons */}
+                    {isMobile && (
+                        <Button
+                            color="primary"
+                            startIcon={isMobile ? undefined : <FilterListIcon />}
+                            onClick={() => setOpenFilterDrawer(true)}
+                            variant="contained"
+                            size="small"
+                            fullWidth={isMobile}
+                            sx={{
+                                fontSize: isMobile ? '0.75rem' : undefined,
+                                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                textAlign: 'center',
+                                lineHeight: isMobile ? 1.2 : undefined,
+                                minWidth: 'auto'
+                            }}
+                        >
+                            Filtros
+                        </Button>
+                    )}
                     <Tooltip title="Exportar a CSV">
                         <Button
                             color="primary"
-                            startIcon={<ExportIcon />}
+                            startIcon={isMobile ? undefined : <ExportIcon />}
                             onClick={() => {
                                 const rows = table.getFilteredRowModel().rows;
                                 const json = rows.map((row) => ({
@@ -1024,8 +1056,16 @@ const DataTableMRT = ({ token }) => {
                             }}
                             variant="outlined"
                             size="small"
+                            fullWidth={isMobile}
+                            sx={{
+                                fontSize: isMobile ? '0.75rem' : undefined,
+                                whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                textAlign: 'center',
+                                lineHeight: isMobile ? 1.2 : undefined,
+                                minWidth: 'auto'
+                            }}
                         >
-                            Exportar CSV
+                            Exportar
                         </Button>
                     </Tooltip>
                     {selectedIds.length > 0 && (
@@ -1033,10 +1073,18 @@ const DataTableMRT = ({ token }) => {
                             <Tooltip title="Enviar por Correo">
                                 <Button
                                     color="primary"
-                                    startIcon={<EmailIcon />}
+                                    startIcon={isMobile ? undefined : <EmailIcon />}
                                     onClick={() => handleEnviarCorreo(selectedIds)}
                                     variant="contained"
                                     size="small"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        fontSize: isMobile ? '0.75rem' : undefined,
+                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                        textAlign: 'center',
+                                        lineHeight: isMobile ? 1.2 : undefined,
+                                        minWidth: 'auto'
+                                    }}
                                 >
                                     Enviar
                                 </Button>
@@ -1044,10 +1092,18 @@ const DataTableMRT = ({ token }) => {
                             <Tooltip title="Timbrar">
                                 <Button
                                     color="secondary"
-                                    startIcon={<TimbrarIcon />}
+                                    startIcon={isMobile ? undefined : <TimbrarIcon />}
                                     onClick={() => handleTimbrar(selectedIds)}
                                     variant="contained"
                                     size="small"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        fontSize: isMobile ? '0.75rem' : undefined,
+                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                        textAlign: 'center',
+                                        lineHeight: isMobile ? 1.2 : undefined,
+                                        minWidth: 'auto'
+                                    }}
                                 >
                                     Timbrar
                                 </Button>
@@ -1055,10 +1111,18 @@ const DataTableMRT = ({ token }) => {
                             <Tooltip title="Descargar">
                                 <Button
                                     color="info"
-                                    startIcon={<DescargarIcon />}
+                                    startIcon={isMobile ? undefined : <DescargarIcon />}
                                     onClick={() => handleDownloadSelecteds(selectedIds)}
                                     variant="contained"
                                     size="small"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        fontSize: isMobile ? '0.75rem' : undefined,
+                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                        textAlign: 'center',
+                                        lineHeight: isMobile ? 1.2 : undefined,
+                                        minWidth: 'auto'
+                                    }}
                                 >
                                     Descargar
                                 </Button>
@@ -1066,12 +1130,20 @@ const DataTableMRT = ({ token }) => {
                             <Tooltip title="Timbrar y Enviar">
                                 <Button
                                     color="success"
-                                    startIcon={<TimbrarEnviarIcon />}
+                                    startIcon={isMobile ? undefined : <TimbrarEnviarIcon />}
                                     onClick={() => handleTimbrarYEnviar(selectedIds)}
                                     variant="contained"
                                     size="small"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        fontSize: isMobile ? '0.75rem' : undefined,
+                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                        textAlign: 'center',
+                                        lineHeight: isMobile ? 1.2 : undefined,
+                                        minWidth: 'auto'
+                                    }}
                                 >
-                                    Timbrar y Enviar
+                                    Timbrar+Enviar
                                 </Button>
                             </Tooltip>
                         </>
@@ -1180,6 +1252,141 @@ const DataTableMRT = ({ token }) => {
         <WithPermission permission="ver_facturas">
             <Box sx={{ width: '100%' }}>
                 <MaterialReactTable table={table} />
+
+                {/* --- MOBILE FILTER DRAWER --- */}
+                <Drawer
+                    anchor="right"
+                    open={openFilterDrawer}
+                    onClose={() => setOpenFilterDrawer(false)}
+                >
+                    <Box sx={{ width: 300, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="h6">Filtros</Typography>
+                            <IconButton onClick={() => setOpenFilterDrawer(false)}>
+                                <CancelIcon />
+                            </IconButton>
+                        </Box>
+
+                        {/* Fecha Emisión Filter */}
+                        <Typography variant="subtitle2">Fecha Emisión</Typography>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <DatePicker
+                                    label="De"
+                                    value={(() => {
+                                        const val = table.getColumn('Fecha')?.getFilterValue();
+                                        return val && val[0] ? dayjs(val[0]) : null;
+                                    })()}
+                                    onChange={(newValue) => {
+                                        const val = table.getColumn('Fecha')?.getFilterValue() || [null, null];
+                                        const newStart = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                        table.getColumn('Fecha').setFilterValue([newStart, val[1]]);
+                                    }}
+                                    slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                                />
+                                <DatePicker
+                                    label="Hasta"
+                                    value={(() => {
+                                        const val = table.getColumn('Fecha')?.getFilterValue();
+                                        return val && val[1] ? dayjs(val[1]) : null;
+                                    })()}
+                                    onChange={(newValue) => {
+                                        const val = table.getColumn('Fecha')?.getFilterValue() || [null, null];
+                                        const newEnd = newValue ? newValue.format('YYYY-MM-DD') : null;
+                                        table.getColumn('Fecha').setFilterValue([val[0], newEnd]);
+                                    }}
+                                    slotProps={{ textField: { size: 'small', fullWidth: true } }}
+                                />
+                            </Box>
+                        </LocalizationProvider>
+
+                        {/* Emisor Filter */}
+                        <Autocomplete
+                            options={uniqueEmisores}
+                            getOptionLabel={(option) => `${option.Nombre} (${option.Rfc})`}
+                            value={(() => {
+                                const filterVal = table.getColumn('Emisor')?.getFilterValue();
+                                if (!filterVal) return null;
+                                return uniqueEmisores.find(e => `${e.Nombre} (${e.Rfc})` === filterVal) || null;
+                            })()}
+                            onChange={(e, value) => {
+                                table.getColumn('Emisor').setFilterValue(value ? `${value.Nombre} (${value.Rfc})` : '');
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Emisor"
+                                    variant="outlined"
+                                    size="small"
+                                />
+                            )}
+                        />
+
+                        {/* Receptor Filter */}
+                        <Autocomplete
+                            options={uniqueReceptores}
+                            getOptionLabel={(option) => `${option.Nombre} (${option.Rfc})`}
+                            value={(() => {
+                                const filterVal = table.getColumn('Receptor')?.getFilterValue();
+                                if (!filterVal) return null;
+                                return uniqueReceptores.find(r => `${r.Nombre} (${r.Rfc})` === filterVal) || null;
+                            })()}
+                            onChange={(e, value) => {
+                                table.getColumn('Receptor').setFilterValue(value ? `${value.Nombre} (${value.Rfc})` : '');
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Receptor"
+                                    variant="outlined"
+                                    size="small"
+                                />
+                            )}
+                        />
+
+                        <TextField
+                            label="Folio"
+                            variant="outlined"
+                            size="small"
+                            value={table.getColumn('Folio')?.getFilterValue() || ''}
+                            onChange={(e) => table.getColumn('Folio').setFilterValue(e.target.value)}
+                        />
+
+                        <TextField
+                            label="UUID"
+                            variant="outlined"
+                            size="small"
+                            value={table.getColumn('uuid')?.getFilterValue() || ''}
+                            onChange={(e) => table.getColumn('uuid').setFilterValue(e.target.value)}
+                        />
+
+                        <TextField
+                            select
+                            label="Estatus"
+                            variant="outlined"
+                            size="small"
+                            value={table.getColumn('Estatus')?.getFilterValue() || ''}
+                            onChange={(e) => table.getColumn('Estatus').setFilterValue(e.target.value)}
+                            SelectProps={{ native: true }}
+                        >
+                            <option value="">Todos</option>
+                            <option value="Timbrada">Timbrada</option>
+                            <option value="No timbrada">No timbrada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </TextField>
+
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={() => {
+                                table.resetColumnFilters();
+                                setOpenFilterDrawer(false);
+                            }}
+                        >
+                            Limpiar Filtros
+                        </Button>
+                    </Box>
+                </Drawer>
 
                 {/* --- MENUS --- */}
                 <Menu

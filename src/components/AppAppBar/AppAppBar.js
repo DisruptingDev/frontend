@@ -35,6 +35,9 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     : alpha(theme.palette.background.default, 0.4),
   boxShadow: (theme.vars || theme).shadows[1],
   padding: "8px 12px",
+  [theme.breakpoints.down("md")]: {
+    padding: "8px 0px",
+  },
 }));
 
 export default function AppAppBar() {
@@ -58,7 +61,7 @@ export default function AppAppBar() {
         mt: "calc(var(--template-frame-height, 0px) + 28px)",
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" sx={{ px: { xs: 0, md: 2 } }}>
         <StyledToolbar variant="dense" disableGutters>
           <Link
             href="#"
@@ -114,9 +117,9 @@ export default function AppAppBar() {
             </Button>
           </Box>
           <Box sx={{ display: { xs: "flex", md: "none" }, gap: 1 }}>
-            {/* <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
+            <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
               <MenuIcon />
-            </IconButton> */}
+            </IconButton>
             <Drawer
               anchor="top"
               open={open}
@@ -124,10 +127,12 @@ export default function AppAppBar() {
               PaperProps={{
                 sx: {
                   top: "var(--template-frame-height, 0px)",
+                  backgroundColor: "rgba(0, 0, 0, 0.8)", // Gris obscuro traslúcido
+                  backdropFilter: "blur(4px)", // Opcional: efecto borroso
                 },
               }}
             >
-              <Box sx={{ p: 2, backgroundColor: "background.default" }}>
+              <Box sx={{ p: 2 }}>
                 <Box
                   sx={{
                     display: "flex",
