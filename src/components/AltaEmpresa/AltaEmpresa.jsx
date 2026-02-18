@@ -376,16 +376,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                                 {...register("Calle", { required: false })}
                                 sx={{ alignSelf: 'start', margin: '0px' }}
                             />
-<<<<<<< HEAD
-                            {imagePreview && (
-                                <Box mt={2}>
-                                    <img src={imagePreview} alt="Vista previa" width={120} height={70} />
-                                </Box>
-                            )}
-                        </WithPermission>
-                    </Box>
-                )}
-=======
                             <TextField
                                 label="Número exterior"
                                 fullWidth
@@ -445,7 +435,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         {/* <Typography variant="h6">Subir Logo</Typography> */}
                         <FileInput
                             name="Subir Logo"
-                            accept="image/*"
+                            accept="image/"
                             onChange={handleImageChange}
                         />
                         {imagePreview && (
@@ -455,7 +445,6 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                         )}
                     </WithPermission>
                 </Box>
->>>>>>> 5573b488f4d7ba1082198393ca82074aae17d7a8
 
                 <Box my={4}>
                     <Typography variant="h6" gutterBottom>
