@@ -331,8 +331,8 @@ const VistaXMLMultiple = ({
             {/* Nota informativa */}
             <Box sx={{ mt: 2, p: 2, bgcolor: '#f0f7ff', borderRadius: 1 }}>
                 <Typography variant="body2" color="info.dark">
-                    <strong>Nota:</strong> Las facturas con estado "Válida" o "Con advertencias" pueden ser importadas.
-                    Las facturas con estado "Error" no podrán ser importadas hasta que se corrijan los problemas.
+                    <strong>Nota:</strong> Las facturas con estado &quot;Válida&quot; o &quot;Con advertencias&quot; pueden ser importadas.
+                    Las facturas con estado &quot;Error&quot; no podrán ser importadas hasta que se corrijan los problemas.
                 </Typography>
             </Box>
         </Box>
