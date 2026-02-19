@@ -24,8 +24,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     const [exportacion, setExportacion] = useState("01");
     const [dataReceptor, setDataReceptor] = useState(data || {});
 
-    console.log("Data Receptor en Receptor.jsx", dataReceptor);
-
     // Reiniciar o recargar los datos del select cuando el modal se cierra
     useEffect(() => {
         if (isModalClosed) {
@@ -36,7 +34,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
     useEffect(() => {
         if (receptorData) {
-            //console.log("Receptor data", receptorData);
             setValue("ReceptorID", receptorData.ID);
             setValue("Receptor", receptorData.ID);
             setRFC(receptorData.Rfc);
@@ -68,8 +65,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setReceptorID(receptorData.ID);
             }
 
-            console.log("Año de info global", receptorData.InformacionGlobal?.Anio);
-
             if (rfc === "XAXX010101000") {
 
                 setValue("Año", receptorData.InformacionGlobal.Año);
@@ -93,7 +88,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
     }, [receptorData, setValue, trigger, getValues, rfc, lugarExpedicion, setReceptorID]);
 
     const handleReceptorChange = (e) => {
-        console.log("Valor seleccionado:", e.target.value);
         try {
             const data = JSON.parse(e.target.value);
             setReceptor(data); // tu estado local
@@ -151,7 +145,6 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             setValue("Municipio", data["Municipio"]);
             setValue("Estado", data["Estado"]);
 
-            console.log("RFCReceptor", data["Rfc"]);
             // Dispara la validación de estos campos
             trigger("RFCReceptor");
             trigger("DomicilioFiscalReceptor");
@@ -164,9 +157,7 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
         if (metodoPago !== undefined) {
             let data = JSON.parse(metodoPago);
             setValue("MetodoPagoDescripcion", data["Descripcion"]);
-            console.log("Forma de pago", data["Clave"]);
             if (data["Clave"] === "PPD") {
-                console.log("Forma de pago", data["Clave"]);
                 setValue("FormaPago", "99");
                 trigger("FormaPago");
             }

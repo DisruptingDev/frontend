@@ -4,31 +4,22 @@ export default function FormatearFactura(
   conceptos,
   id,
   modo,
-  facturasRelacionadas = null
+  facturasRelacionadas = null,
 ) {
-  console.log("Facturas relacionadas", facturasRelacionadas);
-  //console.log("Conceptos antes de reduce: ",conceptos);
   const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
   const TotalTraslados = conceptos.reduce(
     (acc, c) => acc + c.TotalTraslados,
-    0
+    0,
   );
   const TotalRetenciones = conceptos.reduce(
     (acc, c) => acc + c.TotalRetenciones,
-    0
+    0,
   );
   const TotalDescuento = conceptos.reduce((acc, c) => acc + c.Descuento, 0);
-  //console.log("TotalTraslados", TotalTraslados);
-  //console.log("TotalRetenciones", TotalRetenciones);
-  //console.log("TotalDescuento", TotalDescuento);
   const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento;
-  //console.log("Total", total);
   const now = new Date();
   const horaActual = now.toTimeString().split(" ")[0]; // Obtiene solo "HH:MM:SS"
   const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
-  // console.log("Emisor", emisor);
-  // console.log("Receptor", receptor);
-  //console.log("Conceptos", conceptos);
 
   const formatter = new Intl.NumberFormat("es-MX", {
     style: "decimal",
@@ -38,9 +29,6 @@ export default function FormatearFactura(
 
   let factura;
   if (modo == "Factura") {
-    console.log("Datos para formatear la factura:", {
-      conceptos,
-    });
     factura = {
       ...(id && { ID: Number(Number(id).toFixed(2)) }),
       Version: "4.0",
@@ -64,29 +52,29 @@ export default function FormatearFactura(
       Confirmacion: "",
       ...(receptor.Año || receptor.Meses || receptor.Periodicidad
         ? {
-          InformacionGlobal: {
-            Anio: receptor.Año || "",
-            Meses: receptor.Meses || "",
-            Periodicidad: receptor.Periodicidad || "",
-          },
-        }
+            InformacionGlobal: {
+              Anio: receptor.Año || "",
+              Meses: receptor.Meses || "",
+              Periodicidad: receptor.Periodicidad || "",
+            },
+          }
         : {}),
       EmisorID: emisor.Emisor,
       ReceptorID: receptor.Receptor,
       UsoCFDI: receptor.UsoCFDI,
       ...(facturasRelacionadas &&
-        facturasRelacionadas.TipoRelacion &&
-        facturasRelacionadas.ListaCFDIRelacionados &&
-        facturasRelacionadas.ListaCFDIRelacionados.length > 0
+      facturasRelacionadas.TipoRelacion &&
+      facturasRelacionadas.ListaCFDIRelacionados &&
+      facturasRelacionadas.ListaCFDIRelacionados.length > 0
         ? {
-          CFDIRelacionados: {
-            TipoRelacion: facturasRelacionadas.TipoRelacion,
-            ListaCFDIRelacionados:
-              facturasRelacionadas.ListaCFDIRelacionados.map((uuidObj) => ({
-                UUID: uuidObj.UUID,
-              })),
-          },
-        }
+            CFDIRelacionados: {
+              TipoRelacion: facturasRelacionadas.TipoRelacion,
+              ListaCFDIRelacionados:
+                facturasRelacionadas.ListaCFDIRelacionados.map((uuidObj) => ({
+                  UUID: uuidObj.UUID,
+                })),
+            },
+          }
         : {}),
       Conceptos: {
         ListaConceptos: conceptos.map((concepto) => ({
@@ -98,7 +86,7 @@ export default function FormatearFactura(
           Descripcion: concepto.Descripcion,
           ValorUnitario: Number(Number(concepto.ValorUnitario).toFixed(2)),
           ValorUnitarioString: String(
-            Number(concepto.ValorUnitario).toFixed(2)
+            Number(concepto.ValorUnitario).toFixed(2),
           ),
           Importe: Number(Number(concepto.Subtotal).toFixed(2)),
           ImporteString: String(Number(concepto.Subtotal).toFixed(2)),
@@ -108,49 +96,44 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                Base: Number(Number(retencion.BaseImpuesto).toFixed(2)),
-                BaseString: String(Number(retencion.BaseImpuesto).toFixed(2)),
-                ImpuestoCatalogoID: retencion.Impuesto,
-                ImpuestoClave: String(retencion.ImpuestoClave),
-                TipoFactor: "Tasa",
-                TasaOCuota: Number(Number(retencion.TasaOCuota)),
-                TasaOCuotaString: String(
-                  Number(retencion.TasaOCuota)
-                ),
-                TasaCatalogoID: retencion.Tasa,
-                Importe: Number(Number(retencion.Monto).toFixed(2)),
-                ImporteString: String(Number(retencion.Monto).toFixed(2)),
-              }))
+                  Base: Number(Number(retencion.BaseImpuesto).toFixed(2)),
+                  BaseString: String(Number(retencion.BaseImpuesto).toFixed(2)),
+                  ImpuestoCatalogoID: retencion.Impuesto,
+                  ImpuestoClave: String(retencion.ImpuestoClave),
+                  TipoFactor: "Tasa",
+                  TasaOCuota: Number(Number(retencion.TasaOCuota)),
+                  TasaOCuotaString: String(Number(retencion.TasaOCuota)),
+                  TasaCatalogoID: retencion.Tasa,
+                  Importe: Number(Number(retencion.Monto).toFixed(2)),
+                  ImporteString: String(Number(retencion.Monto).toFixed(2)),
+                }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                Base: Number(Number(traslado.BaseImpuesto).toFixed(2)),
-                BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
-                ImpuestoCatalogoID: traslado.Impuesto,
-                ImpuestoClave: String(traslado.ImpuestoClave),
-                TipoFactor: "Tasa",
-                TasaOCuota: Number(Number(traslado.TasaOCuota)),
-                TasaOCuotaString: String(
-                  Number(traslado.TasaOCuota)
-                ),
-                TasaCatalogoID: traslado.Tasa,
-                Importe: Number(Number(traslado.Monto).toFixed(2)),
-                ImporteString: String(Number(traslado.Monto).toFixed(2)),
-              }))
+                  Base: Number(Number(traslado.BaseImpuesto).toFixed(2)),
+                  BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
+                  ImpuestoCatalogoID: traslado.Impuesto,
+                  ImpuestoClave: String(traslado.ImpuestoClave),
+                  TipoFactor: "Tasa",
+                  TasaOCuota: Number(Number(traslado.TasaOCuota)),
+                  TasaOCuotaString: String(Number(traslado.TasaOCuota)),
+                  TasaCatalogoID: traslado.Tasa,
+                  Importe: Number(Number(traslado.Monto).toFixed(2)),
+                  ImporteString: String(Number(traslado.Monto).toFixed(2)),
+                }))
               : [],
           },
         })),
         TotalImpuestosTrasladados: Number(Number(TotalTraslados).toFixed(2)),
         TotalImpuestosTrasladadosString: String(
-          Number(TotalTraslados).toFixed(2)
+          Number(TotalTraslados).toFixed(2),
         ),
         TotalImpuestosRetenidos: Number(Number(TotalRetenciones).toFixed(2)),
         TotalImpuestosRetenidosString: String(
-          Number(TotalRetenciones).toFixed(2)
+          Number(TotalRetenciones).toFixed(2),
         ),
       },
     };
-    console.log("Factura Generada:", factura);
   } else if (modo == "VistaPrevia") {
     factura = {
       UUID: "",
@@ -183,7 +166,7 @@ export default function FormatearFactura(
       Emisor: {
         Rfc: emisor.RFCEmisor,
         Nombre: emisor.NombreEmisor,
-        RegimenFiscal: emisor.RegimenFiscal || emisor.RegimenFiscalEmisor,
+        RegimenFiscal: emisor.RegimenFiscalEmisor || "",
         LugarExpedicion: emisor.LugarExpedicion,
         LogoPath: emisor.LogoPath,
         Calle: emisor.CalleEmisor,
@@ -205,17 +188,7 @@ export default function FormatearFactura(
         Colonia: receptor.Colonia,
         Municipio: receptor.Municipio,
         Estado: receptor.Estado,
-
-        // Direccion: receptor:wp
-        // .Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
       },
-      // ReceptorID: receptor.Receptor,
-      // ReceptorNombre: receptor.NombreReceptor,
-      // ReceptorRFC: receptor.RFCReceptor,
-      // ReceptorRegimenFiscal: receptor.RegimenFiscal,
-      // ReceptorDireccion: receptor.Calle + " # " + receptor.NoExterior + "," + receptor.Colonia + "," + receptor.Municipio + "," + receptor.Estado,
-      // ReceptorUsoCFDI: receptor.UsoCFDI,
-      // ReceptorUsoCFDIDescripcion: receptor.UsoCFDIDescripcion,
       Conceptos: {
         ListaConceptos: conceptos.map((concepto) => ({
           ClaveProdServ: String(concepto.ClaveProdServ),
@@ -231,28 +204,27 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                NombreImpuesto: retencion.NombreImpuesto,
-                Base: retencion.BaseImpuesto,
-                ImpuestoClave: String(retencion.Impuesto),
-                TipoFactor: retencion.Tipo,
-                TasaOCuota: retencion.Tasa,
-                Importe: retencion.Monto,
-              }))
+                  NombreImpuesto: retencion.NombreImpuesto,
+                  Base: retencion.BaseImpuesto,
+                  ImpuestoClave: String(retencion.Impuesto),
+                  TipoFactor: retencion.Tipo,
+                  TasaOCuota: retencion.Tasa,
+                  Importe: retencion.Monto,
+                }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                NombreImpuesto: traslado.NombreImpuesto,
-                Base: parseFloat(traslado.BaseImpuesto),
-                ImpuestoClave: String(traslado.Impuesto),
-                TipoFactor: traslado.Tipo,
-                TasaOCuota: traslado.Tasa,
-                Importe: traslado.Monto,
-              }))
+                  NombreImpuesto: traslado.NombreImpuesto,
+                  Base: parseFloat(traslado.BaseImpuesto),
+                  ImpuestoClave: String(traslado.Impuesto),
+                  TipoFactor: traslado.Tipo,
+                  TasaOCuota: traslado.Tasa,
+                  Importe: traslado.Monto,
+                }))
               : [],
           },
         })),
         TotalImpuestosTrasladados: TotalTraslados,
-        //Aqui restar
         TotalImpuestosRetenidos: TotalRetenciones,
         TotalDescuento: TotalDescuento,
         GrupoID: 1,
@@ -295,43 +267,43 @@ export default function FormatearFactura(
           Version: "2.0",
           Totales: {
             TotalRetencionesIVA: Number(
-              (emisor.Totales.TotalRetencionesIVA || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesIVA || 0).toFixed(2),
             ),
             TotalRetencionesISR: Number(
-              (emisor.Totales.TotalRetencionesISR || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesISR || 0).toFixed(2),
             ),
             TotalRetencionesIEPS: Number(
-              (emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA16: Number(
               (
                 ((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0) * 100) /
                 16
-              ).toFixed(2)
+              ).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA16: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA8: Number(
               (
                 ((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0) * 100) /
                 8
-              ).toFixed(2)
+              ).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA8: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA0: Number(
-              (emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA0: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVAExento: Number(
-              (emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2),
             ),
             TotalTrasladosImpuestoIVAExento: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2),
             ),
             // montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
             montoTotalPagos: parseFloat(receptor.Monto),
@@ -385,7 +357,6 @@ export default function FormatearFactura(
         },
       },
     };
-    //console.log("Factura Vista Previa Pago", factura);
   } else if (modo === "VistaPreviaRPE") {
     factura = {
       UUID: "",
@@ -462,23 +433,23 @@ export default function FormatearFactura(
           Impuestos: {
             Retenciones: concepto.Retenciones
               ? concepto.Retenciones.map((retencion) => ({
-                NombreImpuesto: retencion.NombreImpuesto,
-                Base: retencion.BaseImpuesto,
-                ImpuestoClave: String(retencion.Impuesto),
-                TipoFactor: retencion.Tipo,
-                TasaOCuota: retencion.Tasa,
-                Importe: retencion.Monto,
-              }))
+                  NombreImpuesto: retencion.NombreImpuesto,
+                  Base: retencion.BaseImpuesto,
+                  ImpuestoClave: String(retencion.Impuesto),
+                  TipoFactor: retencion.Tipo,
+                  TasaOCuota: retencion.Tasa,
+                  Importe: retencion.Monto,
+                }))
               : [],
             Traslados: concepto.Traslados
               ? concepto.Traslados.map((traslado) => ({
-                NombreImpuesto: traslado.NombreImpuesto,
-                Base: traslado.BaseImpuesto,
-                ImpuestoClave: String(traslado.Impuesto),
-                TipoFactor: traslado.Tipo,
-                TasaOCuota: traslado.Tasa,
-                Importe: traslado.Monto,
-              }))
+                  NombreImpuesto: traslado.NombreImpuesto,
+                  Base: traslado.BaseImpuesto,
+                  ImpuestoClave: String(traslado.Impuesto),
+                  TipoFactor: traslado.Tipo,
+                  TasaOCuota: traslado.Tasa,
+                  Importe: traslado.Monto,
+                }))
               : [],
           },
         })),
@@ -493,43 +464,43 @@ export default function FormatearFactura(
           Version: "2.0",
           Totales: {
             TotalRetencionesIVA: Number(
-              (emisor.Totales.TotalRetencionesIVA || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesIVA || 0).toFixed(2),
             ),
             TotalRetencionesISR: Number(
-              (emisor.Totales.TotalRetencionesISR || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesISR || 0).toFixed(2),
             ),
             TotalRetencionesIEPS: Number(
-              (emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2)
+              (emisor.Totales.TotalRetencionesIEPS || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA16: Number(
               (
                 ((emisor.Totales.TotalTrasladosImpuestoIVA16 || 0) * 100) /
                 16
-              ).toFixed(2)
+              ).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA16: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA16 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA8: Number(
               (
                 ((emisor.Totales.TotalTrasladosImpuestoIVA8 || 0) * 100) /
                 8
-              ).toFixed(2)
+              ).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA8: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA8 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVA0: Number(
-              (emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosBaseIVA0 || 0).toFixed(2),
             ),
             TotalTrasladosImpuestoIVA0: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVA0 || 0).toFixed(2),
             ),
             TotalTrasladosBaseIVAExento: Number(
-              (emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosBaseIVAExento || 0).toFixed(2),
             ),
             TotalTrasladosImpuestoIVAExento: Number(
-              (emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2)
+              (emisor.Totales.TotalTrasladosImpuestoIVAExento || 0).toFixed(2),
             ),
             // montoTotalPagos: Number((receptor.Monto || 0).toFixed(2))
             montoTotalPagos: parseFloat(receptor.Monto),
@@ -557,7 +528,7 @@ export default function FormatearFactura(
               ],
               Impuestos: {
                 Retenciones: emisor.ImpuestosPagos.filter(
-                  (retencion) => retencion.TipoImpuesto === "Retencion"
+                  (retencion) => retencion.TipoImpuesto === "Retencion",
                 ) // Filtrar primero las retenciones
                   .map((retencion) => ({
                     Base: retencion.Base,
@@ -568,7 +539,7 @@ export default function FormatearFactura(
                     Importe: retencion.Importe,
                   })),
                 Traslados: emisor.ImpuestosPagos.filter(
-                  (traslado) => traslado.TipoImpuesto === "Traslado"
+                  (traslado) => traslado.TipoImpuesto === "Traslado",
                 ) // Filtrar primero los traslados
                   .map((traslado) => ({
                     Base: traslado.Base,
@@ -584,8 +555,6 @@ export default function FormatearFactura(
         },
       },
     };
-    //console.log("Factura Vista Previa RPE", factura);
   }
-  //console.log("Resultado de la factura", factura);
   return factura;
 }
