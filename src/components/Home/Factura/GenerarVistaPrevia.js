@@ -157,7 +157,6 @@ const fillTemplate = async (template, data) => {
     }
   }
   let direccionReceptor = "";
-  console.log("factura.Receptor", factura.Receptor);
   if (factura.Receptor.Calle) {
     direccionReceptor += factura.Receptor.Calle;
     if (factura.Receptor.NumeroExterior) {
@@ -224,8 +223,6 @@ const fillTemplate = async (template, data) => {
     usoCFDI =
       factura.Receptor.UsoCFDI + " " + factura.Receptor.UsoCFDIDescripcion;
   }
-
-  console.log("Logo:",factura.Emisor);
 
   // Reemplazar los placeholders en la plantilla con los valores correspondientes
   return (

@@ -85,8 +85,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
             Colonia: Factura.Emisor.Colonia,
             Municipio: Factura.Emisor.Municipio,
             Estado: Factura.Emisor.Estado,
-            // Logo: Factura.Emisor.Logo,
-        
+            LogoPath: Factura.Emisor.LogoPath,
             Serie: Factura.Serie,
             Fecha: Factura.Fecha,
             TipoComprobante: Factura.TipoDeComprobante

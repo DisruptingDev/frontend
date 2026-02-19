@@ -166,6 +166,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         try {
             // Obtener el valor y limpiarlo
             let value = e.target.value;
+            console.log("Data",value);
 
             value = value.replace(/[\n\r\t]/g, ' ') 
                 .replace(/\s+/g, ' ')       
@@ -181,8 +182,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 data = JSON.parse(value);
             }
 
-            // console.log("Datos parseados exitosamente:", data);
-            // console.log("LogoPath específicamente:", data.LogoPath);
+            console.log("LogoPath específicamente:", data.LogoPath);
 
             setEmisor(data);
             // console.log(data);
