@@ -141,6 +141,16 @@ const VistaNominasImportadas = ({
             },
         },
         {
+            name: "NoSeguroSocial",
+            label: "NSS",
+            options: {
+                customBodyRender: (value, tableMeta) => {
+                    const row = nominas[tableMeta.rowIndex];
+                    return row?.Receptor?.NoSeguroSocial || row?.NoSeguroSocial || "N/A";
+                }
+            },
+        },
+        {
             name: "Nombre",
             label: "Nombre",
             options: {
@@ -159,6 +169,16 @@ const VistaNominasImportadas = ({
                 customBodyRender: (value, tableMeta) => {
                     const row = nominas[tableMeta.rowIndex];
                     return row?.Receptor?.TipoContrato || row?.TipoContrato || row?.Nomina?.Receptor?.TipoContrato || "N/A";
+                }
+            },
+        },
+        {
+            name: "TipoJornada",
+            label: "Tipo Jornada",
+            options: {
+                customBodyRender: (value, tableMeta) => {
+                    const row = nominas[tableMeta.rowIndex];
+                    return row?.Receptor?.TipoJornada || row?.TipoJornada || "N/A";
                 }
             },
         },

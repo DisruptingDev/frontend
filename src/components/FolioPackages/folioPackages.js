@@ -29,7 +29,7 @@ const highVolumePackagesData = [
 import { useRouter } from 'next/navigation';
 
 const CustomTabPanel = (props) => {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, padding = 3, ...other } = props;
 
   return (
     <div
@@ -40,7 +40,7 @@ const CustomTabPanel = (props) => {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: padding }}>
           {children}
         </Box>
       )}
@@ -72,12 +72,14 @@ const FolioPackages = () => {
             <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes de</span><span>alto volumen</span></Box>} {...a11yProps(1)} />
           </Tabs>
         </Box>
-        <CustomTabPanel value={value} index={0}>
+        <CustomTabPanel value={value} index={0} padding={0}>
           <Box
-            className="section sectionNormal w-full" // Aplicamos clase para fondo y estilos comunes
+            className="section sectionNormal w-full p-0 " // Aplicamos clase para fondo y estilos comunes
+
             sx={{
               // padding, color, display, flexDirection, alignItems son manejados por la clase .section
               flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
+              padding: { md: 0 },
             }}
           >
             <h2 className="sectionTitle">Paquetes PyMEs de folios.</h2>
@@ -119,12 +121,13 @@ const FolioPackages = () => {
             </table>
           </Box>
         </CustomTabPanel>
-        <CustomTabPanel value={value} index={1}>
+        <CustomTabPanel value={value} index={1} padding={0}>
           <Box
             component="section" // Mantenemos la semántica de <section>
-            className="section sectionHighVolume"
+            className="section sectionHighVolume w-full p-0"
             sx={{
-              flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
+              flex: { md: 1 },
+              padding: { md: 0 }, // Para que ocupe espacio igual en layout de fila (md)
             }}
           >
             <h2 className="sectionTitle">Paquetes de alto volumen</h2>

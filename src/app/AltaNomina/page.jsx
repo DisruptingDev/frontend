@@ -14,7 +14,7 @@ import Select from "@/components/Select/Select.jsx";
 export default function ImportarFacturas() {
     const router = useRouter();
 
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [openModal, setOpenModal] = useState(false);
     const [openModalError, setOpenModalError] = useState(false);
@@ -68,86 +68,60 @@ export default function ImportarFacturas() {
     };
 
     const handleGuardarNominas = async () => {
-        console.log(nominas);
-
         // Función para validar si un objeto contiene errores
         const hasError = (obj) => {
             if (!obj) return false;
             return Object.keys(obj).some((key) => key.includes("Error") && obj[key] === "record not found");
         };
 
-        // Validar cuántas nóminas tienen errores
-        const nominasConErrores = nominas.filter((nomina) => {
-            // Adjust validation based on Nomina structure
-            // Assuming errors can be at root or specific children
-            return (
-                hasError(nomina) ||
-                hasError(nomina.Receptor) ||
-                hasError(nomina.Nomina)
-            );
-        });
-
-        // Validar cuántas nóminas no tienen errores
-        const nominasSinErrores = nominas.filter((nomina) => {
-            return !(
-                hasError(nomina) ||
-                hasError(nomina.Receptor) ||
-                hasError(nomina.Nomina)
-            );
-        });
-
-        console.log("Con errores:", nominasConErrores);
-        console.log("Sin errores:", nominasSinErrores);
+        const nominasConErrores = nominas.filter((nomina) =>
+            hasError(nomina) || hasError(nomina.Receptor) || hasError(nomina.Nomina)
+        );
+        const nominasSinErrores = nominas.filter((nomina) =>
+            !hasError(nomina) && !hasError(nomina.Receptor) && !hasError(nomina.Nomina)
+        );
 
         if (nominasConErrores.length === nominas.length) {
-            console.log("Todas las nóminas contienen errores");
             setOpenModalError(true);
             setConfirmationMessage("Todas las nóminas contienen errores");
             return;
         }
 
-        if (nominasConErrores.length > 0) {
-            console.log("Hay nóminas con errores");
-            // Optional: Alert user that only valid ones will be uploaded or block
-            // For now, let's proceed with valid ones or ask confirmation (skipping confirmation for speed unless requested)
-            // setOpenModalError(true);
-            // setConfirmationMessage("Hay registros con errores. Solo se procesarán los correctos.");
-            // return; // Uncomment to block
-        }
-
         if (nominasSinErrores.length === 0) return;
 
+        setLoading(true);
+        let exito = 0;
+
         try {
-            // iterate and save specifically or batch?
-            // The endpoint /ComplementoNomina likely accepts a single object or list.
-            // "guardara los datos" usually implies batch if previous was batch. 
-            // However, typical API designs might be per item. 
-            // Let's assume batch for list endpoint or iterative. 
-            // Given "CargaMasiva" context, usually it sends the whole list.
-            // Let's try sending the array of valid nominas.
+            for (const nomina of nominasSinErrores) {
+                console.log("📤 Enviando nómina a ComplementoNomina:", JSON.stringify(nomina, null, 2));
+                const response = await fetch(`${apiUrl}/api/facturas/ComplementoNomina`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(nomina),
+                });
 
-            const response = await fetch(`${apiUrl}/api/facturas/Facturas/ComplementoNomina`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(nominasSinErrores),
-            });
-
-            if (response.ok) {
-                alert("Nóminas guardadas correctamente");
-                setNominas([]);
-                // Reload or redirect?
-            } else {
-                const errorData = await response.json();
-                console.error("Error saving nominas:", errorData);
-                alert("Error al guardar las nóminas");
+                if (response.ok) {
+                    exito++;
+                } else {
+                    const text = await response.text();
+                    console.error(`Error al guardar nómina (${response.status}):`, text);
+                }
             }
 
+            setConfirmationMessage(`Se guardaron ${exito} de ${nominasSinErrores.length} nóminas con éxito`);
+            setOpenModalError(true);
+            if (exito > 0) setNominas([]);
+
         } catch (error) {
-            console.error("Error network:", error);
-            alert("Error de conexión");
+            console.error("Error de red:", error);
+            setConfirmationMessage("Error de conexión al guardar las nóminas");
+            setOpenModalError(true);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -229,12 +203,13 @@ export default function ImportarFacturas() {
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button
                                     variant="contained"
+                                    disabled={loading}
                                     sx={{
                                         backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' },
                                     }}
                                     onClick={handleGuardarNominas}
                                 >
-                                    Importar
+                                    {loading ? "Procesando..." : "Importar"}
                                 </Button>
                             </Box>
                         }

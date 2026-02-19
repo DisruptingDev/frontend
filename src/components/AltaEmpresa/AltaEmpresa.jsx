@@ -62,6 +62,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('Colonia', empresa.Colonia);
             setValue('Municipio', empresa.Municipio);
             setValue('Estado', empresa.Estado);
+            setValue('Banco', empresa.Banco);
+            setValue('Cuenta', empresa.Cuenta);
+            setValue('Sucursal', empresa.Sucursal);
+            setValue('Clabe', empresa.Clabe);
             setImagePreview(empresa.LogoPath);
 
             if (empresa.PlantillaID) {
@@ -137,6 +141,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         setValue("Colonia", "");
         setValue("Municipio", "");
         setValue("Estado", "");
+        setValue("Banco", "");
+        setValue("Cuenta", "");
+        setValue("Sucursal", "");
+        setValue("Clabe", "");
         setImage(null);
         setImagePreview('');
         setImagePath('');
@@ -203,6 +211,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             Colonia: data.Colonia || "",
             Municipio: data.Municipio || "",
             Estado: data.Estado || "",
+            Banco: data.Banco || "",
+            Cuenta: data.Cuenta || "",
+            Sucursal: data.Sucursal || "",
+            Clabe: data.Clabe || "",
             PlantillaID: plantillaSeleccionada,
         };
 
@@ -425,6 +437,61 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                                 helperText={errors.Estado ? "Este campo es obligatorio" : ""}
                                 {...register("Estado", { required: false })}
                                 sx={{ alignSelf: 'start', marginTop: '0px' }}
+                            />
+                        </Box>
+                    </AccordionDetails>
+                </Accordion>
+
+                <Accordion sx={{ mt: 2 }}>
+                    <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        aria-controls="panel-banco-content"
+                        id="panel-banco-header"
+                    >
+                        <Typography>Datos Bancarios <Typography component="span" variant="caption" color="text.secondary">(opcional)</Typography></Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <Box
+                            display="grid"
+                            gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr 1fr" }}
+                            gap={3}
+                            alignItems="end"
+                        >
+                            <TextField
+                                label="Banco"
+                                fullWidth
+                                placeholder="Ej: BBVA"
+                                {...register("Banco")}
+                                sx={{ alignSelf: 'start', margin: '0px' }}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                            <TextField
+                                label="Número de Cuenta"
+                                fullWidth
+                                placeholder="Ej: 1234567890"
+                                {...register("Cuenta")}
+                                sx={{ alignSelf: 'start', margin: '0px' }}
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                                onInput={(e) => { e.target.value = e.target.value.replace(/[^0-9]/g, ''); }}
+                            />
+                            <TextField
+                                label="Sucursal"
+                                fullWidth
+                                placeholder="Ej: 001"
+                                {...register("Sucursal")}
+                                sx={{ alignSelf: 'start', margin: '0px' }}
+                                InputLabelProps={{ shrink: true }}
+                            />
+                            <TextField
+                                label="CLABE"
+                                fullWidth
+                                placeholder="Ej: 012345678901234567"
+                                {...register("Clabe")}
+                                sx={{ alignSelf: 'start', margin: '0px' }}
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 18 }}
+                                onInput={(e) => { e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 18); }}
                             />
                         </Box>
                     </AccordionDetails>

@@ -47,16 +47,16 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
                             NumEmpleado: getVal('No. Empleado') || getVal('NumEmpleado') || getVal('num_empleado'),
                             NoSeguroSocial: getVal('nss'),
                             TipoContrato: getVal('tipo_contrato') || getVal('TipoContrato'),
-                            TipoRegimen: getVal('tipo_régimen') || getVal('TipoRegimen'),
+                            TipoRegimen: getVal('tipo_regimen') || getVal('TipoRegimen'),
                             TipoJornada: getVal('tipo_jornada') || getVal('TipoJornada'),
-                            PeriodicidadPago: getVal('Periodicidad Pago') || getVal('PeriodicidadPago'),
+                            PeriodicidadPago: getVal('Periodicidad Pago') || getVal('PeriodicidadPago') || getVal('periodicidad_pago'),
                             // Add other fields as necessary from the excel
                         },
                         Nomina: {
-                            FechaPago: getVal('Fecha Pago') || getVal('FechaPago'),
-                            FechaInicialPago: getVal('Fecha Inicial Pago') || getVal('FechaInicialPago'),
-                            FechaFinalPago: getVal('Fecha Final Pago') || getVal('FechaFinalPago'),
-                            NumDiasPagados: getVal('Días Pagados') || getVal('NumDiasPagados'),
+                            FechaPago: getVal('Fecha Pago') || getVal('FechaPago') || getVal('fecha_pago'),
+                            FechaInicialPago: getVal('Fecha Inicial Pago') || getVal('FechaInicialPago') || getVal('fecha_inicial_pago'),
+                            FechaFinalPago: getVal('Fecha Final Pago') || getVal('FechaFinalPago') || getVal('fecha_final_pago'),
+                            NumDiasPagados: getVal('Días Pagados') || getVal('NumDiasPagados') || getVal('num_dias_pagados'),
                         }
                     };
                 });
