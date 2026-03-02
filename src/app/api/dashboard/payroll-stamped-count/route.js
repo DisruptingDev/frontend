@@ -7,22 +7,17 @@ export async function GET(request) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
 
-        // Build the where clause
         const where = {
             uuid: {
-                not: null, // Ensure it is stamped (has UUID)
+                not: null,
             },
             fecha_timbrado: {
                 not: null,
             },
-            tipo_de_comprobante: {
-                not: 'N', // Exclude Payroll invoices
-            },
+            tipo_de_comprobante: 'N', // Only Payroll invoices
         };
 
         if (startDate && endDate) {
-            // Assuming fecha_timbrado is stored as 'YYYY-MM-DD...' string
-            // We'll use string comparison which works for ISO formats
             where.fecha_timbrado = {
                 ...where.fecha_timbrado,
                 gte: startDate,
@@ -36,7 +31,7 @@ export async function GET(request) {
 
         return NextResponse.json({ count });
     } catch (error) {
-        console.error("Error counting stamped invoices:", error);
+        console.error("Error counting stamped payroll invoices:", error);
         return NextResponse.json({ error: "Error fetching data" }, { status: 500 });
     }
 }

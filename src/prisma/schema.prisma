@@ -82,9 +82,8 @@ model acuse_cancelacions {
 model catalogo_plans {
   id               BigInt   @id @default(autoincrement())
   cantidad_timbres BigInt?
-  costo            String?
+  costo            Decimal? @db.Decimal
   nombre           String?
-  open_pay_id      String?
   ordens           ordens[]
   plans            plans[]
 }
@@ -130,7 +129,6 @@ model complementos {
   comprobante_id BigInt?
   Pagos          Pagos[]
   comprobantes   comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_complemento")
-  nomina         nomina[]
 }
 
 model comprobantes {
@@ -145,11 +143,11 @@ model comprobantes {
   no_certificado      String?
   certificado         String?
   condiciones_de_pago String?               @default("Condiciones de Pago")
-  sub_total           String?
+  sub_total           Decimal?              @db.Decimal
   descripcion         String?
   moneda              String?
   tipo_cambio         String?
-  total               String?
+  total               Decimal?              @db.Decimal
   tipo_de_comprobante String?
   exportacion         String?
   metodo_pago         String?
@@ -166,7 +164,7 @@ model comprobantes {
   estatus             String?
   xml_cancelacion     String?
   estatus_pagos       String?
-  descuento           String?
+  descuento           Decimal?              @db.Decimal
   sub_total_string    String?
   total_string        String?
   descuento_string    String?
@@ -177,8 +175,6 @@ model comprobantes {
   grupos              grupos?               @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_grupo")
   receptors           receptors?            @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_receptor")
   informacion_globals informacion_globals[]
-
-  @@index([tipo_de_comprobante], map: "idx_tipo_comprobante")
 }
 
 model conceptos {
@@ -195,8 +191,8 @@ model conceptos {
   descuento         Decimal?    @db.Decimal
   objeto_imp        String?
   grupo_id          BigInt?
-  grupos                grupos?     @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_conceptos_guardados")
-  impuestos             impuestos[]
+  grupos            grupos?     @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_conceptos_guardados")
+  impuestos         impuestos[]
 }
 
 model docto_relacionados {
@@ -242,11 +238,9 @@ model emisors {
   sucursal         String?
   banco            String?
   cuenta_bancaria  String?
-  cable_bancaria   String?
   clabe_bancaria   String?
   comprobantes     comprobantes[]
   grupos           grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
-  plantillas       plantillas?    @relation(fields: [plantilla_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_plantilla")
   ordens           ordens[]
   series           series[]
 }
@@ -268,8 +262,8 @@ model grupos {
   id                           BigInt         @id @default(autoincrement())
   nombre                       String?
   plan_id                      BigInt?
-  timbres_disponibles_paquetes BigInt?
-  timbres_disponibles_plan     BigInt?
+  timbres_disponibles_paquetes Int?
+  timbres_disponibles_plan     Int?
   gasolinera_id                BigInt?
   Conceptos                    Conceptos[]
   comprobantes                 comprobantes[]
@@ -386,14 +380,14 @@ model periodicidads {
 }
 
 model permisos {
-  id           BigInt         @id @default(autoincrement())
-  created_at   DateTime?      @db.Timestamptz(6)
-  updated_at   DateTime?      @db.Timestamptz(6)
-  deleted_at   DateTime?      @db.Timestamptz(6)
-  clave        String         @unique(map: "idx_permisos_clave") @db.VarChar(50)
-  descripcion  String?        @db.VarChar(255)
-  seccion_id   BigInt?
-  rol_permisos rol_permisos[]
+  id               BigInt            @id @default(autoincrement())
+  created_at       DateTime?         @db.Timestamptz(6)
+  updated_at       DateTime?         @db.Timestamptz(6)
+  deleted_at       DateTime?         @db.Timestamptz(6)
+  clave            String            @unique(map: "idx_permisos_clave") @db.VarChar(50)
+  descripcion      String?           @db.VarChar(255)
+  seccion_id       BigInt?
+  seccion_permisos seccion_permisos? @relation(fields: [seccion_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_permisos_seccion")
 
   @@index([deleted_at], map: "idx_permisos_deleted_at")
 }
@@ -412,12 +406,11 @@ model plantillas {
   updated_at   DateTime? @db.Timestamptz(6)
   deleted_at   DateTime? @db.Timestamptz(6)
   nombre       String?
+  categoria    String?
   descripcion  String?
   path         String?
-  categoria    String?
   vista_previa String?
   path_pagos   String?
-  emisors      emisors[]
 
   @@index([deleted_at], map: "idx_plantillas_deleted_at")
 }
@@ -458,43 +451,42 @@ model retencions {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id BigInt?
+  impuesto_catalogo_id Int?             @db.SmallInt
+  tasa_catalogo_id     Int?             @db.SmallInt
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
-  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_impuestos_impuestoclaves")
   impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_retenciones")
 }
 
 model rol_permisos {
   rol_id     BigInt
   permiso_id BigInt
-  permisos   permisos @relation(fields: [permiso_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rol_permiso_permiso")
-  rols       rols     @relation(fields: [rol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_rol_permiso_rol")
 
-  @@id([rol_id, permiso_id], map: "rol_permiso_pkey")
+  @@id([rol_id, permiso_id])
 }
 
 model rols {
-  id           BigInt         @id @default(autoincrement())
-  created_at   DateTime?      @db.Timestamptz(6)
-  updated_at   DateTime?      @db.Timestamptz(6)
-  deleted_at   DateTime?      @db.Timestamptz(6)
-  clave        String         @db.VarChar(50)
-  descripcion  String?        @db.VarChar(255)
-  grupo_id     BigInt?
-  rol_permisos rol_permisos[]
+  id          BigInt    @id @default(autoincrement())
+  created_at  DateTime? @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  clave       String    @db.VarChar(50)
+  descripcion String?   @db.VarChar(255)
+  grupo_id    BigInt?
 
   @@index([deleted_at], map: "idx_rols_deleted_at")
 }
 
 model seccion_permisos {
-  id          BigInt    @id @default(autoincrement())
-  created_at  DateTime? @db.Timestamptz(6)
-  updated_at  DateTime? @db.Timestamptz(6)
-  deleted_at  DateTime? @db.Timestamptz(6)
-  clave       String?   @unique(map: "idx_seccion_permisos_clave")
+  id          BigInt     @id @default(autoincrement())
+  created_at  DateTime?  @db.Timestamptz(6)
+  updated_at  DateTime?  @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  clave       String?    @unique(map: "idx_seccion_permisos_clave")
   descripcion String?
+  permisos    permisos[]
 
   @@index([deleted_at], map: "idx_seccion_permisos_deleted_at")
 }
@@ -505,7 +497,7 @@ model series {
   descripcion         String?
   ultimo_folio        BigInt?
   emisor_id           BigInt?
-  timbres_disponibles BigInt?
+  timbres_disponibles Int?
   tipo_comprobante    String?
   emisors             emisors? @relation(fields: [emisor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_emisors_series")
 }
@@ -567,12 +559,13 @@ model traslados {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id BigInt?
+  impuesto_catalogo_id Int?             @db.SmallInt
+  tasa_catalogo_id     Int?             @db.SmallInt
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
   impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_traslados")
-  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_traslados_impuesto_catalogo")
 }
 
 model uso_cfdis {
@@ -618,149 +611,7 @@ model usuarios {
   email                  String                   @unique(map: "unique_email")
   password               String?
   rol_id                 BigInt?
-  open_pay_id            String?
   usuario_claveprodservs usuario_claveprodservs[]
   usuario_claveunidad    usuario_claveunidad[]
   grupos                 grupos?                  @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_usuarios")
-}
-
-model deducciones {
-  id                        BigInt                @id @default(autoincrement())
-  total_otras_deducciones   String?
-  total_impuestos_retenidos String?
-  nomina_id                 BigInt?
-  nomina                    nomina?               @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_deducciones")
-  deducciones_detalle       deducciones_detalle[]
-}
-
-model deducciones_detalle {
-  id             BigInt       @id @default(autoincrement())
-  tipo_deduccion String?
-  clave          String?
-  concepto       String?
-  importe        String?
-  deducciones_id BigInt?
-  deducciones    deducciones? @relation(fields: [deducciones_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_deducciones_deduccion_array")
-}
-
-model emisor_nomina {
-  id                BigInt  @id @default(autoincrement())
-  registro_patronal String?
-  rfc_patron_origen String?
-  nomina_id         BigInt?
-  nomina            nomina? @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_emisor")
-}
-
-model nomina {
-  id                 BigInt            @id @default(autoincrement())
-  version            String?
-  tipo_nomina        String?
-  fecha_pago         String?
-  fecha_inicial_pago String?
-  fecha_final_pago   String?
-  num_dias_pagados   BigInt?
-  total_percepciones String?
-  total_deducciones  String?
-  total_otros_pagos  String?
-  complemento_id     BigInt?
-  deducciones        deducciones[]
-  emisor_nomina      emisor_nomina[]
-  complementos       complementos?     @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_nomina")
-  otros_pagos        otros_pagos[]
-  percepciones       percepciones[]
-  receptor_nomina    receptor_nomina[]
-}
-
-model otros_pagos {
-  id                  BigInt                @id @default(autoincrement())
-  nomina_id           BigInt?
-  nomina              nomina?               @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_otros_pagos")
-  otros_pagos_detalle otros_pagos_detalle[]
-}
-
-model otros_pagos_detalle {
-  id                 BigInt               @id @default(autoincrement())
-  tipo_otro_pago     String?
-  clave              String?
-  concepto           String?
-  importe            String?
-  otros_pagos_id     BigInt?
-  otros_pagos        otros_pagos?         @relation(fields: [otros_pagos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_otros_pagos_otro_pago_array")
-  subsidio_al_empleo subsidio_al_empleo[]
-
-  @@index([otros_pagos_id], map: "idx_otros_pagos_detalle_otros_pagos_id")
-}
-
-model percepciones {
-  id                   BigInt                 @id @default(autoincrement())
-  total_sueldos        String?
-  total_gravado        String?
-  total_exento         String?
-  nomina_id            BigInt?
-  nomina               nomina?                @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_percepciones")
-  percepciones_detalle percepciones_detalle[]
-}
-
-model percepciones_detalle {
-  id              BigInt        @id @default(autoincrement())
-  tipo_percepcion String?
-  clave           String?
-  concepto        String?
-  importe_gravado String?
-  importe_exento  String?
-  percepciones_id BigInt?
-  percepciones    percepciones? @relation(fields: [percepciones_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_percepciones_percepcion_array")
-}
-
-model receptor_nomina {
-  id                       BigInt  @id @default(autoincrement())
-  curp                     String?
-  num_seguridad_social     String?
-  fecha_inicio_rel_laboral String?
-  antig_edad               String? @map("antigüedad")
-  tipo_contrato            String?
-  tipo_jornada             String?
-  tipo_regimen             String?
-  num_empleado             String?
-  departamento             String?
-  puesto                   String?
-  riesgo_puesto            String?
-  periodicidad_pago        String?
-  cuenta_bancaria          String?
-  banco                    String?
-  salario_base_cot_apor    String?
-  salario_diario_integrado String?
-  clave_ent_fed            String?
-  nomina_id                BigInt?
-  nomina                   nomina? @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_receptor")
-}
-
-model subsidio_al_empleo {
-  id                  BigInt               @id @default(autoincrement())
-  subsidio_causado    String?
-  otro_pago_id        BigInt?
-  otros_pagos_detalle otros_pagos_detalle? @relation(fields: [otro_pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_otros_pagos_detalle_subsidio_al_empleo")
-}
-
-model trabajadores_nomina {
-  id                       BigInt  @id @default(autoincrement())
-  curp                     String?
-  num_seguridad_social     String?
-  fecha_inicio_rel_laboral String?
-  antig_edad               String? @map("antigüedad")
-  tipo_contrato            String?
-  tipo_jornada             String?
-  tipo_regimen             String?
-  num_empleado             String?
-  departamento             String?
-  puesto                   String?
-  riesgo_puesto            String?
-  periodicidad_pago        String?
-  cuenta_bancaria          String?
-  banco                    String?
-  salario_base_cot_apor    String?
-  salario_diario_integrado String?
-  clave_ent_fed            String?
-  sindicalizado            String?
-  emisor_id                BigInt?
 }

@@ -10,6 +10,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 export default function Cards() {
   const [stampedCount, setStampedCount] = useState(0);
+  const [payrollStampedCount, setPayrollStampedCount] = useState(0);
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -21,20 +22,28 @@ export default function Cards() {
   const [openDateModal, setOpenDateModal] = useState(false);
 
   useEffect(() => {
-    const fetchStampedCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const response = await fetch(`/api/dashboard/stamped-count?startDate=${startDate}&endDate=${endDate}`);
-        if (response.ok) {
-          const data = await response.json();
+        const [stampedRes, payrollRes] = await Promise.all([
+          fetch(`/api/dashboard/stamped-count?startDate=${startDate}&endDate=${endDate}`),
+          fetch(`/api/dashboard/payroll-stamped-count?startDate=${startDate}&endDate=${endDate}`)
+        ]);
+
+        if (stampedRes.ok) {
+          const data = await stampedRes.json();
           setStampedCount(data.count);
         }
+        if (payrollRes.ok) {
+          const data = await payrollRes.json();
+          setPayrollStampedCount(data.count);
+        }
       } catch (error) {
-        console.error("Error fetching stamped invoices:", error);
+        console.error("Error fetching dashboard counts:", error);
       }
     };
 
     if (startDate && endDate) {
-      fetchStampedCount();
+      fetchCounts();
     }
   }, [startDate, endDate]);
 
@@ -43,7 +52,7 @@ export default function Cards() {
 
   return (
     <Grid container spacing={3}>
-      {/* Facturas Timbradas (New Card) */}
+      {/* Facturas Timbradas */}
       <Grid item xs={12} sm={6} md={3}>
         <Card sx={{ height: '100%', position: 'relative' }}>
           <CardActionArea onClick={handleOpenDateModal} sx={{ height: '100%' }}>
@@ -54,6 +63,29 @@ export default function Cards() {
               </Box>
 
               <Typography sx={{ fontSize: '1.5em', fontWeight: '600', mb: 1 }}>{stampedCount}</Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#ababae' }}>
+                <CalendarMonthIcon sx={{ fontSize: '1em' }} />
+                <Typography sx={{ fontSize: '0.75em' }}>
+                  {startDate} - {endDate}
+                </Typography>
+              </Box>
+            </CardContent>
+          </CardActionArea>
+        </Card>
+      </Grid>
+
+      {/* Nóminas Timbradas */}
+      <Grid item xs={12} sm={6} md={3}>
+        <Card sx={{ height: '100%', position: 'relative' }}>
+          <CardActionArea onClick={handleOpenDateModal} sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography sx={{ fontSize: '0.8em' }}>Nóminas Timbradas</Typography>
+                <LabelIcon sx={{ fontSize: '1.5em', color: '#2e7d32' }} />
+              </Box>
+
+              <Typography sx={{ fontSize: '1.5em', fontWeight: '600', mb: 1 }}>{payrollStampedCount}</Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#ababae' }}>
                 <CalendarMonthIcon sx={{ fontSize: '1em' }} />
