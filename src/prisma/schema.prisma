@@ -451,8 +451,8 @@ model retencions {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id Int?             @db.SmallInt
-  tasa_catalogo_id     Int?             @db.SmallInt
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     BigInt?
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
@@ -559,8 +559,8 @@ model traslados {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id Int?             @db.SmallInt
-  tasa_catalogo_id     Int?             @db.SmallInt
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     BigInt?
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
