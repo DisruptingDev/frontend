@@ -66,7 +66,7 @@ const baseMenuItems = [
   {
     title: "Nóminas",
     icon: <AttachMoneyIcon />,
-    path: "/AltaNomina",
+    path: "/Nominas",
     permission: "ver_nominas",
     subItems: null
   },

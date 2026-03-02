@@ -19,7 +19,7 @@ export default function FormatearFactura(data, id = null, facturasRelacionadas =
             NoIdentificacion: concepto.NoIdentificacion || "",
             Cantidad: Number(cantidad.toFixed(2)),
             ClaveUnidad: String(concepto.ClaveUnidad || ""),
-            Unidad: calcularUnidad(String(concepto.ClaveUnidad)),    
+            Unidad: calcularUnidad(String(concepto.ClaveUnidad)),
             Descripcion: concepto.Descripcion || "",
             ValorUnitario: Number(precioUnitario.toFixed(2)),
             ValorUnitarioString: String(precioUnitario.toFixed(2)),
@@ -74,8 +74,8 @@ export default function FormatearFactura(data, id = null, facturasRelacionadas =
 
     // Obtener fecha actual formateada
     const now = new Date();
-    const fechaFormateada = now.toISOString().split('T')[0] + 'T' + 
-                           now.toTimeString().split(' ')[0];
+    const fechaFormateada = now.toISOString().split('T')[0] + 'T' +
+        now.toTimeString().split(' ')[0];
 
     const factura = {
         ...(id && { ID: Number(Number(id).toFixed(2)) }),

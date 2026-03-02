@@ -1,11 +1,11 @@
 "use client"
 import React, { useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Box, Typography } from '@mui/material';
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Box, Typography } from '@mui/material';
 import * as XLSX from 'xlsx';
 
-const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, uploadUrl }) => {
+import { formatSATDate } from '@/utils/formatDates';
+
+const ModalNomina = ({ token, open, handleClose, handleUpload, selectedEmisor }) => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -13,61 +13,148 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
         setFile(event.target.files[0]);
     };
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
     const handleSubmit = async () => {
         if (!file) return;
         setLoading(true);
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const data = e.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-                // Map Excel data to the structure expected by VistaNominasImportadas and Backend
-                const mappedData = jsonData.map((row, index) => {
-                    // Try to be flexible with column names (case insensitive or common variations) if possible, 
-                    // but for now, we'll assume standard headers based on the previous analysis or standard templates.
-                    // If the user has a specific template, we should match those headers.
-                    // Based on "VistaNominasImportadas", we need fields like:
-                    // Rfc, Nombre, Curp, NumEmpleado, TipoContrato, TipoRegimen, PeriodicidadPago, etc.
+                console.log("📂 Excel crudo:", jsonData);
 
-                    // Helper to get value ignoring case if needed, or just direct access
-                    const getVal = (key) => row[key] || row[key.toUpperCase()] || row[key.toLowerCase()] || "";
+                // --- Validación y Registro de Receptores/Trabajadores ---
+                console.log("🔍 Iniciando validación masiva de receptores...");
 
-                    // Construct the object structure:
-                    // { Receptor: { ... }, Nomina: { ... } }
-                    return {
-                        Receptor: {
-                            Rfc: getVal('rfc_empleado') || getVal('rfc_empleado'),
-                            Nombre: getVal('nombre'),
-                            Curp: getVal('CURP') || getVal('Curp'),
-                            NumEmpleado: getVal('No. Empleado') || getVal('NumEmpleado') || getVal('num_empleado'),
-                            NoSeguroSocial: getVal('nss'),
-                            TipoContrato: getVal('tipo_contrato') || getVal('TipoContrato'),
-                            TipoRegimen: getVal('tipo_regimen') || getVal('TipoRegimen'),
-                            TipoJornada: getVal('tipo_jornada') || getVal('TipoJornada'),
-                            PeriodicidadPago: getVal('Periodicidad Pago') || getVal('PeriodicidadPago') || getVal('periodicidad_pago'),
-                            // Add other fields as necessary from the excel
-                        },
-                        Nomina: {
-                            FechaPago: getVal('Fecha Pago') || getVal('FechaPago') || getVal('fecha_pago'),
-                            FechaInicialPago: getVal('Fecha Inicial Pago') || getVal('FechaInicialPago') || getVal('fecha_inicial_pago'),
-                            FechaFinalPago: getVal('Fecha Final Pago') || getVal('FechaFinalPago') || getVal('fecha_final_pago'),
-                            NumDiasPagados: getVal('Días Pagados') || getVal('NumDiasPagados') || getVal('num_dias_pagados'),
-                        }
-                    };
+                // 1. Obtener catálogo actual de receptores
+                const catRes = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
+                const catalogoReceptores = await catRes.json();
+                console.log(`📊 Catálogo cargado: ${catalogoReceptores?.length || 0} receptores.`);
 
-                console.log("Datos de nómina parseados:", mappedData);
-                handleUpload(mappedData);
+                const updatedData = [];
+                for (let i = 0; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    const rfc = String(row["rfc_empleado"] || row["RFC_EMPLEADO"] || row["RFC"] || row["Rfc"] || "").trim().toUpperCase();
+                    const curp = String(row["CURP"] || row["Curp"] || "").trim().toUpperCase();
+                    const nombre = String(row["Nombre"] || row["NOMBRE"] || row["nombre"] || row["Nombre del Empleado"] || row["NOMBRE DEL EMPLEADO"] || row["nombre_empleado"] || row["Nombre Completo"] || "").trim();
+
+                    if (!rfc) {
+                        console.warn(`⚠️ Fila ${i + 1} no tiene RFC, se salta validación.`);
+                        updatedData.push(row);
+                        continue;
+                    }
+
+                    // Buscar si ya existe en base al RFC
+                    let receptorExistente = Array.isArray(catalogoReceptores)
+                        ? catalogoReceptores.find(r => r.Rfc?.toUpperCase() === rfc)
+                        : null;
+
+                    if (!receptorExistente) {
+                        console.log(`🆕 [${rfc}] No encontrado. Registrando receptor y trabajador...`);
+
+                        try {
+                            // Registro de Receptor
+                            const regReceptorRes = await fetch(`${apiUrl}/api/gestores/RegistroReceptor`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({
+                                    Receptor: {
+                                        Rfc: rfc,
+                                        Nombre: nombre || "Personal Nómina",
+                                        RegimenFiscalReceptor: "605",
+                                        DomicilioFiscalReceptor: String(row["Domicilio Fiscal"] || row["DomicilioFiscal"] || row["CP"] || "55450"),
+                                        Calle: String(row["Calle"] || "S/N"),
+                                        NumeroExterior: String(row["No. Exterior"] || row["NumeroExterior"] || ""),
+                                        NumeroInterior: String(row["No. Interior"] || row["NumeroInterior"] || ""),
+                                        Colonia: String(row["Colonia"] || ""),
+                                        Municipio: String(row["Municipio"] || ""),
+                                        Estado: String(row["Estado"] || ""),
+                                        Email: String(row["Email"] || "notengo@mail.com")
+                                    }
+                                }),
+                            });
+
+                            if (regReceptorRes.ok) {
+                                const receptorData = await regReceptorRes.json();
+                                // Algunos endpoints usan ID, otros Id, otros retornan el objeto directo o envuelto
+                                const newID = receptorData.ID || receptorData.Id || (receptorData.Receptor && (receptorData.Receptor.ID || receptorData.Receptor.Id));
+
+                                if (newID) {
+                                    console.log(`✅ Receptor creado con ID: ${newID}. Registrando trabajador...`);
+
+                                    // Registro de Trabajador
+                                    const regTrabRes = await fetch(`${apiUrl}/api/gestores/RegistroTrabajadores`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`,
+                                        },
+                                        body: JSON.stringify({
+                                            TrabajadoresNomina: {
+                                                Curp: curp,
+                                                NumSeguridadSocial: String(row["NSS"] || row["NoSeguroSocial"] || ""),
+                                                FechaInicioRelLaboral: formatSATDate(row["Fecha Inicio Laboral"] || row["FechaInicioRelLaboral"] || "2024-01-01"),
+                                                TipoContrato: String(row["Tipo Contrato"] || row["TipoContrato"] || "01"),
+                                                TipoJornada: String(row["Tipo Jornada"] || row["TipoJornada"] || "01"),
+                                                TipoRegimen: String(row["Tipo Régimen"] || row["TipoRegimen"] || "02"),
+                                                NumEmpleado: String(row["No. Empleado"] || row["NumEmpleado"] || ""),
+                                                Departamento: String(row["Departamento"] || ""),
+                                                Puesto: String(row["Puesto"] || ""),
+                                                RiesgoPuesto: String(row["Riesgo Puesto"] || row["RiesgoPuesto"] || "1"),
+                                                PeriodicidadPago: String(row["Periodicidad Pago"] || row["PeriodicidadPago"] || "04"),
+                                                CuentaBancaria: String(row["Cuenta Bancaria"] || row["CuentaBancaria"] || ""),
+                                                Banco: String(row["Banco"] || "002"),
+                                                SalarioBaseCotApor: Number(row["Salario Base"] || row["SalarioBaseCotApor"] || 0),
+                                                SalarioDiarioIntegrado: Number(row["Salario Diario"] || row["SalarioDiarioIntegrado"] || 0),
+                                                ClaveEntFed: String(row["ClaveEntFed"] || row["Estado"] || "NL"),
+                                                EmisorID: selectedEmisor?.ID || 0
+                                            }
+                                        }),
+                                    });
+
+
+                                    if (!regTrabRes.ok) {
+                                        console.error(`❌ Falló registro de trabajador para ${rfc}`);
+                                    }
+
+                                    row["ReceptorID"] = newID;
+                                } else {
+                                    console.error(`❌ No se obtuvo ID para el nuevo receptor ${rfc}`, receptorData);
+                                }
+                            } else {
+                                const errText = await regReceptorRes.text();
+                                console.error(`❌ Error al registrar receptor ${rfc}:`, errText);
+                            }
+                        } catch (err) {
+                            console.error(`❌ Excepción al procesar ${rfc}:`, err);
+                        }
+                    } else {
+                        const existingID = receptorExistente.ID || receptorExistente.Id;
+                        console.log(`✔️ [${rfc}] Ya existe con ID: ${existingID}`);
+                        row["ReceptorID"] = existingID;
+                    }
+                    updatedData.push(row);
+                }
+
+                console.log("✨ Validación terminada. Cargando a la tabla...");
+                handleUpload(updatedData);
                 handleClose();
                 setFile(null);
             } catch (error) {
-                console.error("Error parsing Excel file:", error);
-                alert("Error al procesar el archivo. Asegúrate de que es un Excel válido.");
+                console.error("Error processing nomina upload:", error);
+                alert("Error al procesar el archivo. Revisa la consola para más detalles.");
             } finally {
                 setLoading(false);
             }
@@ -83,7 +170,7 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
     };
 
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>Subir Nómina</DialogTitle>
             <DialogContent>
                 <Box sx={{ mt: 2, border: '1px solid #ccc', borderRadius: '4px' }}>
@@ -93,10 +180,11 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
                         fullWidth
                         sx={{ borderBlockColor: '#1b384a', color: '#1b384a' }}
                     >
-                        Seleccionar archivo de Nómina
+                        Seleccionar archivo de Nómina (.xlsx / .xls)
                         <input
                             type="file"
                             hidden
+                            accept=".xlsx,.xls"
                             onChange={handleFileChange}
                         />
                     </Button>
@@ -108,13 +196,24 @@ const ModalNomina = ({ token, open, handleClose, handleUpload, additionalData, u
                         </Box>
                     )}
                 </Box>
+
+                <Box mt={2}>
+                    <Typography variant="caption" color="text.secondary">
+                        El archivo debe contener una hoja con las columnas:<br />
+                        <strong>ReceptorID, CURP, NSS, No. Empleado, Nombre, Departamento, Puesto,
+                            TipoContrato, TipoJornada, TipoRegimen, PeriodicidadPago, ClaveEntFed,
+                            Salario Base, Salario Diario, Cuenta Bancaria, Banco,
+                            Fecha Pago, Fecha Inicial Pago, Fecha Final Pago, Dias Pagados,
+                            Total Percepciones, Total Deducciones, Importe Gravado, Importe Exento, ISR</strong>
+                    </Typography>
+                </Box>
             </DialogContent>
             <DialogActions>
                 <Button onClick={handleClose} color="primary">
                     Cancelar
                 </Button>
-                <Button onClick={handleSubmit} color="primary" disabled={!file}>
-                    Subir Nómina
+                <Button onClick={handleSubmit} color="primary" disabled={!file || loading}>
+                    {loading ? "Procesando..." : "Cargar Nóminas"}
                 </Button>
             </DialogActions>
         </Dialog>

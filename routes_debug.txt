@@ -1,0 +1,16 @@
+C:\Users\macal\Wise\frontend\src\app\api\apps\academy\route.js
+C:\Users\macal\Wise\frontend\src\app\api\apps\ecommerce\route.js
+C:\Users\macal\Wise\frontend\src\app\api\apps\invoice\route.js
+C:\Users\macal\Wise\frontend\src\app\api\apps\logistics\route.js
+C:\Users\macal\Wise\frontend\src\app\api\apps\permissions\route.js
+C:\Users\macal\Wise\frontend\src\app\api\apps\user-list\route.js
+C:\Users\macal\Wise\frontend\src\app\api\dashboard\stamped-count\route.js
+C:\Users\macal\Wise\frontend\src\app\api\facturas\direct-delete\route.js
+C:\Users\macal\Wise\frontend\src\app\api\generate-pdf\route.js
+C:\Users\macal\Wise\frontend\src\app\api\generate-zip\route.js
+C:\Users\macal\Wise\frontend\src\app\api\login\route.js
+C:\Users\macal\Wise\frontend\src\app\api\pages\faq\route.js
+C:\Users\macal\Wise\frontend\src\app\api\pages\pricing\route.js
+C:\Users\macal\Wise\frontend\src\app\api\pages\profile\route.js
+C:\Users\macal\Wise\frontend\src\app\api\pages\widget-examples\route.js
+C:\Users\macal\Wise\frontend\src\app\api\upload\route.js

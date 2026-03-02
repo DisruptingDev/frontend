@@ -1,319 +1,264 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import MUIDataTable from "mui-datatables";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { IconButton, Menu, MenuItem, Box } from "@mui/material";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-// import ModalEdicion from "./ModalEdicion"; // Reusing or creating new modal? Leaving out for now or reusing if compatible.
+import React, { useState, useEffect, useMemo } from "react";
+import {
+    MaterialReactTable,
+    useMaterialReactTable,
+    MRT_Localization_ES
+} from "material-react-table";
+import {
+    Box,
+    IconButton,
+    Menu,
+    MenuItem,
+    Chip
+} from "@mui/material";
+import { MoreVert as MoreVertIcon, Delete as DeleteIcon } from "@mui/icons-material";
 
-const VistaNominasImportadas = ({
-    facturasRecuperadas, // Keeping prop name generic or changing? Let's use generic "data" internally if possible, but prop from page is likely "facturasRecuperadas" or needs change in page. Let's keep consistency for now.
-    token,
-    actualizarFacturas,
-}) => {
+const fmtNum = (v) => {
+    const n = parseFloat(v);
+    return isNaN(n) ? "—" : `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
+};
+
+// Flexible key getter
+const g = (row, ...keys) => {
+    for (const key of keys) {
+        const variants = [
+            key,
+            key.toUpperCase(),
+            key.toLowerCase(),
+            key.replace(/ /g, "_").toLowerCase(),
+            key.replace(/([A-Z])/g, "_$1").toLowerCase().replace(/^_/, ""),
+        ];
+        for (const v of variants) {
+            if (row[v] !== undefined && row[v] !== null && row[v] !== "") return row[v];
+        }
+    }
+    return "—";
+};
+
+const VistaNominasImportadas = ({ facturasRecuperadas, actualizarFacturas }) => {
     const [nominas, setNominas] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
-    const [menuRow, setMenuRow] = useState(null);
-    //   const [openModal, setOpenModal] = useState(false);
-    //   const [indexNominaEditar, setIndexNominaEditar] = useState(null);
-    //   const [nominaEditar, setNominaEditar] = useState(null);
+    const [menuRowIndex, setMenuRowIndex] = useState(null);
 
     useEffect(() => {
-        console.log("VistaNominasImportadas received data:", facturasRecuperadas);
-        setNominas(facturasRecuperadas);
+        setNominas(facturasRecuperadas || []);
     }, [facturasRecuperadas]);
 
-    // Tema personalizado para la tabla
-    const getMuiTheme = () =>
-        createTheme({
-            components: {
-                MUIDataTable: {
-                    styleOverrides: {
-                        root: {
-                            backgroundColor: "#f5f5f5",
-                        },
-                        paper: {
-                            boxShadow: "none",
-                        },
-                    },
-                },
-                MUIDataTableHeadCell: {
-                    styleOverrides: {
-                        root: {
-                            backgroundColor: "#1b384a",
-                            color: "white",
-                            fontWeight: "bold",
-                            textAlign: "center",
-                        },
-                    },
-                },
-                MUIDataTableBodyCell: {
-                    styleOverrides: {
-                        root: {
-                            padding: "8px",
-                            textAlign: "center",
-                        },
-                    },
-                },
-            },
-        });
-
-    // Manejo del menú de acciones
-    const handleMenuClick = (event, rowData, rowIndex) => {
+    const handleMenuOpen = (event, rowIndex) => {
         setAnchorEl(event.currentTarget);
-        setMenuRow({ rowData, rowIndex });
+        setMenuRowIndex(rowIndex);
     };
-
     const handleMenuClose = () => {
         setAnchorEl(null);
-        setMenuRow(null);
+        setMenuRowIndex(null);
     };
-
-    const handleEditar = () => {
-        // if (menuRow) {
-        //   setNominaEditar(menuRow.rowData);
-        //   setIndexNominaEditar(menuRow.rowIndex);
-        //   setOpenModal(true);
-        //   handleMenuClose();
-        // }
-        handleMenuClose(); // Placeholder
-    };
-
     const handleEliminar = () => {
-        if (menuRow) {
-            const nuevasNominas = nominas.filter((_, i) => i !== menuRow.rowIndex);
-            setNominas(nuevasNominas);
-            actualizarFacturas(nuevasNominas); // Prop name still actualizarFacturas for compatibility
-            handleMenuClose();
+        if (menuRowIndex !== null) {
+            const updated = nominas.filter((_, i) => i !== menuRowIndex);
+            setNominas(updated);
+            actualizarFacturas(updated);
         }
+        handleMenuClose();
     };
 
-    // Función para formatear celdas con errores
-    const renderCellWithError = (value, hasError) => {
-        return (
-            <span style={{ color: hasError ? "red" : "inherit" }}>
-                {hasError ? `${value} no encontrado` : value}
-            </span>
-        );
-    };
+    const columns = useMemo(() => [
+        {
+            accessorFn: (row) => g(row, "ReceptorID", "receptor_id", "ID Receptor"),
+            id: "ReceptorID",
+            header: "Receptor ID",
+            size: 130,
+        },
+        {
+            accessorFn: (row) => g(row, "No. Empleado", "NumEmpleado", "num_empleado"),
+            id: "NumEmpleado",
+            header: "No. Empleado",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Nombre", "nombre", "Nombre del Empleado", "Nombre Completo"),
+            id: "Nombre",
+            header: "Nombre",
+            size: 280,
+        },
+        {
+            accessorFn: (row) => g(row, "RFC", "rfc_empleado", "Rfc", "rfc"),
+            id: "RFC",
+            header: "RFC",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "CURP", "Curp"),
+            id: "CURP",
+            header: "CURP",
+            size: 180,
+        },
+        {
+            accessorFn: (row) => g(row, "NSS", "NoSeguroSocial", "NumSeguridadSocial"),
+            id: "NSS",
+            header: "NSS",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Departamento"),
+            id: "Departamento",
+            header: "Departamento",
+            size: 180,
+        },
+        {
+            accessorFn: (row) => g(row, "Puesto"),
+            id: "Puesto",
+            header: "Puesto",
+            size: 180,
+        },
+        {
+            accessorFn: (row) => g(row, "TipoContrato", "Tipo Contrato"),
+            id: "TipoContrato",
+            header: "Tipo Contrato",
+            size: 160,
+        },
+        {
+            accessorFn: (row) => g(row, "TipoRegimen", "Tipo Regimen"),
+            id: "TipoRegimen",
+            header: "Tipo Régimen",
+            size: 180,
+        },
+        {
+            accessorFn: (row) => g(row, "PeriodicidadPago", "Periodicidad Pago"),
+            id: "Periodicidad",
+            header: "Periodicidad",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Fecha Pago", "FechaPago"),
+            id: "FechaPago",
+            header: "Fecha Pago",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Fecha Inicial Pago", "FechaInicialPago", "Fecha Inicial"),
+            id: "FechaInicial",
+            header: "Fecha Inicial",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Fecha Final Pago", "FechaFinalPago", "Fecha Final"),
+            id: "FechaFinal",
+            header: "Fecha Final",
+            size: 150,
+        },
+        {
+            accessorFn: (row) => g(row, "Dias Pagados", "NumDiasPagados", "Días Pagados"),
+            id: "DiasPagados",
+            header: "Días Pagados",
+            size: 140,
+        },
+        {
+            accessorFn: (row) => g(row, "Total Percepciones", "TotalPercepciones"),
+            id: "TotalPercepciones",
+            header: "Total Percepciones",
+            size: 180,
+            Cell: ({ cell }) => {
+                const v = cell.getValue();
+                return v === "—" ? "—" : fmtNum(v);
+            },
+        },
+        {
+            accessorFn: (row) => g(row, "Total Deducciones", "TotalDeducciones"),
+            id: "TotalDeducciones",
+            header: "Total Deducciones",
+            size: 180,
+            Cell: ({ cell }) => {
+                const v = cell.getValue();
+                return v === "—" ? "—" : fmtNum(v);
+            },
+        },
+        {
+            accessorFn: (row) => g(row, "ISR", "Importe ISR", "ImporteISR", "Deduccion ISR"),
+            id: "ISR",
+            header: "ISR",
+            size: 120,
+            Cell: ({ cell }) => {
+                const v = cell.getValue();
+                return v === "—" ? "—" : fmtNum(v);
+            },
+        },
+    ], []);
 
-    // Columnas de la tabla
-    const columns = [
-        {
-            name: "index",
-            label: "Número",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    return tableMeta.rowIndex + 1;
+    const table = useMaterialReactTable({
+        columns,
+        data: nominas,
+        localization: MRT_Localization_ES,
+        enableRowActions: true,
+        positionActionsColumn: "last",
+        renderRowActions: ({ row }) => (
+            <>
+                <IconButton
+                    size="small"
+                    onClick={(e) => handleMenuOpen(e, row.index)}
+                >
+                    <MoreVertIcon fontSize="small" />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl) && menuRowIndex === row.index}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleEliminar} sx={{ color: "error.main" }}>
+                        <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                        Eliminar
+                    </MenuItem>
+                </Menu>
+            </>
+        ),
+        muiTablePaperProps: {
+            elevation: 0,
+            sx: { border: "1px solid #e0e0e0", borderRadius: 2, maxWidth: "100%", overflow: "hidden" },
+        },
+        muiTableHeadCellProps: {
+            sx: {
+                backgroundColor: "#1b384a",
+                color: "white",
+                fontWeight: "bold",
+                fontSize: "12px",
+                verticalAlign: "bottom",
+                whiteSpace: "normal",
+                lineHeight: "1.2",
+                "& .MuiTableSortLabel-root": { color: "white" },
+                "& .MuiTableSortLabel-root:hover": { color: "#cfe8f3" },
+                "& .Mui-TableHeadCell-Content": {
+                    justifyContent: "space-between",
+                    minHeight: "3rem",
                 },
+                "& svg": { color: "white !important" },
+                "& .MuiIconButton-root": { color: "white" },
             },
         },
-        {
-            name: "RfcEmpleado", // Semantic name, key doesn't matter as we use customBodyRender with rowIndex for robust access
-            label: "RFC Empleado",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    const rfc = row?.Receptor?.Rfc || row?.Rfc || row?.Nomina?.Receptor?.Rfc || "N/A";
-                    const hasError = row?.Receptor?.Error === "record not found"; // Check error on Receptor if exists
-                    return renderCellWithError(rfc, hasError);
-                },
+        muiTableBodyCellProps: {
+            sx: {
+                fontSize: "12px",
             },
         },
-        {
-            name: "Curp",
-            label: "CURP",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.Curp || row?.Curp || row?.Nomina?.Receptor?.Curp || "N/A";
-                }
-            },
+        muiTableBodyRowProps: {
+            hover: true,
         },
-        {
-            name: "NumEmpleado",
-            label: "No. Empleado",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.NumEmpleado || row?.NumEmpleado || row?.Nomina?.Receptor?.NumEmpleado || "N/A";
-                }
-            },
+        initialState: {
+            density: "comfortable",
+            pagination: { pageSize: 10 },
         },
-        {
-            name: "NoSeguroSocial",
-            label: "NSS",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.NoSeguroSocial || row?.NoSeguroSocial || "N/A";
-                }
-            },
-        },
-        {
-            name: "Nombre",
-            label: "Nombre",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    const nombre = row?.Receptor?.Nombre || row?.Nombre || row?.Nomina?.Receptor?.Nombre || "Desconocido";
-                    const hasError = row?.Receptor?.Error === "record not found";
-                    return renderCellWithError(nombre, hasError);
-                },
-            },
-        },
-        {
-            name: "TipoContrato",
-            label: "Tipo Contrato",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.TipoContrato || row?.TipoContrato || row?.Nomina?.Receptor?.TipoContrato || "N/A";
-                }
-            },
-        },
-        {
-            name: "TipoJornada",
-            label: "Tipo Jornada",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.TipoJornada || row?.TipoJornada || "N/A";
-                }
-            },
-        },
-        {
-            name: "TipoRegimen",
-            label: "Tipo Régimen",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.TipoRegimen || row?.TipoRegimen || row?.Nomina?.Receptor?.TipoRegimen || "N/A";
-                }
-            },
-        },
-        {
-            name: "PeriodicidadPago",
-            label: "Periodicidad Pago",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Receptor?.PeriodicidadPago || row?.PeriodicidadPago || row?.Nomina?.Receptor?.PeriodicidadPago || "N/A";
-                }
-            },
-        },
-        {
-            name: "FechaPago",
-            label: "Fecha Pago",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Nomina?.FechaPago || row?.FechaPago || "N/A";
-                }
-            },
-        },
-        {
-            name: "FechaInicialPago",
-            label: "Fecha Inicial Pago",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Nomina?.FechaInicialPago || row?.FechaInicialPago || "N/A";
-                }
-            },
-        },
-        {
-            name: "FechaFinalPago",
-            label: "Fecha Final Pago",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Nomina?.FechaFinalPago || row?.FechaFinalPago || "N/A";
-                }
-            },
-        },
-        {
-            name: "NumDiasPagados",
-            label: "Días Pagados",
-            options: {
-                customBodyRender: (value, tableMeta) => {
-                    const row = nominas[tableMeta.rowIndex];
-                    return row?.Nomina?.NumDiasPagados || row?.NumDiasPagados || "N/A";
-                }
-            },
-        },
-        {
-            name: "actions",
-            label: "Acción",
-            options: {
-                filter: false,
-                sort: false,
-                customBodyRender: (value, tableMeta) => {
-                    return (
-                        <>
-                            <IconButton
-                                onClick={(event) =>
-                                    handleMenuClick(event, nominas[tableMeta.rowIndex], tableMeta.rowIndex)
-                                }
-                            >
-                                <MoreVertIcon />
-                            </IconButton>
-                            <Menu
-                                anchorEl={anchorEl}
-                                open={Boolean(anchorEl) && menuRow?.rowIndex === tableMeta.rowIndex}
-                                onClose={handleMenuClose}
-                            >
-                                <MenuItem onClick={handleEditar}>Editar</MenuItem>
-                                <MenuItem onClick={handleEliminar}>Eliminar</MenuItem>
-                            </Menu>
-                        </>
-                    );
-                },
-            },
-        },
-    ];
-
-    // Opciones de la tabla
-    const options = {
-        filterType: "dropdown",
-        responsive: "standard",
-        selectableRows: "none",
-        download: false,
-        print: false,
-        viewColumns: false,
-        rowsPerPage: 10,
-        rowsPerPageOptions: [10, 25, 50],
-        textLabels: {
-            body: {
-                noMatch: nominas.length === 0 ? "No hay nóminas importadas" : "Cargando...",
-            },
-        },
-        setTableProps: () => ({
-            style: {
-                minWidth: '100%',
-                tableLayout: 'fixed'
-            }
-        }),
-        setCellHeaderProps: () => ({
-            style: {
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                maxWidth: '150px'
-            }
-        })
-    };
+        enableColumnResizing: true,
+        enableGlobalFilter: true,
+        enableDensityToggle: false,
+        renderEmptyRowsFallback: () => (
+            <Box sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
+                No hay nóminas cargadas. Importa un archivo Excel para comenzar.
+            </Box>
+        ),
+    });
 
     return (
-        <Box sx={{ marginTop: 2 }}>
-            <ThemeProvider theme={getMuiTheme()}>
-                <MUIDataTable
-                    title={"Nóminas Importadas"}
-                    data={nominas}
-                    columns={columns}
-                    options={options}
-                />
-            </ThemeProvider>
+        <Box sx={{ mt: 2, width: "100%", maxWidth: "100%", overflowX: "auto" }}>
+            <MaterialReactTable table={table} />
         </Box>
     );
 };

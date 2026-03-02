@@ -82,7 +82,7 @@ model acuse_cancelacions {
 model catalogo_plans {
   id               BigInt   @id @default(autoincrement())
   cantidad_timbres BigInt?
-  costo            Decimal? @db.Decimal
+  costo            String?
   nombre           String?
   open_pay_id      String?
   ordens           ordens[]
@@ -130,6 +130,7 @@ model complementos {
   comprobante_id BigInt?
   Pagos          Pagos[]
   comprobantes   comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_complemento")
+  nomina         nomina[]
 }
 
 model comprobantes {
@@ -144,11 +145,11 @@ model comprobantes {
   no_certificado      String?
   certificado         String?
   condiciones_de_pago String?               @default("Condiciones de Pago")
-  sub_total           Decimal?              @db.Decimal
+  sub_total           String?
   descripcion         String?
   moneda              String?
   tipo_cambio         String?
-  total               Decimal?              @db.Decimal
+  total               String?
   tipo_de_comprobante String?
   exportacion         String?
   metodo_pago         String?
@@ -165,7 +166,7 @@ model comprobantes {
   estatus             String?
   xml_cancelacion     String?
   estatus_pagos       String?
-  descuento           Decimal?              @db.Decimal
+  descuento           String?
   sub_total_string    String?
   total_string        String?
   descuento_string    String?
@@ -176,6 +177,8 @@ model comprobantes {
   grupos              grupos?               @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_grupo")
   receptors           receptors?            @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_receptor")
   informacion_globals informacion_globals[]
+
+  @@index([tipo_de_comprobante], map: "idx_tipo_comprobante")
 }
 
 model conceptos {
@@ -192,8 +195,8 @@ model conceptos {
   descuento         Decimal?    @db.Decimal
   objeto_imp        String?
   grupo_id          BigInt?
-  grupos            grupos?     @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_conceptos_guardados")
-  impuestos         impuestos[]
+  grupos                grupos?     @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_conceptos_guardados")
+  impuestos             impuestos[]
 }
 
 model docto_relacionados {
@@ -214,7 +217,6 @@ model docto_relacionados {
   Pago                      Pago?    @relation(fields: [pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_Pago_doctos_relacionados")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model emisors {
   id               BigInt         @id @default(autoincrement())
   rfc              String?
@@ -237,8 +239,14 @@ model emisors {
   logo_path        String?
   email            String?
   plantilla_id     BigInt?        @default(1)
+  sucursal         String?
+  banco            String?
+  cuenta_bancaria  String?
+  cable_bancaria   String?
+  clabe_bancaria   String?
   comprobantes     comprobantes[]
   grupos           grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
+  plantillas       plantillas?    @relation(fields: [plantilla_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_plantilla")
   ordens           ordens[]
   series           series[]
 }
@@ -409,6 +417,7 @@ model plantillas {
   categoria    String?
   vista_previa String?
   path_pagos   String?
+  emisors      emisors[]
 
   @@index([deleted_at], map: "idx_plantillas_deleted_at")
 }
@@ -450,11 +459,10 @@ model retencions {
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
   impuesto_catalogo_id BigInt?
-  tasa_catalogo_id     Int?             @db.SmallInt
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
-  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_impuestos_impuestoclaves")
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_retenciones")
 }
 
@@ -560,12 +568,11 @@ model traslados {
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
   impuesto_catalogo_id BigInt?
-  tasa_catalogo_id     Int?             @db.SmallInt
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
   impuestos            impuestos?       @relation(fields: [impuestos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_traslados")
-  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_traslados_impuesto_catalogo")
+  impuesto_claves      impuesto_claves? @relation(fields: [impuesto_catalogo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model uso_cfdis {
@@ -615,4 +622,145 @@ model usuarios {
   usuario_claveprodservs usuario_claveprodservs[]
   usuario_claveunidad    usuario_claveunidad[]
   grupos                 grupos?                  @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_usuarios")
+}
+
+model deducciones {
+  id                        BigInt                @id @default(autoincrement())
+  total_otras_deducciones   String?
+  total_impuestos_retenidos String?
+  nomina_id                 BigInt?
+  nomina                    nomina?               @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_deducciones")
+  deducciones_detalle       deducciones_detalle[]
+}
+
+model deducciones_detalle {
+  id             BigInt       @id @default(autoincrement())
+  tipo_deduccion String?
+  clave          String?
+  concepto       String?
+  importe        String?
+  deducciones_id BigInt?
+  deducciones    deducciones? @relation(fields: [deducciones_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_deducciones_deduccion_array")
+}
+
+model emisor_nomina {
+  id                BigInt  @id @default(autoincrement())
+  registro_patronal String?
+  rfc_patron_origen String?
+  nomina_id         BigInt?
+  nomina            nomina? @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_emisor")
+}
+
+model nomina {
+  id                 BigInt            @id @default(autoincrement())
+  version            String?
+  tipo_nomina        String?
+  fecha_pago         String?
+  fecha_inicial_pago String?
+  fecha_final_pago   String?
+  num_dias_pagados   BigInt?
+  total_percepciones String?
+  total_deducciones  String?
+  total_otros_pagos  String?
+  complemento_id     BigInt?
+  deducciones        deducciones[]
+  emisor_nomina      emisor_nomina[]
+  complementos       complementos?     @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_nomina")
+  otros_pagos        otros_pagos[]
+  percepciones       percepciones[]
+  receptor_nomina    receptor_nomina[]
+}
+
+model otros_pagos {
+  id                  BigInt                @id @default(autoincrement())
+  nomina_id           BigInt?
+  nomina              nomina?               @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_otros_pagos")
+  otros_pagos_detalle otros_pagos_detalle[]
+}
+
+model otros_pagos_detalle {
+  id                 BigInt               @id @default(autoincrement())
+  tipo_otro_pago     String?
+  clave              String?
+  concepto           String?
+  importe            String?
+  otros_pagos_id     BigInt?
+  otros_pagos        otros_pagos?         @relation(fields: [otros_pagos_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_otros_pagos_otro_pago_array")
+  subsidio_al_empleo subsidio_al_empleo[]
+
+  @@index([otros_pagos_id], map: "idx_otros_pagos_detalle_otros_pagos_id")
+}
+
+model percepciones {
+  id                   BigInt                 @id @default(autoincrement())
+  total_sueldos        String?
+  total_gravado        String?
+  total_exento         String?
+  nomina_id            BigInt?
+  nomina               nomina?                @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_percepciones")
+  percepciones_detalle percepciones_detalle[]
+}
+
+model percepciones_detalle {
+  id              BigInt        @id @default(autoincrement())
+  tipo_percepcion String?
+  clave           String?
+  concepto        String?
+  importe_gravado String?
+  importe_exento  String?
+  percepciones_id BigInt?
+  percepciones    percepciones? @relation(fields: [percepciones_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_percepciones_percepcion_array")
+}
+
+model receptor_nomina {
+  id                       BigInt  @id @default(autoincrement())
+  curp                     String?
+  num_seguridad_social     String?
+  fecha_inicio_rel_laboral String?
+  antig_edad               String? @map("antigüedad")
+  tipo_contrato            String?
+  tipo_jornada             String?
+  tipo_regimen             String?
+  num_empleado             String?
+  departamento             String?
+  puesto                   String?
+  riesgo_puesto            String?
+  periodicidad_pago        String?
+  cuenta_bancaria          String?
+  banco                    String?
+  salario_base_cot_apor    String?
+  salario_diario_integrado String?
+  clave_ent_fed            String?
+  nomina_id                BigInt?
+  nomina                   nomina? @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_nomina_receptor")
+}
+
+model subsidio_al_empleo {
+  id                  BigInt               @id @default(autoincrement())
+  subsidio_causado    String?
+  otro_pago_id        BigInt?
+  otros_pagos_detalle otros_pagos_detalle? @relation(fields: [otro_pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_otros_pagos_detalle_subsidio_al_empleo")
+}
+
+model trabajadores_nomina {
+  id                       BigInt  @id @default(autoincrement())
+  curp                     String?
+  num_seguridad_social     String?
+  fecha_inicio_rel_laboral String?
+  antig_edad               String? @map("antigüedad")
+  tipo_contrato            String?
+  tipo_jornada             String?
+  tipo_regimen             String?
+  num_empleado             String?
+  departamento             String?
+  puesto                   String?
+  riesgo_puesto            String?
+  periodicidad_pago        String?
+  cuenta_bancaria          String?
+  banco                    String?
+  salario_base_cot_apor    String?
+  salario_diario_integrado String?
+  clave_ent_fed            String?
+  sindicalizado            String?
+  emisor_id                BigInt?
 }

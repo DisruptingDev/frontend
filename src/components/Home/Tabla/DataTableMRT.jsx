@@ -60,7 +60,7 @@ import { formatCurrency } from '@/utils/formatCurrency';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const DataTableMRT = ({ token }) => {
+const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     const router = useRouter();
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +83,7 @@ const DataTableMRT = ({ token }) => {
     const [facturasRemplazo, setFacturasRemplazo] = useState([]);
     const [IDFacturaCancelada, setIDFacturaCancelada] = useState(null);
     const [resultadoCancelar, setResultadoCancelar] = useState(null);
-    const [facturaIdToDelete, setFacturaIdToDelete] = useState(null);
+    const [idsFacturasToDelete, setIdsFacturasToDelete] = useState([]);
 
     // --- BOD ---
     const [isBOD] = useState(() => {
@@ -99,7 +99,6 @@ const DataTableMRT = ({ token }) => {
     const [pagoConfirmado, setPagoConfirmado] = useState(false);
     const [accionPostPago, setAccionPostPago] = useState(null);
 
-
     // -- Data Fetching --
     const fetchData = useCallback(async () => {
         if (token) {
@@ -114,7 +113,16 @@ const DataTableMRT = ({ token }) => {
                 const responseData = await response.json();
 
                 if (Array.isArray(responseData)) {
-                    const normalizedData = responseData.map(item => ({
+                    // Aplicar filtrado dinámico según el prop filterType
+                    let filteredData = responseData;
+
+                    if (filterType === "EXCLUDE_N") {
+                        filteredData = responseData.filter(item => item.TipoDeComprobante !== 'N');
+                    } else if (filterType === "ONLY_N") {
+                        filteredData = responseData.filter(item => item.TipoDeComprobante === 'N');
+                    }
+
+                    const normalizedData = filteredData.map(item => ({
                         ...item,
                         Conceptos: item.Conceptos || {
                             TotalImpuestosTrasladados: 0,
@@ -134,7 +142,7 @@ const DataTableMRT = ({ token }) => {
                 setIsLoading(false);
             }
         }
-    }, [token]);
+    }, [token, filterType]);
 
     useEffect(() => {
         fetchData();
@@ -441,34 +449,63 @@ const DataTableMRT = ({ token }) => {
     }, [token]);
 
     const handleDeleteFactura = useCallback(async () => {
-        if (!facturaIdToDelete) return;
-        try {
-            const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+        const idsToDelete = [...idsFacturasToDelete];
+        if (idsToDelete.length === 0) return;
 
-            if (response.ok) {
-                setConfirmationMessage('La factura se ha eliminado correctamente.');
+        setIsLoading(true);
+        try {
+            const results = await Promise.all(idsToDelete.map(async (id) => {
+                if (!id) return false;
+                const url = `${window.location.origin}/api/facturas/direct-delete?id=${id}`;
+                console.log(`Intentando eliminar factura directamente en: ${url}`);
+                try {
+                    const response = await fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error(`Error al eliminar ID ${id}. Status: ${response.status}, Body: ${errorBody}`);
+                        return false;
+                    }
+                    console.log(`ID ${id} eliminado exitosamente.`);
+                    return true;
+                } catch (err) {
+                    console.error(`Error de red al eliminar ID ${id}:`, err);
+                    return false;
+                }
+            }));
+
+
+            const allOk = results.length > 0 && results.every(res => res);
+            const someOk = results.some(res => res);
+
+            if (allOk) {
+                setConfirmationMessage(idsToDelete.length === 1 ? 'Factura eliminada correctamente.' : 'Facturas eliminadas correctamente.');
                 setOpenModalSuccess(true);
-                fetchData();
+            } else if (someOk) {
+                setConfirmationMessage('Algunas facturas no se pudieron eliminar.');
+                setOpenModalError(true);
             } else {
-                setConfirmationMessage('Error al eliminar la factura.');
+                setConfirmationMessage('Error al eliminar las facturas. Por favor, verifica el estado de las mismas.');
                 setOpenModalError(true);
             }
+            fetchData();
         } catch (error) {
             console.error('Error en la solicitud DELETE:', error);
-            setConfirmationMessage('Error al eliminar la factura.');
+            setConfirmationMessage('Ocurrió un error inesperado al eliminar.');
             setOpenModalError(true);
         } finally {
+            setIsLoading(false);
             setOpenModalConfirm(false);
             setMenuRow(null);
-            setFacturaIdToDelete(null);
+            setIdsFacturasToDelete([]);
         }
-    }, [facturaIdToDelete, token, fetchData]);
+    }, [idsFacturasToDelete, token, fetchData]);
 
     const handleFacturaPago = useCallback(async (row) => {
         try {
@@ -864,10 +901,43 @@ const DataTableMRT = ({ token }) => {
     };
 
     const handleDelete = () => {
-        setFacturaIdToDelete(menuRow.ID);
+        const id = menuRow.ID || menuRow.id || menuRow.Id;
+        if (!id) {
+            setConfirmationMessage('No se pudo identificar el ID de la factura.');
+            setOpenModalError(true);
+            return;
+        }
+        setIdsFacturasToDelete([id]);
         setConfirmationMessage('¿Estás seguro de que deseas eliminar esta factura?');
         setOpenModalConfirm(true);
         handleCloseMenu();
+    };
+
+    const handleDeleteSelected = (selectedRows) => {
+        const rowsToDelete = selectedRows.filter(row => !row.original.uuid);
+        const stampedCount = selectedRows.length - rowsToDelete.length;
+
+        if (rowsToDelete.length === 0) {
+            setConfirmationMessage('No se pueden eliminar las facturas seleccionadas porque están timbradas.');
+            setOpenModalError(true);
+            return;
+        }
+
+        const ids = rowsToDelete.map(row => row.original.ID || row.original.id || row.original.Id).filter(Boolean);
+
+        if (ids.length === 0) {
+            setConfirmationMessage('No se pudieron identificar los IDs de las facturas seleccionadas.');
+            setOpenModalError(true);
+            return;
+        }
+
+        setIdsFacturasToDelete(ids);
+        setConfirmationMessage(
+            stampedCount > 0
+                ? `Se eliminarán ${ids.length} facturas no timbradas. Las ${stampedCount} facturas timbradas serán ignoradas. ¿Deseas continuar?`
+                : `¿Estás seguro de que deseas eliminar las ${ids.length} facturas seleccionadas?`
+        );
+        setOpenModalConfirm(true);
     };
 
 
@@ -890,7 +960,7 @@ const DataTableMRT = ({ token }) => {
         },
         muiTableHeadCellProps: {
             sx: {
-                backgroundColor: '#10968a',
+                backgroundColor: filterType === 'ONLY_N' ? '#1b384a' : '#10968a',
                 color: 'white',
                 fontWeight: 'bold',
                 fontSize: '10.5px',
@@ -1068,6 +1138,33 @@ const DataTableMRT = ({ token }) => {
                             Exportar
                         </Button>
                     </Tooltip>
+                    <Tooltip title="Timbrar Seleccionados">
+                        <span>
+                            <Button
+                                color="secondary"
+                                startIcon={isMobile ? undefined : <TimbrarIcon />}
+                                onClick={() => handleTimbrar(selectedIds)}
+                                variant="contained"
+                                size="small"
+                                disabled={selectedIds.length === 0}
+                                fullWidth={isMobile}
+                                sx={{
+                                    fontSize: isMobile ? '0.75rem' : undefined,
+                                    whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                    textAlign: 'center',
+                                    lineHeight: isMobile ? 1.2 : undefined,
+                                    minWidth: 'auto',
+                                    ml: isMobile ? 0 : 1,
+                                    backgroundColor: selectedIds.length > 0 ? '#ba68c8' : 'rgba(0, 0, 0, 0.12)',
+                                    '&:hover': {
+                                        backgroundColor: '#ab47bc',
+                                    }
+                                }}
+                            >
+                                Enviar a Timbrar
+                            </Button>
+                        </span>
+                    </Tooltip>
                     {selectedIds.length > 0 && (
                         <>
                             <Tooltip title="Enviar por Correo">
@@ -1087,25 +1184,6 @@ const DataTableMRT = ({ token }) => {
                                     }}
                                 >
                                     Enviar
-                                </Button>
-                            </Tooltip>
-                            <Tooltip title="Timbrar">
-                                <Button
-                                    color="secondary"
-                                    startIcon={isMobile ? undefined : <TimbrarIcon />}
-                                    onClick={() => handleTimbrar(selectedIds)}
-                                    variant="contained"
-                                    size="small"
-                                    fullWidth={isMobile}
-                                    sx={{
-                                        fontSize: isMobile ? '0.75rem' : undefined,
-                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
-                                        textAlign: 'center',
-                                        lineHeight: isMobile ? 1.2 : undefined,
-                                        minWidth: 'auto'
-                                    }}
-                                >
-                                    Timbrar
                                 </Button>
                             </Tooltip>
                             <Tooltip title="Descargar">
@@ -1146,9 +1224,28 @@ const DataTableMRT = ({ token }) => {
                                     Timbrar+Enviar
                                 </Button>
                             </Tooltip>
+                            <Tooltip title="Eliminar Seleccionados">
+                                <Button
+                                    color="error"
+                                    startIcon={isMobile ? undefined : <DeleteIcon />}
+                                    onClick={() => handleDeleteSelected(selectedRows)}
+                                    variant="contained"
+                                    size="small"
+                                    fullWidth={isMobile}
+                                    sx={{
+                                        fontSize: isMobile ? '0.75rem' : undefined,
+                                        whiteSpace: isMobile ? 'normal' : 'nowrap',
+                                        textAlign: 'center',
+                                        lineHeight: isMobile ? 1.2 : undefined,
+                                        minWidth: 'auto'
+                                    }}
+                                >
+                                    Eliminar
+                                </Button>
+                            </Tooltip>
                         </>
                     )}
-                </Box>
+                </Box >
             );
         },
     });
@@ -1169,7 +1266,7 @@ const DataTableMRT = ({ token }) => {
             if (!menuRow.uuid && menuRow.TipoDeComprobante !== 'P') {
                 menuItems.push(
                     <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
-                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Enviar a Timbrar
                     </MenuItem>,
                     <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleCloseMenu(); }}>
                         <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
@@ -1192,7 +1289,7 @@ const DataTableMRT = ({ token }) => {
             if (!menuRow.uuid && menuRow.TipoDeComprobante === 'P') {
                 menuItems.push(
                     <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
-                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar
+                        <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Enviar a Timbrar
                     </MenuItem>,
                     <MenuItem key="edit-pago" onClick={handleEdit}>
                         <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
