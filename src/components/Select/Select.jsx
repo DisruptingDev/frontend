@@ -3,13 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { FormControl, InputLabel, MenuItem, Select as MuiSelect, FormHelperText } from '@mui/material';
 
+const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, key) => acc?.[key], obj) ?? '';
+};
+
 async function obtener_opciones(url) {
     try {
         let token;
-        if(localStorage.getItem('authToken')) {
-         token = localStorage.getItem('authToken');
-        }
-        else{
+        if (localStorage.getItem('authToken')) {
+            token = localStorage.getItem('authToken');
+        } else {
             token = sessionStorage.getItem('authToken');
         }
         const response = await fetch(url, {
@@ -36,53 +39,36 @@ async function obtener_opciones(url) {
     }
 }
 
-export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value,disabled=false, reset =false, opcion=false, opcionText="Todos" }) {
+export default function Select({ register = () => (1), nombre, label = nombre, url, className, clave = "", id = clave, descripcion = "", onChange, sx, variant = "outlined", error = false, helperText = "", value, disabled = false, reset = false, opcion = false, opcionText = "Todos" }) {
     const [opciones, setOpciones] = useState([]);
     const [selectedValue, setSelectedValue] = useState(value || '');
 
-    // useEffect(() => {
-    //     if(url)
-    //     obtener_opciones(url).then(data => setOpciones(data));
-    // }, [url]);
-
     useEffect(() => {
         if (url) {
-          obtener_opciones(url).then((data) => {
-            setOpciones(data);
-            // Seleccionar la primera opción automáticamente si no hay un valor inicial
-            // if (!value && data.length === 1) {
-            //   setSelectedValue(data[0][id]);
-            //   if (onChange) {
-            //     const selectedOption = data[0];
-            //     onChange({ target: { value: JSON.stringify(selectedOption) } });
-            //   }
-            // }
-          });
+            obtener_opciones(url).then((data) => {
+                setOpciones(data);
+            });
         }
-      }, [url, value, id, onChange]);
+    }, [url, value, id, onChange]);
 
     useEffect(() => {
-
         if (reset) {
-            if(url){
+            if (url) {
                 obtener_opciones(url).then(data => setOpciones(data));
             }
-            
-
         }
     }, [reset, url]);
 
     useEffect(() => {
-        // Update the selected value when `value` prop changes
         setSelectedValue(value || '');
     }, [value]);
 
     const handleChange = (e) => {
         const value = e.target.value;
-        setSelectedValue(value);  // Update local state
+        setSelectedValue(value);
 
         const selectedOption = opciones.find(opcion => opcion[id] === value);
-        
+
         if (onChange) {
             onChange({ target: { value: JSON.stringify(selectedOption) } });
         }
@@ -94,21 +80,24 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
             <MuiSelect
                 {...register(nombre, {
                     required: "Este campo es obligatorio",
-                    onChange: handleChange 
+                    onChange: handleChange
                 })}
-                value={selectedValue}  // Use controlled value
+                value={selectedValue}
                 label={label}
                 variant={variant}
                 onChange={handleChange}
                 disabled={disabled}
             >
                 {opcion && <MenuItem value="">{opcionText}</MenuItem>}
-                {!opcion &&<MenuItem value="" disabled>Selecciona una opción</MenuItem>}
-                
+                {!opcion && <MenuItem value="" disabled>Selecciona una opción</MenuItem>}
+
                 {Array.isArray(opciones) && opciones.length > 0 ? (
                     opciones.map((opcion, index) => (
                         <MenuItem key={index} value={opcion[id]}>
-                            {clave !== "" ? `${opcion[clave]} - ${opcion[descripcion]}` : `${opcion[descripcion]}`}
+                            {clave !== ""
+                                ? `${getNestedValue(opcion, clave)} - ${getNestedValue(opcion, descripcion)}`
+                                : `${getNestedValue(opcion, descripcion)}`
+                            }
                         </MenuItem>
                     ))
                 ) : (

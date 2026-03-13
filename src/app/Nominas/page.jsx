@@ -12,6 +12,8 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import DataTableMRT from "@/components/Home/Tabla/DataTableMRT";
+import EmisorNomina from "@/components/FacturasMasivas/RegistroEmisorNomina"
+
 
 export default function NominasPage() {
     const router = useRouter();
@@ -71,14 +73,14 @@ export default function NominasPage() {
                                     label="Nóminas Emitidas"
                                 />
                                 <Tab
+                                    icon={<PeopleIcon />}
+                                    iconPosition="start"
+                                    label="Emisores de Nómina"
+                                />
+                                <Tab
                                     icon={<AddBoxIcon />}
                                     iconPosition="start"
                                     label="Alta de Nómina"
-                                />
-                                <Tab
-                                    icon={<PeopleIcon />}
-                                    iconPosition="start"
-                                    label="Lista de Trabajadores"
                                 />
                             </Tabs>
                         </Box>
@@ -89,8 +91,8 @@ export default function NominasPage() {
                                     <DataTableMRT token={token} filterType="ONLY_N" />
                                 </Box>
                             )}
-                            {activeTab === 1 && <CargaNomina token={token} />}
-                            {activeTab === 2 && <VistaTrabajadores token={token} />}
+                            {activeTab === 1 && <EmisorNomina token={token} />}
+                            {activeTab === 2 && <CargaNomina token={token} />}
                         </Box>
                     </Box>
                 </Grid>

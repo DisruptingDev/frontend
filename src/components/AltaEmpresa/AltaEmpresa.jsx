@@ -63,9 +63,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('Municipio', empresa.Municipio);
             setValue('Estado', empresa.Estado);
             setValue('Banco', empresa.Banco);
-            setValue('Cuenta', empresa.Cuenta);
+            setValue('CuentaBancaria', empresa.CuentaBancaria);
             setValue('Sucursal', empresa.Sucursal);
-            setValue('Clabe', empresa.Clabe);
+            setValue('ClabeBancaria', empresa.ClabeBancaria);
             setImagePreview(empresa.LogoPath);
 
             if (empresa.PlantillaID) {
@@ -142,9 +142,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
         setValue("Municipio", "");
         setValue("Estado", "");
         setValue("Banco", "");
-        setValue("Cuenta", "");
+        setValue("CuentaBancaria", "");
         setValue("Sucursal", "");
-        setValue("Clabe", "");
+        setValue("ClabeBancaria", "");
         setImage(null);
         setImagePreview('');
         setImagePath('');
@@ -212,9 +212,9 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             Municipio: data.Municipio || "",
             Estado: data.Estado || "",
             Banco: data.Banco || "",
-            Cuenta: data.Cuenta || "",
+            CuentaBancaria: data.CuentaBancaria || "",
             Sucursal: data.Sucursal || "",
-            Clabe: data.Clabe || "",
+            ClabeBancaria: data.ClabeBancaria || "",
             PlantillaID: plantillaSeleccionada,
         };
 
@@ -469,7 +469,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                                 label="Número de Cuenta"
                                 fullWidth
                                 placeholder="Ej: 1234567890"
-                                {...register("Cuenta")}
+                                {...register("CuentaBancaria")}
                                 sx={{ alignSelf: 'start', margin: '0px' }}
                                 InputLabelProps={{ shrink: true }}
                                 inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
@@ -487,7 +487,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                                 label="CLABE"
                                 fullWidth
                                 placeholder="Ej: 012345678901234567"
-                                {...register("Clabe")}
+                                {...register("ClabeBancaria")}
                                 sx={{ alignSelf: 'start', margin: '0px' }}
                                 InputLabelProps={{ shrink: true }}
                                 inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 18 }}

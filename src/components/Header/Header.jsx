@@ -50,7 +50,7 @@ export default function Header() {
       >
         <Image
           src="/images/Log_blanco_wise_factura.png"
-          alt="Descripción del logo"
+          alt="Wise Facturación Logo"
           width={203}
           height={64}
         />

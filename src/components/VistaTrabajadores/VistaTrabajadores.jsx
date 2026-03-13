@@ -36,7 +36,7 @@ const VistaTrabajadores = ({ token }) => {
             setLoading(true);
             try {
                 // Por ahora usamos el catálogo de receptores ya que los trabajadores se registran ahí
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Receptor`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/TrabajadoresNomina`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     },
@@ -67,28 +67,115 @@ const VistaTrabajadores = ({ token }) => {
         {
             accessorKey: 'ID',
             header: 'ID',
-            size: 80,
+            size: 50,
         },
         {
-            accessorKey: 'Rfc',
-            header: 'RFC',
-            size: 150,
-        },
-        {
-            accessorKey: 'Nombre',
-            header: 'Nombre',
-            size: 250,
-        },
-        {
-            accessorKey: 'Curp', // Asumimos que viene el CURP si se registró vía nómina
+            accessorKey: 'Curp',
             header: 'CURP',
-            size: 200,
+            size: 150,
             Cell: ({ cell }) => cell.getValue() || '-',
         },
         {
-            accessorKey: 'DomicilioFiscalReceptor',
-            header: 'CP / Domicilio',
+            accessorKey: 'NumSeguridadSocial',
+            header: 'Número de Seguridad Social',
             size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'FechaInicioRelLaboral',
+            header: 'Fecha de Inicio',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'Antigüedad',
+            header: 'Antigüedad',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'TipoContrato',
+            header: 'Tipo de Contrato',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'TipoJornada',
+            header: 'Tipo de Jornada',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'TipoRegimen',
+            header: 'Tipo de Régimen',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'NumEmpleado',
+            header: 'Número de Empleado',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'Departamento',
+            header: 'Departamento',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'Puesto',
+            header: 'Puesto',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'RiesgoPuesto',
+            header: 'Riesgo del Puesto',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'PeriodicidadPago',
+            header: 'Periodicidad de Pago',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'CuentaBancaria',
+            header: 'Cuenta Bancaria',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'Banco',
+            header: 'Banco',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'SalarioBaseCotApor',
+            header: 'Salario Base de Cotización',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'SalarioDiarioIntegrado',
+            header: 'Salario Diario Integrado',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'ClaveEntFed',
+            header: 'Clave Entidad Federativa',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
+        },
+        {
+            accessorKey: 'Sindicalizado',
+            header: 'Sindicalizado',
+            size: 150,
+            Cell: ({ cell }) => cell.getValue() || '-',
         }
     ], []);
 

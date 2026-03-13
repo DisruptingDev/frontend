@@ -456,13 +456,14 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
         try {
             const results = await Promise.all(idsToDelete.map(async (id) => {
                 if (!id) return false;
-                const url = `${window.location.origin}/api/facturas/direct-delete?id=${id}`;
+                const url = `${apiUrl}/api/facturas/EliminarFactura/${id}`;
                 console.log(`Intentando eliminar factura directamente en: ${url}`);
                 try {
                     const response = await fetch(url, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
                         },
                     });
 

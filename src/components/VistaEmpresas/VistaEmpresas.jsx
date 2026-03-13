@@ -138,13 +138,6 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
             enableColumnFilter: true,
         },
         {
-            accessorFn: (row) => row.Grupo?.TimbresDisponiblesPaquetes || 0,
-            id: 'Timbres',
-            header: 'Timbres Disponibles',
-            size: 180,
-            enableColumnFilter: true,
-        },
-        {
             id: 'Estatus',
             header: 'Estatus',
             size: 120,
