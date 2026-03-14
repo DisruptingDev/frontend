@@ -1,475 +1,600 @@
-"use client";
+"use client"
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 import {
-    Box, Button, Typography, TextField, Table, TableBody, TableCell,
-    TableContainer, TableHead, TableRow, Paper, Dialog, DialogTitle,
-    DialogContent, DialogActions, IconButton, Chip, Divider, Accordion,
-    AccordionSummary, AccordionDetails, Tooltip
+    Box, Button, Typography, Chip, CircularProgress,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Paper, Checkbox, LinearProgress, Tooltip
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import DownloadIcon from "@mui/icons-material/Download";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SendIcon from "@mui/icons-material/Send";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const RECEPTORES_URL = `${apiUrl}/api/catalogos/Catalogos/ReceptorNomina`;
+const GUARDAR_NOMINA_URL = `${apiUrl}/api/facturas/GuardarFacturaNomina`;
 
-const conceptoVacio = () => ({ TipoPercepcion: "", Clave: "", Concepto: "", ImporteGravado: "0", ImporteExento: "0" });
-const deduccionVacia = () => ({ TipoDeduccion: "", Clave: "", Concepto: "", Importe: "0" });
-const otroPagoVacio = () => ({ TipoOtroPago: "", Clave: "", Concepto: "", Importe: "0", SubsidioAlEmpleo: null });
+// ── Catálogos SAT ──────────────────────────────────────────
+const TIPOS_PERCEPCION = [
+    "001 - Sueldos, Salarios Rayas y Jornales",
+    "002 - Gratificación Anual (Aguinaldo)",
+    "003 - Participación de los Trabajadores en las Utilidades PTU",
+    "004 - Reembolso de Gastos Médicos Dentales y Hospitalarios",
+    "005 - Fondo de Ahorro",
+    "006 - Caja de ahorro",
+    "009 - Contribuciones a Cargo del Trabajador Pagadas por el Patrón",
+    "010 - Premios por Puntualidad",
+    "011 - Prima de Seguro de vida",
+    "013 - Pagos por separación",
+    "014 - Premio por Antigüedad",
+    "019 - Horas extra",
+    "022 - Prima dominical",
+    "023 - Prima vacacional",
+    "024 - Tiempo extraordinario",
+    "025 - Indemnizaciones",
+    "044 - Jubilaciones, pensiones o haberes de retiro",
+    "046 - Ingresos en acciones o títulos",
+];
 
-// Función para obtener fecha actual en formato YYYY-MM-DD
-const getTodayDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+const TIPOS_DEDUCCION = [
+    "001 - Seguridad Social",
+    "002 - ISR",
+    "003 - Aportaciones a retiro, cesantía en edad avanzada y vejez",
+    "004 - Otros",
+    "005 - Aportaciones a Fondo de vivienda",
+    "006 - Descuento por incapacidad",
+    "007 - Pensión alimenticia",
+    "008 - Renta",
+    "009 - Préstamos provenientes del Fondo Nacional de la Vivienda",
+    "010 - Pago por crédito de vivienda",
+    "011 - Pago de abonos INFONACOT",
+    "012 - Anticipo de salarios",
+    "013 - Pagos hechos con exceso al trabajador",
+    "014 - Errores",
+    "015 - Pérdidas",
+    "016 - Averías",
+    "017 - Adquisición de artículos producidos por la empresa o establecimiento",
+    "018 - Cuotas sindicales",
+    "019 - Devolución de pagos hechos por error al trabajador",
+    "020 - Prima de Seguro de vida",
+    "021 - Prima de Seguro de Gastos Médicos",
+    "022 - Impuesto local",
+];
+
+const TIPOS_OTRO_PAGO = [
+    "001 - Reintegro de ISR pagado en exceso (siempre que no haya sido enterado al SAT)",
+    "002 - Subsidio para el empleo",
+    "003 - Viáticos (entregados al trabajador)",
+    "004 - Aplicación de saldo a favor por compensación anual",
+    "005 - Reintegro de ISR retenido en exceso de ejercicio anterior (ISR anual)",
+];
+
+// ── Columnas de percepciones/deducciones/otros en la plantilla ──
+const COLS_PERCEPCIONES = [
+    { key: "perc_tipo", label: "Percepcion_Tipo", catalog: TIPOS_PERCEPCION },
+    { key: "perc_clave", label: "Percepcion_Clave" },
+    { key: "perc_concepto", label: "Percepcion_Concepto" },
+    { key: "perc_gravado", label: "Percepcion_ImporteGravado" },
+    { key: "perc_exento", label: "Percepcion_ImporteExento" },
+];
+
+const COLS_DEDUCCIONES = [
+    { key: "ded_tipo", label: "Deduccion_Tipo", catalog: TIPOS_DEDUCCION },
+    { key: "ded_clave", label: "Deduccion_Clave" },
+    { key: "ded_concepto", label: "Deduccion_Concepto" },
+    { key: "ded_importe", label: "Deduccion_Importe" },
+];
+
+const COLS_OTROS = [
+    { key: "otro_tipo", label: "OtroPago_Tipo", catalog: TIPOS_OTRO_PAGO },
+    { key: "otro_clave", label: "OtroPago_Clave" },
+    { key: "otro_concepto", label: "OtroPago_Concepto" },
+    { key: "otro_importe", label: "OtroPago_Importe" },
+];
+
+// ── Helper: parsear clave SAT del string "001 - Descripción" ──
+const parsearClave = (str) => (str ?? "").split(" - ")[0].trim();
+
+// ── Helper: construir payload completo por fila ──────────────
+const buildPayload = (row, emisor) => {
+    const percepciones = [];
+    const deducciones = [];
+    const otrosPagos = [];
+
+    // Puede haber múltiples filas de percepciones/deducciones separadas por "|"
+    const splitCol = (val) =>
+        val ? String(val).split("|").map((s) => s.trim()).filter(Boolean) : [];
+
+    const percTipos = splitCol(row["Percepcion_Tipo"]);
+    percTipos.forEach((_, i) => {
+        const gravado = parseFloat(splitCol(row["Percepcion_ImporteGravado"])[i] ?? 0);
+        const exento = parseFloat(splitCol(row["Percepcion_ImporteExento"])[i] ?? 0);
+        percepciones.push({
+            TipoPercepcion: parsearClave(splitCol(row["Percepcion_Tipo"])[i]),
+            Clave: splitCol(row["Percepcion_Clave"])[i] ?? "001",
+            Concepto: splitCol(row["Percepcion_Concepto"])[i] ?? "",
+            ImporteGravado: gravado,
+            ImporteExento: exento,
+        });
+    });
+
+    const dedTipos = splitCol(row["Deduccion_Tipo"]);
+    dedTipos.forEach((_, i) => {
+        deducciones.push({
+            TipoDeduccion: parsearClave(splitCol(row["Deduccion_Tipo"])[i]),
+            Clave: splitCol(row["Deduccion_Clave"])[i] ?? "001",
+            Concepto: splitCol(row["Deduccion_Concepto"])[i] ?? "",
+            Importe: parseFloat(splitCol(row["Deduccion_Importe"])[i] ?? 0),
+        });
+    });
+
+    const otroTipos = splitCol(row["OtroPago_Tipo"]);
+    otroTipos.forEach((_, i) => {
+        otrosPagos.push({
+            TipoOtroPago: parsearClave(splitCol(row["OtroPago_Tipo"])[i]),
+            Clave: splitCol(row["OtroPago_Clave"])[i] ?? "001",
+            Concepto: splitCol(row["OtroPago_Concepto"])[i] ?? "",
+            Importe: parseFloat(splitCol(row["OtroPago_Importe"])[i] ?? 0),
+        });
+    });
+
+    const totalPercepciones =
+        percepciones.reduce((s, p) => s + p.ImporteGravado + p.ImporteExento, 0);
+    const totalDeducciones =
+        deducciones.reduce((s, d) => s + d.Importe, 0);
+    const totalOtros =
+        otrosPagos.reduce((s, o) => s + o.Importe, 0);
+    const total = totalPercepciones - totalDeducciones + totalOtros;
+
+    return {
+        Version: "4.0",
+        Serie: emisor?.Serie ?? "N",
+        Fecha: new Date().toISOString().slice(0, 19),
+        FormaPago: "99",
+        Moneda: "MXN",
+        TipoCambio: "1",
+        TipoDeComprobante: "N",
+        Exportacion: "01",
+        MetodoPago: "PPD",
+        LugarExpedicion: emisor?.Emisor.LugarExpedicion,
+        EmisorID: emisor?.EmisorID,
+        ReceptorNominaID: row["receptor_nomina_id"],
+        UsoCFDI: "CN01",
+        SubTotal: totalPercepciones,
+        Total: total,
+        Conceptos: {
+            ListaConceptos: [{
+                ClaveProdServ: "84111505",
+                Cantidad: 1,
+                ClaveUnidad: "ACT",
+                Descripcion: "Pago de nómina",
+                ValorUnitario: totalPercepciones,
+                Importe: totalPercepciones,
+                Descuento: totalDeducciones,
+                ObjetoImp: "01",
+                Impuestos: {
+                    Traslados: [],
+                    Retenciones: [],
+                }
+            }],
+            TotalImpuestosTrasladados: 0,
+            TotalImpuestosRetenidos: 0,
+        },
+        Complemento: {
+            Nomina: {
+                Version: "1.2",
+                TipoNomina: row["TipoNomina"] ?? "O",
+                FechaPago: String(row["FechaPago"]) ?? new Date().toISOString().slice(0, 10),
+                FechaInicialPago: String(row["FechaInicialPago"]) ?? "",
+                FechaFinalPago: String(row["FechaFinalPago"]) ?? "",
+                NumDiasPagados: parseFloat(row["DiasLaborados"] ?? 0),
+                TotalPercepciones: totalPercepciones,
+                TotalDeducciones: totalDeducciones,
+                TotalOtrosPagos: totalOtros,
+                EmisorNominaID: emisor.ID,
+                ReceptorNominaID: parseInt(row["receptor_nomina_id"], 10),
+                Percepciones: { Percepciones: percepciones },
+                Deducciones: deducciones.length ? { Deducciones: deducciones } : undefined,
+                OtrosPagos: otrosPagos.length ? { OtrosPagos: otrosPagos } : undefined,
+            },
+        },
+    };
 };
 
-// Función para calcular días entre dos fechas
-const calculateDaysBetween = (startDate, endDate) => {
-    if (!startDate || !endDate) return "";
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    // Calcular la diferencia en milisegundos y convertir a días
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir ambos días
-
-    return diffDays.toString();
-};
-
+// ────────────────────────────────────────────────────────────
 export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
-    const [loading, setLoading] = useState(false);
-    const [trabajadores, setTrabajadores] = useState([]);
+    const [loadingTabla, setLoadingTabla] = useState(false);
+    const [receptores, setReceptores] = useState([]);
+    const [seleccionados, setSeleccionados] = useState([]);   // IDs seleccionados
+    const [nominasPreview, setNominasPreview] = useState([]); // filas parseadas del xlsx
+    const [resultados, setResultados] = useState([]);          // {id, nombre, ok, msg}
+    const [enviando, setEnviando] = useState(false);
+    const [progreso, setProgreso] = useState(0);
 
-    // Inicializar periodo con fecha actual
-    const [periodo, setPeriodo] = useState({
-        FechaPago: getTodayDate(),
-        FechaInicialPago: "",
-        FechaFinalPago: "",
-        NumDiasPagados: ""
-    });
-
-    // Modal
-    const [modalOpen, setModalOpen] = useState(false);
-    const [trabajadorActivo, setTrabajadorActivo] = useState(null);
-    const [conceptos, setConceptos] = useState({
-        Percepciones: [],
-        TotalSueldos: "0", TotalGravado: "0", TotalExento: "0",
-        Deducciones: [],
-        TotalOtrasDeducciones: "0", TotalImpuestosRetenidos: "0",
-        OtrosPagos: [],
-    });
-
-    // Mapa de conceptos guardados por trabajador { [id]: conceptos }
-    const [conceptosPorTrabajador, setConceptosPorTrabajador] = useState({});
-
-    // ── Efecto para calcular días pagados automáticamente ──
-    useEffect(() => {
-        if (periodo.FechaInicialPago && periodo.FechaFinalPago) {
-            const dias = calculateDaysBetween(periodo.FechaInicialPago, periodo.FechaFinalPago);
-            setPeriodo(prev => ({ ...prev, NumDiasPagados: dias }));
-        }
-    }, [periodo.FechaInicialPago, periodo.FechaFinalPago]);
-
-    // ── Cargar trabajadores del emisor ──
+    // ── Cargar receptores al montar o cambiar emisor ──
     useEffect(() => {
         if (!selectedEmisor) return;
-        fetch(`${apiUrl}/api/catalogos/Catalogos/ReceptorNomina?EmisorNominaID=${selectedEmisor.ID}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        })
-            .then(r => r.json())
-            .then(data => setTrabajadores(Array.isArray(data) ? data : []))
-            .catch(() => setTrabajadores([]));
+        fetchReceptores();
     }, [selectedEmisor]);
 
-    // ── Abrir modal ──
-    const handleAbrirModal = (trabajador) => {
-        setTrabajadorActivo(trabajador);
-        // Si ya tenía conceptos guardados, cargarlos
-        setConceptos(conceptosPorTrabajador[trabajador.ID] || {
-            Percepciones: [], TotalSueldos: "0", TotalGravado: "0", TotalExento: "0",
-            Deducciones: [], TotalOtrasDeducciones: "0", TotalImpuestosRetenidos: "0",
-            OtrosPagos: [],
-        });
-        setModalOpen(true);
+    const fetchReceptores = async () => {
+        setLoadingTabla(true);
+        try {
+            const res = await fetch(
+                `${RECEPTORES_URL}?EmisorNominaID=${selectedEmisor.ID}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (res.ok) setReceptores((await res.json()) ?? []);
+        } finally {
+            setLoadingTabla(false);
+        }
     };
 
-    const handleGuardarConceptos = () => {
-        setConceptosPorTrabajador(prev => ({
-            ...prev,
-            [trabajadorActivo.ID]: conceptos
+    // ── Selección en tabla ──
+    const toggleSeleccion = (id) =>
+        setSeleccionados((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+
+    const toggleTodos = () =>
+        setSeleccionados(
+            seleccionados.length === receptores.length ? [] : receptores.map((r) => r.ID)
+        );
+
+    // ── Generar plantilla .xlsx ──────────────────────────────
+    const handleDescargarPlantilla = () => {
+        const trabajadores = receptores.filter((r) => seleccionados.includes(r.ID));
+
+        const headers = [
+            // Bloqueados (referencia)
+            "receptor_nomina_id", "Nombre", "RFC", "SalarioDiario",
+            // A llenar
+            "DiasLaborados", "TipoNomina", "FechaPago", "FechaInicialPago", "FechaFinalPago",
+            // Percepciones (separar múltiples con "|")
+            "Percepcion_Tipo", "Percepcion_Clave", "Percepcion_Concepto",
+            "Percepcion_ImporteGravado", "Percepcion_ImporteExento",
+            // Deducciones
+            "Deduccion_Tipo", "Deduccion_Clave", "Deduccion_Concepto", "Deduccion_Importe",
+            // Otros pagos
+            "OtroPago_Tipo", "OtroPago_Clave", "OtroPago_Concepto", "OtroPago_Importe",
+        ];
+
+        const rows = trabajadores.map((r) => ({
+            receptor_nomina_id: r.ID,
+            Nombre: r.Nombre,
+            RFC: r.Rfc,
+            SalarioDiario: r.SalarioDiarioIntegrado,
+            DiasLaborados: "",
+            TipoNomina: "O",
+            FechaPago: "",
+            FechaInicialPago: "",
+            FechaFinalPago: "",
+            // Percepción por defecto: sueldo (001)
+            Percepcion_Tipo: "001 - Sueldos, Salarios Rayas y Jornales",
+            Percepcion_Clave: "001",
+            Percepcion_Concepto: "Sueldo",
+            Percepcion_ImporteGravado: "",  // = SalarioDiario × DiasLaborados
+            Percepcion_ImporteExento: "0",
+            Deduccion_Tipo: "",
+            Deduccion_Clave: "",
+            Deduccion_Concepto: "",
+            Deduccion_Importe: "",
+            OtroPago_Tipo: "",
+            OtroPago_Clave: "",
+            OtroPago_Concepto: "",
+            OtroPago_Importe: "",
         }));
-        setModalOpen(false);
+
+        const wb = XLSX.utils.book_new();
+
+        // ── Hoja principal ──
+        const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+        // Ancho de columnas
+        ws["!cols"] = headers.map((h) =>
+            h === "Nombre" || h.includes("Concepto") || h.includes("Tipo")
+                ? { wch: 45 }
+                : { wch: 18 }
+        );
+
+        // ── Hoja de catálogos (para dropdowns) ──
+        const maxRows = Math.max(
+            TIPOS_PERCEPCION.length,
+            TIPOS_DEDUCCION.length,
+            TIPOS_OTRO_PAGO.length
+        );
+        const catalogData = Array.from({ length: maxRows }, (_, i) => ({
+            "Tipo Percepcion": TIPOS_PERCEPCION[i] ?? "",
+            "Tipo Deduccion": TIPOS_DEDUCCION[i] ?? "",
+            "Tipo Otro Pago": TIPOS_OTRO_PAGO[i] ?? "",
+        }));
+        const wsCatalogos = XLSX.utils.json_to_sheet(catalogData);
+        wsCatalogos["!cols"] = [{ wch: 70 }, { wch: 70 }, { wch: 70 }];
+
+        // ── DataValidation dropdowns ──
+        const numRows = rows.length;
+        const colPercTipo = XLSX.utils.encode_col(headers.indexOf("Percepcion_Tipo"));
+        const colDedTipo = XLSX.utils.encode_col(headers.indexOf("Deduccion_Tipo"));
+        const colOtroTipo = XLSX.utils.encode_col(headers.indexOf("OtroPago_Tipo"));
+
+        const makeDropdown = (col, sheetCol, count) => ({
+            type: "list",
+            sqref: `${col}2:${col}${numRows + 1}`,
+            formula1: `Catalogos!$${sheetCol}$2:$${sheetCol}$${count + 1}`,
+        });
+
+        ws["!dataValidations"] = [
+            makeDropdown(colPercTipo, "A", TIPOS_PERCEPCION.length),
+            makeDropdown(colDedTipo, "B", TIPOS_DEDUCCION.length),
+            makeDropdown(colOtroTipo, "C", TIPOS_OTRO_PAGO.length),
+        ];
+
+        // Proteger columnas de referencia (A-D) — solo lectura visual via estilo
+        const refCols = ["receptor_nomina_id", "Nombre", "RFC", "SalarioDiario"];
+        refCols.forEach((col) => {
+            const colIdx = headers.indexOf(col);
+            const colLetter = XLSX.utils.encode_col(colIdx);
+            for (let r = 1; r <= numRows + 1; r++) {
+                const cellAddr = `${colLetter}${r}`;
+                if (ws[cellAddr]) {
+                    ws[cellAddr].s = {
+                        fill: { fgColor: { rgb: "E8F4F8" } },
+                        font: { color: { rgb: "1b384a" } },
+                    };
+                }
+            }
+        });
+
+        XLSX.utils.book_append_sheet(wb, ws, "Nominas");
+        XLSX.utils.book_append_sheet(wb, wsCatalogos, "Catalogos");
+        XLSX.writeFile(wb, `plantilla_nomina_${selectedEmisor?.ID}.xlsx`);
     };
 
-    // ── Helpers para listas dinámicas ──
-    const agregarItem = (lista) => setConceptos(p => ({ ...p, [lista]: [...p[lista], lista === "Percepciones" ? conceptoVacio() : lista === "Deducciones" ? deduccionVacia() : otroPagoVacio()] }));
-    const eliminarItem = (lista, idx) => setConceptos(p => ({ ...p, [lista]: p[lista].filter((_, i) => i !== idx) }));
-    const actualizarItem = (lista, idx, campo, valor) => setConceptos(p => ({
-        ...p,
-        [lista]: p[lista].map((item, i) => i === idx ? { ...item, [campo]: valor } : item)
-    }));
+    // ── Parsear .xlsx llenado ────────────────────────────────
+    const handleUploadPlantilla = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    // ── Validar periodo completo ──
-    const periodoCompleto = periodo.FechaPago && periodo.FechaInicialPago &&
-        periodo.FechaFinalPago && periodo.NumDiasPagados;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const wb = XLSX.read(evt.target.result, { type: "array" });
+            const ws = wb.Sheets["Nominas"];
+            const rows = XLSX.utils.sheet_to_json(ws);
+            setNominasPreview(rows);
+            setResultados([]);
+        };
+        reader.readAsArrayBuffer(file);
+    };
 
-    const trabajadoresListos = trabajadores.filter(t => conceptosPorTrabajador[t.ID]);
+    // ── Enviar nóminas ───────────────────────────────────────
+    const handleEnviar = async () => {
+        if (!nominasPreview.length) return;
+        setEnviando(true);
+        setProgreso(0);
+        const res = [];
 
-    // ── Generar y enviar nóminas ──
-    const handleGenerarNominas = async () => {
-        if (!periodoCompleto || trabajadoresListos.length === 0) return;
-        setLoading(true);
-
-        let exito = 0;
-        const errores = [];
-
-        for (const trabajador of trabajadoresListos) {
-            const c = conceptosPorTrabajador[trabajador.ID];
-
-            console.log("Emisor", selectedEmisor);
-
-            const payload = {
-                // Comprobante
-                Version: "4.0",
-                Serie: "N",
-                Fecha: new Date().toISOString().replace('Z', '').split('.')[0],
-                FormaPago: "99",
-                CondicionesDePago: "Contado",
-                SubTotal: parseFloat(c.TotalSueldos),
-                Descuento: parseFloat(c.TotalOtrasDeducciones),
-                Moneda: "MXN",
-                TipoCambio: "1",
-                Total: parseFloat(
-                    (parseFloat(c.TotalSueldos) - parseFloat(c.TotalOtrasDeducciones) +
-                        c.OtrosPagos.reduce((s, o) => s + parseFloat(o.Importe || 0), 0)).toFixed(2)
-                ),
-                TipoDeComprobante: "N",
-                Exportacion: "01",
-                MetodoPago: "PUE",
-                LugarExpedicion: selectedEmisor.Emisor?.LugarExpedicion || "00000",
-                EmisorID: selectedEmisor.EmisorID,   // ID de Gestores.Emisor
-                ReceptorNominaID: trabajador.ID,             // ID de ReceptorNomina
-                UsoCFDI: "N01",
-
-                Conceptos: {
-                    ListaConceptos: [{
-                        ClaveProdServ: "84111505",
-                        NoIdentificacion: "",
-                        Cantidad: 1,
-                        ClaveUnidad: "ACT",
-                        Unidad: "Actividad",
-                        Descripcion: "Pago de nómina",
-                        ValorUnitario: parseFloat(c.TotalSueldos),
-                        Importe: parseFloat(c.TotalSueldos),
-                        Descuento: parseFloat(c.TotalOtrasDeducciones),
-                        ObjetoImp: "01",
-                        Impuestos: {
-                            Traslados: [],
-                            Retenciones: [],
-                        }
-                    }],
-                    TotalImpuestosTrasladados: 0,
-                    TotalImpuestosRetenidos: 0,
-                },
-
-                Complemento: {
-                    Nomina: {
-                        Version: "1.2",
-                        TipoNomina: "O",
-                        FechaPago: periodo.FechaPago,
-                        FechaInicialPago: periodo.FechaInicialPago,
-                        FechaFinalPago: periodo.FechaFinalPago,
-                        NumDiasPagados: parseInt(periodo.NumDiasPagados),
-                        TotalPercepciones: parseFloat(c.TotalSueldos),
-                        TotalDeducciones: parseFloat(c.TotalOtrasDeducciones),
-                        TotalOtrosPagos: parseFloat(
-                            c.OtrosPagos.reduce((s, o) => s + parseFloat(o.Importe || 0), 0).toFixed(2)
-                        ),
-                        EmisorNominaID: selectedEmisor.ID,  // ID de EmisorNomina
-                        ReceptorNominaID: trabajador.ID,       // ID de ReceptorNomina
-
-                        Percepciones: {
-                            TotalSueldos: parseFloat(c.TotalSueldos),
-                            TotalGravado: parseFloat(c.TotalGravado),
-                            TotalExento: parseFloat(c.TotalExento),
-                            Percepciones: c.Percepciones,
-                        },
-                        Deducciones: c.Deducciones.length > 0 ? {
-                            TotalOtrasDeducciones: parseFloat(c.TotalOtrasDeducciones),
-                            TotalImpuestosRetenidos: parseFloat(c.TotalImpuestosRetenidos),
-                            Deducciones: c.Deducciones,
-                        } : null,
-                        OtrosPagos: c.OtrosPagos.length > 0 ? {
-                            OtrosPagos: c.OtrosPagos,
-                        } : null,
-                    }
-                }
-            };
+        for (let i = 0; i < nominasPreview.length; i++) {
+            const row = nominasPreview[i];
+            const payload = buildPayload(row, selectedEmisor);
 
             try {
-                const res = await fetch(`${apiUrl}/api/facturas/GuardarFacturaNomina`, {
+                const r = await fetch(GUARDAR_NOMINA_URL, {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify(payload),
                 });
 
-                if (res.ok) exito++;
-                else {
-                    const text = await res.text();
-                    errores.push(`${trabajador.Curp}: ${text.substring(0, 100)}`);
-                }
+                res.push({
+                    id: row["receptor_nomina_id"],
+                    nombre: row["Nombre"],
+                    ok: r.ok,
+                    msg: r.ok ? "OK" : await r.text(),
+                });
             } catch {
-                errores.push(`${trabajador.Curp}: Error de conexión`);
+                res.push({ id: row["receptor_nomina_id"], nombre: row["Nombre"], ok: false, msg: "Error de conexión" });
             }
+
+            setProgreso(Math.round(((i + 1) / nominasPreview.length) * 100));
         }
 
-        let msg = `${exito} de ${trabajadoresListos.length} nómina(s) generada(s).`;
-        if (errores.length > 0) msg += ` Errores:\n${errores.join("\n")}`;
-        onMessage(msg);
-        setLoading(false);
+        setResultados(res);
+        setEnviando(false);
+
+        const exitosos = res.filter((r) => r.ok).length;
+        onMessage?.(`Se generaron ${exitosos} de ${nominasPreview.length} nómina(s) correctamente.`);
     };
 
+    // ────────────────────────────────────────────────────────
     return (
         <Box>
-            {/* ── Periodo ── */}
-            <Box p={2} mb={2} borderRadius={2} sx={{ border: "1px solid #e0e0e0", backgroundColor: "#f7fbfd" }}>
-                <Typography variant="subtitle2" fontWeight="bold" color="#1b384a" mb={1}>
-                    Periodo de pago
-                </Typography>
-                <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
-                    {[
-                        { label: "Fecha de pago", key: "FechaPago" },
-                        { label: "Fecha inicial", key: "FechaInicialPago" },
-                        { label: "Fecha final", key: "FechaFinalPago" },
-                    ].map(({ label, key }) => (
-                        <TextField
-                            key={key}
-                            label={label}
-                            type="date"
-                            size="small"
-                            InputLabelProps={{ shrink: true }}
-                            value={periodo[key]}
-                            onChange={e => setPeriodo(p => ({ ...p, [key]: e.target.value }))}
-                            sx={{ minWidth: 180 }}
-                        />
-                    ))}
-                    <TextField
-                        label="Núm. días pagados"
-                        type="number"
+            {/* ── Tabla de trabajadores ── */}
+            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+                1. Selecciona los trabajadores
+                {seleccionados.length > 0 && (
+                    <Chip
+                        label={`${seleccionados.length} seleccionado(s)`}
                         size="small"
-                        value={periodo.NumDiasPagados}
-                        onChange={e => setPeriodo(p => ({ ...p, NumDiasPagados: e.target.value }))}
-                        sx={{ minWidth: 150 }}
-                        InputProps={{
-                            readOnly: true, // Hacer el campo de solo lectura
-                        }}
+                        sx={{ ml: 1, backgroundColor: "#e8f4f8", color: "#1b384a" }}
                     />
-                </Box>
+                )}
+            </Typography>
+
+            {loadingTabla ? (
+                <CircularProgress size={24} sx={{ color: "#1b384a", mb: 2 }} />
+            ) : (
+                <TableContainer component={Paper} elevation={0}
+                    sx={{ border: "1px solid #e0e0e0", borderRadius: 2, mb: 3 }}>
+                    <Table size="small">
+                        <TableHead sx={{ backgroundColor: "#f0f4f7" }}>
+                            <TableRow>
+                                <TableCell padding="checkbox">
+                                    <Checkbox
+                                        checked={seleccionados.length === receptores.length && receptores.length > 0}
+                                        indeterminate={seleccionados.length > 0 && seleccionados.length < receptores.length}
+                                        onChange={toggleTodos}
+                                    />
+                                </TableCell>
+                                <TableCell><strong>RFC</strong></TableCell>
+                                <TableCell><strong>Nombre</strong></TableCell>
+                                <TableCell><strong>Puesto</strong></TableCell>
+                                <TableCell><strong>Salario Diario</strong></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {receptores.map((r) => (
+                                <TableRow key={r.ID} hover
+                                    selected={seleccionados.includes(r.ID)}
+                                    onClick={() => toggleSeleccion(r.ID)}
+                                    sx={{ cursor: "pointer" }}
+                                >
+                                    <TableCell padding="checkbox">
+                                        <Checkbox checked={seleccionados.includes(r.ID)} />
+                                    </TableCell>
+                                    <TableCell>{r.Rfc}</TableCell>
+                                    <TableCell>{r.Nombre}</TableCell>
+                                    <TableCell>{r.Puesto}</TableCell>
+                                    <TableCell>{r.SalarioDiarioIntegrado}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+
+            {/* ── Descargar plantilla ── */}
+            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+                2. Descarga y llena la plantilla
+            </Typography>
+            <Box display="flex" gap={2} alignItems="center" mb={3}>
+                <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    disabled={seleccionados.length === 0}
+                    onClick={handleDescargarPlantilla}
+                    sx={{ borderColor: "#1b384a", color: "#1b384a" }}
+                >
+                    Descargar plantilla .xlsx
+                </Button>
+                <Typography variant="caption" color="text.secondary">
+                    Columnas de referencia (ID, Nombre, RFC, Salario) no deben modificarse.
+                    Para múltiples percepciones/deducciones, separa los valores con <strong>|</strong>
+                </Typography>
             </Box>
 
-            {/* ── Tabla trabajadores ── */}
-            <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                    <TableHead sx={{ backgroundColor: "#1b384a" }}>
-                        <TableRow>
-                            {["CURP", "NSS", "Empleado", "Puesto", "Departamento", "Conceptos"].map(h => (
-                                <TableCell key={h} sx={{ color: "white", fontWeight: "bold" }}>{h}</TableCell>
-                            ))}
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {trabajadores.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ color: "#999", py: 3 }}>
-                                    No hay trabajadores registrados para este emisor
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            trabajadores.map((t, i) => (
-                                <TableRow key={t.ID} sx={{ backgroundColor: i % 2 === 0 ? "#f9f9f9" : "white" }}>
-                                    <TableCell sx={{ fontSize: 12 }}>{t.Curp}</TableCell>
-                                    <TableCell sx={{ fontSize: 12 }}>{t.NumSeguridadSocial}</TableCell>
-                                    <TableCell sx={{ fontSize: 12 }}>{t.NumEmpleado}</TableCell>
-                                    <TableCell sx={{ fontSize: 12 }}>{t.Puesto}</TableCell>
-                                    <TableCell sx={{ fontSize: 12 }}>{t.Departamento}</TableCell>
-                                    <TableCell>
-                                        {conceptosPorTrabajador[t.ID] ? (
-                                            <Chip
-                                                icon={<CheckCircleIcon />}
-                                                label="Listo"
-                                                size="small"
-                                                sx={{ backgroundColor: "#e6f4ea", color: "#2e7d32", mr: 1, cursor: "pointer" }}
-                                                onClick={() => handleAbrirModal(t)}
-                                            />
-                                        ) : (
-                                            <Button
-                                                size="small"
-                                                variant="outlined"
-                                                startIcon={<EditIcon />}
-                                                disabled={!periodoCompleto}
-                                                onClick={() => handleAbrirModal(t)}
-                                                sx={{ borderColor: "#1b384a", color: "#1b384a", fontSize: 11 }}
-                                            >
-                                                Capturar
-                                            </Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+            {/* ── Subir plantilla llenada ── */}
+            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+                3. Sube la plantilla llenada
+            </Typography>
+            <Box display="flex" gap={2} alignItems="center" mb={3}>
+                <Button variant="outlined" component="label"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ borderColor: "#1b384a", color: "#1b384a" }}>
+                    Seleccionar archivo
+                    <input type="file" accept=".xlsx" hidden onChange={handleUploadPlantilla} />
+                </Button>
+                {nominasPreview.length > 0 && (
+                    <Chip
+                        label={`${nominasPreview.length} nómina(s) listas para enviar`}
+                        size="small"
+                        sx={{ backgroundColor: "#e6f4ea", color: "#2e7d32" }}
+                    />
+                )}
+            </Box>
 
-            {/* ── Botón generar ── */}
-            {trabajadoresListos.length > 0 && (
-                <Box display="flex" justifyContent="center" mt={3}>
+            {/* ── Preview ── */}
+            {nominasPreview.length > 0 && (
+                <TableContainer component={Paper} elevation={0}
+                    sx={{ border: "1px solid #e0e0e0", borderRadius: 2, mb: 3, maxHeight: 300, overflow: "auto" }}>
+                    <Table size="small" stickyHeader>
+                        <TableHead sx={{ backgroundColor: "#f0f4f7" }}>
+                            <TableRow>
+                                <TableCell><strong>Nombre</strong></TableCell>
+                                <TableCell><strong>RFC</strong></TableCell>
+                                <TableCell><strong>Días</strong></TableCell>
+                                <TableCell><strong>Percepción Tipo</strong></TableCell>
+                                <TableCell><strong>Gravado</strong></TableCell>
+                                <TableCell><strong>Deducción Tipo</strong></TableCell>
+                                <TableCell><strong>Deducción</strong></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {nominasPreview.map((row, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>{row["Nombre"]}</TableCell>
+                                    <TableCell>{row["RFC"]}</TableCell>
+                                    <TableCell>{row["DiasLaborados"]}</TableCell>
+                                    <TableCell>{row["Percepcion_Tipo"]}</TableCell>
+                                    <TableCell>{row["Percepcion_ImporteGravado"]}</TableCell>
+                                    <TableCell>{row["Deduccion_Tipo"] || "—"}</TableCell>
+                                    <TableCell>{row["Deduccion_Importe"] || "—"}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
+
+            {/* ── Enviar ── */}
+            {nominasPreview.length > 0 && (
+                <Box display="flex" alignItems="center" gap={2} mb={3}>
                     <Button
                         variant="contained"
-                        disabled={loading || !periodoCompleto}
                         startIcon={<SendIcon />}
-                        onClick={handleGenerarNominas}
-                        sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" }, px: 4 }}
+                        disabled={enviando}
+                        onClick={handleEnviar}
+                        sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
                     >
-                        {loading ? "Generando..." : `Generar ${trabajadoresListos.length} nómina(s)`}
+                        {enviando ? `Enviando... ${progreso}%` : `Generar ${nominasPreview.length} nómina(s)`}
                     </Button>
+                    {enviando && (
+                        <Box sx={{ width: 200 }}>
+                            <LinearProgress variant="determinate" value={progreso}
+                                sx={{ "& .MuiLinearProgress-bar": { backgroundColor: "#1b384a" } }} />
+                        </Box>
+                    )}
                 </Box>
             )}
 
-            {/* ── Modal conceptos ── */}
-            <Dialog open={modalOpen} onClose={() => setModalOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ backgroundColor: "#1b384a", color: "white" }}>
-                    Conceptos — {trabajadorActivo?.Curp} · {trabajadorActivo?.Puesto}
-                </DialogTitle>
-                <DialogContent dividers>
-
-                    {/* Percepciones */}
-                    <Accordion defaultExpanded>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography fontWeight="bold" color="#1b384a">Percepciones</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-                                {[["TotalSueldos", "Total sueldos"], ["TotalGravado", "Total gravado"], ["TotalExento", "Total exento"]].map(([key, label]) => (
-                                    <TextField key={key} label={label} size="small" type="number"
-                                        value={conceptos[key]}
-                                        onChange={e => setConceptos(p => ({ ...p, [key]: e.target.value }))}
-                                        sx={{ minWidth: 150 }} />
-                                ))}
-                            </Box>
-                            {conceptos.Percepciones.map((p, i) => (
-                                <Box key={i} display="flex" gap={1} mb={1} alignItems="center" flexWrap="wrap">
-                                    <TextField label="Tipo" size="small" value={p.TipoPercepcion} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("Percepciones", i, "TipoPercepcion", e.target.value)} />
-                                    <TextField label="Clave" size="small" value={p.Clave} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("Percepciones", i, "Clave", e.target.value)} />
-                                    <TextField label="Concepto" size="small" value={p.Concepto} sx={{ width: 180 }}
-                                        onChange={e => actualizarItem("Percepciones", i, "Concepto", e.target.value)} />
-                                    <TextField label="Gravado" size="small" type="number" value={p.ImporteGravado} sx={{ width: 110 }}
-                                        onChange={e => actualizarItem("Percepciones", i, "ImporteGravado", e.target.value)} />
-                                    <TextField label="Exento" size="small" type="number" value={p.ImporteExento} sx={{ width: 110 }}
-                                        onChange={e => actualizarItem("Percepciones", i, "ImporteExento", e.target.value)} />
-                                    <IconButton size="small" onClick={() => eliminarItem("Percepciones", i)}>
-                                        <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                </Box>
+            {/* ── Resultados ── */}
+            {resultados.length > 0 && (
+                <TableContainer component={Paper} elevation={0}
+                    sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}>
+                    <Table size="small">
+                        <TableHead sx={{ backgroundColor: "#f0f4f7" }}>
+                            <TableRow>
+                                <TableCell><strong>Trabajador</strong></TableCell>
+                                <TableCell><strong>Estado</strong></TableCell>
+                                <TableCell><strong>Detalle</strong></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {resultados.map((r, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>{r.nombre}</TableCell>
+                                    <TableCell>
+                                        {r.ok
+                                            ? <CheckCircleIcon sx={{ color: "#2e7d32", fontSize: 18 }} />
+                                            : <ErrorIcon sx={{ color: "#c62828", fontSize: 18 }} />
+                                        }
+                                    </TableCell>
+                                    <TableCell>
+                                        <Tooltip title={r.msg}>
+                                            <Typography variant="caption" noWrap sx={{ maxWidth: 300, display: "block" }}>
+                                                {r.msg}
+                                            </Typography>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                            <Button size="small" startIcon={<AddIcon />} onClick={() => agregarItem("Percepciones")}
-                                sx={{ color: "#1b384a", mt: 1 }}>
-                                Agregar percepción
-                            </Button>
-                        </AccordionDetails>
-                    </Accordion>
-
-                    {/* Deducciones */}
-                    <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography fontWeight="bold" color="#1b384a">Deducciones</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box display="flex" gap={2} mb={2} flexWrap="wrap">
-                                {[["TotalOtrasDeducciones", "Total otras ded."], ["TotalImpuestosRetenidos", "Total imp. retenidos"]].map(([key, label]) => (
-                                    <TextField key={key} label={label} size="small" type="number"
-                                        value={conceptos[key]}
-                                        onChange={e => setConceptos(p => ({ ...p, [key]: e.target.value }))}
-                                        sx={{ minWidth: 170 }} />
-                                ))}
-                            </Box>
-                            {conceptos.Deducciones.map((d, i) => (
-                                <Box key={i} display="flex" gap={1} mb={1} alignItems="center" flexWrap="wrap">
-                                    <TextField label="Tipo" size="small" value={d.TipoDeduccion} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("Deducciones", i, "TipoDeduccion", e.target.value)} />
-                                    <TextField label="Clave" size="small" value={d.Clave} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("Deducciones", i, "Clave", e.target.value)} />
-                                    <TextField label="Concepto" size="small" value={d.Concepto} sx={{ width: 180 }}
-                                        onChange={e => actualizarItem("Deducciones", i, "Concepto", e.target.value)} />
-                                    <TextField label="Importe" size="small" type="number" value={d.Importe} sx={{ width: 110 }}
-                                        onChange={e => actualizarItem("Deducciones", i, "Importe", e.target.value)} />
-                                    <IconButton size="small" onClick={() => eliminarItem("Deducciones", i)}>
-                                        <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                </Box>
-                            ))}
-                            <Button size="small" startIcon={<AddIcon />} onClick={() => agregarItem("Deducciones")}
-                                sx={{ color: "#1b384a", mt: 1 }}>
-                                Agregar deducción
-                            </Button>
-                        </AccordionDetails>
-                    </Accordion>
-
-                    {/* Otros Pagos */}
-                    <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography fontWeight="bold" color="#1b384a">Otros pagos</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            {conceptos.OtrosPagos.map((o, i) => (
-                                <Box key={i} display="flex" gap={1} mb={1} alignItems="center" flexWrap="wrap">
-                                    <TextField label="Tipo" size="small" value={o.TipoOtroPago} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("OtrosPagos", i, "TipoOtroPago", e.target.value)} />
-                                    <TextField label="Clave" size="small" value={o.Clave} sx={{ width: 80 }}
-                                        onChange={e => actualizarItem("OtrosPagos", i, "Clave", e.target.value)} />
-                                    <TextField label="Concepto" size="small" value={o.Concepto} sx={{ width: 180 }}
-                                        onChange={e => actualizarItem("OtrosPagos", i, "Concepto", e.target.value)} />
-                                    <TextField label="Importe" size="small" type="number" value={o.Importe} sx={{ width: 110 }}
-                                        onChange={e => actualizarItem("OtrosPagos", i, "Importe", e.target.value)} />
-                                    <TextField label="Subsidio causado" size="small" type="number"
-                                        value={o.SubsidioAlEmpleo?.SubsidioCausado || ""}
-                                        sx={{ width: 140 }}
-                                        onChange={e => actualizarItem("OtrosPagos", i, "SubsidioAlEmpleo",
-                                            e.target.value ? { SubsidioCausado: e.target.value } : null)} />
-                                    <IconButton size="small" onClick={() => eliminarItem("OtrosPagos", i)}>
-                                        <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                </Box>
-                            ))}
-                            <Button size="small" startIcon={<AddIcon />} onClick={() => agregarItem("OtrosPagos")}
-                                sx={{ color: "#1b384a", mt: 1 }}>
-                                Agregar otro pago
-                            </Button>
-                        </AccordionDetails>
-                    </Accordion>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setModalOpen(false)} sx={{ color: "#999" }}>Cancelar</Button>
-                    <Button
-                        variant="contained"
-                        onClick={handleGuardarConceptos}
-                        sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
-                    >
-                        Guardar conceptos
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            )}
         </Box>
     );
 }

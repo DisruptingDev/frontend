@@ -68,19 +68,24 @@ export default function NominasPage() {
                                 }}
                             >
                                 <Tab
-                                    icon={<ReceiptIcon />}
+                                    icon={<ReceiptIcon />} // Nóminas Emitidas
                                     iconPosition="start"
                                     label="Nóminas Emitidas"
                                 />
                                 <Tab
-                                    icon={<PeopleIcon />}
+                                    icon={<AddBoxIcon />} // Registros Patronales (registro/alta)
                                     iconPosition="start"
-                                    label="Emisores de Nómina"
+                                    label="Registros Patronales"
                                 />
                                 <Tab
-                                    icon={<AddBoxIcon />}
+                                    icon={<AddBoxIcon />} // Alta de Nómina (registro/alta)
                                     iconPosition="start"
                                     label="Alta de Nómina"
+                                />
+                                <Tab
+                                    icon={<PeopleIcon />} // Alta de Trabajadores (personas)
+                                    iconPosition="start"
+                                    label="Alta de Trabajadores"
                                 />
                             </Tabs>
                         </Box>
@@ -93,6 +98,7 @@ export default function NominasPage() {
                             )}
                             {activeTab === 1 && <EmisorNomina token={token} />}
                             {activeTab === 2 && <CargaNomina token={token} />}
+                            {activeTab === 3 && <VistaTrabajadores token={token} />}
                         </Box>
                     </Box>
                 </Grid>

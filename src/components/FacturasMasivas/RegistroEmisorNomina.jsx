@@ -152,7 +152,7 @@ export default function RegistroEmisorNomina({ token }) {
             {/* Header con título y botón */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                 <Typography variant="h6" fontWeight="bold" color="#1b384a">
-                    Emisores de Nómina Registrados
+                    Registros Patronales Registrados
                 </Typography>
                 
                 <Button

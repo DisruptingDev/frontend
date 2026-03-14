@@ -1,275 +1,243 @@
-'use client';
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+"use client"
+import { useState, useEffect } from "react";
 import {
-    MaterialReactTable,
-    useMaterialReactTable,
-    MRT_Localization_ES,
-} from 'material-react-table';
-import {
-    Box,
-    IconButton,
-    CircularProgress,
-    Typography,
-    Drawer,
-    Button,
-    TextField,
-    useTheme,
-    useMediaQuery,
-    Chip
-} from '@mui/material';
-import {
-    FilterList as FilterListIcon,
-    Cancel as CancelIcon,
-} from '@mui/icons-material';
-import { WithPermission } from '@/components/WithPermission';
+    Box, Button, Typography, Chip, Stepper, Step, StepLabel,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress
+} from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import PeopleIcon from "@mui/icons-material/People";
+import ModalError from "@/components/Home/Modales/modalError";
+import ModalExito from "@/components/Home/Modales/modalExito";
+import Select from "@/components/Select/Select.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const CARGAR_TRABAJADORES_URL = `${apiUrl}/api/gestores/cargarTrabajadores`;
+const RECEPTORES_NOMINA_URL = `${apiUrl}/api/catalogos/Catalogos/ReceptorNomina`;
 
-const VistaTrabajadores = ({ token }) => {
-    const [trabajadores, setTrabajadores] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
+const PASOS = ["Seleccionar Emisor", "Cargar trabajadores", "Catálogo de trabajadores"];
 
-    const fetchTrabajadores = useCallback(async () => {
-        if (token) {
-            setLoading(true);
-            try {
-                // Por ahora usamos el catálogo de receptores ya que los trabajadores se registran ahí
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/TrabajadoresNomina`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    // Si el catálogo de receptores tiene algún campo que identifique trabajadores, 
-                    // podríamos filtrar aquí. Por ahora mostramos todos los receptores.
-                    const sortedData = data.sort((a, b) => b.ID - a.ID);
-                    setTrabajadores(sortedData);
-                } else {
-                    setTrabajadores([]);
-                }
-            } catch (error) {
-                console.error('Error fetching trabajadores:', error);
-                setTrabajadores([]);
-            } finally {
-                setLoading(false);
-            }
-        }
-    }, [token]);
+export default function VistaTrabajadores({ token }) {
+    const [loading, setLoading] = useState(false);
+    const [loadingTabla, setLoadingTabla] = useState(false);
+    const [openModalError, setOpenModalError] = useState(false);
+    const [openModalExito, setOpenModalExito] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState("");
+    const [selectedEmisor, setSelectedEmisor] = useState(null);
+    const [trabajadoresCargados, setTrabajadoresCargados] = useState(false);
+    const [archivo, setArchivo] = useState(null);
+    const [receptores, setReceptores] = useState([]);
 
+    const pasoActivo = !selectedEmisor ? 0 : !trabajadoresCargados ? 1 : 2;
+
+    // ── Cargar catálogo cuando se selecciona un emisor ──
     useEffect(() => {
-        fetchTrabajadores();
-    }, [fetchTrabajadores, token]);
-
-    const columns = useMemo(() => [
-        {
-            accessorKey: 'ID',
-            header: 'ID',
-            size: 50,
-        },
-        {
-            accessorKey: 'Curp',
-            header: 'CURP',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'NumSeguridadSocial',
-            header: 'Número de Seguridad Social',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'FechaInicioRelLaboral',
-            header: 'Fecha de Inicio',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'Antigüedad',
-            header: 'Antigüedad',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'TipoContrato',
-            header: 'Tipo de Contrato',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'TipoJornada',
-            header: 'Tipo de Jornada',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'TipoRegimen',
-            header: 'Tipo de Régimen',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'NumEmpleado',
-            header: 'Número de Empleado',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'Departamento',
-            header: 'Departamento',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'Puesto',
-            header: 'Puesto',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'RiesgoPuesto',
-            header: 'Riesgo del Puesto',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'PeriodicidadPago',
-            header: 'Periodicidad de Pago',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'CuentaBancaria',
-            header: 'Cuenta Bancaria',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'Banco',
-            header: 'Banco',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'SalarioBaseCotApor',
-            header: 'Salario Base de Cotización',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'SalarioDiarioIntegrado',
-            header: 'Salario Diario Integrado',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'ClaveEntFed',
-            header: 'Clave Entidad Federativa',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
-        },
-        {
-            accessorKey: 'Sindicalizado',
-            header: 'Sindicalizado',
-            size: 150,
-            Cell: ({ cell }) => cell.getValue() || '-',
+        if (!selectedEmisor) {
+            setReceptores([]);
+            return;
         }
-    ], []);
+        fetchReceptores();
+    }, [selectedEmisor]);
 
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const fetchReceptores = async () => {
+        setLoadingTabla(true);
+        try {
+            const res = await fetch(
+                `${RECEPTORES_NOMINA_URL}?EmisorNominaID=${selectedEmisor.ID}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setReceptores(data ?? []);
+                // Si ya hay trabajadores, avanzar al paso 3 automáticamente
+                if (data?.length > 0) setTrabajadoresCargados(true);
+            }
+        } catch {
+            setConfirmationMessage("Error al obtener el catálogo de trabajadores.");
+            setOpenModalError(true);
+        }
+        setLoadingTabla(false);
+    };
 
-    const table = useMaterialReactTable({
-        columns,
-        data: trabajadores,
-        enableColumnActions: false,
-        enableRowSelection: false,
-        enableColumnFiltering: false,
-        enableGlobalFilter: true,
-        enableSorting: true,
-        localization: MRT_Localization_ES,
-        initialState: { density: 'compact' },
-        muiTableBodyCellProps: {
-            sx: { fontSize: '13px' },
-        },
-        muiTableHeadCellProps: {
-            sx: {
-                backgroundColor: '#1b384a',
-                color: 'white',
-                fontWeight: 'bold',
-            },
-        },
-        state: {
-            isLoading: loading,
-        },
-        renderTopToolbarCustomActions: () => (
-            <Box display="flex" gap={1}>
-                <Button
-                    color="primary"
-                    startIcon={<FilterListIcon />}
-                    onClick={() => setOpenFilterDrawer(true)}
-                    variant="contained"
-                    size="small"
-                >
-                    Filtros
-                </Button>
-            </Box>
-        )
-    });
+    const handleCargarTrabajadores = async () => {
+        if (!archivo || !selectedEmisor) return;
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append("archivo", archivo);
+        formData.append("EmisorNominaID", selectedEmisor.ID);
+
+        try {
+            const res = await fetch(CARGAR_TRABAJADORES_URL, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setConfirmationMessage(
+                    `Proceso completado:\n• ${data.nuevos} trabajador(es) nuevo(s)\n• ${data.actualizados} trabajador(es) actualizado(s).`
+                );
+                setOpenModalExito(true);
+                setTrabajadoresCargados(true);
+                await fetchReceptores(); // Refrescar tabla
+            } else {
+                const text = await res.text();
+                setConfirmationMessage(`Error al cargar trabajadores: ${text.substring(0, 200)}`);
+                setOpenModalError(true);
+            }
+        } catch {
+            setConfirmationMessage("Error de conexión al cargar trabajadores.");
+            setOpenModalError(true);
+        }
+
+        setLoading(false);
+    };
+
+    const handleCambioEmisor = (e) => {
+        setSelectedEmisor(e.target.value ? JSON.parse(e.target.value) : null);
+        setTrabajadoresCargados(false);
+        setArchivo(null);
+        setReceptores([]);
+    };
 
     return (
-        <Box sx={{ width: '100%', p: 2 }}>
-            <WithPermission permission="ver_receptores">
-                <MaterialReactTable table={table} />
+        <Box bgcolor="white" p={2} borderRadius={2} sx={{ maxWidth: "100%", overflow: "hidden" }}>
 
-                <Drawer
-                    anchor="right"
-                    open={openFilterDrawer}
-                    onClose={() => setOpenFilterDrawer(false)}
+            {/* ── Título ── */}
+            <Typography variant="h6" fontWeight="bold" color="#1b384a" mb={2}>
+                Nómina – Carga masiva de trabajadores
+            </Typography>
+
+            {/* ── Stepper ── */}
+            <Stepper activeStep={pasoActivo} sx={{ mb: 3 }}>
+                {PASOS.map((label) => (
+                    <Step key={label}><StepLabel>{label}</StepLabel></Step>
+                ))}
+            </Stepper>
+
+            {/* ── Paso 1: Seleccionar Emisor ── */}
+            <Box display="flex" alignItems="center" gap={2} mb={3} flexWrap="wrap">
+                <Box sx={{ minWidth: 300 }}>
+                    <Select
+                        label="Seleccionar Emisor de Nómina"
+                        url={`${apiUrl}/api/catalogos/Catalogos/EmisorNomina`}
+                        id="ID"
+                        descripcion="Emisor.Nombre"
+                        onChange={handleCambioEmisor}
+                        value={selectedEmisor?.ID || ""}
+                    />
+                </Box>
+                {selectedEmisor && (
+                    <Chip
+                        label={`Patrón: ${selectedEmisor.RegistroPatronal}`}
+                        size="small"
+                        sx={{ backgroundColor: "#e8f4f8", color: "#1b384a" }}
+                    />
+                )}
+            </Box>
+
+            {/* ── Paso 2: Cargar trabajadores ── */}
+            {selectedEmisor && (
+                <Box
+                    display="flex" alignItems="center" gap={2} mb={3} p={2}
+                    borderRadius={2}
+                    sx={{ border: "1px dashed #1b384a", backgroundColor: "#f7fbfd" }}
                 >
-                    <Box sx={{ width: 300, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">Filtrar Personal</Typography>
-                            <IconButton onClick={() => setOpenFilterDrawer(false)}>
-                                <CancelIcon />
-                            </IconButton>
+                    <PeopleIcon sx={{ color: "#1b384a" }} />
+                    <Typography variant="body2" color="#1b384a" flex={1}>
+                        Sube el <strong>.xlsx</strong> para agregar o actualizar trabajadores en el catálogo.
+                    </Typography>
+
+                    <Button variant="outlined" component="label"
+                        sx={{ borderColor: "#1b384a", color: "#1b384a" }}>
+                        Seleccionar archivo
+                        <input type="file" accept=".xlsx" hidden
+                            onChange={(e) => setArchivo(e.target.files[0])} />
+                    </Button>
+
+                    {archivo && (
+                        <Chip label={archivo.name} size="small"
+                            sx={{ backgroundColor: "#e8f4f8" }} />
+                    )}
+
+                    <Button
+                        variant="contained"
+                        disabled={!archivo || loading}
+                        startIcon={<CloudUploadIcon />}
+                        sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
+                        onClick={handleCargarTrabajadores}
+                    >
+                        {loading ? "Cargando..." : "Guardar trabajadores"}
+                    </Button>
+                </Box>
+            )}
+
+            {/* ── Paso 3: Tabla del catálogo ── */}
+            {selectedEmisor && (
+                <Box mt={2}>
+                    <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+                        Trabajadores en catálogo
+                        <Chip
+                            label={receptores.length}
+                            size="small"
+                            sx={{ ml: 1, backgroundColor: "#e8f4f8", color: "#1b384a" }}
+                        />
+                    </Typography>
+
+                    {loadingTabla ? (
+                        <Box display="flex" justifyContent="center" p={3}>
+                            <CircularProgress size={28} sx={{ color: "#1b384a" }} />
                         </Box>
+                    ) : receptores.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary">
+                            No hay trabajadores registrados para este emisor.
+                        </Typography>
+                    ) : (
+                        <TableContainer component={Paper} elevation={0}
+                            sx={{ border: "1px solid #e0e0e0", borderRadius: 2 }}>
+                            <Table size="small">
+                                <TableHead sx={{ backgroundColor: "#f0f4f7" }}>
+                                    <TableRow>
+                                        <TableCell><strong>RFC</strong></TableCell>
+                                        <TableCell><strong>Nombre</strong></TableCell>
+                                        <TableCell><strong>CURP</strong></TableCell>
+                                        <TableCell><strong>NSS</strong></TableCell>
+                                        <TableCell><strong>Tipo Contrato</strong></TableCell>
+                                        <TableCell><strong>Puesto</strong></TableCell>
+                                        <TableCell><strong>Salario Diario</strong></TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {receptores.map((r) => (
+                                        <TableRow key={r.ID} hover>
+                                            <TableCell>{r.Rfc}</TableCell>
+                                            <TableCell>{r.Nombre}</TableCell>
+                                            <TableCell>{r.Curp}</TableCell>
+                                            <TableCell>{r.NumSeguridadSocial}</TableCell>
+                                            <TableCell>{r.TipoContrato}</TableCell>
+                                            <TableCell>{r.Puesto}</TableCell>
+                                            <TableCell>{r.SalarioDiarioIntegrado}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </Box>
+            )}
 
-                        <TextField
-                            label="Nombre"
-                            variant="outlined"
-                            size="small"
-                            value={table.getColumn('Nombre')?.getFilterValue() || ''}
-                            onChange={(e) => table.getColumn('Nombre').setFilterValue(e.target.value)}
-                        />
-
-                        <TextField
-                            label="RFC"
-                            variant="outlined"
-                            size="small"
-                            value={table.getColumn('Rfc')?.getFilterValue() || ''}
-                            onChange={(e) => table.getColumn('Rfc').setFilterValue(e.target.value)}
-                        />
-
-                        <Button
-                            variant="outlined"
-                            color="secondary"
-                            sx={{ mt: 2 }}
-                            onClick={() => {
-                                table.resetColumnFilters();
-                                setOpenFilterDrawer(false);
-                            }}
-                        >
-                            Limpiar Filtros
-                        </Button>
-                    </Box>
-                </Drawer>
-            </WithPermission>
+            {/* ── Modals ── */}
+            <ModalExito
+                openModalSuccess={openModalExito}
+                handleCloseModal={() => setOpenModalExito(false)}
+                confirmationMessage={confirmationMessage}
+            />
+            <ModalError
+                openModalError={openModalError}
+                handleCloseModal={() => setOpenModalError(false)}
+                confirmationMessage={confirmationMessage}
+            />
         </Box>
     );
-};
-
-export default VistaTrabajadores;
+}
