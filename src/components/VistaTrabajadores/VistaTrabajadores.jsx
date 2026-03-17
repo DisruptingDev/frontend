@@ -205,7 +205,7 @@ export default function VistaTrabajadores({ token }) {
                                         <TableCell><strong>NSS</strong></TableCell>
                                         <TableCell><strong>Tipo Contrato</strong></TableCell>
                                         <TableCell><strong>Puesto</strong></TableCell>
-                                        <TableCell><strong>Salario Diario</strong></TableCell>
+                                        <TableCell><strong>Salario Diario Integrado</strong></TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>

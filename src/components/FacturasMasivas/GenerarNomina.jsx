@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import {
     Box, Button, Typography, Chip, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Paper, Checkbox, LinearProgress, Tooltip
+    Paper, Checkbox, LinearProgress, Tooltip, TextField
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -15,6 +15,17 @@ import ErrorIcon from "@mui/icons-material/Error";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const RECEPTORES_URL = `${apiUrl}/api/catalogos/Catalogos/ReceptorNomina`;
 const GUARDAR_NOMINA_URL = `${apiUrl}/api/facturas/GuardarFacturaNomina`;
+
+// ── Helpers de fecha ──────────────────────────────────────────
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+
+const calcularDias = (fechaInicial, fechaFinal) => {
+    if (!fechaInicial || !fechaFinal) return 0;
+    const inicio = new Date(fechaInicial + "T00:00:00");
+    const fin = new Date(fechaFinal + "T00:00:00");
+    const diff = Math.round((fin - inicio) / (1000 * 60 * 60 * 24));
+    return diff >= 0 ? diff + 1 : 0; // +1 para incluir ambos extremos
+};
 
 // ── Catálogos SAT ──────────────────────────────────────────
 const TIPOS_PERCEPCION = [
@@ -94,6 +105,8 @@ const COLS_OTROS = [
     { key: "otro_importe", label: "OtroPago_Importe" },
 ];
 
+const TIPOS_IMPUESTO_RETENIDO = new Set(["001", "002"]);
+
 // ── Helper: parsear clave SAT del string "001 - Descripción" ──
 const parsearClave = (str) => (str ?? "").split(" - ")[0].trim();
 
@@ -148,6 +161,23 @@ const buildPayload = (row, emisor) => {
         otrosPagos.reduce((s, o) => s + o.Importe, 0);
     const total = totalPercepciones - totalDeducciones + totalOtros;
 
+    const totalGravado = percepciones.reduce((s, p) => s + p.ImporteGravado, 0);
+    const totalExento = percepciones.reduce((s, p) => s + p.ImporteExento, 0);
+
+    const totalImpuestosRetenidos = Math.round(
+        deducciones
+            .filter(d => TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
+            .reduce((s, d) => s + d.Importe, 0) * 100
+    ) / 100;
+
+    const totalOtrasDeducciones = Math.round(
+        deducciones
+            .filter(d => !TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
+            .reduce((s, d) => s + d.Importe, 0) * 100
+    ) / 100;
+
+    const r2 = (n) => Math.round(n * 100) / 100;
+
     return {
         Version: "4.0",
         Serie: emisor?.Serie ?? "N",
@@ -157,22 +187,22 @@ const buildPayload = (row, emisor) => {
         TipoCambio: "1",
         TipoDeComprobante: "N",
         Exportacion: "01",
-        MetodoPago: "PPD",
+        MetodoPago: "PUE",
         LugarExpedicion: emisor?.Emisor.LugarExpedicion,
         EmisorID: emisor?.EmisorID,
         ReceptorNominaID: row["receptor_nomina_id"],
         UsoCFDI: "CN01",
-        SubTotal: totalPercepciones,
-        Total: total,
+        SubTotal: r2(totalPercepciones),
+        Total: r2(totalPercepciones - totalDeducciones + totalOtros),
         Conceptos: {
             ListaConceptos: [{
                 ClaveProdServ: "84111505",
                 Cantidad: 1,
                 ClaveUnidad: "ACT",
                 Descripcion: "Pago de nómina",
-                ValorUnitario: totalPercepciones,
-                Importe: totalPercepciones,
-                Descuento: totalDeducciones,
+                ValorUnitario: r2(totalPercepciones),
+                Importe: r2(totalPercepciones),
+                Descuento: r2(totalDeducciones),
                 ObjetoImp: "01",
                 Impuestos: {
                     Traslados: [],
@@ -190,13 +220,22 @@ const buildPayload = (row, emisor) => {
                 FechaInicialPago: String(row["FechaInicialPago"]) ?? "",
                 FechaFinalPago: String(row["FechaFinalPago"]) ?? "",
                 NumDiasPagados: parseFloat(row["DiasLaborados"] ?? 0),
-                TotalPercepciones: totalPercepciones,
-                TotalDeducciones: totalDeducciones,
-                TotalOtrosPagos: totalOtros,
+                TotalPercepciones: r2(totalPercepciones),
+                TotalDeducciones: r2(totalDeducciones),
+                TotalOtrosPagos: r2(totalOtros),
                 EmisorNominaID: emisor.ID,
                 ReceptorNominaID: parseInt(row["receptor_nomina_id"], 10),
-                Percepciones: { Percepciones: percepciones },
-                Deducciones: deducciones.length ? { Deducciones: deducciones } : undefined,
+                Percepciones: {
+                    TotalSueldos: r2(totalGravado + totalExento),
+                    TotalGravado: r2(totalGravado),
+                    TotalExento: r2(totalExento),
+                    Percepciones: percepciones
+                },
+                Deducciones: {
+                    TotalImpuestosRetenidos: totalImpuestosRetenidos,
+                    TotalOtrasDeducciones: totalOtrasDeducciones,
+                    Deducciones: deducciones
+                },
                 OtrosPagos: otrosPagos.length ? { OtrosPagos: otrosPagos } : undefined,
             },
         },
@@ -212,6 +251,12 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
     const [resultados, setResultados] = useState([]);          // {id, nombre, ok, msg}
     const [enviando, setEnviando] = useState(false);
     const [progreso, setProgreso] = useState(0);
+    const [fechaInicial, setFechaInicial] = useState("");
+    const [fechaFinal, setFechaFinal] = useState("");
+    const [fechaPago, setFechaPago] = useState(hoyISO());
+
+    const diasCalculados = calcularDias(fechaInicial, fechaFinal);
+    const periodoValido = fechaInicial && fechaFinal && fechaPago && diasCalculados > 0;
 
     // ── Cargar receptores al montar o cambiar emisor ──
     useEffect(() => {
@@ -248,16 +293,11 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
         const trabajadores = receptores.filter((r) => seleccionados.includes(r.ID));
 
         const headers = [
-            // Bloqueados (referencia)
             "receptor_nomina_id", "Nombre", "RFC", "SalarioDiario",
-            // A llenar
             "DiasLaborados", "TipoNomina", "FechaPago", "FechaInicialPago", "FechaFinalPago",
-            // Percepciones (separar múltiples con "|")
             "Percepcion_Tipo", "Percepcion_Clave", "Percepcion_Concepto",
             "Percepcion_ImporteGravado", "Percepcion_ImporteExento",
-            // Deducciones
             "Deduccion_Tipo", "Deduccion_Clave", "Deduccion_Concepto", "Deduccion_Importe",
-            // Otros pagos
             "OtroPago_Tipo", "OtroPago_Clave", "OtroPago_Concepto", "OtroPago_Importe",
         ];
 
@@ -266,16 +306,17 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
             Nombre: r.Nombre,
             RFC: r.Rfc,
             SalarioDiario: r.SalarioDiarioIntegrado,
-            DiasLaborados: "",
+            // ── Pre-llenado desde el panel de fechas ──
+            DiasLaborados: diasCalculados,
             TipoNomina: "O",
-            FechaPago: "",
-            FechaInicialPago: "",
-            FechaFinalPago: "",
-            // Percepción por defecto: sueldo (001)
+            FechaPago: fechaPago,
+            FechaInicialPago: fechaInicial,
+            FechaFinalPago: fechaFinal,
+            // Percepción por defecto
             Percepcion_Tipo: "001 - Sueldos, Salarios Rayas y Jornales",
             Percepcion_Clave: "001",
             Percepcion_Concepto: "Sueldo",
-            Percepcion_ImporteGravado: "",  // = SalarioDiario × DiasLaborados
+            Percepcion_ImporteGravado: "",
             Percepcion_ImporteExento: "0",
             Deduccion_Tipo: "",
             Deduccion_Clave: "",
@@ -288,15 +329,10 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
         }));
 
         const wb = XLSX.utils.book_new();
-
-        // ── Hoja principal ──
         const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-
-        // Ancho de columnas
         ws["!cols"] = headers.map((h) =>
             h === "Nombre" || h.includes("Concepto") || h.includes("Tipo")
-                ? { wch: 45 }
-                : { wch: 18 }
+                ? { wch: 45 } : { wch: 18 }
         );
 
         // ── Hoja de catálogos (para dropdowns) ──
@@ -379,6 +415,8 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
             const row = nominasPreview[i];
             const payload = buildPayload(row, selectedEmisor);
 
+            console.log("Payload:", payload);
+
             try {
                 const r = await fetch(GUARDAR_NOMINA_URL, {
                     method: "POST",
@@ -412,7 +450,7 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
     // ────────────────────────────────────────────────────────
     return (
         <Box>
-            {/* ── Tabla de trabajadores ── */}
+            {/* ── Paso 1: Tabla de trabajadores ── */}
             <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
                 1. Selecciona los trabajadores
                 {seleccionados.length > 0 && (
@@ -442,7 +480,7 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
                                 <TableCell><strong>RFC</strong></TableCell>
                                 <TableCell><strong>Nombre</strong></TableCell>
                                 <TableCell><strong>Puesto</strong></TableCell>
-                                <TableCell><strong>Salario Diario</strong></TableCell>
+                                <TableCell><strong>Salario Diario Integrado</strong></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -466,29 +504,112 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
                 </TableContainer>
             )}
 
-            {/* ── Descargar plantilla ── */}
+            {/* ── Paso 2 (NUEVO): Periodo de pago ── */}
+            {seleccionados.length > 0 && (
+                <>
+                    <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+                        2. Periodo de pago
+                    </Typography>
+
+                    <Box
+                        display="grid"
+                        gridTemplateColumns={{ xs: "1fr 1fr", sm: "1fr 1fr 1fr auto" }}
+                        gap={2}
+                        alignItems="flex-end"
+                        mb={1}
+                        sx={{
+                            p: 2,
+                            border: "1px solid #e0e0e0",
+                            borderRadius: 2,
+                            backgroundColor: "#fafafa",
+                        }}
+                    >
+                        <TextField
+                            label="Fecha inicial de pago"
+                            type="date"
+                            size="small"
+                            value={fechaInicial}
+                            onChange={(e) => setFechaInicial(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        <TextField
+                            label="Fecha final de pago"
+                            type="date"
+                            size="small"
+                            value={fechaFinal}
+                            onChange={(e) => setFechaFinal(e.target.value)}
+                            inputProps={{ min: fechaInicial }}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        <TextField
+                            label="Fecha de pago"
+                            type="date"
+                            size="small"
+                            value={fechaPago}
+                            onChange={(e) => setFechaPago(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        {/* Días calculados (solo lectura) */}
+                        <Box
+                            sx={{
+                                height: 40,
+                                px: 2,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                border: "1px solid #e0e0e0",
+                                borderRadius: 1,
+                                backgroundColor: "#e8f4f8",
+                                minWidth: 110,
+                            }}
+                        >
+                            <Typography variant="h6" color="#1b384a" fontWeight="bold" lineHeight={1}>
+                                {diasCalculados}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                días
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {fechaInicial && fechaFinal && diasCalculados === 0 && (
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            La fecha final debe ser igual o posterior a la fecha inicial.
+                        </Alert>
+                    )}
+
+                    {periodoValido && (
+                        <Chip
+                            label={`Periodo: ${fechaInicial} → ${fechaFinal} · ${diasCalculados} día(s) · Pago: ${fechaPago}`}
+                            size="small"
+                            sx={{ mb: 3, backgroundColor: "#e6f4ea", color: "#2e7d32" }}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* ── Paso 3: Descargar plantilla ── */}
             <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                2. Descarga y llena la plantilla
+                {seleccionados.length > 0 ? "3." : "2."} Descarga y llena la plantilla
             </Typography>
             <Box display="flex" gap={2} alignItems="center" mb={3}>
                 <Button
                     variant="outlined"
                     startIcon={<DownloadIcon />}
-                    disabled={seleccionados.length === 0}
+                    disabled={seleccionados.length === 0 || !periodoValido}
                     onClick={handleDescargarPlantilla}
                     sx={{ borderColor: "#1b384a", color: "#1b384a" }}
                 >
                     Descargar plantilla .xlsx
                 </Button>
                 <Typography variant="caption" color="text.secondary">
-                    Columnas de referencia (ID, Nombre, RFC, Salario) no deben modificarse.
-                    Para múltiples percepciones/deducciones, separa los valores con <strong>|</strong>
+                    Las fechas y días se pre-llenan automáticamente. Para múltiples percepciones/deducciones separa los valores con <strong>|</strong>
                 </Typography>
             </Box>
 
-            {/* ── Subir plantilla llenada ── */}
+            {/* ── Paso 4: Subir plantilla llenada ── */}
             <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                3. Sube la plantilla llenada
+                {seleccionados.length > 0 ? "4." : "3."} Sube la plantilla llenada
             </Typography>
             <Box display="flex" gap={2} alignItems="center" mb={3}>
                 <Button variant="outlined" component="label"
