@@ -11,13 +11,14 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SendIcon from "@mui/icons-material/Send";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
+import { useRouter } from "next/navigation";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const RECEPTORES_URL = `${apiUrl}/api/catalogos/Catalogos/ReceptorNomina`;
 const GUARDAR_NOMINA_URL = `${apiUrl}/api/facturas/GuardarFacturaNomina`;
 
 // ── Helpers de fecha ──────────────────────────────────────────
-const hoyISO = () => new Date().toISOString().slice(0, 10);
+const hoy = () => new Date().toLocaleDateString('sv-SE');
 
 const calcularDias = (fechaInicial, fechaFinal) => {
     if (!fechaInicial || !fechaFinal) return 0;
@@ -178,10 +179,24 @@ const buildPayload = (row, emisor) => {
 
     const r2 = (n) => Math.round(n * 100) / 100;
 
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+
+    const Fecha = formatter.format(now).replace(' ', 'T');
+
     return {
         Version: "4.0",
         Serie: emisor?.Serie ?? "N",
-        Fecha: new Date().toISOString().slice(0, 19),
+        Fecha: Fecha,
         FormaPago: "99",
         Moneda: "MXN",
         TipoCambio: "1",
@@ -243,7 +258,7 @@ const buildPayload = (row, emisor) => {
 };
 
 // ────────────────────────────────────────────────────────────
-export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
+export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuccess }) {
     const [loadingTabla, setLoadingTabla] = useState(false);
     const [receptores, setReceptores] = useState([]);
     const [seleccionados, setSeleccionados] = useState([]);   // IDs seleccionados
@@ -253,10 +268,12 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
     const [progreso, setProgreso] = useState(0);
     const [fechaInicial, setFechaInicial] = useState("");
     const [fechaFinal, setFechaFinal] = useState("");
-    const [fechaPago, setFechaPago] = useState(hoyISO());
+    const [fechaPago, setFechaPago] = useState(hoy());
 
     const diasCalculados = calcularDias(fechaInicial, fechaFinal);
     const periodoValido = fechaInicial && fechaFinal && fechaPago && diasCalculados > 0;
+
+    const router = useRouter();
 
     // ── Cargar receptores al montar o cambiar emisor ──
     useEffect(() => {
@@ -415,8 +432,6 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
             const row = nominasPreview[i];
             const payload = buildPayload(row, selectedEmisor);
 
-            console.log("Payload:", payload);
-
             try {
                 const r = await fetch(GUARDAR_NOMINA_URL, {
                     method: "POST",
@@ -445,6 +460,14 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage }) {
 
         const exitosos = res.filter((r) => r.ok).length;
         onMessage?.(`Se generaron ${exitosos} de ${nominasPreview.length} nómina(s) correctamente.`);
+
+        if (exitosos === nominasPreview.length) {
+            onMessage?.("Todas las nóminas se generaron correctamente");
+
+            setTimeout(() => {
+                onSuccess?.();
+            }, 1500);
+        }
     };
 
     // ────────────────────────────────────────────────────────

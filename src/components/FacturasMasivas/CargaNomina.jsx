@@ -9,7 +9,7 @@ import GenerarNominas from "@/components/FacturasMasivas/GenerarNomina";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const PASOS = ["Seleccionar Emisor", "Generar nóminas"];
 
-export default function CargaNomina({ token }) {
+export default function CargaNomina({ token, onSuccess }) {
     const [openModalError, setOpenModalError] = useState(false);
     const [openModalExito, setOpenModalExito] = useState(false);
     const [confirmationMessage, setConfirmationMessage] = useState("");
@@ -64,6 +64,7 @@ export default function CargaNomina({ token }) {
                         setConfirmationMessage(msg);
                         isError ? setOpenModalError(true) : setOpenModalExito(true);
                     }}
+                    onSuccess={onSuccess}
                 />
             )}
 

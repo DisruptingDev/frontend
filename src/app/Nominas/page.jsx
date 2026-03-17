@@ -33,6 +33,10 @@ export default function NominasPage() {
         setActiveTab(newValue);
     };
 
+    const irANominasEmitidas = () => {
+        setActiveTab(0);
+    };
+
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
             <Header />
@@ -97,7 +101,12 @@ export default function NominasPage() {
                                 </Box>
                             )}
                             {activeTab === 1 && <EmisorNomina token={token} />}
-                            {activeTab === 2 && <CargaNomina token={token} />}
+                            {activeTab === 2 && (
+                                <CargaNomina
+                                    token={token}
+                                    onSuccess={irANominasEmitidas}
+                                />
+                            )}
                             {activeTab === 3 && <VistaTrabajadores token={token} />}
                         </Box>
                     </Box>

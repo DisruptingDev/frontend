@@ -12,20 +12,6 @@ import HelpIcon from '@mui/icons-material/Help';
 import BadgeIcon from '@mui/icons-material/Badge';
 import { Button, Tooltip, IconButton } from "@mui/material";
 
-
-// Configuración de la fuente Inter
-const inter = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-
-// Opciones del dropdown para "Facturación"
-const facturacionOptions = [
-  { href: "/CrearFactura", label: "Nueva Factura" },
-  { href: "/ImportarFacturas", label: "Importar Facturas" },
-];
-
 export default function Header() {
   const router = useRouter();
   const [token, setToken] = useState("");

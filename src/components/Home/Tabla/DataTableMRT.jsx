@@ -457,7 +457,6 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
             const results = await Promise.all(idsToDelete.map(async (id) => {
                 if (!id) return false;
                 const url = `${apiUrl}/api/facturas/EliminarFactura/${id}`;
-                console.log(`Intentando eliminar factura directamente en: ${url}`);
                 try {
                     const response = await fetch(url, {
                         method: 'DELETE',
@@ -473,7 +472,6 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                         console.error(`Error al eliminar ID ${id}. Status: ${response.status}, Body: ${errorBody}`);
                         return false;
                     }
-                    console.log(`ID ${id} eliminado exitosamente.`);
                     return true;
                 } catch (err) {
                     console.error(`Error de red al eliminar ID ${id}:`, err);

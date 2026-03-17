@@ -1,9 +1,9 @@
 "use client"
 import { useState, useEffect } from "react";
-import { 
-    Box, 
-    Button, 
-    Typography, 
+import {
+    Box,
+    Button,
+    Typography,
     TextField,
     Modal,
     Paper,
@@ -29,16 +29,16 @@ const CONSULTAR_EMISORES_URL = `${apiUrl}/api/catalogos/Catalogos/EmisorNomina`;
 export default function RegistroEmisorNomina({ token }) {
     // Estado para el modal
     const [openModal, setOpenModal] = useState(false);
-    
+
     // Estado del formulario
     const [selectedEmisor, setSelectedEmisor] = useState(null);
     const [registroPatronal, setRegistroPatronal] = useState("");
     const [rfcPatronOrigen, setRfcPatronOrigen] = useState("");
-    
+
     // Estado para la tabla
     const [emisoresRegistrados, setEmisoresRegistrados] = useState([]);
     const [loadingTable, setLoadingTable] = useState(false);
-    
+
     // Estados generales
     const [loading, setLoading] = useState(false);
     const [openModalError, setOpenModalError] = useState(false);
@@ -55,11 +55,11 @@ export default function RegistroEmisorNomina({ token }) {
                     "Content-Type": "application/json",
                 },
             });
-            
+
             if (!response.ok) {
                 throw new Error("Error al cargar emisores");
             }
-            
+
             const data = await response.json();
             setEmisoresRegistrados(data);
         } catch (err) {
@@ -131,7 +131,7 @@ export default function RegistroEmisorNomina({ token }) {
             setConfirmationMessage("Emisor de nómina registrado correctamente.");
             setLoading(false);
             setOpenModalExito(true);
-            
+
             // Cerrar modal y recargar tabla
             handleCloseModal();
             cargarEmisores();
@@ -154,7 +154,7 @@ export default function RegistroEmisorNomina({ token }) {
                 <Typography variant="h6" fontWeight="bold" color="#1b384a">
                     Registros Patronales Registrados
                 </Typography>
-                
+
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -245,12 +245,23 @@ export default function RegistroEmisorNomina({ token }) {
                             descripcion="Nombre"
                             value={selectedEmisor?.ID || ""}
                             onChange={(e) => {
-                                setSelectedEmisor(
-                                    e.target.value ? JSON.parse(e.target.value) : null
-                                );
+                                const emisor = e.target.value ? JSON.parse(e.target.value) : null;
+                                console.log(emisor);
+                                setSelectedEmisor(emisor);
+                                setRfcPatronOrigen(emisor?.Rfc || "");
                             }}
                         />
                     </Box>
+
+                    <TextField
+                        label="RFC Patrón Origen"
+                        fullWidth
+                        value={rfcPatronOrigen}
+                        InputProps={{
+                            readOnly: true,
+                        }}
+                        sx={{ mb: 4 }}
+                    />
 
                     <TextField
                         label="Registro Patronal"
@@ -258,14 +269,6 @@ export default function RegistroEmisorNomina({ token }) {
                         value={registroPatronal}
                         onChange={(e) => setRegistroPatronal(e.target.value)}
                         sx={{ mb: 3 }}
-                    />
-
-                    <TextField
-                        label="RFC Patrón Origen"
-                        fullWidth
-                        value={rfcPatronOrigen}
-                        onChange={(e) => setRfcPatronOrigen(e.target.value)}
-                        sx={{ mb: 4 }}
                     />
 
                     {/* Botones del modal */}
@@ -276,7 +279,7 @@ export default function RegistroEmisorNomina({ token }) {
                             sx={{
                                 color: "#666",
                                 borderColor: "#666",
-                                "&:hover": { 
+                                "&:hover": {
                                     borderColor: "#444",
                                     backgroundColor: "rgba(0,0,0,0.04)"
                                 },
