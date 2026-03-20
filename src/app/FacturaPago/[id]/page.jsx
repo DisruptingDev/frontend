@@ -124,17 +124,18 @@ export default function FacturaPago() {
 
         const fetchDoctosRelacionados = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+                const response = await fetch(`${apiUrl}/api/facturas/ObtenerUltimoDoctoRelacionado?FacturaMadreID=${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
-                const data = await response.json();
-                console.log("Docto Relacionado", data);
 
-                if (data.length === 0) {
-                    // Si no hay pagos, establecer valores por defecto
+                const ultimoPago = await response.json();
+                console.log("Último docto relacionado:", ultimoPago);
+
+                // Si la respuesta está vacía o no tiene ID, no hay pagos previos
+                if (!ultimoPago || !ultimoPago.ID) {
                     setPagos({
                         numOperacion: 1,
                         totalPagado: 0,
@@ -144,49 +145,32 @@ export default function FacturaPago() {
                     return;
                 }
 
-                // Ordenar por ID ascendente
-                const dataOrdenada = [...data].sort((a, b) => a.ID - b.ID);
-
-                // Obtener el último pago (el de mayor ID después de ordenar)
-                const ultimoPago = dataOrdenada[dataOrdenada.length - 1];
-
-                // Convertir campos a números usando parseFloat directamente
-                const saldoAnterior = parseFloat(ultimoPago.ImpSaldoAnt);
-                const impPagado = parseFloat(ultimoPago.ImpPagado);
                 const saldoInsoluto = parseFloat(ultimoPago.ImpSaldoInsoluto);
+                const impPagado = parseFloat(ultimoPago.ImpPagado);
+                const saldoAnterior = parseFloat(ultimoPago.ImpSaldoAnt);
 
                 console.log("Saldo Anterior:", saldoAnterior);
                 console.log("Importe Pagado:", impPagado);
                 console.log("Saldo Insoluto:", saldoInsoluto);
 
-                // Calcular el siguiente número de operación
+                // El siguiente número de parcialidad
                 const numOperacion = ultimoPago.NumParcialidad + 1;
 
-                // Calcular el total pagado sumando todos los pagos CORRECTAMENTE
-                const totalPagado = dataOrdenada.reduce((sum, pago) => {
-                    const pagoConvertido = parseFloat(pago.ImpPagado);
-                    return sum + pagoConvertido;
-                }, 0);
+                // El total pagado = totalFactura - saldoInsoluto (más preciso que sumar)
+                const totalPagado = totalPago - saldoInsoluto;
 
-                console.log("Total Pagado hasta ahora:", totalPagado);
-
-                // Calcular el saldo restante
-                const saldoRestante = totalPago - totalPagado;
-
-                // Actualizar el estado de pagos
                 setPagos({
                     numOperacion: numOperacion,
                     totalPagado: totalPagado,
-                    saldo: saldoRestante,
-                    saldoAnterior: saldoInsoluto,
+                    saldo: saldoInsoluto,       // Lo que falta por pagar
+                    saldoAnterior: saldoInsoluto, // Saldo anterior para el próximo pago
                 });
 
-                console.log("Último pago obtenido:", ultimoPago);
                 console.log("Pagos calculados:", {
-                    numOperacion: numOperacion,
-                    totalPagado: totalPagado,
-                    saldo: saldoRestante,
-                    saldoAnterior: saldoAnterior,
+                    numOperacion,
+                    totalPagado,
+                    saldo: saldoInsoluto,
+                    saldoAnterior: saldoInsoluto,
                 });
 
             } catch (error) {
@@ -234,7 +218,7 @@ export default function FacturaPago() {
             const facturaOriginal = await responseFactura.json();
 
             // Obtener documentos relacionados
-            const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
+            const responsePagos = await fetch(`${apiUrl}/api/facturas/ObtenerUltimoDoctoRelacionado?FacturaMadreID=${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             let doctosRelacionados = await responsePagos.json();
@@ -287,10 +271,7 @@ export default function FacturaPago() {
                 },
             });
             const facturaOriginal = await responseFactura.json();
-
-            console.log("Factura original", facturaOriginal);
-
-            // Obtener los documentos relacionados (pagos)
+            // Obtener el último docto relacionado (pago)
             const responsePagos = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -299,10 +280,6 @@ export default function FacturaPago() {
             });
             const doctosRelacionados = await responsePagos.json();
 
-            console.log("Doctos relacionados", doctosRelacionados);
-
-
-            console.log("Data para vista previa", data);
             // Formatear la factura incluyendo los pagos relacionados
             const factura = FormatearFactura(facturaOriginal, data, doctosRelacionados, "", "VistaPreviaPago");
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode } from 'react';
-import { useAuth } from '../hooks/useAuth.js';
+import { ReactNode } from "react";
+import { useAuth } from "../hooks/useAuth.js";
 
 interface WithPermissionProps {
   permission: string;
@@ -9,13 +9,22 @@ interface WithPermissionProps {
   fallback?: ReactNode;
 }
 
-export function WithPermission({ permission, children, fallback = null }: WithPermissionProps) {
-  const { hasPermission } = useAuth();
+export function WithPermission({
+  permission,
+  children,
+  fallback = null,
+}: WithPermissionProps) {
+  const { hasPermission, permissionsLoaded, isSuperUser } = useAuth();
 
-  if (hasPermission(permission)) {
+  // Evita renderizar antes de tener permisos
+  if (!permissionsLoaded) {
+    return null; // o un loader si quieres
+  }
+
+  // SuperUser bypass
+  if (isSuperUser || hasPermission(permission)) {
     return <>{children}</>;
   }
 
   return <>{fallback}</>;
 }
-

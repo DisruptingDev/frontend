@@ -79,52 +79,52 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
   const calcularDesglose = (monto) => {
     // Convertir monto a número
     const montoNumero = parseFloat(monto) || 0;
-    
+
     if (!conceptos || conceptos.length === 0 || montoNumero <= 0) return;
 
     // Asegurar que los valores sean números
     const totalFactura = conceptos.reduce(
-        (total, concepto) => {
-            const subtotal = parseFloat(concepto.Subtotal) || 0;
-            const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
-            return total + subtotal + totalTraslados;
-        },
-        0
+      (total, concepto) => {
+        const subtotal = parseFloat(concepto.Subtotal) || 0;
+        const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
+        return total + subtotal + totalTraslados;
+      },
+      0
     );
 
     const nuevoDesglose = conceptos.map((concepto) => {
-        const subtotal = parseFloat(concepto.Subtotal) || 0;
-        const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
-        const totalConcepto = subtotal + totalTraslados;
-        const proporcion = totalConcepto / totalFactura;
-        const pagoParcial = montoNumero * proporcion;
+      const subtotal = parseFloat(concepto.Subtotal) || 0;
+      const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
+      const totalConcepto = subtotal + totalTraslados;
+      const proporcion = totalConcepto / totalFactura;
+      const pagoParcial = montoNumero * proporcion;
 
-        const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
-            // Convertir valores a números
-            const tasaOCuota = parseFloat(impuesto.TasaOCuota) || 0;
-            
-            const proporcionSubtotal = subtotal / totalConcepto;
-            const baseProporcional = pagoParcial / (1 + tasaOCuota);
-            const montoProporcional = baseProporcional * tasaOCuota;
+      const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
+        // Convertir valores a números
+        const tasaOCuota = parseFloat(impuesto.TasaOCuota) || 0;
 
-            return {
-                ImpuestoCatalogoID: impuesto.Impuesto || 0,
-                TipoImpuesto: impuesto.TipoImpuesto,
-                NombreImpuesto: impuesto.NombreImpuesto,
-                ImpuestoClave: impuesto.ImpuestoClave || "",
-                TasaOCuota: tasaOCuota,
-                BaseProporcional: baseProporcional,
-                MontoProporcional: montoProporcional,
-                TipoFactor: impuesto.TipoF,
-            };
-        });
+        const proporcionSubtotal = subtotal / totalConcepto;
+        const baseProporcional = pagoParcial / (1 + tasaOCuota);
+        const montoProporcional = baseProporcional * tasaOCuota;
 
         return {
-            Descripcion: concepto.Descripcion,
-            PagoProporcional: pagoParcial,
-            SubtotalProporcional: ((subtotal / totalConcepto) * pagoParcial),
-            ImpuestosProporcionales: impuestosProporcionales,
+          ImpuestoCatalogoID: impuesto.Impuesto || 0,
+          TipoImpuesto: impuesto.TipoImpuesto,
+          NombreImpuesto: impuesto.NombreImpuesto,
+          ImpuestoClave: impuesto.ImpuestoClave || "",
+          TasaOCuota: tasaOCuota,
+          BaseProporcional: baseProporcional,
+          MontoProporcional: montoProporcional,
+          TipoFactor: impuesto.TipoF,
         };
+      });
+
+      return {
+        Descripcion: concepto.Descripcion,
+        PagoProporcional: pagoParcial,
+        SubtotalProporcional: ((subtotal / totalConcepto) * pagoParcial),
+        ImpuestosProporcionales: impuestosProporcionales,
+      };
     });
 
     // Consolidar totales de impuestos
@@ -165,12 +165,11 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     setValue("ImpuestosPagos", nuevosTotalesImpuestos);
   };
 
+  // DESPUÉS
   useEffect(() => {
     if (pagos) {
-      console.log("Pagos:", pagos)
-      // Asegurarse de que numOperacion sea un entero usando Math.floor()
-      const numeroOperacionEntero = Math.floor(pagos.numOperacion) + 1;
-      setValue("NumeroOperacion", numeroOperacionEntero);
+      console.log("Pagos:", pagos);
+      setValue("NumeroOperacion", Math.floor(pagos.numOperacion));
       setValue("SaldoAnterior", pagos.saldoAnterior);
       setValue("SaldoPagado", pagos.totalPagado);
     }
@@ -184,16 +183,15 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     }
 
     setPago({ ...pago, monto: nuevoMonto });
-    calcularDesglose(nuevoMonto);
     setValue("Monto", nuevoMonto);
 
-    // Asegurar que el número de operación sea entero
-    const numeroOperacionEntero = Math.floor(pagos.numOperacion);
-    setValue("NumeroOperacion", numeroOperacionEntero);
+    const montoNumerico = parseFloat(nuevoMonto) || 0;
+    calcularDesglose(montoNumerico);
+    setValue("NumeroOperacion", Math.floor(pagos.numOperacion));
 
-    // Calcular el saldo insoluto
-    const saldoAnterior = parseFloat(pagos.saldo);
-    const saldoInsoluto = (saldoAnterior - nuevoMonto).toFixed(2);
+    // Leer saldoAnterior desde el form, no desde pagos.saldo
+    const saldoAnterior = parseFloat(getValues("SaldoAnterior")) || 0;
+    const saldoInsoluto = (saldoAnterior - montoNumerico).toFixed(2);
     setValue("ImpSaldoInsoluto", saldoInsoluto);
   };
 
