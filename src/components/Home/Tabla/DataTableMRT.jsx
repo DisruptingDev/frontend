@@ -211,26 +211,36 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.Facturas.length > 1) {
-                    setOpenModalTimbrar(true);
-                    setFacturasTimbrar(data.Facturas.map(f => ({
-                        id: f.facturaID,
-                        status: f.status,
-                        error: f.error || null,
-                    })));
-                } else {
-                    const factura = data.Facturas[0];
-                    if (factura.status === 'success') {
-                        setConfirmationMessage('Facturas timbradas exitosamente.');
-                        setOpenModalSuccess(true);
-                    } else {
-                        const errorMensaje =
-                            factura?.error ||
-                            data?.servicioTimbrado?.mensaje ||
-                            data?.mensaje ||
-                            'Error desconocido al timbrar';
-                        setConfirmationMessage('Error al timbrar facturas: ' + errorMensaje);
-                        setOpenModalError(true);
+
+                // Caso error del PAC / servicio
+                if (data.servicioTimbrado && !data.servicioTimbrado.timbradoOk) {
+                    setConfirmationMessage(
+                        'Error al timbrar: ' + data.servicioTimbrado.mensaje
+                    );
+                    setOpenModalError(true);
+                    return;
+                }
+
+                // Caso correcto con facturas
+                if (data.Facturas) {
+                    if (data.Facturas.length > 1) {
+                        setOpenModalTimbrar(true);
+                        setFacturasTimbrar(data.Facturas.map(factura => ({
+                            id: factura.facturaID,
+                            status: factura.status,
+                            error: factura.error || null,
+                        })));
+                    } else if (data.Facturas.length === 1) {
+                        const factura = data.Facturas[0];
+                        if (factura.status === 'success') {
+                            setConfirmationMessage('Facturas timbradas exitosamente.');
+                            setOpenModalSuccess(true);
+                        } else {
+                            setConfirmationMessage(
+                                'Error al timbrar: ' + (factura.error || '')
+                            );
+                            setOpenModalError(true);
+                        }
                     }
                 }
             }
@@ -456,16 +466,15 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
         try {
             const results = await Promise.all(idsToDelete.map(async (id) => {
                 if (!id) return false;
-                const url = `${apiUrl}/api/facturas/EliminarFactura/${id}`;
                 try {
-                    const response = await fetch(url, {
+                    const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${id}`, {
                         method: 'DELETE',
                         headers: {
+                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`,
                         },
                     });
-
 
                     if (!response.ok) {
                         const errorBody = await response.text();
