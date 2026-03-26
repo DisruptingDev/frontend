@@ -3,49 +3,39 @@ import React, { useState, useEffect, use } from 'react';
 import { TextField, Box, Typography } from '@mui/material';
 import Select from "@/components/Select/Select.jsx";
 import { format, parseISO } from 'date-fns';
-import padding from 'tailwindcss-logical/plugins/padding';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 import AutocompleteEmisor from '@/components/Autocompletes/AutocompleteEmisor';
 
 export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
     const [emisor, setEmisor] = useState({});
-    const [minDate, setMinDate] = useState('');
-    const [maxDate, setMaxDate] = useState('');
     const [serieUrl, setSerieUrl] = useState('');
     const [isMXN, setIsMXN] = useState(false);
 
-    useEffect(() => {
-        const today = new Date();
-        const threeDaysAgo = new Date();
-        threeDaysAgo.setDate(today.getDate() - 3);
+    const formatFechaSAT = (date) => {
+        const pad = (n) => String(n).padStart(2, '0');
 
-        const formatDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    };
+
+
+    const getMinMaxDates = () => {
+        const now = new Date();
+        const minDate = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+
+        const format = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         };
 
-        setMinDate(formatDate(threeDaysAgo));
-        setMaxDate(formatDate(today));
-
-    }, []);
-    useEffect(() => {
-        const today = new Date();
-
-
-        const formatDate = (date) => {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        return {
+            min: format(minDate),
+            max: format(now)
         };
+    };
 
-        if (!emisorData) {
-            setValue("Fecha", formatDate(today));
-        }
-
-    }, [emisorData, setValue]);
+    const { min, max } = getMinMaxDates();
 
     // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
@@ -166,10 +156,10 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
         try {
             // Obtener el valor y limpiarlo
             let value = e.target.value;
-            console.log("Data",value);
+            console.log("Data", value);
 
-            value = value.replace(/[\n\r\t]/g, ' ') 
-                .replace(/\s+/g, ' ')       
+            value = value.replace(/[\n\r\t]/g, ' ')
+                .replace(/\s+/g, ' ')
                 .trim();
 
             let data;
@@ -177,7 +167,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                 data = JSON.parse(value);
             } catch (parseError) {
                 console.log("Error en parseo inicial, intentando limpieza más profunda:", parseError);
-                value = value.replace(/[^\x20-\x7E]/g, ''); 
+                value = value.replace(/[^\x20-\x7E]/g, '');
                 // Intentar de nuevo
                 data = JSON.parse(value);
             }
@@ -232,20 +222,6 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     }
                 }}
             >
-                {/* <Select
-                    register={register}
-                    trigger={trigger}
-                    nombre="Emisor"
-                    url={`${apiUrl}/api/catalogos/Catalogos/Emisor`}
-                    id="ID"
-                    clave=""
-                    descripcion="Nombre"
-                    onChange={handleEmisorChange}
-                    error={!!errors.Emisor}
-                    helperText={errors.Emisor ? "Este campo es obligatorio" : ""}
-                    value={getValues("EmisorID") || ""}
-                    disabled={disabled}
-                /> */}
 
                 <AutocompleteEmisor
                     nombre="Emisor"
@@ -316,48 +292,40 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     label="Fecha"
                     type="date"
                     {...register("Fecha", {
-                        required: !disabled ? "La fecha es requerida." : false,
-                        validate: !disabled
-                            ? {
-                                notTooOld: (value) => {
-                                    const inputDate = new Date(value);
-                                    const today = new Date();
-                                    const twoDaysAgo = new Date();
-                                    twoDaysAgo.setDate(today.getDate() - 2);
+                        required: "La fecha es requerida.",
+                        validate: {
+                            validSATDate: (value) => {
+                                const parseLocalDate = (val) => {
+                                    const [y, m, d] = val.split('-');
+                                    return new Date(y, m - 1, d);
+                                };
 
-                                    // Normalizar fechas a medianoche para evitar errores por horas
-                                    inputDate.setHours(0, 0, 0, 0);
-                                    today.setHours(0, 0, 0, 0);
-                                    twoDaysAgo.setHours(0, 0, 0, 0);
+                                const selected = parseLocalDate(value);
+                                const now = new Date();
 
-                                    return (
-                                        (inputDate >= twoDaysAgo && inputDate <= today) ||
-                                        "Fecha inválida."
-                                    );
-                                },
+                                // Combinar con hora actual
+                                selected.setHours(
+                                    now.getHours(),
+                                    now.getMinutes(),
+                                    now.getSeconds(),
+                                    0
+                                );
+
+                                const min = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+
+                                return (
+                                    selected >= min && selected <= now
+                                ) || "Debe estar dentro de las últimas 72 horas.";
                             }
-                            : undefined,
+                        }
                     })}
-                    fullWidth
-                    InputLabelProps={{
-                        shrink: true,
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{
+                        min,
+                        max
                     }}
-                    InputProps={{
-                        inputProps: {
-                            min: (() => {
-                                const d = new Date();
-                                d.setDate(d.getDate() - 2);
-                                return d.toISOString().split("T")[0];
-                            })(),
-                            max: (() => {
-                                const d = new Date();
-                                return d.toISOString().split("T")[0];
-                            })(),
-                        },
-                    }}
-                    error={!disabled && !!errors.Fecha}
-                    helperText={!disabled && errors.Fecha ? errors.Fecha.message : ""}
-                    disabled={disabled}
+                    error={!!errors.Fecha}
+                    helperText={errors.Fecha?.message}
                 />
 
 
