@@ -59,7 +59,7 @@ export default function Impuesto({
     useEffect(() => {
         if (impuestoEditor) {
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
-            setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
+            setValue(`impuestos[${index}].Tasa`, impuestoEditor.TasaOCuota || '');
             setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
             setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
 

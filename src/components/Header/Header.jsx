@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { DM_Sans } from "next/font/google";
 import Image from "next/image";
 import UserMenu from "./UserMenu";
 import FacturasPPD from "./FacturasPPD"
@@ -10,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import Layout from "../Layout";
 import HelpIcon from '@mui/icons-material/Help';
 import BadgeIcon from '@mui/icons-material/Badge';
-import { Button, Tooltip, IconButton } from "@mui/material";
+import { Tooltip, IconButton } from "@mui/material";
 
 export default function Header() {
   const router = useRouter();
