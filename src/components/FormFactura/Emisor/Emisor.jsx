@@ -20,7 +20,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
     const getMinMaxDates = () => {
         const now = new Date();
-        const minDate = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+        const tolerance = (72 * 60 * 60 * 1000) + (15 * 60 * 1000);
+        const minDate = new Date(now.getTime() - tolerance);
 
         const format = (date) => {
             const y = date.getFullYear();
@@ -311,7 +312,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                                     0
                                 );
 
-                                const min = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+                                const tolerance = (72 * 60 * 60 * 1000) + (15 * 60 * 1000);
+                                const min = new Date(now.getTime() - tolerance);
 
                                 return (
                                     selected >= min && selected <= now
