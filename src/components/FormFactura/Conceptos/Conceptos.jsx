@@ -383,15 +383,16 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             }
         } else {
             // Validación normal para facturas
-            if (!getValues('Descuento') || getValues('Descuento') > ((getValues('Cantidad') * getValues('ValorUnitario'))) / 2) {
+            const descuento = getValues('Descuento');
+            const limiteDescuento = (getValues('Cantidad') * getValues('ValorUnitario')) / 2;
+
+            if (descuento === '' || descuento === undefined || Number(descuento) > limiteDescuento) {
                 setDescuentoError(true);
                 setDescuentoErrorMesage('El descuento no puede ser mayor al 50% del total.');
                 hasError = true;
+            } else {
+                setDescuentoError(false);
             }
-        }
-        if (getValues('Descuento') === 0) {
-            setDescuentoError(false);
-            hasError = false;
         }
         if (objetoImpuesto !== "01") {
             // Validaciones para los campos de Impuesto

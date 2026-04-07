@@ -2,7 +2,6 @@ import validarConcepto from "./ValidarConcepto.js"
 import separarImpuestos from "./SepararImpuestos.js"
 
 export default function CrearConcepto(getValues, impuestos) {
-    console.log("Impuestos en CrearConcepto", impuestos);
 
     let concepto = {
         Nombre: getValues("Nombre"),
@@ -26,14 +25,11 @@ export default function CrearConcepto(getValues, impuestos) {
     const resultado = validarConcepto(concepto);
 
     if (resultado.isValid) {
-        console.log('Concepto is valid:', concepto);
         if(concepto.ObjetoImpuesto !== "01"){
-            console.log("Separando impuestos");
             concepto = separarImpuestos(concepto)
         }
         
     } else {
-        console.log('Validation failed:', resultado.message);
         return "Error"
     }
 

@@ -9,7 +9,7 @@ import {
 
 export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
     let finales = CalculosFinales(conceptos);
-    console.log("Conceptos Resumen", conceptos);
+
 
     const formatoMoneda = (valor) => {
         return valor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });

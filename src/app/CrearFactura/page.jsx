@@ -38,8 +38,6 @@ export default function CrearFactura() {
     const [emisorID, setEmisorID] = useState("");
     const [receptorID, setReceptorID] = useState(null);
 
-    console.log("Token en GenerarEgreso:", token);
-
     useEffect(() => {
         const token = isAuthenticated();
         if (!token) {
