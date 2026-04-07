@@ -12,6 +12,10 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.0.2] - 2026-03-26
+### [TR]
+* FIX - Ajuste en sección de nóminas y validaciones de conceptos
+
 ## [0.0.1] - 2026-03-26
 ### [TR]
 * TR-VERSION-INICIAL - Versión inicial publicada

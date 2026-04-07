@@ -82,14 +82,14 @@ export default function NominasPage() {
                                     label="Registros Patronales"
                                 />
                                 <Tab
-                                    icon={<AddBoxIcon />} // Alta de Nómina (registro/alta)
-                                    iconPosition="start"
-                                    label="Alta de Nómina"
-                                />
-                                <Tab
                                     icon={<PeopleIcon />} // Alta de Trabajadores (personas)
                                     iconPosition="start"
                                     label="Alta de Trabajadores"
+                                />
+                                <Tab
+                                    icon={<AddBoxIcon />} // Alta de Nómina (registro/alta)
+                                    iconPosition="start"
+                                    label="Alta de Nómina"
                                 />
                             </Tabs>
                         </Box>
@@ -101,13 +101,13 @@ export default function NominasPage() {
                                 </Box>
                             )}
                             {activeTab === 1 && <EmisorNomina token={token} />}
-                            {activeTab === 2 && (
+                            {activeTab === 2 && <VistaTrabajadores token={token} />}
+                            {activeTab === 3 && (
                                 <CargaNomina
                                     token={token}
                                     onSuccess={irANominasEmitidas}
                                 />
                             )}
-                            {activeTab === 3 && <VistaTrabajadores token={token} />}
                         </Box>
                     </Box>
                 </Grid>
