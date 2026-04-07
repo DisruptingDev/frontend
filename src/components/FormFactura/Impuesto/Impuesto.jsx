@@ -26,6 +26,7 @@ export default function Impuesto({
     const [monto, setMonto] = useState(0);
     const [tasaUrl, setTasaUrl] = useState('');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [tasaError, setTasaError] = useState(false);
 
     // Preload values for nota de crédito on first load
     useEffect(() => {
@@ -150,8 +151,6 @@ export default function Impuesto({
             setTasa(data.ID);
             setValue(`impuestos[${index}].Tasa`, data.ID);
             setValue(`impuestos[${index}].TasaOCuota`, parseFloat(data.Valor));
-
-            console.log("Valor de tasa guardado:", parseFloat(data.Valor));
 
             // Si es nota de crédito, forzar recálculo
             if (isNotaCredito) {

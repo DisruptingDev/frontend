@@ -6,7 +6,7 @@ import { format, parseISO } from 'date-fns';
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 import AutocompleteEmisor from '@/components/Autocompletes/AutocompleteEmisor';
 
-export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID }) {
+export default function Emisor({ register, setLugarExpedicion, setValue, getValues, trigger, errors, emisorData, disabled = false, setTipoComprobante, setEmisorID, esPago = false }) {
     const [emisor, setEmisor] = useState({});
     const [serieUrl, setSerieUrl] = useState('');
     const [isMXN, setIsMXN] = useState(false);
@@ -20,7 +20,8 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
 
     const getMinMaxDates = () => {
         const now = new Date();
-        const minDate = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+        const tolerance = (72 * 60 * 60 * 1000) + (15 * 60 * 1000);
+        const minDate = new Date(now.getTime() - tolerance);
 
         const format = (date) => {
             const y = date.getFullYear();
@@ -36,6 +37,27 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
     };
 
     const { min, max } = getMinMaxDates();
+
+
+    const getMinMaxDatesPago = () => {
+        const now = new Date();
+        const minDate = new Date(now);
+        minDate.setDate(now.getDate() - 3); // 👈 3 días atrás
+
+        const format = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        return {
+            min: format(minDate),
+            max: format(now)
+        };
+    };
+
+    const { min: minPago, max: maxPago } = getMinMaxDatesPago();
 
     // Actualiza los valores del formulario cuando emisorData cambia
     useEffect(() => {
@@ -58,15 +80,23 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
             setValue("LogoPath", emisorData.LogoPath);
             setValue("Serie", emisorData.Serie);
             setValue("TipoComprobante", emisorData.TipoComprobante);
-
             setLugarExpedicion(emisorData.LugarExpedicion);
 
             // Solo establece la fecha si no está definida
             if (!getValues("Fecha")) {
-                const formattedDate = emisorData.Fecha
-                    ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd')
-                    : '';
-                console.log(formattedDate);
+                let formattedDate;
+
+                if (esPago) {
+                    // Siempre hoy
+                    const today = new Date();
+                    formattedDate = format(today, 'yyyy-MM-dd');
+                } else {
+                    // Comportamiento original (factura)
+                    formattedDate = emisorData.Fecha
+                        ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd')
+                        : '';
+                }
+
                 setValue("Fecha", formattedDate);
             }
 
@@ -293,36 +323,38 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     type="date"
                     {...register("Fecha", {
                         required: "La fecha es requerida.",
-                        validate: {
-                            validSATDate: (value) => {
-                                const parseLocalDate = (val) => {
-                                    const [y, m, d] = val.split('-');
-                                    return new Date(y, m - 1, d);
-                                };
+                        validate: esPago
+                            ? undefined
+                            : {
+                                validSATDate: (value) => {
+                                    const parseLocalDate = (val) => {
+                                        const [y, m, d] = val.split('-');
+                                        return new Date(y, m - 1, d);
+                                    };
 
-                                const selected = parseLocalDate(value);
-                                const now = new Date();
+                                    const selected = parseLocalDate(value);
+                                    const now = new Date();
 
-                                // Combinar con hora actual
-                                selected.setHours(
-                                    now.getHours(),
-                                    now.getMinutes(),
-                                    now.getSeconds(),
-                                    0
-                                );
+                                    selected.setHours(
+                                        now.getHours(),
+                                        now.getMinutes(),
+                                        now.getSeconds(),
+                                        0
+                                    );
 
-                                const min = new Date(now.getTime() - (72 * 60 * 60 * 1000));
+                                    const tolerance = (72 * 60 * 60 * 1000) + (15 * 60 * 1000);
+                                    const min = new Date(now.getTime() - tolerance);
 
-                                return (
-                                    selected >= min && selected <= now
-                                ) || "Debe estar dentro de las últimas 72 horas.";
+                                    return (
+                                        selected >= min && selected <= now
+                                    ) || "Debe estar dentro de las últimas 72 horas.";
+                                }
                             }
-                        }
                     })}
                     InputLabelProps={{ shrink: true }}
                     inputProps={{
-                        min,
-                        max
+                        min: esPago ? minPago : min,
+                        max: esPago ? maxPago : max
                     }}
                     error={!!errors.Fecha}
                     helperText={errors.Fecha?.message}

@@ -324,6 +324,7 @@ export default function FacturaPago() {
                                 errors={errors}
                                 emisorData={emisorData}  // Usa emisorData aquí
                                 disabled={facturaEdit ? true : false}
+                                esPago={true}
                             />
                             <Receptor
                                 register={register}
