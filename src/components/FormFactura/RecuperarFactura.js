@@ -113,7 +113,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
     
             //informacion Global
             InformacionGlobal:{
-                Año: Factura.InformacionGlobal.Año,
+                Anio: Factura.InformacionGlobal.Anio,
                 Meses: Factura.InformacionGlobal.Meses,
                 Periodicidad: Factura.InformacionGlobal.Periodicidad
     

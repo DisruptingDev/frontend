@@ -5,6 +5,7 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import DownloadIcon from "@mui/icons-material/Download";
 import PeopleIcon from "@mui/icons-material/People";
 import ModalError from "@/components/Home/Modales/modalError";
 import ModalExito from "@/components/Home/Modales/modalExito";
@@ -101,16 +102,48 @@ export default function VistaTrabajadores({ token }) {
         setReceptores([]);
     };
 
+    const handleDescargarPlantilla = async () => {
+        try {
+            const response = await fetch(`${apiUrl}/api/cargamasivafacturas/DescargarXLSXTrabajadores`, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "Plantilla-Trabajadores.xlsx";
+                link.click();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     return (
         <Box bgcolor="white" p={2} borderRadius={2} sx={{ maxWidth: "100%", overflow: "hidden" }}>
 
-            {/* ── Título ── */}
-            <Typography variant="h6" fontWeight="bold" color="#1b384a" mb={2}>
-                Nómina – Carga masiva de trabajadores
-            </Typography>
+
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" fontWeight="bold" color="#1b384a">
+                    Nómina – Carga masiva de trabajadores
+                </Typography>
+
+                <Button
+                    variant="contained"
+                    sx={{ backgroundColor: "#1b384a", "&:hover": { backgroundColor: "#10232f" } }}
+                    onClick={handleDescargarPlantilla}
+                >
+                    Descargar plantilla .xlsx <DownloadIcon sx={{ ml: 1 }} />
+                </Button>
+            </Box>
 
             {/* ── Stepper ── */}
-            <Stepper activeStep={pasoActivo} sx={{ mb: 3 }}>
+            <Stepper activeStep={pasoActivo} sx={{ my: 3 }}>
                 {PASOS.map((label) => (
                     <Step key={label}><StepLabel>{label}</StepLabel></Step>
                 ))}

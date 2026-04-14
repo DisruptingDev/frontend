@@ -56,12 +56,8 @@ const ModalEdicion = ({
         }
     }, [facturaEditar]);
 
-
     // Maneja la actualización de la factura
     const onSubmit = (data) => {
-        //console.log("Entro a onSubmit");
-        console.log("Datos del formulario", data);
-
         // Creación del objeto emisor
         const emisor = {
             ID: data.Emisor,
@@ -70,19 +66,17 @@ const ModalEdicion = ({
             LugarExpedicion: data.EmisorLugarExpedicion,
             Serie: data.Serie,
         }
-        console.log("Emisor", emisor);
         // Creación del objeto receptor
         const receptor = {
             ID: data.ReceptorID,
             Nombre: data.ReceptorNombre,
             RFC: data.ReceptorRFC,
             MetodoPago: data.MetodoPago,
-            UsoCFDI: data.UsoCFDI,
+            UsoCFDI: data.UsoCFDI ?? facturaEditar.Receptor.UsoCFDI, // Si no se proporciona un nuevo valor, se mantiene el valor existente
             UsoCFDIID: data.UsoCFDIID,
             FormaPago: data.FormaPago,
             RegimenFiscal: data.RegimenFiscal,
         }
-        console.log("Receptor", receptor);
         // Creación del objeto concepto
         const concepto = {
             Cantidad: data.Cantidad,
@@ -116,7 +110,6 @@ const ModalEdicion = ({
             Impuesto: impuesto,
 
         };
-        console.log("Factura a actualizar", factura);
         actualizarFactura(factura); // Actualiza la factura
         handleClose(); // Cierra el modal
     };

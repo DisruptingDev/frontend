@@ -7,6 +7,7 @@ import { Box, Button, Grid } from "@mui/material";
 import ModalCSV from "@/components/FacturasMasivas/ModalCSV";
 import ModalExito from "@/components/Home/Modales/modalExito";
 import ModalFacturasError from "@/components/FacturasMasivas/Modal";
+import ModalError from '@/components/Home/Modales/modalError';
 import VistaFacturasImportadas from "@/components/FacturasMasivas/VistaFacturasImportadas";
 import FormatearFactura from "@/components/FacturasMasivas/FormatearFactura";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
@@ -92,11 +93,20 @@ export default function ImportarFacturas() {
                 }
             }
 
-            setConfirmationMessage(`Se guardaron ${exito} facturas con éxito`);
-            setOpenModalSuccess(true);
-            setTimeout(() => {
-                router.push("/Home");
-            }, 2000);
+            if (exito > 0) {
+                setConfirmationMessage(`Se guardaron ${exito} facturas con éxito`);
+                setOpenModalSuccess(true);
+
+                // Solo redirigir si hubo éxito
+                setTimeout(() => {
+                    router.push("/Home");
+                }, 2000);
+
+            } else {
+                setConfirmationMessage("No se pudo guardar ninguna factura");
+                setOpenModalError(true);
+            }
+
         } catch (error) {
             console.error(error);
             setConfirmationMessage("Ocurrió un error al guardar las facturas");
