@@ -4,199 +4,362 @@ import * as XLSX from "xlsx";
 import {
     Box, Button, Typography, Chip, CircularProgress,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Paper, Checkbox, LinearProgress, Tooltip, TextField, Alert
+    Paper, Checkbox, LinearProgress, Tooltip, TextField, Alert,
+    Divider, FormControlLabel, Accordion, AccordionSummary, AccordionDetails,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import SendIcon from "@mui/icons-material/Send";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from "@mui/icons-material/Error";
-import { useRouter } from "next/navigation";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const RECEPTORES_URL = `${apiUrl}/api/catalogos/Catalogos/ReceptorNomina`;
 const GUARDAR_NOMINA_URL = `${apiUrl}/api/facturas/GuardarFacturaNomina`;
 
 // ── Helpers de fecha ──────────────────────────────────────────
-const hoy = () => new Date().toLocaleDateString('sv-SE');
+const hoy = () => new Date().toLocaleDateString("sv-SE");
 
 const calcularDias = (fechaInicial, fechaFinal) => {
     if (!fechaInicial || !fechaFinal) return 0;
     const inicio = new Date(fechaInicial + "T00:00:00");
     const fin = new Date(fechaFinal + "T00:00:00");
     const diff = Math.round((fin - inicio) / (1000 * 60 * 60 * 24));
-    return diff >= 0 ? diff + 1 : 0; // +1 para incluir ambos extremos
+    return diff >= 0 ? diff + 1 : 0;
 };
 
-// ── Catálogos SAT ──────────────────────────────────────────
+// ── Catálogos SAT ─────────────────────────────────────────────
 const TIPOS_PERCEPCION = [
-    "001 - Sueldos, Salarios Rayas y Jornales",
-    "002 - Gratificación Anual (Aguinaldo)",
-    "003 - Participación de los Trabajadores en las Utilidades PTU",
-    "004 - Reembolso de Gastos Médicos Dentales y Hospitalarios",
-    "005 - Fondo de Ahorro",
-    "006 - Caja de ahorro",
-    "009 - Contribuciones a Cargo del Trabajador Pagadas por el Patrón",
-    "010 - Premios por Puntualidad",
-    "011 - Prima de Seguro de vida",
-    "013 - Pagos por separación",
-    "014 - Premio por Antigüedad",
-    "019 - Horas extra",
-    "022 - Prima dominical",
-    "023 - Prima vacacional",
-    "024 - Tiempo extraordinario",
-    "025 - Indemnizaciones",
-    "044 - Jubilaciones, pensiones o haberes de retiro",
-    "046 - Ingresos en acciones o títulos",
+    { clave: "001", label: "Sueldos, Salarios Rayas y Jornales" },
+    { clave: "002", label: "Gratificación Anual (Aguinaldo)" },
+    { clave: "003", label: "Participación de los Trabajadores en las Utilidades PTU" },
+    { clave: "004", label: "Reembolso de Gastos Médicos Dentales y Hospitalarios" },
+    { clave: "005", label: "Fondo de Ahorro" },
+    { clave: "006", label: "Caja de ahorro" },
+    { clave: "009", label: "Contribuciones a Cargo del Trabajador Pagadas por el Patrón" },
+    { clave: "010", label: "Premios por Puntualidad" },
+    { clave: "011", label: "Prima de Seguro de vida" },
+    { clave: "013", label: "Pagos por separación" },
+    { clave: "014", label: "Premio por Antigüedad" },
+    { clave: "019", label: "Horas extra" },
+    { clave: "022", label: "Prima dominical" },
+    { clave: "023", label: "Prima vacacional" },
+    { clave: "024", label: "Tiempo extraordinario" },
+    { clave: "025", label: "Indemnizaciones" },
+    { clave: "044", label: "Jubilaciones, pensiones o haberes de retiro" },
+    { clave: "046", label: "Ingresos en acciones o títulos" },
 ];
 
 const TIPOS_DEDUCCION = [
-    "001 - Seguridad Social",
-    "002 - ISR",
-    "003 - Aportaciones a retiro, cesantía en edad avanzada y vejez",
-    "004 - Otros",
-    "005 - Aportaciones a Fondo de vivienda",
-    "006 - Descuento por incapacidad",
-    "007 - Pensión alimenticia",
-    "008 - Renta",
-    "009 - Préstamos provenientes del Fondo Nacional de la Vivienda",
-    "010 - Pago por crédito de vivienda",
-    "011 - Pago de abonos INFONACOT",
-    "012 - Anticipo de salarios",
-    "013 - Pagos hechos con exceso al trabajador",
-    "014 - Errores",
-    "015 - Pérdidas",
-    "016 - Averías",
-    "017 - Adquisición de artículos producidos por la empresa o establecimiento",
-    "018 - Cuotas sindicales",
-    "019 - Devolución de pagos hechos por error al trabajador",
-    "020 - Prima de Seguro de vida",
-    "021 - Prima de Seguro de Gastos Médicos",
-    "022 - Impuesto local",
+    { clave: "001", label: "Seguridad Social" },
+    { clave: "002", label: "ISR" },
+    { clave: "003", label: "Aportaciones a retiro, cesantía en edad avanzada y vejez" },
+    { clave: "004", label: "Otros" },
+    { clave: "005", label: "Aportaciones a Fondo de vivienda" },
+    { clave: "006", label: "Descuento por incapacidad" },
+    { clave: "007", label: "Pensión alimenticia" },
+    { clave: "008", label: "Renta" },
+    { clave: "009", label: "Préstamos provenientes del Fondo Nacional de la Vivienda" },
+    { clave: "010", label: "Pago por crédito de vivienda" },
+    { clave: "011", label: "Pago de abonos INFONACOT" },
+    { clave: "012", label: "Anticipo de salarios" },
+    { clave: "013", label: "Pagos hechos con exceso al trabajador" },
+    { clave: "014", label: "Errores" },
+    { clave: "015", label: "Pérdidas" },
+    { clave: "016", label: "Averías" },
+    { clave: "017", label: "Adquisición de artículos producidos por la empresa" },
+    { clave: "018", label: "Cuotas sindicales" },
+    { clave: "019", label: "Devolución de pagos hechos por error al trabajador" },
+    { clave: "020", label: "Prima de Seguro de vida" },
+    { clave: "021", label: "Prima de Seguro de Gastos Médicos" },
+    { clave: "022", label: "Impuesto local" },
 ];
 
 const TIPOS_OTRO_PAGO = [
-    "001 - Reintegro de ISR pagado en exceso (siempre que no haya sido enterado al SAT)",
-    "002 - Subsidio para el empleo",
-    "003 - Viáticos (entregados al trabajador)",
-    "004 - Aplicación de saldo a favor por compensación anual",
-    "005 - Reintegro de ISR retenido en exceso de ejercicio anterior (ISR anual)",
-];
-
-// ── Columnas de percepciones/deducciones/otros en la plantilla ──
-const COLS_PERCEPCIONES = [
-    { key: "perc_tipo", label: "Percepcion_Tipo", catalog: TIPOS_PERCEPCION },
-    { key: "perc_clave", label: "Percepcion_Clave" },
-    { key: "perc_concepto", label: "Percepcion_Concepto" },
-    { key: "perc_gravado", label: "Percepcion_ImporteGravado" },
-    { key: "perc_exento", label: "Percepcion_ImporteExento" },
-];
-
-const COLS_DEDUCCIONES = [
-    { key: "ded_tipo", label: "Deduccion_Tipo", catalog: TIPOS_DEDUCCION },
-    { key: "ded_clave", label: "Deduccion_Clave" },
-    { key: "ded_concepto", label: "Deduccion_Concepto" },
-    { key: "ded_importe", label: "Deduccion_Importe" },
-];
-
-const COLS_OTROS = [
-    { key: "otro_tipo", label: "OtroPago_Tipo", catalog: TIPOS_OTRO_PAGO },
-    { key: "otro_clave", label: "OtroPago_Clave" },
-    { key: "otro_concepto", label: "OtroPago_Concepto" },
-    { key: "otro_importe", label: "OtroPago_Importe" },
+    { clave: "001", label: "Reintegro de ISR pagado en exceso" },
+    { clave: "002", label: "Subsidio para el empleo" },
+    { clave: "003", label: "Viáticos (entregados al trabajador)" },
+    { clave: "004", label: "Aplicación de saldo a favor por compensación anual" },
+    { clave: "005", label: "Reintegro de ISR retenido en exceso de ejercicio anterior" },
 ];
 
 const TIPOS_IMPUESTO_RETENIDO = new Set(["001", "002"]);
 
-// ── Helper: parsear clave SAT del string "001 - Descripción" ──
-const parsearClave = (str) => (str ?? "").split(" - ")[0].trim();
+// ── Helpers ────────────────────────────────────────────────────
+const fmtCatalog = (item) => `${item.clave} - ${item.label}`;
 
-// ── Helper: construir payload completo por fila ──────────────
+// ── Selector de conceptos ──────────────────────────────────────
+// selectedConceptos = { percepciones: ["001","002",...], deducciones: [...], otrosPagos: [...] }
+const defaultConceptos = { percepciones: ["001"], deducciones: [], otrosPagos: [] };
+
+function ConceptoSelector({ value, onChange }) {
+    const toggle = (group, clave) => {
+        const prev = value[group];
+        const next = prev.includes(clave) ? prev.filter((c) => c !== clave) : [...prev, clave];
+        onChange({ ...value, [group]: next });
+    };
+
+    const Section = ({ title, items, group, color }) => (
+        <Accordion disableGutters elevation={0}
+            sx={{ border: "1px solid #e0e0e0", borderRadius: "8px !important", mb: 1, "&:before": { display: "none" } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: "#fafafa", borderRadius: 2 }}>
+                <Typography fontWeight="bold" color="#1b384a" fontSize={14}>{title}</Typography>
+                {value[group].length > 0 && (
+                    <Chip label={value[group].length} size="small"
+                        sx={{ ml: 1, backgroundColor: color, color: "#fff", height: 18, fontSize: 11 }} />
+                )}
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0 }}>
+                <Box display="flex" flexWrap="wrap" gap={0.5}>
+                    {items.map((item) => (
+                        <FormControlLabel
+                            key={item.clave}
+                            control={
+                                <Checkbox
+                                    size="small"
+                                    checked={value[group].includes(item.clave)}
+                                    onChange={() => toggle(group, item.clave)}
+                                    sx={{ py: 0.3 }}
+                                />
+                            }
+                            label={
+                                <Typography fontSize={12} color="text.primary">
+                                    <strong>{item.clave}</strong> — {item.label}
+                                </Typography>
+                            }
+                            sx={{ width: "100%", m: 0, pl: 1 }}
+                        />
+                    ))}
+                </Box>
+            </AccordionDetails>
+        </Accordion>
+    );
+
+    return (
+        <Box>
+            <Section title="Percepciones" items={TIPOS_PERCEPCION} group="percepciones" color="#2e7d32" />
+            <Section title="Deducciones" items={TIPOS_DEDUCCION} group="deducciones" color="#c62828" />
+            <Section title="Otros pagos" items={TIPOS_OTRO_PAGO} group="otrosPagos" color="#1565c0" />
+        </Box>
+    );
+}
+
+// ── Generar columnas dinámicas según conceptos elegidos ────────
+// Retorna array de { key, header, group, clave, subfield }
+//   group: "perc" | "ded" | "otro"
+//   subfield: "Tipo" | "Clave" | "Concepto" | "ImporteGravado" | "ImporteExento" | "Importe"
+function buildColumnDefs(conceptos) {
+    const cols = [
+        { key: "receptor_nomina_id", header: "receptor_nomina_id", fixed: true },
+        { key: "Nombre",             header: "Nombre",             fixed: true },
+        { key: "RFC",                header: "RFC",                fixed: true },
+        { key: "SalarioDiario",      header: "SalarioDiario",      fixed: true },
+        { key: "DiasLaborados",      header: "DiasLaborados",      fixed: true },
+        { key: "TipoNomina",         header: "TipoNomina",         fixed: true },
+        { key: "FechaPago",          header: "FechaPago",          fixed: true },
+        { key: "FechaInicialPago",   header: "FechaInicialPago",   fixed: true },
+        { key: "FechaFinalPago",     header: "FechaFinalPago",     fixed: true },
+    ];
+
+    conceptos.percepciones.forEach((clave, idx) => {
+        const n = idx + 1;
+        const item = TIPOS_PERCEPCION.find((t) => t.clave === clave);
+        cols.push(
+            { key: `Percepcion_Tipo_${n}`,           header: `Percepcion_Tipo_${n}`,           group: "perc", clave, n, subfield: "Tipo",           readOnly: true },
+            { key: `Percepcion_Clave_${n}`,          header: `Percepcion_Clave_${n}`,          group: "perc", clave, n, subfield: "Clave",          readOnly: true },
+            { key: `Percepcion_Concepto_${n}`,       header: `Percepcion_Concepto_${n}`,       group: "perc", clave, n, subfield: "Concepto",       readOnly: false },
+            { key: `Percepcion_ImporteGravado_${n}`, header: `Percepcion_ImporteGravado_${n}`, group: "perc", clave, n, subfield: "ImporteGravado", readOnly: false,
+              autoCalc: clave === "001" }, // se calcula para sueldo
+            { key: `Percepcion_ImporteExento_${n}`,  header: `Percepcion_ImporteExento_${n}`,  group: "perc", clave, n, subfield: "ImporteExento",  readOnly: false },
+        );
+    });
+
+    conceptos.deducciones.forEach((clave, idx) => {
+        const n = idx + 1;
+        cols.push(
+            { key: `Deduccion_Tipo_${n}`,     header: `Deduccion_Tipo_${n}`,     group: "ded", clave, n, subfield: "Tipo",    readOnly: true },
+            { key: `Deduccion_Clave_${n}`,    header: `Deduccion_Clave_${n}`,    group: "ded", clave, n, subfield: "Clave",   readOnly: true },
+            { key: `Deduccion_Concepto_${n}`, header: `Deduccion_Concepto_${n}`, group: "ded", clave, n, subfield: "Concepto",readOnly: false },
+            { key: `Deduccion_Importe_${n}`,  header: `Deduccion_Importe_${n}`,  group: "ded", clave, n, subfield: "Importe", readOnly: false },
+        );
+    });
+
+    conceptos.otrosPagos.forEach((clave, idx) => {
+        const n = idx + 1;
+        cols.push(
+            { key: `OtroPago_Tipo_${n}`,     header: `OtroPago_Tipo_${n}`,     group: "otro", clave, n, subfield: "Tipo",    readOnly: true },
+            { key: `OtroPago_Clave_${n}`,    header: `OtroPago_Clave_${n}`,    group: "otro", clave, n, subfield: "Clave",   readOnly: true },
+            { key: `OtroPago_Concepto_${n}`, header: `OtroPago_Concepto_${n}`, group: "otro", clave, n, subfield: "Concepto",readOnly: false },
+            { key: `OtroPago_Importe_${n}`,  header: `OtroPago_Importe_${n}`,  group: "otro", clave, n, subfield: "Importe", readOnly: false },
+        );
+    });
+
+    return cols;
+}
+
+// ── Valor por defecto para un campo ────────────────────────────
+function defaultCellValue(colDef, receptor, diasCalculados) {
+    if (colDef.fixed) return undefined; // handled separately in row builder
+
+    const { group, clave, subfield, autoCalc } = colDef;
+
+    if (group === "perc") {
+        const item = TIPOS_PERCEPCION.find((t) => t.clave === clave);
+        if (subfield === "Tipo")           return fmtCatalog(item);
+        if (subfield === "Clave")          return clave;
+        if (subfield === "Concepto")       return item?.label ?? "";
+        if (subfield === "ImporteGravado") {
+            // Auto-calculate sueldo: SalarioDiario * DiasLaborados
+            if (autoCalc && receptor?.SalarioDiarioIntegrado && diasCalculados > 0) {
+                return parseFloat((receptor.SalarioDiarioIntegrado * diasCalculados).toFixed(2));
+            }
+            return "";
+        }
+        if (subfield === "ImporteExento")  return 0;
+    }
+
+    if (group === "ded") {
+        const item = TIPOS_DEDUCCION.find((t) => t.clave === clave);
+        if (subfield === "Tipo")    return fmtCatalog(item);
+        if (subfield === "Clave")   return clave;
+        if (subfield === "Concepto") return item?.label ?? "";
+        if (subfield === "Importe") return "";
+    }
+
+    if (group === "otro") {
+        const item = TIPOS_OTRO_PAGO.find((t) => t.clave === clave);
+        if (subfield === "Tipo")    return fmtCatalog(item);
+        if (subfield === "Clave")   return clave;
+        if (subfield === "Concepto") return item?.label ?? "";
+        if (subfield === "Importe") return "";
+    }
+
+    return "";
+}
+
+// ── Construir fila de plantilla para un receptor ───────────────
+function buildTemplateRow(receptor, colDefs, fechaInicial, fechaFinal, fechaPago, diasCalculados) {
+    const row = {};
+    colDefs.forEach((col) => {
+        if (col.fixed) {
+            switch (col.key) {
+                case "receptor_nomina_id": row[col.header] = receptor.ID; break;
+                case "Nombre":            row[col.header] = receptor.Nombre; break;
+                case "RFC":               row[col.header] = receptor.Rfc; break;
+                case "SalarioDiario":     row[col.header] = receptor.SalarioDiarioIntegrado; break;
+                case "DiasLaborados":     row[col.header] = diasCalculados; break;
+                case "TipoNomina":        row[col.header] = "O"; break;
+                case "FechaPago":         row[col.header] = fechaPago; break;
+                case "FechaInicialPago":  row[col.header] = fechaInicial; break;
+                case "FechaFinalPago":    row[col.header] = fechaFinal; break;
+                default: row[col.header] = "";
+            }
+        } else {
+            row[col.header] = defaultCellValue(col, receptor, diasCalculados);
+        }
+    });
+    return row;
+}
+
+// ── Parser: xlsx → array de filas normalizadas ─────────────────
+// Lee columnas indexadas _1, _2, … y reconstruye arrays de percepciones, etc.
+function parseXlsxRows(ws, colDefs) {
+    const raw = XLSX.utils.sheet_to_json(ws);
+    return raw.map((row) => {
+        const out = { ...row };
+
+        // Contar cuántos grupos hay por tipo
+        const countGroup = (prefix) => {
+            let n = 1;
+            while (row[`${prefix}_${n}`] !== undefined) n++;
+            return n - 1;
+        };
+
+        out.__percepciones_count = countGroup("Percepcion_Tipo");
+        out.__deducciones_count  = countGroup("Deduccion_Tipo");
+        out.__otros_count        = countGroup("OtroPago_Tipo");
+
+        return out;
+    });
+}
+
+// ── buildPayload ── (reescrito para columnas indexadas) ─────────
 const buildPayload = (row, emisor) => {
     const percepciones = [];
-    const deducciones = [];
-    const otrosPagos = [];
+    const deducciones  = [];
+    const otrosPagos   = [];
 
-    // Puede haber múltiples filas de percepciones/deducciones separadas por "|"
-    const splitCol = (val) =>
-        val ? String(val).split("|").map((s) => s.trim()).filter(Boolean) : [];
+    const countGroup = (prefix) => {
+        let n = 1;
+        while (row[`${prefix}_Tipo_${n}`] !== undefined) n++;
+        return n - 1;
+    };
 
-    const percTipos = splitCol(row["Percepcion_Tipo"]);
-    percTipos.forEach((_, i) => {
-        const gravado = parseFloat(splitCol(row["Percepcion_ImporteGravado"])[i] ?? 0);
-        const exento = parseFloat(splitCol(row["Percepcion_ImporteExento"])[i] ?? 0);
+    const numPerc  = countGroup("Percepcion");
+    const numDed   = countGroup("Deduccion");
+    const numOtros = countGroup("OtroPago");
+
+    const parsearClave = (str) => (str ?? "").split(" - ")[0].trim();
+    const num = (v) => parseFloat(v ?? 0) || 0;
+
+    for (let i = 1; i <= numPerc; i++) {
+        const gravado = num(row[`Percepcion_ImporteGravado_${i}`]);
+        const exento  = num(row[`Percepcion_ImporteExento_${i}`]);
         percepciones.push({
-            TipoPercepcion: parsearClave(splitCol(row["Percepcion_Tipo"])[i]),
-            Clave: splitCol(row["Percepcion_Clave"])[i] ?? "001",
-            Concepto: splitCol(row["Percepcion_Concepto"])[i] ?? "",
+            TipoPercepcion: parsearClave(row[`Percepcion_Tipo_${i}`]),
+            Clave:          row[`Percepcion_Clave_${i}`] ?? "001",
+            Concepto:       row[`Percepcion_Concepto_${i}`] ?? "",
             ImporteGravado: gravado,
-            ImporteExento: exento,
+            ImporteExento:  exento,
         });
-    });
+    }
 
-    const dedTipos = splitCol(row["Deduccion_Tipo"]);
-    dedTipos.forEach((_, i) => {
+    for (let i = 1; i <= numDed; i++) {
         deducciones.push({
-            TipoDeduccion: parsearClave(splitCol(row["Deduccion_Tipo"])[i]),
-            Clave: splitCol(row["Deduccion_Clave"])[i] ?? "001",
-            Concepto: splitCol(row["Deduccion_Concepto"])[i] ?? "",
-            Importe: parseFloat(splitCol(row["Deduccion_Importe"])[i] ?? 0),
+            TipoDeduccion: parsearClave(row[`Deduccion_Tipo_${i}`]),
+            Clave:         row[`Deduccion_Clave_${i}`] ?? "001",
+            Concepto:      row[`Deduccion_Concepto_${i}`] ?? "",
+            Importe:       num(row[`Deduccion_Importe_${i}`]),
         });
-    });
+    }
 
-    const otroTipos = splitCol(row["OtroPago_Tipo"]);
-    otroTipos.forEach((_, i) => {
+    for (let i = 1; i <= numOtros; i++) {
         otrosPagos.push({
-            TipoOtroPago: parsearClave(splitCol(row["OtroPago_Tipo"])[i]),
-            Clave: splitCol(row["OtroPago_Clave"])[i] ?? "001",
-            Concepto: splitCol(row["OtroPago_Concepto"])[i] ?? "",
-            Importe: parseFloat(splitCol(row["OtroPago_Importe"])[i] ?? 0),
+            TipoOtroPago: parsearClave(row[`OtroPago_Tipo_${i}`]),
+            Clave:        row[`OtroPago_Clave_${i}`] ?? "001",
+            Concepto:     row[`OtroPago_Concepto_${i}`] ?? "",
+            Importe:      num(row[`OtroPago_Importe_${i}`]),
         });
-    });
+    }
 
-    const totalPercepciones =
-        percepciones.reduce((s, p) => s + p.ImporteGravado + p.ImporteExento, 0);
-    const totalDeducciones =
-        deducciones.reduce((s, d) => s + d.Importe, 0);
-    const totalOtros =
-        otrosPagos.reduce((s, o) => s + o.Importe, 0);
-    const total = totalPercepciones - totalDeducciones + totalOtros;
-
-    const totalGravado = percepciones.reduce((s, p) => s + p.ImporteGravado, 0);
-    const totalExento = percepciones.reduce((s, p) => s + p.ImporteExento, 0);
+    const totalPercepciones = percepciones.reduce((s, p) => s + p.ImporteGravado + p.ImporteExento, 0);
+    const totalDeducciones  = deducciones.reduce((s, d) => s + d.Importe, 0);
+    const totalOtros        = otrosPagos.reduce((s, o) => s + o.Importe, 0);
+    const totalGravado      = percepciones.reduce((s, p) => s + p.ImporteGravado, 0);
+    const totalExento       = percepciones.reduce((s, p) => s + p.ImporteExento, 0);
 
     const totalImpuestosRetenidos = Math.round(
-        deducciones
-            .filter(d => TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
-            .reduce((s, d) => s + d.Importe, 0) * 100
-    ) / 100;
-
+        deducciones.filter(d => TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
+            .reduce((s, d) => s + d.Importe, 0) * 100) / 100;
     const totalOtrasDeducciones = Math.round(
-        deducciones
-            .filter(d => !TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
-            .reduce((s, d) => s + d.Importe, 0) * 100
-    ) / 100;
+        deducciones.filter(d => !TIPOS_IMPUESTO_RETENIDO.has(d.TipoDeduccion))
+            .reduce((s, d) => s + d.Importe, 0) * 100) / 100;
 
     const r2 = (n) => Math.round(n * 100) / 100;
 
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat('sv-SE', {
+    const formatter = new Intl.DateTimeFormat("sv-SE", {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
     });
-
-    const Fecha = formatter.format(now).replace(' ', 'T');
+    const Fecha = formatter.format(now).replace(" ", "T");
 
     return {
         Version: "4.0",
         Serie: emisor?.Serie ?? "N",
-        Fecha: Fecha,
+        Fecha,
         FormaPago: "99",
         Moneda: "MXN",
         TipoCambio: "1",
@@ -219,10 +382,7 @@ const buildPayload = (row, emisor) => {
                 Importe: r2(totalPercepciones),
                 Descuento: r2(totalDeducciones),
                 ObjetoImp: "01",
-                Impuestos: {
-                    Traslados: [],
-                    Retenciones: [],
-                }
+                Impuestos: { Traslados: [], Retenciones: [] },
             }],
             TotalImpuestosTrasladados: 0,
             TotalImpuestosRetenidos: 0,
@@ -231,9 +391,9 @@ const buildPayload = (row, emisor) => {
             Nomina: {
                 Version: "1.2",
                 TipoNomina: row["TipoNomina"] ?? "O",
-                FechaPago: String(row["FechaPago"]) ?? new Date().toISOString().slice(0, 10),
-                FechaInicialPago: String(row["FechaInicialPago"]) ?? "",
-                FechaFinalPago: String(row["FechaFinalPago"]) ?? "",
+                FechaPago: String(row["FechaPago"]),
+                FechaInicialPago: String(row["FechaInicialPago"]),
+                FechaFinalPago: String(row["FechaFinalPago"]),
                 NumDiasPagados: parseFloat(row["DiasLaborados"] ?? 0),
                 TotalPercepciones: r2(totalPercepciones),
                 TotalDeducciones: r2(totalDeducciones),
@@ -244,12 +404,12 @@ const buildPayload = (row, emisor) => {
                     TotalSueldos: r2(totalGravado + totalExento),
                     TotalGravado: r2(totalGravado),
                     TotalExento: r2(totalExento),
-                    Percepciones: percepciones
+                    Percepciones: percepciones,
                 },
                 Deducciones: {
                     TotalImpuestosRetenidos: totalImpuestosRetenidos,
                     TotalOtrasDeducciones: totalOtrasDeducciones,
-                    Deducciones: deducciones
+                    Deducciones: deducciones,
                 },
                 OtrosPagos: otrosPagos.length ? { OtrosPagos: otrosPagos } : undefined,
             },
@@ -257,25 +417,35 @@ const buildPayload = (row, emisor) => {
     };
 };
 
-// ────────────────────────────────────────────────────────────
+// ── Etiquetas de color por grupo de columna ────────────────────
+const colGroupStyle = (header) => {
+    if (header.startsWith("Percepcion_")) return { backgroundColor: "#e6f4ea" };
+    if (header.startsWith("Deduccion_"))  return { backgroundColor: "#fce4e4" };
+    if (header.startsWith("OtroPago_"))   return { backgroundColor: "#e3f2fd" };
+    return {};
+};
+
+// ────────────────────────────────────────────────────────────────
 export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuccess }) {
-    const [loadingTabla, setLoadingTabla] = useState(false);
-    const [receptores, setReceptores] = useState([]);
-    const [seleccionados, setSeleccionados] = useState([]);   // IDs seleccionados
-    const [nominasPreview, setNominasPreview] = useState([]); // filas parseadas del xlsx
-    const [resultados, setResultados] = useState([]);          // {id, nombre, ok, msg}
-    const [enviando, setEnviando] = useState(false);
-    const [progreso, setProgreso] = useState(0);
-    const [fechaInicial, setFechaInicial] = useState("");
-    const [fechaFinal, setFechaFinal] = useState("");
-    const [fechaPago, setFechaPago] = useState(hoy());
+    const [loadingTabla, setLoadingTabla]   = useState(false);
+    const [receptores, setReceptores]       = useState([]);
+    const [seleccionados, setSeleccionados] = useState([]);
+    const [nominasPreview, setNominasPreview] = useState([]);
+    const [resultados, setResultados]       = useState([]);
+    const [enviando, setEnviando]           = useState(false);
+    const [progreso, setProgreso]           = useState(0);
+    const [fechaInicial, setFechaInicial]   = useState("");
+    const [fechaFinal, setFechaFinal]       = useState("");
+    const [fechaPago, setFechaPago]         = useState(hoy());
+    const [conceptos, setConceptos]         = useState(defaultConceptos);
+    // Guarda las columnas usadas al generar la plantilla, para parsear el xlsx con la misma definición
+    const [colDefsUsadas, setColDefsUsadas] = useState([]);
 
     const diasCalculados = calcularDias(fechaInicial, fechaFinal);
-    const periodoValido = fechaInicial && fechaFinal && fechaPago && diasCalculados > 0;
+    const periodoValido  = fechaInicial && fechaFinal && fechaPago && diasCalculados > 0;
+    const totalConceptos =
+        conceptos.percepciones.length + conceptos.deducciones.length + conceptos.otrosPagos.length;
 
-    const router = useRouter();
-
-    // ── Cargar receptores al montar o cambiar emisor ──
     useEffect(() => {
         if (!selectedEmisor) return;
         fetchReceptores();
@@ -294,7 +464,6 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
         }
     };
 
-    // ── Selección en tabla ──
     const toggleSeleccion = (id) =>
         setSeleccionados((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -305,94 +474,39 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
             seleccionados.length === receptores.length ? [] : receptores.map((r) => r.ID)
         );
 
-    // ── Generar plantilla .xlsx ──────────────────────────────
+    // ── Generar plantilla xlsx ────────────────────────────────
     const handleDescargarPlantilla = () => {
         const trabajadores = receptores.filter((r) => seleccionados.includes(r.ID));
+        const colDefs = buildColumnDefs(conceptos);
+        setColDefsUsadas(colDefs); // guardar para parseo posterior
 
-        const headers = [
-            "receptor_nomina_id", "Nombre", "RFC", "SalarioDiario",
-            "DiasLaborados", "TipoNomina", "FechaPago", "FechaInicialPago", "FechaFinalPago",
-            "Percepcion_Tipo", "Percepcion_Clave", "Percepcion_Concepto",
-            "Percepcion_ImporteGravado", "Percepcion_ImporteExento",
-            "Deduccion_Tipo", "Deduccion_Clave", "Deduccion_Concepto", "Deduccion_Importe",
-            "OtroPago_Tipo", "OtroPago_Clave", "OtroPago_Concepto", "OtroPago_Importe",
-        ];
+        const headers = colDefs.map((c) => c.header);
 
-        const rows = trabajadores.map((r) => ({
-            receptor_nomina_id: r.ID,
-            Nombre: r.Nombre,
-            RFC: r.Rfc,
-            SalarioDiario: r.SalarioDiarioIntegrado,
-            // ── Pre-llenado desde el panel de fechas ──
-            DiasLaborados: diasCalculados,
-            TipoNomina: "O",
-            FechaPago: fechaPago,
-            FechaInicialPago: fechaInicial,
-            FechaFinalPago: fechaFinal,
-            // Percepción por defecto
-            Percepcion_Tipo: "001 - Sueldos, Salarios Rayas y Jornales",
-            Percepcion_Clave: "001",
-            Percepcion_Concepto: "Sueldo",
-            Percepcion_ImporteGravado: "",
-            Percepcion_ImporteExento: "0",
-            Deduccion_Tipo: "",
-            Deduccion_Clave: "",
-            Deduccion_Concepto: "",
-            Deduccion_Importe: "",
-            OtroPago_Tipo: "",
-            OtroPago_Clave: "",
-            OtroPago_Concepto: "",
-            OtroPago_Importe: "",
-        }));
+        const rows = trabajadores.map((r) =>
+            buildTemplateRow(r, colDefs, fechaInicial, fechaFinal, fechaPago, diasCalculados)
+        );
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+
+        // Anchos de columna
         ws["!cols"] = headers.map((h) =>
-            h === "Nombre" || h.includes("Concepto") || h.includes("Tipo")
-                ? { wch: 45 } : { wch: 18 }
+            h.includes("Concepto") || h.includes("Tipo") || h === "Nombre"
+                ? { wch: 42 } : { wch: 22 }
         );
 
-        // ── Hoja de catálogos (para dropdowns) ──
-        const maxRows = Math.max(
-            TIPOS_PERCEPCION.length,
-            TIPOS_DEDUCCION.length,
-            TIPOS_OTRO_PAGO.length
-        );
-        const catalogData = Array.from({ length: maxRows }, (_, i) => ({
-            "Tipo Percepcion": TIPOS_PERCEPCION[i] ?? "",
-            "Tipo Deduccion": TIPOS_DEDUCCION[i] ?? "",
-            "Tipo Otro Pago": TIPOS_OTRO_PAGO[i] ?? "",
-        }));
-        const wsCatalogos = XLSX.utils.json_to_sheet(catalogData);
-        wsCatalogos["!cols"] = [{ wch: 70 }, { wch: 70 }, { wch: 70 }];
+        // Estilos — columnas de solo lectura con fondo azulado
+        const readOnlyCols = colDefs
+            .filter((c) => c.fixed || c.readOnly)
+            .map((c) => headers.indexOf(c.header));
 
-        // ── DataValidation dropdowns ──
         const numRows = rows.length;
-        const colPercTipo = XLSX.utils.encode_col(headers.indexOf("Percepcion_Tipo"));
-        const colDedTipo = XLSX.utils.encode_col(headers.indexOf("Deduccion_Tipo"));
-        const colOtroTipo = XLSX.utils.encode_col(headers.indexOf("OtroPago_Tipo"));
-
-        const makeDropdown = (col, sheetCol, count) => ({
-            type: "list",
-            sqref: `${col}2:${col}${numRows + 1}`,
-            formula1: `Catalogos!$${sheetCol}$2:$${sheetCol}$${count + 1}`,
-        });
-
-        ws["!dataValidations"] = [
-            makeDropdown(colPercTipo, "A", TIPOS_PERCEPCION.length),
-            makeDropdown(colDedTipo, "B", TIPOS_DEDUCCION.length),
-            makeDropdown(colOtroTipo, "C", TIPOS_OTRO_PAGO.length),
-        ];
-
-        // Proteger columnas de referencia (A-D) — solo lectura visual via estilo
-        const refCols = ["receptor_nomina_id", "Nombre", "RFC", "SalarioDiario"];
-        refCols.forEach((col) => {
-            const colIdx = headers.indexOf(col);
+        readOnlyCols.forEach((colIdx) => {
             const colLetter = XLSX.utils.encode_col(colIdx);
             for (let r = 1; r <= numRows + 1; r++) {
-                const cellAddr = `${colLetter}${r}`;
-                if (ws[cellAddr]) {
-                    ws[cellAddr].s = {
+                const addr = `${colLetter}${r}`;
+                if (ws[addr]) {
+                    ws[addr].s = {
                         fill: { fgColor: { rgb: "E8F4F8" } },
                         font: { color: { rgb: "1b384a" } },
                     };
@@ -401,11 +515,15 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
         });
 
         XLSX.utils.book_append_sheet(wb, ws, "Nominas");
-        XLSX.utils.book_append_sheet(wb, wsCatalogos, "Catalogos");
+
+        // Hoja de metadatos — guarda la definición de columnas para parseo seguro
+        const meta = [{ colDefs: JSON.stringify(colDefs) }];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(meta), "_meta");
+
         XLSX.writeFile(wb, `plantilla_nomina_${selectedEmisor?.ID}.xlsx`);
     };
 
-    // ── Parsear .xlsx llenado ────────────────────────────────
+    // ── Parsear xlsx llenado ──────────────────────────────────
     const handleUploadPlantilla = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -415,13 +533,25 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
             const wb = XLSX.read(evt.target.result, { type: "array" });
             const ws = wb.Sheets["Nominas"];
             const rows = XLSX.utils.sheet_to_json(ws);
+
+            // Recuperar colDefs desde hoja _meta si existe
+            let savedColDefs = colDefsUsadas;
+            if (wb.Sheets["_meta"]) {
+                try {
+                    const metaRows = XLSX.utils.sheet_to_json(wb.Sheets["_meta"]);
+                    if (metaRows[0]?.colDefs) {
+                        savedColDefs = JSON.parse(metaRows[0].colDefs);
+                    }
+                } catch { /* usa las guardadas en estado */ }
+            }
+
             setNominasPreview(rows);
             setResultados([]);
         };
         reader.readAsArrayBuffer(file);
     };
 
-    // ── Enviar nóminas ───────────────────────────────────────
+    // ── Enviar nóminas ────────────────────────────────────────
     const handleEnviar = async () => {
         if (!nominasPreview.length) return;
         setEnviando(true);
@@ -446,7 +576,7 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                     id: row["receptor_nomina_id"],
                     nombre: row["Nombre"],
                     ok: r.ok,
-                    msg: r.ok ? "OK" : await r.text(),
+                    msg: r.ok ? "OK" : "Falta un campo requerido o formato incorrecto",
                 });
             } catch {
                 res.push({ id: row["receptor_nomina_id"], nombre: row["Nombre"], ok: false, msg: "Error de conexión" });
@@ -459,31 +589,36 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
         setEnviando(false);
 
         const exitosos = res.filter((r) => r.ok).length;
-        onMessage?.(`Se generaron ${exitosos} de ${nominasPreview.length} nómina(s) correctamente.`);
+        if (exitosos > 0) {
+            onMessage?.(`Se generaron ${exitosos} de ${nominasPreview.length} nómina(s) correctamente.`);
+        } else {
+            onMessage?.("No se pudo generar ninguna nómina. Revisa los errores e intenta de nuevo.", true);
+        }
 
         if (exitosos === nominasPreview.length) {
             onMessage?.("Todas las nóminas se generaron correctamente");
-
-            setTimeout(() => {
-                onSuccess?.();
-            }, 1500);
+            setTimeout(() => { onSuccess?.(); }, 1500);
         }
     };
+
+    const step = (n, label) => (
+        <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
+            {n}. {label}
+        </Typography>
+    );
 
     // ────────────────────────────────────────────────────────
     return (
         <Box>
-            {/* ── Paso 1: Tabla de trabajadores ── */}
-            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                1. Selecciona los trabajadores
+
+            {/* ── Paso 1: Trabajadores ── */}
+            {step(1, <>
+                Selecciona los trabajadores{" "}
                 {seleccionados.length > 0 && (
-                    <Chip
-                        label={`${seleccionados.length} seleccionado(s)`}
-                        size="small"
-                        sx={{ ml: 1, backgroundColor: "#e8f4f8", color: "#1b384a" }}
-                    />
+                    <Chip label={`${seleccionados.length} seleccionado(s)`} size="small"
+                        sx={{ ml: 1, backgroundColor: "#e8f4f8", color: "#1b384a" }} />
                 )}
-            </Typography>
+            </>)}
 
             {loadingTabla ? (
                 <CircularProgress size={24} sx={{ color: "#1b384a", mb: 2 }} />
@@ -527,71 +662,36 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                 </TableContainer>
             )}
 
-            {/* ── Paso 2 (NUEVO): Periodo de pago ── */}
+            {/* ── Paso 2: Periodo ── */}
             {seleccionados.length > 0 && (
                 <>
-                    <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                        2. Periodo de pago
-                    </Typography>
-
+                    {step(2, "Periodo de pago")}
                     <Box
                         display="grid"
                         gridTemplateColumns={{ xs: "1fr 1fr", sm: "1fr 1fr 1fr auto" }}
                         gap={2}
                         alignItems="flex-end"
                         mb={1}
-                        sx={{
-                            p: 2,
-                            border: "1px solid #e0e0e0",
-                            borderRadius: 2,
-                            backgroundColor: "#fafafa",
-                        }}
+                        sx={{ p: 2, border: "1px solid #e0e0e0", borderRadius: 2, backgroundColor: "#fafafa" }}
                     >
-                        <TextField
-                            label="Fecha inicial de pago"
-                            type="date"
-                            size="small"
-                            value={fechaInicial}
-                            onChange={(e) => setFechaInicial(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                        <TextField
-                            label="Fecha final de pago"
-                            type="date"
-                            size="small"
-                            value={fechaFinal}
-                            onChange={(e) => setFechaFinal(e.target.value)}
-                            inputProps={{ min: fechaInicial }}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                        <TextField
-                            label="Fecha de pago"
-                            type="date"
-                            size="small"
-                            value={fechaPago}
-                            onChange={(e) => setFechaPago(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                        />
-                        {/* Días calculados (solo lectura) */}
-                        <Box
-                            sx={{
-                                height: 40,
-                                px: 2,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 1,
-                                backgroundColor: "#e8f4f8",
-                                minWidth: 110,
-                            }}
-                        >
+                        <TextField label="Fecha inicial de pago" type="date" size="small"
+                            value={fechaInicial} onChange={(e) => setFechaInicial(e.target.value)}
+                            InputLabelProps={{ shrink: true }} />
+                        <TextField label="Fecha final de pago" type="date" size="small"
+                            value={fechaFinal} onChange={(e) => setFechaFinal(e.target.value)}
+                            inputProps={{ min: fechaInicial }} InputLabelProps={{ shrink: true }} />
+                        <TextField label="Fecha de pago" type="date" size="small"
+                            value={fechaPago} onChange={(e) => setFechaPago(e.target.value)}
+                            InputLabelProps={{ shrink: true }} />
+                        <Box sx={{
+                            height: 40, px: 2, display: "flex", alignItems: "center", gap: 1,
+                            border: "1px solid #e0e0e0", borderRadius: 1,
+                            backgroundColor: "#e8f4f8", minWidth: 110,
+                        }}>
                             <Typography variant="h6" color="#1b384a" fontWeight="bold" lineHeight={1}>
                                 {diasCalculados}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                días
-                            </Typography>
+                            <Typography variant="caption" color="text.secondary">días</Typography>
                         </Box>
                     </Box>
 
@@ -611,29 +711,62 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                 </>
             )}
 
-            {/* ── Paso 3: Descargar plantilla ── */}
-            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                {seleccionados.length > 0 ? "3." : "2."} Descarga y llena la plantilla
-            </Typography>
-            <Box display="flex" gap={2} alignItems="center" mb={3}>
+            {/* ── Paso 3: Conceptos a registrar ── */}
+            {seleccionados.length > 0 && periodoValido && (
+                <>
+                    {step(3, <>
+                        Elige los conceptos a registrar{" "}
+                        {totalConceptos > 0 && (
+                            <Chip label={`${totalConceptos} concepto(s)`} size="small"
+                                sx={{ ml: 1, backgroundColor: "#fff3e0", color: "#e65100" }} />
+                        )}
+                    </>)}
+
+                    <Box mb={3} sx={{
+                        p: 2, border: "1px solid #e0e0e0", borderRadius: 2, backgroundColor: "#fafafa"
+                    }}>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
+                            Cada concepto seleccionado generará sus propias columnas en la plantilla.
+                            El importe gravado de <strong>Sueldo (001)</strong> se calcula automáticamente
+                            como <em>Salario Diario × Días Laborados</em>.
+                        </Typography>
+                        <ConceptoSelector value={conceptos} onChange={setConceptos} />
+
+                        {totalConceptos === 0 && (
+                            <Alert severity="info" sx={{ mt: 1 }}>
+                                Selecciona al menos una percepción para continuar.
+                            </Alert>
+                        )}
+                    </Box>
+                </>
+            )}
+
+            {/* ── Paso 4: Descargar plantilla ── */}
+            {step(
+                seleccionados.length > 0 && periodoValido && totalConceptos > 0 ? 4 : 3,
+                "Descarga y llena la plantilla"
+            )}
+            <Box display="flex" gap={2} alignItems="center" mb={3} flexWrap="wrap">
                 <Button
                     variant="outlined"
                     startIcon={<DownloadIcon />}
-                    disabled={seleccionados.length === 0 || !periodoValido}
+                    disabled={seleccionados.length === 0 || !periodoValido || totalConceptos === 0}
                     onClick={handleDescargarPlantilla}
                     sx={{ borderColor: "#1b384a", color: "#1b384a" }}
                 >
                     Descargar plantilla .xlsx
                 </Button>
                 <Typography variant="caption" color="text.secondary">
-                    Las fechas y días se pre-llenan automáticamente. Para múltiples percepciones/deducciones separa los valores con <strong>|</strong>
+                    Las columnas se generan según los conceptos elegidos arriba.
+                    Las celdas azuladas son de sólo referencia (no las modifiques).
                 </Typography>
             </Box>
 
-            {/* ── Paso 4: Subir plantilla llenada ── */}
-            <Typography variant="subtitle1" fontWeight="bold" color="#1b384a" mb={1}>
-                {seleccionados.length > 0 ? "4." : "3."} Sube la plantilla llenada
-            </Typography>
+            {/* ── Paso 5: Subir plantilla ── */}
+            {step(
+                seleccionados.length > 0 && periodoValido && totalConceptos > 0 ? 5 : 4,
+                "Sube la plantilla llenada"
+            )}
             <Box display="flex" gap={2} alignItems="center" mb={3}>
                 <Button variant="outlined" component="label"
                     startIcon={<CloudUploadIcon />}
@@ -642,40 +775,39 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                     <input type="file" accept=".xlsx" hidden onChange={handleUploadPlantilla} />
                 </Button>
                 {nominasPreview.length > 0 && (
-                    <Chip
-                        label={`${nominasPreview.length} nómina(s) listas para enviar`}
+                    <Chip label={`${nominasPreview.length} nómina(s) listas para enviar`}
                         size="small"
-                        sx={{ backgroundColor: "#e6f4ea", color: "#2e7d32" }}
-                    />
+                        sx={{ backgroundColor: "#e6f4ea", color: "#2e7d32" }} />
                 )}
             </Box>
 
-            {/* ── Preview ── */}
+            {/* ── Preview dinámico ── */}
             {nominasPreview.length > 0 && (
                 <TableContainer component={Paper} elevation={0}
-                    sx={{ border: "1px solid #e0e0e0", borderRadius: 2, mb: 3, maxHeight: 300, overflow: "auto" }}>
+                    sx={{ border: "1px solid #e0e0e0", borderRadius: 2, mb: 3, maxHeight: 320, overflow: "auto" }}>
                     <Table size="small" stickyHeader>
-                        <TableHead sx={{ backgroundColor: "#f0f4f7" }}>
+                        <TableHead>
                             <TableRow>
-                                <TableCell><strong>Nombre</strong></TableCell>
-                                <TableCell><strong>RFC</strong></TableCell>
-                                <TableCell><strong>Días</strong></TableCell>
-                                <TableCell><strong>Percepción Tipo</strong></TableCell>
-                                <TableCell><strong>Gravado</strong></TableCell>
-                                <TableCell><strong>Deducción Tipo</strong></TableCell>
-                                <TableCell><strong>Deducción</strong></TableCell>
+                                {Object.keys(nominasPreview[0])
+                                    .filter((k) => !k.startsWith("__"))
+                                    .map((col) => (
+                                        <TableCell key={col}
+                                            sx={{ ...colGroupStyle(col), fontWeight: "bold", fontSize: 11, whiteSpace: "nowrap" }}>
+                                            {col}
+                                        </TableCell>
+                                    ))}
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {nominasPreview.map((row, i) => (
                                 <TableRow key={i}>
-                                    <TableCell>{row["Nombre"]}</TableCell>
-                                    <TableCell>{row["RFC"]}</TableCell>
-                                    <TableCell>{row["DiasLaborados"]}</TableCell>
-                                    <TableCell>{row["Percepcion_Tipo"]}</TableCell>
-                                    <TableCell>{row["Percepcion_ImporteGravado"]}</TableCell>
-                                    <TableCell>{row["Deduccion_Tipo"] || "—"}</TableCell>
-                                    <TableCell>{row["Deduccion_Importe"] || "—"}</TableCell>
+                                    {Object.keys(row)
+                                        .filter((k) => !k.startsWith("__"))
+                                        .map((col) => (
+                                            <TableCell key={col} sx={{ fontSize: 11, whiteSpace: "nowrap" }}>
+                                                {row[col] ?? "—"}
+                                            </TableCell>
+                                        ))}
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -723,8 +855,7 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                                     <TableCell>
                                         {r.ok
                                             ? <CheckCircleIcon sx={{ color: "#2e7d32", fontSize: 18 }} />
-                                            : <ErrorIcon sx={{ color: "#c62828", fontSize: 18 }} />
-                                        }
+                                            : <ErrorIcon sx={{ color: "#c62828", fontSize: 18 }} />}
                                     </TableCell>
                                     <TableCell>
                                         <Tooltip title={r.msg}>

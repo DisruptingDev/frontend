@@ -12,6 +12,10 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.0.4] - 2026-04-23
+### [TR]
+* FIX - Cambios en flujo de alta de nóminas.
+
 ## [0.0.3] - 2026-04-13
 ### [TR]
 * FIX - Plantilla para carga de trabajadores.
