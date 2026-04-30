@@ -124,18 +124,18 @@ export default function FacturaPago() {
 
         const fetchDoctosRelacionados = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/facturas/ObtenerUltimoDoctoRelacionado?FacturaMadreID=${id}`, {
+                const response = await fetch(`${apiUrl}/api/facturas/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
 
-                const ultimoPago = await response.json();
-                console.log("Último docto relacionado:", ultimoPago);
+                const doctos = await response.json();
+                console.log("Doctos relacionados:", doctos);
 
-                // Si la respuesta está vacía o no tiene ID, no hay pagos previos
-                if (!ultimoPago || !ultimoPago.ID) {
+                // ❌ Si no hay pagos previos
+                if (!doctos || doctos.length === 0) {
                     setPagos({
                         numOperacion: 1,
                         totalPagado: 0,
@@ -145,36 +145,37 @@ export default function FacturaPago() {
                     return;
                 }
 
-                const saldoInsoluto = parseFloat(ultimoPago.ImpSaldoInsoluto);
-                const impPagado = parseFloat(ultimoPago.ImpPagado);
-                const saldoAnterior = parseFloat(ultimoPago.ImpSaldoAnt);
+                // ✅ Ordenar por parcialidad (por si vienen desordenados)
+                const ordenados = [...doctos].sort((a, b) => a.NumParcialidad - b.NumParcialidad);
 
-                console.log("Saldo Anterior:", saldoAnterior);
-                console.log("Importe Pagado:", impPagado);
-                console.log("Saldo Insoluto:", saldoInsoluto);
+                const ultimo = ordenados[ordenados.length - 1];
 
-                // El siguiente número de parcialidad
-                const numOperacion = ultimoPago.NumParcialidad + 1;
+                // ✅ Número de operación
+                const numOperacion = ultimo.NumParcialidad + 1;
 
-                // El total pagado = totalFactura - saldoInsoluto (más preciso que sumar)
-                const totalPagado = totalPago - saldoInsoluto;
+                // ✅ Total pagado (sumatoria real)
+                const totalPagado = ordenados.reduce((acc, item) => {
+                    return acc + parseFloat(item.ImpPagado || 0);
+                }, 0);
+
+                // ✅ Saldo insoluto (último registro válido)
+                const saldoInsoluto = parseFloat(ultimo.ImpSaldoInsoluto);
+
+                console.log("Calculados:", {
+                    numOperacion,
+                    totalPagado,
+                    saldoInsoluto
+                });
 
                 setPagos({
                     numOperacion: numOperacion,
                     totalPagado: totalPagado,
-                    saldo: saldoInsoluto,       // Lo que falta por pagar
-                    saldoAnterior: saldoInsoluto, // Saldo anterior para el próximo pago
-                });
-
-                console.log("Pagos calculados:", {
-                    numOperacion,
-                    totalPagado,
                     saldo: saldoInsoluto,
                     saldoAnterior: saldoInsoluto,
                 });
 
             } catch (error) {
-                console.error('Error fetching docto relacionado:', error);
+                console.error('Error fetching doctos relacionados:', error);
             }
         };
 
