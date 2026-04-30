@@ -86,6 +86,10 @@ const TIPOS_OTRO_PAGO = [
 
 const TIPOS_IMPUESTO_RETENIDO = new Set(["001", "002"]);
 
+const MENSAJES_CONOCIDOS = {
+    "record not found": "No existe una serie configurada para este emisor. Verifica la configuración antes de continuar.",
+};
+
 // ── Helpers ────────────────────────────────────────────────────
 const fmtCatalog = (item) => `${item.clave} - ${item.label}`;
 

@@ -218,7 +218,7 @@ export default function FacturaPago() {
             const facturaOriginal = await responseFactura.json();
 
             // Obtener documentos relacionados
-            const responsePagos = await fetch(`${apiUrl}/api/facturas/ObtenerUltimoDoctoRelacionado?FacturaMadreID=${id}`, {
+            const responsePagos = await fetch(`${apiUrl}/api/facturas/ObtenerDoctosRelacionados?FacturaMadreID=${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             let doctosRelacionados = await responsePagos.json();
