@@ -228,14 +228,18 @@ export default function AltaCliente({ onClose, cliente, setActualizar, token, da
                     <TextField
                         label="Nombre del Cliente"
                         fullWidth
-                        placeholder=""
-                        margin="normal"
                         required
                         error={!!errors.Nombre}
                         helperText={errors.Nombre ? "Este campo es obligatorio" : ""}
                         {...register("Nombre", { required: true })}
-                        sx={{ alignSelf: 'start', 'marginTop': '0px' }}
+                        inputProps={{ style: { textTransform: 'uppercase' } }}
+                        onBlur={(e) => {
+                            const valor = e.target.value.toUpperCase().trimEnd();
+                            setValue("Nombre", valor);
+                        }}
+                        sx={{ alignSelf: 'start', marginTop: '0px' }}
                     />
+
                     <TextField
                         label="R.F.C."
                         fullWidth
