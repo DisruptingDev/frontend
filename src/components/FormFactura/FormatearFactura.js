@@ -103,7 +103,7 @@ export default function FormatearFactura(
                 TipoFactor: "Tasa",
                 TasaOCuota: Number(Number(retencion.TasaOCuota)),
                 TasaOCuotaString: String(Number(retencion.TasaOCuota)),
-                TasaCatalogoID: retencion.Tasa,
+                TasaCatalogoID: Number(Number(retencion.Tasa)),
                 Importe: Number(Number(retencion.Monto).toFixed(2)),
                 ImporteString: String(Number(retencion.Monto).toFixed(2)),
               }))
@@ -117,7 +117,7 @@ export default function FormatearFactura(
                 TipoFactor: "Tasa",
                 TasaOCuota: Number(Number(traslado.TasaOCuota)),
                 TasaOCuotaString: String(Number(traslado.TasaOCuota)),
-                TasaCatalogoID: traslado.Tasa,
+                TasaCatalogoID: Number(Number(traslado.Tasa)),
                 Importe: Number(Number(traslado.Monto).toFixed(2)),
                 ImporteString: String(Number(traslado.Monto).toFixed(2)),
               }))
@@ -134,6 +134,7 @@ export default function FormatearFactura(
         ),
       },
     };
+    console.log("Factura formateada para modo 'Factura':", factura);
   } else if (modo == "VistaPrevia") {
     factura = {
       UUID: "",

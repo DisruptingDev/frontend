@@ -59,20 +59,44 @@ export default function Impuesto({
     // Sincronizar datos del editor de impuestos al cargar
     useEffect(() => {
         if (impuestoEditor) {
+
             setValue(`impuestos[${index}].Impuesto`, impuestoEditor.Impuesto || '');
-            setValue(`impuestos[${index}].Tasa`, impuestoEditor.TasaOCuota || '');
-            setValue(`impuestos[${index}].NombreImpuesto`, impuestoEditor.NombreImpuesto || '');
-            setValue(`impuestos[${index}].ImpuestoClave`, impuestoEditor.ImpuestoClave || '');
+
+            // ID del catálogo
+            setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || '');
+
+            // Valor real decimal
+            setValue(
+                `impuestos[${index}].TasaOCuota`,
+                impuestoEditor.TasaOCuota || 0
+            );
+
+            setValue(
+                `impuestos[${index}].NombreImpuesto`,
+                impuestoEditor.NombreImpuesto || ''
+            );
+
+            setValue(
+                `impuestos[${index}].ImpuestoClave`,
+                impuestoEditor.ImpuestoClave || ''
+            );
 
             if (impuestoEditor.Tasa) {
                 setTasa(impuestoEditor.Tasa);
-                setValue(`impuestos[${index}].Tasa`, impuestoEditor.Tasa || 0);
             }
 
-            const nombreImpuesto = impuestoEditor.NombreImpuesto || getValues(`impuestos[${index}].NombreImpuesto`);
-            const tipo = impuestoEditor.Tipo || getValues(`impuestos[${index}].Tipo`);
+            const nombreImpuesto =
+                impuestoEditor.NombreImpuesto ||
+                getValues(`impuestos[${index}].NombreImpuesto`);
+
+            const tipo =
+                impuestoEditor.Tipo ||
+                getValues(`impuestos[${index}].Tipo`);
+
             if (nombreImpuesto && tipo) {
-                setTasaUrl(`${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`);
+                setTasaUrl(
+                    `${apiUrl}/api/catalogos/Catalogos/TasaOCuota?impuesto=${nombreImpuesto}&tipo=${tipo}`
+                );
             }
         }
     }, [impuestoEditor, index, setValue, getValues]);
