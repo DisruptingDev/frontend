@@ -129,7 +129,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                             TotalImpuestosRetenidos: 0
                         },
                         Emisor: item.Emisor || { Nombre: 'Desconocido', Rfc: '' },
-                        Receptor: item.Receptor || { Nombre: 'Desconocido', Rfc: '' },
+                        Receptor: item.Receptor ?? item.ReceptorNomina ?? { Nombre: 'Desconocido', Rfc: '' },
                         MontoTotalPagos: item.Complemento?.Pagos?.Totales?.MontoTotalPagos || 0,
                         fullObject: item,
                         statusObj: item
