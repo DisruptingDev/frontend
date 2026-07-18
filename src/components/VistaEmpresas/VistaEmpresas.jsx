@@ -5,16 +5,18 @@ import {
     MRT_Localization_ES,
 } from 'material-react-table';
 import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
     Box,
     IconButton,
     Menu,
     MenuItem,
-    CircularProgress,
     Typography,
     Drawer,
     Button,
     TextField,
-    Tooltip,
     useTheme,
     useMediaQuery,
     Chip
@@ -25,8 +27,12 @@ import {
     FilterList as FilterListIcon,
     Cancel as CancelIcon,
     CheckCircle as CheckCircleIcon,
+    Draw,
+    Download as DownloadIcon
 } from '@mui/icons-material';
 import { WithPermission } from '@/components/WithPermission';
+import ModalExito from "@/components/Home/Modales/modalExito";
+import ModalError from '@/components/Home/Modales/modalError';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -36,6 +42,15 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [menuRow, setMenuRow] = useState(null);
     const [openFilterDrawer, setOpenFilterDrawer] = useState(false);
+    const [openFirmarDialog, setOpenFirmarDialog] = useState(false);
+    const [certFile, setCertFile] = useState(null);
+    const [keyFile, setKeyFile] = useState(null);
+    const [password, setPassword] = useState("");
+    const [correo, setCorreo] = useState("");
+    const [emisorSeleccionado, setEmisorSeleccionado] = useState(null);
+    const [openModalExito, setOpenModalExito] = useState(false);
+    const [openModalError, setOpenModalError] = useState(false);
+    const [confirmationMessage, setConfirmationMessage] = useState('');
 
     // Fetch Data
     const fetchEmisores = useCallback(async () => {
@@ -90,6 +105,92 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
             setEmpresaIdEditar(menuRow.ID);
             handleMenuClose();
         }
+    };
+
+    const handleFirmarManifiesto = () => {
+        if (!menuRow) return;
+        setEmisorSeleccionado(menuRow.ID);
+        setCorreo(menuRow.Email || "");
+        setPassword("");
+        setCertFile(null);
+        setKeyFile(null);
+
+        setOpenFirmarDialog(true);
+        handleMenuClose();
+    };
+
+    const handleEnviarManifiesto = async () => {
+
+        if (!certFile || !keyFile) {
+            alert("Debe seleccionar el certificado y la llave.");
+            return;
+        }
+
+        if (!password) {
+            alert("Debe capturar la contraseña.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+
+            const formData = new FormData();
+
+            formData.append("cert", certFile);
+            formData.append("key", keyFile);
+            formData.append("password", password);
+            formData.append("correo", correo);
+
+            const response = await fetch(
+                `${apiUrl}/api/gestores/FirmarManifiesto/${emisorSeleccionado}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: formData,
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setConfirmationMessage("Carta manifiesto firmada correctamente.");
+            setOpenModalExito(true);
+            setOpenFirmarDialog(false);
+
+            fetchEmisores();
+
+        } catch (error) {
+
+            setConfirmationMessage(error.message || "Ocurrió un error.");
+            setOpenModalError(true);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    const handleDescargarManifiesto = () => {
+        if (!menuRow?.CartaManifiestoPDF) {
+            setConfirmationMessage("No existe el PDF del manifiesto.");
+            setOpenModalError(true);
+            return;
+        }
+        const link = document.createElement("a");
+        link.href = `data:application/pdf;base64,${menuRow.CartaManifiestoPDF}`;
+        link.download = `Carta_Manifiesto_${menuRow.Rfc}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        handleMenuClose();
     };
 
     // Columns
@@ -294,11 +395,117 @@ const VistaEmpresas = ({ setEmpresaIdEditar, actualizar, token }) => {
                 onClose={handleMenuClose}
             >
                 <WithPermission permission="editar_emisores">
+
                     <MenuItem onClick={handleEditar}>
-                        <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
+                        <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                        Editar
                     </MenuItem>
+
+                    {!menuRow?.CartaManifiestoXML ? (
+
+                        <MenuItem onClick={handleFirmarManifiesto}>
+                            <Draw fontSize="small" sx={{ mr: 1 }} />
+                            Firmar Manifiesto
+                        </MenuItem>
+
+                    ) : (
+
+                        <MenuItem onClick={handleDescargarManifiesto}>
+                            <DownloadIcon fontSize="small" sx={{ mr: 1 }} />
+                            Descargar Manifiesto
+                        </MenuItem>
+
+                    )}
+
                 </WithPermission>
             </Menu>
+            <Dialog
+                open={openFirmarDialog}
+                onClose={() => setOpenFirmarDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+
+                <DialogTitle>
+                    Firmar Carta Manifiesto
+                </DialogTitle>
+
+                <DialogContent>
+
+                    <TextField
+                        margin="normal"
+                        fullWidth
+                        label="Correo"
+                        value={correo}
+                        onChange={(e) => setCorreo(e.target.value)}
+                    />
+
+                    <TextField
+                        margin="normal"
+                        fullWidth
+                        label="Contraseña de la FIEL"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+
+                    <Button
+                        component="label"
+                        variant="outlined"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                    >
+                        {certFile ? certFile.name : "Seleccionar certificado (.cer)"}
+
+                        <input
+                            hidden
+                            type="file"
+                            accept=".cer"
+                            onChange={(e) => setCertFile(e.target.files[0])}
+                        />
+
+                    </Button>
+
+                    <Button
+                        component="label"
+                        variant="outlined"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                    >
+                        {keyFile ? keyFile.name : "Seleccionar llave (.key)"}
+
+                        <input
+                            hidden
+                            type="file"
+                            accept=".key"
+                            onChange={(e) => setKeyFile(e.target.files[0])}
+                        />
+
+                    </Button>
+
+                </DialogContent>
+
+                <DialogActions>
+
+                    <Button
+                        onClick={() => setOpenFirmarDialog(false)}
+                    >
+                        Cancelar
+                    </Button>
+
+                    <Button
+                        variant="contained"
+                        onClick={handleEnviarManifiesto}
+                        disabled={loading}
+                    >
+                        Firmar
+                    </Button>
+
+                </DialogActions>
+
+            </Dialog>
+            <ModalExito openModalSuccess={openModalExito} handleCloseModal={() => setOpenModalExito(false)} confirmationMessage={confirmationMessage} />
+            <ModalError openModalError={openModalError} handleCloseModal={() => setOpenModalError(false)} confirmationMessage={confirmationMessage} />
         </Box>
     );
 };
