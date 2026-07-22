@@ -77,75 +77,76 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
 
   const calcularDesglose = (monto) => {
-    // Convertir monto a número
     const montoNumero = parseFloat(monto) || 0;
-
     if (!conceptos || conceptos.length === 0 || montoNumero <= 0) return;
 
-    // Asegurar que los valores sean números
-    const totalFactura = conceptos.reduce(
-      (total, concepto) => {
-        const subtotal = parseFloat(concepto.Subtotal) || 0;
-        const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
-        return total + subtotal + totalTraslados;
-      },
-      0
-    );
+    // Total real de la factura: Subtotal + Traslados - Retenciones
+    const totalFactura = conceptos.reduce((total, concepto) => {
+      const subtotal = parseFloat(concepto.Subtotal) || 0;
+      const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
+      const totalRetenciones = parseFloat(concepto.TotalRetenciones) || 0;
+      return total + subtotal + totalTraslados - totalRetenciones;
+    }, 0);
+
+    if (totalFactura <= 0) return;
+
+    const proporcion = montoNumero / totalFactura;
 
     const nuevoDesglose = conceptos.map((concepto) => {
       const subtotal = parseFloat(concepto.Subtotal) || 0;
-      const totalTraslados = parseFloat(concepto.TotalTraslados) || 0;
-      const totalConcepto = subtotal + totalTraslados;
-      const proporcion = totalConcepto / totalFactura;
-      const pagoParcial = montoNumero * proporcion;
+      const pagoParcial = subtotal * proporcion;
 
-      const impuestosProporcionales = concepto.Impuestos.map((impuesto) => {
-        // Convertir valores a números
-        const tasaOCuota = parseFloat(impuesto.TasaOCuota) || 0;
+      const traslados = (concepto.Traslados || []).map((imp) => ({
+        ImpuestoCatalogoID: imp.Impuesto || 0,
+        TipoImpuesto: "Traslado",
+        NombreImpuesto: imp.NombreImpuesto,
+        ImpuestoClave: imp.ImpuestoClave || "",
+        TasaOCuota: parseFloat(imp.TasaOCuota) || 0,
+        BaseProporcional: (parseFloat(imp.BaseImpuesto) || 0) * proporcion,
+        MontoProporcional: (parseFloat(imp.Monto) || 0) * proporcion,
+        TipoFactor: imp.Tipo,
+      }));
 
-        const proporcionSubtotal = subtotal / totalConcepto;
-        const baseProporcional = pagoParcial / (1 + tasaOCuota);
-        const montoProporcional = baseProporcional * tasaOCuota;
-
-        return {
-          ImpuestoCatalogoID: impuesto.Impuesto || 0,
-          TipoImpuesto: impuesto.TipoImpuesto,
-          NombreImpuesto: impuesto.NombreImpuesto,
-          ImpuestoClave: impuesto.ImpuestoClave || "",
-          TasaOCuota: tasaOCuota,
-          BaseProporcional: baseProporcional,
-          MontoProporcional: montoProporcional,
-          TipoFactor: impuesto.TipoF,
-        };
-      });
+      const retenciones = (concepto.Retenciones || []).map((imp) => ({
+        ImpuestoCatalogoID: imp.Impuesto || 0,
+        TipoImpuesto: "Retencion",
+        NombreImpuesto: imp.NombreImpuesto,
+        ImpuestoClave: imp.ImpuestoClave || "",
+        TasaOCuota: parseFloat(imp.TasaOCuota) || 0,
+        BaseProporcional: (parseFloat(imp.BaseImpuesto) || 0) * proporcion,
+        MontoProporcional: (parseFloat(imp.Monto) || 0) * proporcion,
+        TipoFactor: imp.Tipo,
+      }));
 
       return {
         Descripcion: concepto.Descripcion,
         PagoProporcional: pagoParcial,
-        SubtotalProporcional: ((subtotal / totalConcepto) * pagoParcial),
-        ImpuestosProporcionales: impuestosProporcionales,
+        SubtotalProporcional: pagoParcial,
+        ImpuestosProporcionales: [...traslados, ...retenciones],
       };
     });
 
-    // Consolidar totales de impuestos
+    // Consolidar totales de impuestos (misma lógica que ya tenías)
     const nuevosTotalesImpuestos = [];
     nuevoDesglose.forEach((concepto) => {
       concepto.ImpuestosProporcionales.forEach((impuesto) => {
         const index = nuevosTotalesImpuestos.findIndex(
-          (item) => item.NombreImpuesto === impuesto.NombreImpuesto && item.TasaOCuota === impuesto.TasaOCuota
+          (item) => item.NombreImpuesto === impuesto.NombreImpuesto
+            && item.TasaOCuota === impuesto.TasaOCuota
+            && item.TipoImpuesto === impuesto.TipoImpuesto
         );
         if (index !== -1) {
-          nuevosTotalesImpuestos[index].Base += parseFloat(impuesto.BaseProporcional);
-          nuevosTotalesImpuestos[index].Importe += parseFloat(impuesto.MontoProporcional);
+          nuevosTotalesImpuestos[index].Base += impuesto.BaseProporcional;
+          nuevosTotalesImpuestos[index].Importe += impuesto.MontoProporcional;
         } else {
           nuevosTotalesImpuestos.push({
-            ImpuestoCatalogoID: impuesto.ImpuestoCatalogoID || 0,
+            ImpuestoCatalogoID: impuesto.ImpuestoCatalogoID,
             TipoImpuesto: impuesto.TipoImpuesto,
             NombreImpuesto: impuesto.NombreImpuesto,
-            ImpuestoClave: impuesto.ImpuestoClave || "",
+            ImpuestoClave: impuesto.ImpuestoClave,
             TasaOCuota: impuesto.TasaOCuota,
-            Base: parseFloat(impuesto.BaseProporcional),
-            Importe: parseFloat(impuesto.MontoProporcional),
+            Base: impuesto.BaseProporcional,
+            Importe: impuesto.MontoProporcional,
             TipoFactor: impuesto.TipoFactor,
           });
         }
@@ -154,7 +155,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
 
     const nuevosTotales = nuevosTotalesImpuestos.reduce((acc, impuesto) => {
       const key = `Total${impuesto.TipoImpuesto}sImpuesto${impuesto.NombreImpuesto}${impuesto.TasaOCuota * 100}`;
-      acc[key] = (acc[key] || 0) + parseFloat(impuesto.Importe);
+      acc[key] = (acc[key] || 0) + impuesto.Importe;
       return acc;
     }, {});
 
@@ -164,6 +165,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
     setTotalesImpuestos(nuevosTotalesImpuestos);
     setValue("ImpuestosPagos", nuevosTotalesImpuestos);
   };
+
 
   // DESPUÉS
   useEffect(() => {

@@ -48,7 +48,6 @@ export default function FacturaPago() {
             router.push("/IniciaSesion"); // Redirige a la página de login si no está autenticado
         } else {
             setToken(token);
-            console.log("Token", token);
         }
     }, [router]);
 
@@ -132,7 +131,7 @@ export default function FacturaPago() {
                 });
 
                 const doctos = await response.json();
-                console.log("Doctos relacionados:", doctos);
+                // console.log("Doctos relacionados:", doctos);
 
                 // ❌ Si no hay pagos previos
                 if (!doctos || doctos.length === 0) {
@@ -161,11 +160,11 @@ export default function FacturaPago() {
                 // ✅ Saldo insoluto (último registro válido)
                 const saldoInsoluto = parseFloat(ultimo.ImpSaldoInsoluto);
 
-                console.log("Calculados:", {
-                    numOperacion,
-                    totalPagado,
-                    saldoInsoluto
-                });
+                // console.log("Calculados:", {
+                //     numOperacion,
+                //     totalPagado,
+                //     saldoInsoluto
+                // });
 
                 setPagos({
                     numOperacion: numOperacion,
@@ -223,9 +222,9 @@ export default function FacturaPago() {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             let doctosRelacionados = await responsePagos.json();
-            console.log("Doctos relacionados a enviar", doctosRelacionados);
-            console.log("Datos del formulario", data);
-            console.log("Factura original", facturaOriginal);
+            // console.log("Doctos relacionados a enviar", doctosRelacionados);
+            // console.log("Datos del formulario", data);
+            // console.log("Factura original", facturaOriginal);
 
             // Formatear factura (ahora pasamos facturaOriginal también)
             const factura = FormatearFactura(
@@ -236,7 +235,7 @@ export default function FacturaPago() {
                 "Pago"
             );
 
-            console.log("Datos finales a enviar:", factura);
+            // console.log("Datos finales a enviar:", factura);
 
             // Guardar factura
             await GuardarFactura(

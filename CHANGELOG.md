@@ -12,6 +12,10 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.0.9] - 2026-07-21
+### [BUG]
+* BUG - Ajuste en cálculo de impuestos al generar complemento de pago
+
 ## [0.0.8] - 2026-07-18
 ### [TR]
 * TR - Desarrollo de nueva funcionalidad para firma de manifiesto (Prodigia)
