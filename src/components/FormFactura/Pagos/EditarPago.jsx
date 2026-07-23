@@ -22,40 +22,51 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     const [fechaPago, setFechaPago] = useState(new Date(factura.Complemento.Pagos.Pagos[0].FechaPago));
     const [opcionesSerie, setOpcionesSerie] = useState([]);
     const [opcionesFormaPago, setOpcionesFormaPago] = useState([]);
-    const [impuestos, setImpuestos] = useState(factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || []);
+    // const [impuestos, setImpuestos] = useState(factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || []);
     const monto = watch("Monto");
+
+    const [impuestos, setImpuestos] = useState(() => {
+        const traslados = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || [])
+            .map(imp => ({ ...imp, TipoImpuesto: "Traslado" }));
+        const retenciones = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Retenciones || [])
+            .map(imp => ({ ...imp, TipoImpuesto: "Retencion" }));
+        return [...traslados, ...retenciones];
+    });
 
     // Función para recalcular impuestos correctamente
     const recalcularImpuestos = (nuevoMonto) => {
-        if (!impuestos.length || !nuevoMonto) return;
+        const montoOriginal = parseFloat(factura.Complemento.Pagos.Pagos[0].Monto) || 0;
+        const nuevoMontoNum = parseFloat(nuevoMonto) || 0;
+        if (montoOriginal <= 0) return;
 
-        const montoNumerico = parseFloat(nuevoMonto) || 0;
+        const proporcion = nuevoMontoNum / montoOriginal;
 
-        // Calculamos la base gravable (monto sin IVA)
-        // Para IVA del 16%: base = monto / 1.16
-        const baseGravable = montoNumerico / 1.16;
-        const importeIVA = montoNumerico - baseGravable;
+        const escalar = (imp, tipo) => {
+            const nuevaBase = (parseFloat(imp.Base) * proporcion).toFixed(2);
+            const nuevoImporte = (parseFloat(imp.Importe) * proporcion).toFixed(2);
+            return {
+                ...imp,
+                TipoImpuesto: tipo,
+                Base: nuevaBase,
+                BaseString: nuevaBase,
+                Importe: nuevoImporte,
+                ImporteString: nuevoImporte,
+            };
+        };
 
-        const nuevosImpuestos = impuestos.map(impuesto => {
-            // Solo aplicamos el cálculo para IVA (002)
-            if (impuesto.ImpuestoClave === "002") {
-                return {
-                    ...impuesto,
-                    Base: baseGravable.toFixed(2),
-                    Importe: importeIVA.toFixed(2)
-                };
-            }
-            return impuesto;
-        });
+        const traslados = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || [])
+            .map(imp => escalar(imp, "Traslado"));
+        const retenciones = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Retenciones || [])
+            .map(imp => escalar(imp, "Retencion"));
 
-        setImpuestos(nuevosImpuestos);
+        setImpuestos([...traslados, ...retenciones]);
     };
 
     // Efecto que se dispara cuando cambia el monto
     useEffect(() => {
         recalcularImpuestos(monto);
-        // Añadimos impuestos como dependencia para evitar warnings
-    }, [monto, impuestos.length]); // Solo se ejecuta cuando monto o la longitud de impuestos cambia
+        // Añadimos imonSubmitpuestos como dependencia para evitar warnings
+    }, [monto]); // Solo se ejecuta cuando monto o la longitud de impuestos cambia
 
     const handleMontoChange = (e) => {
         const value = e.target.value.replace(/[^0-9.]/g, "");
@@ -99,7 +110,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     useEffect(() => {
         const fetchDoctosRelacionados = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${factura.ID}`, { 
+                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${factura.ID}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -117,20 +128,31 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     }, [factura.ID, token, watch("Monto"), setValue]);
 
     const onSubmit = (data) => {
-        const baseGravable = parseFloat(data.Monto) / 1.16;
-        const importeIVA = parseFloat(data.Monto) - baseGravable;
+        const traslados = impuestos.filter(i => i.TipoImpuesto === "Traslado");
+        const retenciones = impuestos.filter(i => i.TipoImpuesto === "Retencion");
+
+        const totalTrasladoIVA16 = traslados
+            .filter(i => i.ImpuestoClave === "002" && parseFloat(i.TasaOCuota) === 0.16)
+            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
+        const baseTrasladoIVA16 = traslados
+            .filter(i => i.ImpuestoClave === "002" && parseFloat(i.TasaOCuota) === 0.16)
+            .reduce((sum, i) => sum + parseFloat(i.Base), 0);
+        const totalRetencionISR = retenciones
+            .filter(i => i.ImpuestoClave === "001")
+            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
+        const totalRetencionIVA = retenciones
+            .filter(i => i.ImpuestoClave === "002")
+            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
 
         const payload = {
             ...data,
             FechaPago: format(fechaPago, "yyyy-MM-dd'T'HH:mm:ss"),
-            Impuestos: impuestos.map(impuesto => ({
-                ...impuesto,
-                Base: baseGravable.toFixed(2),
-                Importe: importeIVA.toFixed(2)
-            })),
+            Impuestos: { Traslados: traslados, Retenciones: retenciones },
             Totales: {
-                TotalTrasladosBaseIVA16: baseGravable.toFixed(2),
-                TotalTrasladosImpuestoIVA16: importeIVA.toFixed(2),
+                TotalTrasladosBaseIVA16: baseTrasladoIVA16.toFixed(2),
+                TotalTrasladosImpuestoIVA16: totalTrasladoIVA16.toFixed(2),
+                TotalRetencionesISR: totalRetencionISR.toFixed(2),
+                TotalRetencionesIVA: totalRetencionIVA.toFixed(2),
                 MontoTotalPagos: data.Monto
             }
         };
@@ -262,7 +284,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     <Typography variant="h6">Impuestos</Typography>
                     {impuestos.map((impuesto) => (
                         <Box
-                            key={impuesto.NombreImpuesto}
+                            key={`${impuesto.TipoImpuesto}-${impuesto.ImpuestoClave}-${impuesto.TasaOCuota}`}
                             display="grid"
                             gridTemplateColumns="repeat(4, 1fr)"
                             gap={2}
@@ -271,7 +293,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         >
                             <TextField
                                 label="Impuesto"
-                                value={impuesto.ImpuestoClave === "002" ? "IVA" : impuesto.ImpuestoClave} // Asigna visualmente "IVA" si cumple la condición
+                                value={impuesto.ImpuestoCatalogo?.Impuesto || impuesto.ImpuestoClave}
                                 fullWidth
                                 InputProps={{ readOnly: true }}
                                 disabled

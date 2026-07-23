@@ -59,7 +59,6 @@ export default function EditarComplementoPago() {
         try {
             const updatedFactura = {
                 ...facturaData.factura,
-                Serie: editedPago.SeriePagos,
                 Fecha: editedPago.FechaPago,
                 Complemento: {
                     ...facturaData.factura.Complemento,
@@ -70,25 +69,28 @@ export default function EditarComplementoPago() {
                             FechaPago: editedPago.FechaPago,
                             FormaDePagoP: editedPago.FormaPagoComprobante,
                             Monto: parseFloat(editedPago.Monto),
+                            MontoString: String(editedPago.Monto),
                             DoctoRelacionados: [{
                                 ...facturaData.factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0],
                                 ImpPagado: parseFloat(editedPago.Monto),
-                                ImpSaldoInsoluto: parseFloat(editedPago.ImpSaldoInsoluto)
+                                ImpPagadoString: String(editedPago.Monto),
+                                ImpSaldoInsoluto: parseFloat(editedPago.ImpSaldoInsoluto),
+                                ImpSaldoInsolutoString: String(editedPago.ImpSaldoInsoluto),
                             }],
-                            Impuestos: {
-                                ...facturaData.factura.Complemento.Pagos.Pagos[0].Impuestos,
-                                Traslados: facturaData.factura.Complemento.Pagos.Pagos[0].Impuestos.Traslados.map(t => ({
-                                    ...t,
-                                    Base: parseFloat(editedPago.Monto) / 1.16,
-                                    Importe: parseFloat(editedPago.Monto) - (parseFloat(editedPago.Monto) / 1.16)
-                                }))
-                            }
+                            Impuestos: editedPago.Impuestos // {Traslados, Retenciones} ya viene listo de onSubmit
                         }],
                         Totales: {
                             ...facturaData.factura.Complemento.Pagos.Totales,
-                            TotalTrasladosBaseIVA16: parseFloat((editedPago.Monto)) / 1.16,
-                            TotalTrasladosImpuestoIVA16: parseFloat(editedPago.Monto) - (parseFloat(editedPago.Monto) / 1.16),
-                            MontoTotalPagos: parseFloat(editedPago.Monto)
+                            TotalTrasladosBaseIVA16: editedPago.Totales.TotalTrasladosBaseIVA16,
+                            TotalTrasladosBaseIVA16String: editedPago.Totales.TotalTrasladosBaseIVA16,
+                            TotalTrasladosImpuestoIVA16: editedPago.Totales.TotalTrasladosImpuestoIVA16,
+                            TotalTrasladosImpuestoIVA16String: editedPago.Totales.TotalTrasladosImpuestoIVA16,
+                            TotalRetencionesISR: editedPago.Totales.TotalRetencionesISR,
+                            TotalRetencionesISRString: editedPago.Totales.TotalRetencionesISR,
+                            TotalRetencionesIVA: editedPago.Totales.TotalRetencionesIVA,
+                            TotalRetencionesIVAString: editedPago.Totales.TotalRetencionesIVA,
+                            MontoTotalPagos: editedPago.Monto,
+                            MontoTotalPagosString: String(editedPago.Monto),
                         }
                     }
                 }
