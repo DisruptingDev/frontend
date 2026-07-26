@@ -35,7 +35,8 @@ import {
     ContentCopy as CloneIcon,
     Cancel as CancelIcon,
     FileDownload as ExportIcon,
-    FilterList as FilterListIcon
+    FilterList as FilterListIcon,
+    ViewList as ViewListIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -53,6 +54,7 @@ import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar'; // Relative path from original file structure
 import ModalConfirm from '@/components/Home/Modales/modalConfirm'; // Assuming this exists based on usage in original
+import ModalDocumentosRelacionados from '../Modales/ModalDocumentosRelacionados';
 import PagoModalWithPayPal from '@/components/CompraTimbres/PagoModal';
 
 // Utils
@@ -76,6 +78,8 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     const [openModalTimbrar, setOpenModalTimbrar] = useState(false);
     const [openModalCancelar, setOpenModalCancelar] = useState(false);
     const [openModalConfirm, setOpenModalConfirm] = useState(false);
+    const [openModalDocRel, setOpenModalDocRel] = useState(false);
+    const [uuidDocRel, setUuidDocRel] = useState(null);
 
     // Operation States
     const [confirmationMessage, setConfirmationMessage] = useState('');
@@ -538,6 +542,19 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
             console.error('Error fetching serie:', error);
         }
     }, [token, router]);
+
+    const handleViewDocRel = useCallback(() => {
+        if (menuRow?.uuid) {
+            setUuidDocRel(menuRow.uuid);
+            setOpenModalDocRel(true);
+            if (typeof handleCloseMenu === 'function') {
+                handleCloseMenu();
+            } else {
+                setAnchorEl(null);
+                setMenuRow(null);
+            }
+        }
+    }, [menuRow]);
 
     useEffect(() => {
         if (!pagoConfirmado || idsPendientesTimbrar.length === 0) return;
@@ -1349,6 +1366,14 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     </MenuItem>
                 );
             }
+
+            if ((menuRow.MetodoPago === 'PPD' || menuRow.TipoDeComprobante === 'P') && menuRow.uuid) {
+                menuItems.push(
+                    <MenuItem key="doc-rel" onClick={handleViewDocRel}>
+                        <ViewListIcon fontSize="small" sx={{ mr: 1 }} /> Ver documentos relacionados
+                    </MenuItem>
+                );
+            }
         }
         return menuItems;
     };
@@ -1527,6 +1552,18 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     IDFacturaCancelada={IDFacturaCancelada}
                     token={token}
                     setResultadoCancelar={setResultadoCancelar}
+                />
+
+                <ModalDocumentosRelacionados
+                    open={openModalDocRel}
+                    onClose={() => setOpenModalDocRel(false)}
+                    uuid={uuidDocRel}
+                    onTimbrar={(id) => handleTimbrar([id])}
+                    onDescargar={(id) => handleDownloadSelecteds([id])}
+                    onCancelar={(id) => {
+                        setIDFacturaCancelada(id);
+                        setOpenModalCancelar(true);
+                    }}
                 />
 
                 <PagoModalWithPayPal

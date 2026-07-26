@@ -23,10 +23,9 @@ import {
     PictureAsPdf as PdfIcon,
     Edit as EditIcon,
     ContentCopy as CloneIcon,
-    Delete as DeleteIcon,
-    Cancel as CancelIcon,
     Payment as PaymentIcon,
-    MoreVert as MoreVertIcon
+    MoreVert as MoreVertIcon,
+    ViewList as ViewListIcon
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -39,11 +38,10 @@ import TextField from '@mui/material/TextField';
 import { WithPermission } from '@/components/WithPermission';
 import PagoModalWithPayPal from '@/components/CompraTimbres/PagoModal';
 
-// Importación de componentes de modal
-import ModalExito from '@/components/Home/Modales/modalExito';
 import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';
+import ModalDocumentosRelacionados from '../Modales/ModalDocumentosRelacionados';
 
 // Utilidades
 import { formatCurrency } from '@/utils/formatCurrency';
@@ -65,6 +63,7 @@ const RowActionMenu = React.memo(({
     handleEdit,
     handleClone,
     handleDelete,
+    handleViewDocRel,
     router
 }) => {
     const menuItems = [];
@@ -151,6 +150,13 @@ const RowActionMenu = React.memo(({
             menuItems.push(
                 <MenuItem key="pago" onClick={() => { handleFacturaPago(menuRow); handleClose(); }}>
                     <PaymentIcon fontSize="small" sx={{ mr: 1 }} /> Complemento de Pago
+                </MenuItem>
+            );
+        }
+        if (menuRow.MetodoPago === 'PPD' && menuRow.uuid) {
+            menuItems.push(
+                <MenuItem key="doc-rel" onClick={handleViewDocRel}>
+                    <ViewListIcon fontSize="small" sx={{ mr: 1 }} /> Ver documentos relacionados
                 </MenuItem>
             );
         }
@@ -285,9 +291,11 @@ export default function DataTable({ token }) {
     const [openModalTimbrar, setOpenModalTimbrar] = useState(false);
     const [openModalCancelar, setOpenModalCancelar] = useState(false);
     const [openModalConfirm, setOpenModalConfirm] = useState(false);
+    const [openModalDocRel, setOpenModalDocRel] = useState(false);
 
     // Estados para operaciones
     const [confirmationMessage, setConfirmationMessage] = useState('');
+    const [uuidDocRel, setUuidDocRel] = useState(null);
     const [facturasTimbrar, setFacturasTimbrar] = useState([]);
     const [facturasRemplazo, setFacturasRemplazo] = useState([]);
     const [IDFacturaCancelada, setIDFacturaCancelada] = useState(null);
@@ -751,6 +759,15 @@ export default function DataTable({ token }) {
         setFacturaIdToDelete(menuRow.ID);
         setConfirmationMessage('¿Estás seguro de que deseas eliminar esta factura?');
         setOpenModalConfirm(true);
+        setAnchorEl(null);
+        setMenuRow(null);
+    }, [menuRow]);
+
+    const handleViewDocRel = useCallback(() => {
+        if (menuRow && menuRow.uuid) {
+            setUuidDocRel(menuRow.uuid);
+            setOpenModalDocRel(true);
+        }
         setAnchorEl(null);
         setMenuRow(null);
     }, [menuRow]);
@@ -1259,6 +1276,7 @@ export default function DataTable({ token }) {
                 handleEdit={handleEdit}
                 handleClone={handleClone}
                 handleDelete={handleDelete}
+                handleViewDocRel={handleViewDocRel}
                 router={router}
             />
 

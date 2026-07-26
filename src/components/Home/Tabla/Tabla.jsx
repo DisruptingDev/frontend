@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import { useRouter } from 'next/navigation'; // Importa correctamente desde next/navigation
 
 
@@ -32,6 +33,7 @@ import ModalExito from '@/components/Home/Modales/modalExito';
 import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';
+import ModalDocumentosRelacionados from '../Modales/ModalDocumentosRelacionados';
 
 import { formatCurrency } from '@/utils/formatCurrency';
 import JSZip from 'jszip';
@@ -57,8 +59,9 @@ export default function DataTable({ token, filtro }) {
   const [selectedRow, setSelectedRow] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
 
-  //Modales
-  const [openModal, setOpenModal] = useState(false); // Loading modal
+  const [openModal, setOpenModal] = useState(false);
+  const [openModalDocRel, setOpenModalDocRel] = useState(false);
+  const [uuidDocRel, setUuidDocRel] = useState(null); // Loading modal
   const [openModalSuccess, setOpenModalSuccess] = useState(false); // Success modal
   const [openModalError, setOpenModalError] = useState(false); // Error modal
   const [loading, setLoading] = useState(false);
@@ -574,6 +577,14 @@ export default function DataTable({ token, filtro }) {
     setMenuRow(null);
   };
 
+  const handleViewDocRel = () => {
+    if (menuRow && menuRow.uuid) {
+      setUuidDocRel(menuRow.uuid);
+      setOpenModalDocRel(true);
+    }
+    handleMenuClose();
+  };
+
   const handleEdit = () => {
     if (menuRow) {
       console.log(menuRow);
@@ -820,7 +831,10 @@ export default function DataTable({ token, filtro }) {
                         }
                         {
                           menuRow && menuRow.MetodoPago === 'PPD' && menuRow.uuid !== '' && [
-                            <MenuItem key="pago" onClick={handleFacturaPago}>Complemento de Pago</MenuItem>
+                            <MenuItem key="pago" onClick={handleFacturaPago}>Complemento de Pago</MenuItem>,
+                            <MenuItem key="doc-rel" onClick={handleViewDocRel}>
+                                <ViewListIcon fontSize="small" sx={{ mr: 1 }} /> Ver documentos relacionados
+                            </MenuItem>
                           ]
                         }
 
@@ -912,6 +926,18 @@ export default function DataTable({ token, filtro }) {
         </DialogActions>
       </Dialog>
 
+      <ModalDocumentosRelacionados 
+          open={openModalDocRel} 
+          onClose={() => setOpenModalDocRel(false)} 
+          uuid={uuidDocRel} 
+          onTimbrar={(id) => handleTimbrar([id])}
+          onDescargar={(id) => handleDownloadSelecteds([id])}
+          onCancelar={(id) => {
+              setIDFacturaCancelada(id);
+              setOpenModalCancelar(true);
+          }}
+      />
+
       <PdfModal
         open={pdfModalOpen}
         onClose={() => {
@@ -925,8 +951,6 @@ export default function DataTable({ token, filtro }) {
         loading={loadingPdf}
         error={pdfError}
       />
-
     </Box>
-
   );
 }
