@@ -82,9 +82,8 @@ model acuse_cancelacions {
 model catalogo_plans {
   id               BigInt   @id @default(autoincrement())
   cantidad_timbres BigInt?
-  costo            String?
   nombre           String?
-  open_pay_id      String?
+  costo            Decimal? @db.Decimal
   ordens           ordens[]
   plans            plans[]
 }
@@ -126,13 +125,10 @@ model clave_unidads {
 }
 
 model complementos {
-  id                BigInt              @id @default(autoincrement())
-  comprobante_id    BigInt?
-  Pagos             Pagos[]
-  carta_portes      carta_portes[]
-  comprobantes      comprobantes?       @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_complemento")
-  impuestos_locales impuestos_locales[]
-  nomina            nomina[]
+  id             BigInt        @id @default(autoincrement())
+  comprobante_id BigInt?
+  Pagos          Pagos[]
+  comprobantes   comprobantes? @relation(fields: [comprobante_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_comprobantes_complemento")
 }
 
 model comprobantes {
@@ -147,11 +143,9 @@ model comprobantes {
   no_certificado      String?
   certificado         String?
   condiciones_de_pago String?               @default("Condiciones de Pago")
-  sub_total           String?
   descripcion         String?
   moneda              String?
   tipo_cambio         String?
-  total               String?
   tipo_de_comprobante String?
   exportacion         String?
   metodo_pago         String?
@@ -168,21 +162,20 @@ model comprobantes {
   estatus             String?
   xml_cancelacion     String?
   estatus_pagos       String?
-  descuento           String?
   sub_total_string    String?
   total_string        String?
   descuento_string    String?
   xml_timbrado        String?
-  receptor_nomina_id  BigInt?
+  sub_total           Decimal?              @db.Decimal
+  total               Decimal?              @db.Decimal
+  descuento           Decimal?              @db.Decimal
   Conceptos           Conceptos[]
+  PagoAlumno          PagoAlumno[]
   complementos        complementos[]
   emisors             emisors?              @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_emisor")
   grupos              grupos?               @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_grupo")
-  receptors           receptors?            @relation(fields: [receptor_id], references: [id], onUpdate: NoAction, map: "fk_comprobantes_receptor")
-  receptor_nomina     receptor_nomina?      @relation(fields: [receptor_nomina_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_comprobantes_receptor_nomina")
+  receptors           receptors?            @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_comprobantes_receptor")
   informacion_globals informacion_globals[]
-
-  @@index([tipo_de_comprobante], map: "idx_tipo_comprobante")
 }
 
 model conceptos {
@@ -222,39 +215,36 @@ model docto_relacionados {
 }
 
 model emisors {
-  id                   BigInt          @id @default(autoincrement())
-  rfc                  String?
-  nombre               String?
-  regimen_fiscal       String?
-  fac_atr_adquire      String?
-  lugar_expedicion     String?
-  grupo_id             BigInt?
-  calle                String?
-  numero_exterior      String?
-  numero_interior      String?
-  colonia              String?
-  municipio            String?
-  estado               String?
-  no_certificado       String?
-  certificado          String?
-  certificado_path     String?
-  key_path             String?
-  password             String?
-  logo_path            String?
-  email                String?
-  plantilla_id         BigInt?         @default(1)
-  sucursal             String?
-  banco                String?
-  cuenta_bancaria      String?
-  clabe_bancaria       String?
-  carta_manifiesto_xml String?
-  carta_manifiesto_pdf String?
-  comprobantes         comprobantes[]
-  emisor_nomina        emisor_nomina[]
-  grupos               grupos?         @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
-  plantillas           plantillas?     @relation(fields: [plantilla_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_plantilla")
-  ordens               ordens[]
-  series               series[]
+  id               BigInt         @id @default(autoincrement())
+  rfc              String?
+  nombre           String?
+  regimen_fiscal   String?
+  fac_atr_adquire  String?
+  lugar_expedicion String?
+  grupo_id         BigInt?
+  calle            String?
+  numero_exterior  String?
+  numero_interior  String?
+  colonia          String?
+  municipio        String?
+  estado           String?
+  no_certificado   String?
+  certificado      String?
+  certificado_path String?
+  key_path         String?
+  password         String?
+  logo_path        String?
+  email            String?
+  plantilla_id     BigInt?        @default(1)
+  sucursal         String?
+  banco            String?
+  cuenta_bancaria  String?
+  clabe_bancaria   String?
+  Alumno           Alumno[]
+  comprobantes     comprobantes[]
+  grupos           grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
+  ordens           ordens[]
+  series           series[]
 }
 
 model forma_pagos {
@@ -274,23 +264,27 @@ model grupos {
   id                           BigInt            @id @default(autoincrement())
   nombre                       String?
   plan_id                      BigInt?
-  timbres_disponibles_paquetes BigInt?
-  timbres_disponibles_plan     BigInt?
+  timbres_disponibles_paquetes Int?
+  timbres_disponibles_plan     Int?
   gasolinera_id                BigInt?
+  Alumno                       Alumno[]
+  ArchivoBancario              ArchivoBancario[]
+  CargoAlumno                  CargoAlumno[]
+  ConceptoCobro                ConceptoCobro[]
   Conceptos                    Conceptos[]
+  PagoAlumno                   PagoAlumno[]
   comprobantes                 comprobantes[]
   conceptos                    conceptos[]
   emisors                      emisors[]
   gasolineras                  gasolineras?      @relation(fields: [gasolinera_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_gasolineras_grupos")
   plans                        plans?            @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grupos_plan")
   ordens                       ordens[]
-  receptor_nomina              receptor_nomina[]
   receptors                    receptors[]
   usuarios                     usuarios[]
 }
 
 model impuesto_claves {
-  id          Int          @id @default(autoincrement())
+  id          BigInt       @id @default(autoincrement())
   clave       String?
   descripcion String?
   tipo        String?
@@ -419,12 +413,11 @@ model plantillas {
   updated_at   DateTime? @db.Timestamptz(6)
   deleted_at   DateTime? @db.Timestamptz(6)
   nombre       String?
-  categoria    String?
   descripcion  String?
   path         String?
+  categoria    String?
   vista_previa String?
   path_pagos   String?
-  emisors      emisors[]
 
   @@index([deleted_at], map: "idx_plantillas_deleted_at")
 }
@@ -446,6 +439,7 @@ model receptors {
   municipio                 String?
   estado                    String?
   email                     String?
+  Alumno                    Alumno[]
   comprobantes              comprobantes[]
   grupos                    grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_receptors_grupo")
 }
@@ -465,8 +459,8 @@ model retencions {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id Int?             @db.SmallInt
-  tasa_catalogo_id     Int?             @db.SmallInt
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     BigInt?
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
@@ -573,8 +567,8 @@ model traslados {
   tasa_o_cuota         Decimal?         @db.Decimal
   importe              Decimal?         @db.Decimal
   impuestos_id         BigInt?
-  impuesto_catalogo_id Int?             @db.SmallInt
-  tasa_catalogo_id     Int?             @db.SmallInt
+  impuesto_catalogo_id BigInt?
+  tasa_catalogo_id     BigInt?
   base_string          String?
   tasa_o_cuota_string  String?
   importe_string       String?
@@ -631,471 +625,354 @@ model usuarios {
 }
 
 model emisor_nomina {
-  id                BigInt            @id @default(autoincrement())
-  registro_patronal String?
-  rfc_patron_origen String?
-  emisor_id         BigInt?
-  emisors           emisors?          @relation(fields: [emisor_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_emisor_nomina_emisor")
-  nomina            nomina[]
-  receptor_nomina   receptor_nomina[]
+  id                Int     @id @default(autoincrement())
+  registro_patronal String? @db.VarChar(255)
+  rfc_patron_origen String? @db.VarChar(255)
+  emisor_id         Int?
+  nomina_id         Int?
 }
 
 model receptor_nomina {
-  id                        BigInt         @id @default(autoincrement())
-  rfc                       String?
-  nombre                    String?
-  domicilio_fiscal_receptor String?
-  regimen_fiscal_receptor   String?
-  curp                      String?
-  num_seguridad_social      String?
-  fecha_inicio_rel_laboral  String?
-  antiguedad                String?
-  tipo_contrato             String?
-  tipo_jornada              String?
-  tipo_regimen              String?
-  num_empleado              String?
-  departamento              String?
-  puesto                    String?
-  riesgo_puesto             String?
-  periodicidad_pago         String?
-  cuenta_bancaria           String?
-  banco                     String?
-  salario_base_cot_apor     String?
-  salario_diario_integrado  String?
-  clave_ent_fed             String?
-  sindicalizado             String?
-  correo                    String?
-  emisor_nomina_id          BigInt?
-  grupo_id                  BigInt?
-  comprobantes              comprobantes[]
-  nomina                    nomina[]
-  emisor_nomina             emisor_nomina? @relation(fields: [emisor_nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisor_nomina_receptores")
-  grupos                    grupos?        @relation(fields: [grupo_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_receptor_nomina_grupo")
-
-  @@unique([curp, emisor_nomina_id], map: "idx_trabajador_patron")
+  id                        Int      @id @default(autoincrement())
+  curp                      String?  @db.VarChar(255)
+  num_seguridad_social      String?  @db.VarChar(255)
+  fecha_inicio_rel_laboral  String?  @db.VarChar(255)
+  antiguedad                String?  @db.VarChar(255)
+  tipo_contrato             String?  @db.VarChar(255)
+  tipo_jornada              String?  @db.VarChar(255)
+  tipo_regimen              String?  @db.VarChar(255)
+  num_empleado              String?  @db.VarChar(255)
+  departamento              String?  @db.VarChar(255)
+  puesto                    String?  @db.VarChar(255)
+  riesgo_puesto             String?  @db.VarChar(255)
+  periodicidad_pago         String?  @db.VarChar(255)
+  cuenta_bancaria           String?  @db.VarChar(255)
+  banco                     String?  @db.VarChar(255)
+  salario_base_cot_apor     Decimal? @db.Decimal(10, 2)
+  salario_diario_integrado  Decimal? @db.Decimal(10, 2)
+  clave_ent_fed             String?  @db.VarChar(255)
+  receptor_id               Int?
+  emisor_nomina_id          Int?
+  nomina_id                 Int?
+  rfc                       String?  @db.VarChar(255)
+  nombre                    String?  @db.VarChar(255)
+  domicilio_fiscal_receptor String?  @db.VarChar(255)
+  residencia_fiscal         String?  @db.VarChar(255)
+  num_reg_id_trib           String?  @db.VarChar(255)
+  regimen_fiscal_receptor   String?  @db.VarChar(255)
+  uso_cfdi                  String?  @db.VarChar(255)
+  grupo_id                  Int?
+  calle                     String?  @db.VarChar(255)
+  numero_exterior           String?  @db.VarChar(255)
+  numero_interior           String?  @db.VarChar(255)
+  colonia                   String?  @db.VarChar(255)
+  municipio                 String?  @db.VarChar(255)
+  estado                    String?  @db.VarChar(255)
+  email                     String?  @db.VarChar(255)
+  sindicalizado             String?  @db.VarChar(255)
+  correo                    String?  @db.VarChar(255)
 }
 
 model nomina {
-  id                 BigInt           @id @default(autoincrement())
-  version            String?
-  tipo_nomina        String?
-  fecha_pago         String?
-  fecha_inicial_pago String?
-  fecha_final_pago   String?
-  num_dias_pagados   BigInt?
-  total_percepciones String?
-  total_deducciones  String?
-  total_otros_pagos  String?
-  emisor_nomina_id   BigInt?
-  receptor_nomina_id BigInt?
-  complemento_id     BigInt?
-  deducciones        deducciones[]
-  complementos       complementos?    @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_nomina")
-  emisor_nomina      emisor_nomina?   @relation(fields: [emisor_nomina_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_nomina_emisor_nomina")
-  receptor_nomina    receptor_nomina? @relation(fields: [receptor_nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_receptor_nomina_nominas")
-  otros_pagos        otros_pagos[]
-  percepciones       percepciones[]
+  id                 Int      @id @default(autoincrement())
+  version            String?  @db.VarChar(255)
+  tipo_nomina        String?  @db.VarChar(255)
+  fecha_pago         String?  @db.VarChar(255)
+  fecha_inicial_pago String?  @db.VarChar(255)
+  fecha_final_pago   String?  @db.VarChar(255)
+  num_dias_pagados   Int?
+  total_percepciones Decimal? @db.Decimal(10, 2)
+  total_deducciones  Decimal? @db.Decimal(10, 2)
+  total_otros_pagos  Decimal? @db.Decimal(10, 2)
+  emisor_nomina_id   Int?
+  receptor_nomina_id Int?
+  complemento_id     Int?
 }
 
 model percepciones {
-  id                   BigInt                 @id @default(autoincrement())
-  total_sueldos        String?
-  total_gravado        String?
-  total_exento         String?
-  nomina_id            BigInt?
-  nomina               nomina?                @relation(fields: [nomina_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_nomina_percepciones")
-  percepciones_detalle percepciones_detalle[]
+  id            Int      @id @default(autoincrement())
+  total_sueldos Decimal? @db.Decimal(10, 2)
+  total_gravado Decimal? @db.Decimal(10, 2)
+  total_exento  Decimal? @db.Decimal(10, 2)
+  nomina_id     Int?
 }
 
 model deducciones {
-  id                        BigInt                @id @default(autoincrement())
-  total_otras_deducciones   String?
-  total_impuestos_retenidos String?
-  nomina_id                 BigInt?
-  nomina                    nomina?               @relation(fields: [nomina_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_nomina_deducciones")
-  deducciones_detalle       deducciones_detalle[]
+  id                        Int      @id @default(autoincrement())
+  total_otras_deducciones   Decimal? @db.Decimal(10, 2)
+  total_impuestos_retenidos Decimal? @db.Decimal(10, 2)
+  nomina_id                 Int?
 }
 
 model percepciones_detalle {
-  id              BigInt        @id @default(autoincrement())
-  tipo_percepcion String?
-  clave           String?
-  concepto        String?
-  importe_gravado String?
-  importe_exento  String?
-  percepciones_id BigInt?
-  percepciones    percepciones? @relation(fields: [percepciones_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_percepciones_percepcion_array")
+  id              Int      @id @default(autoincrement())
+  tipo_percepcion String?  @db.VarChar(255)
+  clave           String?  @db.VarChar(255)
+  concepto        String?  @db.VarChar(255)
+  importe_gravado Decimal? @db.Decimal(10, 2)
+  importe_exento  Decimal? @db.Decimal(10, 2)
+  percepciones_id Int?
+  nomina_id       Int?
 }
 
 model deducciones_detalle {
-  id             BigInt       @id @default(autoincrement())
-  tipo_deduccion String?
-  clave          String?
-  concepto       String?
-  importe        String?
-  deducciones_id BigInt?
-  deducciones    deducciones? @relation(fields: [deducciones_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_deducciones_deduccion_array")
+  id             Int      @id @default(autoincrement())
+  tipo_deduccion String?  @db.VarChar(255)
+  clave          String?  @db.VarChar(255)
+  concepto       String?  @db.VarChar(255)
+  importe        Decimal? @db.Decimal(10, 2)
+  deducciones_id Int?
+  nomina_id      Int?
 }
 
 model otros_pagos_detalle {
-  id                 BigInt               @id @default(autoincrement())
-  tipo_otro_pago     String?
-  clave              String?
-  concepto           String?
-  importe            String?
-  otros_pagos_id     BigInt?
-  otros_pagos        otros_pagos?         @relation(fields: [otros_pagos_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_otros_pagos_otro_pago_array")
-  subsidio_al_empleo subsidio_al_empleo[]
-
-  @@index([otros_pagos_id], map: "idx_otros_pagos_detalle_otros_pagos_id")
+  id             Int      @id @default(autoincrement())
+  tipo_otro_pago String?  @db.VarChar(255)
+  clave          String?  @db.VarChar(255)
+  concepto       String?  @db.VarChar(255)
+  importe        Decimal? @db.Decimal(10, 2)
+  otros_pagos_id Int?
+  nomina_id      Int?
 }
 
 model otros_pagos {
-  id                  BigInt                @id @default(autoincrement())
-  nomina_id           BigInt?
-  nomina              nomina?               @relation(fields: [nomina_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_nomina_otros_pagos")
-  otros_pagos_detalle otros_pagos_detalle[]
+  id        Int  @id @default(autoincrement())
+  nomina_id Int?
 }
 
 model subsidio_al_empleo {
-  id                  BigInt               @id @default(autoincrement())
-  subsidio_causado    String?
-  otro_pago_id        BigInt?
-  otros_pagos_detalle otros_pagos_detalle? @relation(fields: [otro_pago_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_otros_pagos_detalle_subsidio_al_empleo")
+  id               Int      @id @default(autoincrement())
+  subsidio_causado Decimal? @db.Decimal(10, 2)
+  nomina_id        Int?
+  otro_pago_id     Int?
 }
 
-model autotransportes {
-  id                        BigInt                      @id @default(autoincrement())
-  perm_sct                  String                      @db.VarChar(10)
-  num_permiso_sct           String                      @db.VarChar(50)
-  nombre_aseg               String?                     @db.VarChar(300)
-  num_poliza_seg_resp_civil String?                     @db.VarChar(30)
-  identificacion_vehiculars identificacion_vehiculars[]
-  remolques                 remolques[]
-  seguros_autotransportes   seguros_autotransportes[]
-  sub_transportes           sub_transportes[]
-}
-
-model cantidad_transportans {
-  id                 BigInt              @id @default(autoincrement())
-  cantidad           Decimal             @db.Decimal(16, 3)
-  clave_unidad       String              @db.VarChar(3)
-  unidad             String?             @db.VarChar(50)
-  mercancia_id       BigInt?
-  mercancias_detalle mercancias_detalle? @relation(fields: [mercancia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mercancias_detalle_cantidades_transportan")
-}
-
-model carro_ferroviarios {
-  id                        BigInt                    @id @default(autoincrement())
-  tipo_carro                String                    @db.VarChar(7)
-  num_carro                 String                    @db.VarChar(15)
-  iniciales                 String?                   @db.VarChar(4)
-  num_servicios             BigInt?
-  peso_vacio                Decimal?                  @db.Decimal(16, 3)
-  peso_bruto                Decimal?                  @db.Decimal(16, 3)
-  capacidad_carga           Decimal?                  @db.Decimal(16, 3)
-  transporte_ferroviario_id BigInt?
-  transporte_ferroviarios   transporte_ferroviarios?  @relation(fields: [transporte_ferroviario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transporte_ferroviarios_carros")
-  contenedor_ferroviarios   contenedor_ferroviarios[]
-}
-
-model carta_portes {
-  id                     BigInt              @id @default(autoincrement())
-  version                String?             @default("3.1")
-  transp_internac        Boolean
-  entrada_salida_merc    String              @db.VarChar(7)
-  pais_origen_destino    String?             @db.VarChar(3)
-  total_dist_rec         Decimal             @db.Decimal(16, 2)
-  via_entrada_salida     String?             @db.VarChar(2)
-  registro_istmo         String?             @db.VarChar(2)
-  ubicacion_polo_origen  String?             @db.VarChar(2)
-  ubicacion_polo_destino String?             @db.VarChar(2)
-  id_ccp                 String?             @db.VarChar(36)
-  complemento_id         BigInt
-  complementos           complementos        @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_carta_porte")
-  mercancias             mercancias[]
-  regimen_aduaneros      regimen_aduaneros[]
-  tipo_figuras           tipo_figuras[]
-  ubicaciones            ubicaciones[]
-
-  @@index([complemento_id], map: "idx_carta_portes_complemento_id")
-}
-
-model contenedor_ferroviarios {
-  id                   BigInt              @id @default(autoincrement())
-  tipo_contenedor      String              @db.VarChar(3)
-  peso_contenedor      Decimal?            @db.Decimal(16, 3)
-  num_contenedor       String?             @db.VarChar(15)
-  carro_ferroviario_id BigInt?
-  carro_ferroviarios   carro_ferroviarios? @relation(fields: [carro_ferroviario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_carro_ferroviarios_contenedores")
-}
-
-model contenedor_maritimos {
+model Alumno {
   id                    BigInt                 @id @default(autoincrement())
-  matricula_contenedor  String                 @db.VarChar(15)
-  tipo_contenedor       String                 @db.VarChar(3)
-  num_precinto          String?                @db.VarChar(30)
-  peso_neto_contenedor  Decimal?               @db.Decimal(16, 3)
-  peso_bruto_contenedor Decimal?               @db.Decimal(16, 3)
-  transporte_mar_id     BigInt?
-  transportes_maritimos transportes_maritimos? @relation(fields: [transporte_mar_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_transportes_maritimos_contenedores")
+  matricula             String                 @unique(map: "idx_alumno_matricula")
+  nombre                String
+  apellido_paterno      String
+  apellido_materno      String?
+  email                 String?
+  telefono              String?
+  carrera               String?
+  semestre              Int?
+  estatus               String                 @default("ACTIVO")
+  requiere_factura      Boolean                @default(false)
+  receptor_id           BigInt?
+  grupo_id              BigInt?
+  created_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?              @db.Timestamptz(6)
+  concepto_id           BigInt?
+  monto_personalizado   Decimal?               @db.Decimal
+  dia_pago              Int?                   @default(5)
+  emisor_id             BigInt?
+  clabe_interbancaria   String?
+  referencia_pago       String?
+  ids_alumno            String?
+  informacion_pago      String?
+  programa_academico_id BigInt?
+  ConceptoCobro         ConceptoCobro?         @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_concepto")
+  emisors               emisors?               @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_emisor")
+  grupos                grupos?                @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_grupo")
+  receptors             receptors?             @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_receptor")
+  CargoAlumno           CargoAlumno[]
+  HistorialMontoAlumno  HistorialMontoAlumno[]
+  PagoAlumno            PagoAlumno[]
 }
 
-model detalle_mercancia {
-  id                  BigInt              @id @default(autoincrement())
-  unidad_peso_porcion Decimal?            @db.Decimal(16, 3)
-  peso_porcion        Decimal?            @db.Decimal(16, 3)
-  mercancia_id        BigInt?
-  mercancias_detalle  mercancias_detalle? @relation(fields: [mercancia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mercancias_detalle_detalle_mercancia")
+model ArchivoBancario {
+  id                    BigInt       @id @default(autoincrement())
+  nombre_archivo        String
+  banco                 String
+  fecha_carga           DateTime     @default(now()) @db.Timestamptz(6)
+  usuario_id            BigInt?
+  grupo_id              BigInt?
+  total_registros       Int
+  registros_conciliados Int
+  registros_pendientes  Int          @default(0)
+  registros_con_error   Int          @default(0)
+  monto_total_procesado Decimal      @db.Decimal
+  estatus               String       @default("PROCESADO")
+  created_at            DateTime?    @default(now()) @db.Timestamptz(6)
+  grupos                grupos?      @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_archivobancario_grupo")
+  PagoAlumno            PagoAlumno[]
 }
 
-model documentacion_aduaneras {
-  id                 BigInt              @id @default(autoincrement())
-  tipo_documento     String              @db.VarChar(2)
-  num_pedimento      String?             @db.VarChar(21)
-  ident_doc_aduanero String?             @db.VarChar(100)
-  mercancia_id       BigInt?
-  mercancias_detalle mercancias_detalle? @relation(fields: [mercancia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mercancias_detalle_documentacion_aduanera")
+model CargoAlumno {
+  id                  BigInt        @id @default(autoincrement())
+  alumno_id           BigInt
+  concepto_id         BigInt
+  referencia_bancaria String        @unique(map: "idx_cargo_referencia")
+  monto_total         Decimal       @db.Decimal
+  monto_pagado        Decimal       @default(0) @db.Decimal
+  monto_pendiente     Decimal       @db.Decimal
+  fecha_emision       DateTime      @db.Timestamptz(6)
+  fecha_vencimiento   DateTime      @db.Timestamptz(6)
+  estatus             String        @default("PENDIENTE")
+  grupo_id            BigInt?
+  created_at          DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?     @db.Timestamptz(6)
+  codigo_ficha        String?
+  detalles_items      String?
+  producto_id         BigInt?
+  Alumno              Alumno        @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cargo_alumno")
+  ConceptoCobro       ConceptoCobro @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_concepto")
+  grupos              grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_grupo")
+  PagoAlumno          PagoAlumno[]
 }
 
-model domicilio_figuras {
-  id              BigInt        @id @default(autoincrement())
-  calle           String?       @db.VarChar(120)
-  numero_exterior String?       @db.VarChar(55)
-  numero_interior String?       @db.VarChar(55)
-  colonia         String?       @db.VarChar(120)
-  localidad       String?       @db.VarChar(120)
-  referencia      String?       @db.VarChar(250)
-  municipio       String?       @db.VarChar(120)
-  estado          String?       @db.VarChar(30)
-  pais            String        @db.VarChar(3)
-  codigo_postal   String        @db.VarChar(5)
-  tipo_figura_id  BigInt?
-  tipo_figuras    tipo_figuras? @relation(fields: [tipo_figura_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tipo_figuras_domicilio")
+model ConceptoCobro {
+  id                    BigInt        @id @default(autoincrement())
+  nombre                String
+  descripcion           String?
+  clave_prod_serv       String?       @default("86121500")
+  clave_unidad          String?       @default("E48")
+  monto_base            Decimal       @db.Decimal
+  aplica_recargo        Boolean       @default(false)
+  grupo_id              BigInt?
+  created_at            DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?     @db.Timestamptz(6)
+  carrera               String?
+  programa_academico_id BigInt?
+  Alumno                Alumno[]
+  CargoAlumno           CargoAlumno[]
+  grupos                grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_conceptocobro_grupo")
 }
 
-model domicilios {
-  id              BigInt       @id @default(autoincrement())
-  calle           String?      @db.VarChar(120)
-  numero_exterior String?      @db.VarChar(55)
-  numero_interior String?      @db.VarChar(55)
-  colonia         String?      @db.VarChar(120)
-  localidad       String?      @db.VarChar(120)
-  referencia      String?      @db.VarChar(250)
-  municipio       String?      @db.VarChar(120)
-  estado          String?      @db.VarChar(30)
-  pais            String       @db.VarChar(3)
-  codigo_postal   String       @db.VarChar(5)
-  ubicacion_id    BigInt?
-  ubicaciones     ubicaciones? @relation(fields: [ubicacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ubicaciones_domicilio")
+model HistorialMontoAlumno {
+  id             BigInt   @id @default(autoincrement())
+  alumno_id      BigInt
+  monto_anterior Decimal? @db.Decimal
+  monto_nuevo    Decimal  @db.Decimal
+  motivo_cambio  String?
+  fecha_cambio   DateTime @default(now()) @db.Timestamptz(6)
+  Alumno         Alumno   @relation(fields: [alumno_id], references: [id], onDelete: Cascade)
 }
 
-model guia_identificacions {
-  id                          BigInt              @id @default(autoincrement())
-  numero_guia_identificacion  String              @db.VarChar(30)
-  descrip_guia_identificacion String              @db.VarChar(100)
-  peso_guia_identificacion    Decimal             @db.Decimal(16, 3)
-  mercancia_id                BigInt?
-  mercancias_detalle          mercancias_detalle? @relation(fields: [mercancia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mercancias_detalle_guias_identificacion")
+model PagoAlumno {
+  id                  BigInt           @id @default(autoincrement())
+  alumno_id           BigInt
+  cargo_id            BigInt?
+  archivo_bancario_id BigInt?
+  grupo_id            BigInt?
+  fecha_pago          DateTime         @db.Timestamptz(6)
+  monto               Decimal          @db.Decimal
+  referencia_bancaria String
+  metodo_pago         String           @default("03")
+  estado_conciliacion String           @default("CONCILIADO")
+  comprobante_id      BigInt?
+  created_at          DateTime?        @default(now()) @db.Timestamptz(6)
+  Alumno              Alumno           @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pagoalumno_alumno")
+  ArchivoBancario     ArchivoBancario? @relation(fields: [archivo_bancario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_archivo")
+  CargoAlumno         CargoAlumno?     @relation(fields: [cargo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_cargo")
+  comprobantes        comprobantes?    @relation(fields: [comprobante_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_comprobante")
+  grupos              grupos?          @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_grupo")
 }
 
-model identificacion_vehiculars {
-  id                   BigInt           @id @default(autoincrement())
-  config_vehicular     String           @db.VarChar(5)
-  peso_bruto_vehicular Decimal          @db.Decimal(16, 3)
-  placa_vm             String           @db.VarChar(10)
-  anio_modelo_vm       BigInt
-  autotransporte_id    BigInt?
-  autotransportes      autotransportes? @relation(fields: [autotransporte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_autotransportes_identificacion_vehicular")
+model ProductoFicha {
+  id                 BigInt    @id @default(autoincrement())
+  nombre             String
+  concepto_utilizado String?
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @db.Timestamptz(6)
 }
 
-model impuestos_locales {
-  id                  BigInt             @id @default(autoincrement())
-  version             String?            @default("1.0")
-  totalde_retenciones Decimal            @default(0.00) @db.Decimal(16, 2)
-  totalde_traslados   Decimal            @default(0.00) @db.Decimal(16, 2)
-  complemento_id      BigInt?
-  complementos        complementos?      @relation(fields: [complemento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_complementos_impuestos_locales")
-  retencion_locals    retencion_locals[]
-  traslado_locals     traslado_locals[]
+model ProgramaAcademico {
+  id         BigInt    @id @default(autoincrement())
+  nombre     String
+  rvoe       String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @db.Timestamptz(6)
 }
 
-model mercancias {
-  id                   BigInt               @id @default(autoincrement())
-  num_total_mercancias BigInt
-  peso_bruto_total     Decimal              @db.Decimal(16, 3)
-  peso_neto_total      Decimal?             @db.Decimal(16, 3)
-  peso_tara            Decimal?             @db.Decimal(16, 3)
-  cargo_por_tasacion   Decimal?             @db.Decimal(16, 2)
-  unidad_peso          String               @db.VarChar(3)
-  transporte_tipo      String?              @db.VarChar(20)
-  transporte_id        BigInt?
-  carta_porte_id       BigInt?
-  carta_portes         carta_portes?        @relation(fields: [carta_porte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_carta_portes_mercancias")
-  mercancias_detalle   mercancias_detalle[]
+model deduccions {
+  id             Int      @id @default(autoincrement())
+  tipo_deduccion String?  @db.VarChar(255)
+  clave          String?  @db.VarChar(255)
+  concepto       String?  @db.VarChar(255)
+  importe        Decimal? @db.Decimal(10, 2)
+  deducciones_id Int?
 }
 
-model mercancias_detalle {
-  id                      BigInt                    @id @default(autoincrement())
-  bienes_transp           String                    @db.VarChar(8)
-  descripcion             String                    @db.VarChar(1000)
-  cantidad                Decimal                   @db.Decimal(16, 3)
-  clave_unidad            String                    @db.VarChar(3)
-  unidad                  String?                   @db.VarChar(20)
-  dimensiones             String?                   @db.VarChar(50)
-  material_peligroso      Boolean?
-  cve_material_peligroso  String?                   @db.VarChar(4)
-  embalaje                String?                   @db.VarChar(4)
-  descrip_embalaje        String?                   @db.VarChar(100)
-  peso_en_kg              Decimal?                  @db.Decimal(16, 3)
-  valor_mercancia         Decimal?                  @db.Decimal(16, 2)
-  moneda                  String?                   @db.VarChar(3)
-  fraccion_arancelaria    String?                   @db.VarChar(10)
-  uuid_comercio_ext       String?                   @db.VarChar(36)
-  tipo_materia            String?                   @db.VarChar(2)
-  descripcion_materia     String?                   @db.VarChar(100)
-  mercancias_id           BigInt?
-  cantidad_transportans   cantidad_transportans[]
-  detalle_mercancia       detalle_mercancia[]
-  documentacion_aduaneras documentacion_aduaneras[]
-  guia_identificacions    guia_identificacions[]
-  mercancias              mercancias?               @relation(fields: [mercancias_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mercancias_mercancias")
+model emisor_nominas {
+  id                Int     @id @default(autoincrement())
+  registro_patronal String? @db.VarChar(255)
+  rfc_patron_origen String? @db.VarChar(255)
+  emisor_id         Int?
+  nomina_id         Int?
 }
 
-model parte_transportes {
-  id               BigInt        @id @default(autoincrement())
-  parte_transporte String        @db.VarChar(4)
-  tipo_figura_id   BigInt?
-  tipo_figuras     tipo_figuras? @relation(fields: [tipo_figura_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tipo_figuras_partes_transporte")
+model nominas {
+  id                 Int      @id @default(autoincrement())
+  version            String?  @db.VarChar(255)
+  tipo_nomina        String?  @db.VarChar(255)
+  fecha_pago         String?  @db.VarChar(255)
+  fecha_inicial_pago String?  @db.VarChar(255)
+  fecha_final_pago   String?  @db.VarChar(255)
+  num_dias_pagados   Int?
+  total_percepciones Decimal? @db.Decimal(10, 2)
+  total_deducciones  Decimal? @db.Decimal(10, 2)
+  total_otros_pagos  Decimal? @db.Decimal(10, 2)
+  emisor_nomina_id   Int?
+  receptor_nomina_id Int?
+  complemento_id     Int?
 }
 
-model regimen_aduaneros {
-  id               BigInt        @id @default(autoincrement())
-  regimen_aduanero String        @db.VarChar(10)
-  carta_porte_id   BigInt?
-  carta_portes     carta_portes? @relation(fields: [carta_porte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_carta_portes_regimenes_aduaneros")
+model percepcions {
+  id              Int      @id @default(autoincrement())
+  tipo_percepcion String?  @db.VarChar(255)
+  clave           String?  @db.VarChar(255)
+  concepto        String?  @db.VarChar(255)
+  importe_gravado Decimal? @db.Decimal(10, 2)
+  importe_exento  Decimal? @db.Decimal(10, 2)
+  percepciones_id Int?
 }
 
-model remolques {
-  id                BigInt           @id @default(autoincrement())
-  sub_tipo_rem      String           @db.VarChar(7)
-  placa             String           @db.VarChar(10)
-  autotransporte_id BigInt?
-  autotransportes   autotransportes? @relation(fields: [autotransporte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_autotransportes_remolques")
+model receptor_nominas {
+  id                        Int      @id @default(autoincrement())
+  curp                      String?  @db.VarChar(255)
+  num_seguridad_social      String?  @db.VarChar(255)
+  fecha_inicio_rel_laboral  String?  @db.VarChar(255)
+  antiguedad                String?  @db.VarChar(255)
+  tipo_contrato             String?  @db.VarChar(255)
+  tipo_jornada              String?  @db.VarChar(255)
+  tipo_regimen              String?  @db.VarChar(255)
+  num_empleado              String?  @db.VarChar(255)
+  departamento              String?  @db.VarChar(255)
+  puesto                    String?  @db.VarChar(255)
+  riesgo_puesto             String?  @db.VarChar(255)
+  periodicidad_pago         String?  @db.VarChar(255)
+  cuenta_bancaria           String?  @db.VarChar(255)
+  banco                     String?  @db.VarChar(255)
+  salario_base_cot_apor     Decimal? @db.Decimal(10, 2)
+  salario_diario_integrado  Decimal? @db.Decimal(10, 2)
+  clave_ent_fed             String?  @db.VarChar(255)
+  receptor_id               Int?
+  emisor_nomina_id          Int?
+  nomina_id                 Int?
+  rfc                       String?  @db.VarChar(255)
+  nombre                    String?  @db.VarChar(255)
+  domicilio_fiscal_receptor String?  @db.VarChar(255)
+  residencia_fiscal         String?  @db.VarChar(255)
+  num_reg_id_trib           String?  @db.VarChar(255)
+  regimen_fiscal_receptor   String?  @db.VarChar(255)
+  uso_cfdi                  String?  @db.VarChar(255)
+  grupo_id                  Int?
+  calle                     String?  @db.VarChar(255)
+  numero_exterior           String?  @db.VarChar(255)
+  numero_interior           String?  @db.VarChar(255)
+  colonia                   String?  @db.VarChar(255)
+  municipio                 String?  @db.VarChar(255)
+  estado                    String?  @db.VarChar(255)
+  email                     String?  @db.VarChar(255)
+  sindicalizado             String?  @db.VarChar(255)
+  correo                    String?  @db.VarChar(255)
 }
 
-model retencion_locals {
-  id                   BigInt             @id @default(autoincrement())
-  imp_loc_retenido     String
-  tasade_retencion     Decimal            @db.Decimal(10, 6)
-  importe              Decimal            @db.Decimal(16, 2)
-  impuestos_locales_id BigInt?
-  impuestos_locales    impuestos_locales? @relation(fields: [impuestos_locales_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_locales_retenciones_locales")
-}
-
-model seguros_autotransportes {
-  id                   BigInt           @id @default(autoincrement())
-  asegura_resp_civil   String           @db.VarChar(100)
-  poliza_resp_civil    String           @db.VarChar(30)
-  asegura_med_ambiente String?          @db.VarChar(100)
-  poliza_med_ambiente  String?          @db.VarChar(30)
-  asegura_carga        String?          @db.VarChar(100)
-  poliza_carga         String?          @db.VarChar(30)
-  prima_seguro         Decimal?         @db.Decimal(16, 2)
-  autotransporte_id    BigInt?
-  autotransportes      autotransportes? @relation(fields: [autotransporte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_autotransportes_seguros")
-}
-
-model sub_transportes {
-  id                   BigInt           @id @default(autoincrement())
-  rfc_sub_contratacion String           @db.VarChar(13)
-  rfc_figura           String?          @db.VarChar(13)
-  autotransporte_id    BigInt?
-  autotransportes      autotransportes? @relation(fields: [autotransporte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_autotransportes_sub_transporte")
-}
-
-model tipo_figuras {
-  id                BigInt              @id @default(autoincrement())
-  tipo_figura       String              @db.VarChar(2)
-  rfc_figura        String              @db.VarChar(13)
-  nombre_figura     String?             @db.VarChar(254)
-  num_licencia      String?             @db.VarChar(16)
-  num_reg_id_trib   String?             @db.VarChar(40)
-  residencia_fiscal String?             @db.VarChar(3)
-  carta_porte_id    BigInt?
-  domicilio_figuras domicilio_figuras[]
-  parte_transportes parte_transportes[]
-  carta_portes      carta_portes?       @relation(fields: [carta_porte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_carta_portes_figura_transporte")
-}
-
-model transporte_aereos {
-  id                   BigInt   @id @default(autoincrement())
-  perm_sct             String?  @db.VarChar(10)
-  num_permiso_sct      String?  @db.VarChar(50)
-  nombre_aseg          String?  @db.VarChar(100)
-  num_poliza_seguro    String?  @db.VarChar(30)
-  numero_guia          String   @db.VarChar(30)
-  lugar_contrato       String?  @db.VarChar(50)
-  codigo_transportista String   @db.VarChar(3)
-  num_vuelo            String?  @db.VarChar(10)
-  aeropuerto_origen    String?  @db.VarChar(3)
-  aeropuerto_destino   String?  @db.VarChar(3)
-  cargo_total          String?  @db.VarChar(20)
-  tipo_servicio        String?  @db.VarChar(4)
-  cargo_x_kilogramo    Decimal? @db.Decimal(16, 2)
-  cargo_por_peso       Decimal? @db.Decimal(16, 2)
-  cargo_por_otros      Decimal? @db.Decimal(16, 2)
-  descuento            Decimal? @db.Decimal(16, 2)
-  peso_carga           Decimal? @db.Decimal(16, 3)
-}
-
-model transporte_ferroviarios {
-  id                 BigInt               @id @default(autoincrement())
-  tipo_de_servicio   String               @db.VarChar(4)
-  nombre_aseg        String?              @db.VarChar(100)
-  num_poliza_seguro  String?              @db.VarChar(30)
-  carro_ferroviarios carro_ferroviarios[]
-}
-
-model transportes_maritimos {
-  id                        BigInt                 @id @default(autoincrement())
-  perm_sct                  String?                @db.VarChar(10)
-  num_permiso_sct           String?                @db.VarChar(50)
-  nombre_aseg               String?                @db.VarChar(100)
-  num_poliza_seguro         String?                @db.VarChar(30)
-  tipo_carga                String                 @db.VarChar(4)
-  nombre_agent_naviero      String?                @db.VarChar(300)
-  num_autoriz_naviero       String?                @db.VarChar(30)
-  nombre_agente_naviero     String?                @db.VarChar(300)
-  num_autoriz_imo           String?                @db.VarChar(30)
-  nombre_buque              String                 @db.VarChar(300)
-  tipo_navegacion           String?                @db.VarChar(4)
-  num_viaje                 String?                @db.VarChar(30)
-  num_conocimiento_embarque String?                @db.VarChar(30)
-  lineas_navieras           String?                @db.VarChar(300)
-  contenedor_maritimos      contenedor_maritimos[]
-}
-
-model traslado_locals {
-  id                   BigInt             @id @default(autoincrement())
-  imp_loc_trasladado   String
-  tasade_traslado      Decimal            @db.Decimal(10, 6)
-  importe              Decimal            @db.Decimal(16, 2)
-  impuestos_locales_id BigInt?
-  impuestos_locales    impuestos_locales? @relation(fields: [impuestos_locales_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_impuestos_locales_traslados_locales")
-}
-
-model ubicaciones {
-  id                            BigInt        @id @default(autoincrement())
-  tipo_ubicacion                String        @db.VarChar(10)
-  id_ubicacion                  String?       @db.VarChar(30)
-  rfc_remitente_destinatario    String        @db.VarChar(13)
-  nombre_remitente_destinatario String?       @db.VarChar(254)
-  num_reg_id_trib               String?       @db.VarChar(40)
-  residencia_fiscal             String?       @db.VarChar(3)
-  fecha_hora_salida_llegada     DateTime      @db.Timestamptz(6)
-  distancia_recorrida           Decimal?      @db.Decimal(16, 3)
-  carta_porte_id                BigInt?
-  domicilios                    domicilios[]
-  carta_portes                  carta_portes? @relation(fields: [carta_porte_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_carta_portes_ubicaciones")
+model subsidio_al_empleos {
+  id               Int      @id @default(autoincrement())
+  subsidio_causado Decimal? @db.Decimal(10, 2)
+  nomina_id        Int?
+  otro_pago_id     Int?
 }
