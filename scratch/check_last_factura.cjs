@@ -18,13 +18,34 @@ async function main() {
 
     if (rawFacturas.length > 0) {
       const lastId = rawFacturas[0].id;
+      console.log("ÚLTIMA FACTURA CREADA (ID:", lastId.toString(), "):");
+      console.log(rawFacturas);
       
-      const rawRetencionesTotal = await prisma.$queryRaw`
+      const rawConceptos = await prisma.$queryRaw`
         SELECT 
           id, 
-          importe_string 
+          descripcion, 
+          importe_string, 
+          valor_unitario_string, 
+          descuento_string
         FROM 
-          retencions 
+          "Concepto"
+        WHERE 
+          conceptos_id IN (
+            SELECT id FROM "Conceptos" WHERE comprobante_id = ${lastId}
+          );
+      `;
+      console.log("CONCEPTOS ASOCIADOS:");
+      console.log(rawConceptos);
+
+      const rawTraslados = await prisma.$queryRaw`
+        SELECT 
+          id, 
+          base_string, 
+          importe_string, 
+          tasa_o_cuota_string 
+        FROM 
+          traslados 
         WHERE 
           impuestos_id IN (
             SELECT id FROM impuestos WHERE concepto_id IN (
@@ -34,11 +55,24 @@ async function main() {
             )
           );
       `;
-      console.log("RETENCIONES ASOCIADAS:");
-      console.log(rawRetencionesTotal);
+      console.log("TRASLADOS ASOCIADOS (CONCEPTOS):");
+      console.log(rawTraslados);
+
+      const rawConceptosTable = await prisma.$queryRaw`
+        SELECT 
+          id, 
+          total_impuestos_trasladados_string, 
+          total_impuestos_retenidos_string
+        FROM 
+          "Conceptos"
+        WHERE 
+          comprobante_id = ${lastId};
+      `;
+      console.log("TABLA 'Conceptos' (SUMAS):");
+      console.log(rawConceptosTable);
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error consultando la factura:", error);
   } finally {
     await prisma.$disconnect();
   }
