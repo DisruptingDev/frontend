@@ -15,7 +15,9 @@ export default async function GuardarFactura(factura, onSuccess, onError ,{token
             });
 
             if (!response.ok) {
-                throw new Error('Error al guardar la factura');
+                const errorText = await response.text();
+                console.error("Error devuelto por la API:", errorText);
+                throw new Error(`Error al guardar la factura: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
             const result = await response.json();

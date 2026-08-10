@@ -388,8 +388,8 @@ const buildPayload = (row, emisor) => {
         EmisorID: emisor?.EmisorID,
         ReceptorNominaID: row["receptor_nomina_id"],
         UsoCFDI: "CN01",
-        Descuento: r2(totalDeducciones),
-        DescuentoString: r2(totalDeducciones).toFixed(2),
+        Descuento: totalDeducciones > 0 ? r2(totalDeducciones) : undefined,
+        DescuentoString: totalDeducciones > 0 ? r2(totalDeducciones).toFixed(2) : undefined,
         SubTotal: r2(totalPercepciones),
         SubTotalString: r2(totalPercepciones).toFixed(2),
         Total: r2(totalPercepciones - totalDeducciones + totalOtros),
@@ -402,7 +402,7 @@ const buildPayload = (row, emisor) => {
                 Descripcion: "Pago de nómina",
                 ValorUnitario: r2(totalPercepciones),
                 Importe: r2(totalPercepciones),
-                Descuento: r2(totalDeducciones),
+                Descuento: totalDeducciones > 0 ? r2(totalDeducciones) : undefined,
                 ObjetoImp: "01",
                 Impuestos: { Traslados: [], Retenciones: [] },
             }],
@@ -428,11 +428,11 @@ const buildPayload = (row, emisor) => {
                     TotalExento: r2(totalExento),
                     Percepciones: percepciones,
                 },
-                Deducciones: {
+                Deducciones: deducciones.length > 0 ? {
                     TotalImpuestosRetenidos: totalImpuestosRetenidos,
                     TotalOtrasDeducciones: totalOtrasDeducciones,
                     Deducciones: deducciones,
-                },
+                } : undefined,
                 OtrosPagos: otrosPagos.length ? { OtrosPagos: otrosPagos } : undefined,
             },
         },
@@ -595,14 +595,29 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
                     },
                     body: JSON.stringify(payload),
                 });
+                
+                let errorMsg = "Falta un campo requerido o formato incorrecto";
+                if (!r.ok) {
+                    const errorText = await r.text();
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        // Extraemos el error. Tratamos de hacerlo muy legible.
+                        errorMsg = errorData.error || errorData.message || JSON.stringify(errorData);
+                    } catch (e) {
+                        errorMsg = errorText || errorMsg;
+                    }
+                    // Forzar mostrarlo en un alert temporal para que el usuario lo vea SÍ o SÍ
+                    alert("El servidor rechazó la nómina por: " + errorMsg);
+                }
 
                 res.push({
                     id: row["receptor_nomina_id"],
                     nombre: row["Nombre"],
                     ok: r.ok,
-                    msg: r.ok ? "OK" : "Falta un campo requerido o formato incorrecto",
+                    msg: r.ok ? "OK" : errorMsg,
                 });
-            } catch {
+            } catch (err) {
+                console.error("Error de red:", err);
                 res.push({ id: row["receptor_nomina_id"], nombre: row["Nombre"], ok: false, msg: "Error de conexión" });
             }
 

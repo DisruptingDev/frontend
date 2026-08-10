@@ -34,8 +34,10 @@ export default function FormatearFactura(
       Version: "4.0",
       Fecha: fechaFormateada,
       FormaPago: receptor.FormaPago,
-      Descuento: Number(Number(TotalDescuento).toFixed(2)),
-      DescuentoString: String(Number(TotalDescuento).toFixed(2)),
+      ...(Number(TotalDescuento) > 0 && {
+        Descuento: Number(Number(TotalDescuento).toFixed(2)),
+        DescuentoString: String(Number(TotalDescuento).toFixed(2)),
+      }),
       Serie: emisor.Serie,
       SubTotal: Number(Number(subtotal).toFixed(2)),
       SubTotalString: String(Number(subtotal).toFixed(2)),
@@ -90,8 +92,10 @@ export default function FormatearFactura(
           ),
           Importe: Number(Number(concepto.Subtotal).toFixed(2)),
           ImporteString: String(Number(concepto.Subtotal).toFixed(2)),
-          Descuento: Number(Number(concepto.Descuento).toFixed(2)),
-          DescuentoString: String(Number(concepto.Descuento).toFixed(2)),
+          ...(Number(concepto.Descuento) > 0 && {
+            Descuento: Number(Number(concepto.Descuento).toFixed(2)),
+            DescuentoString: String(Number(concepto.Descuento).toFixed(2)),
+          }),
           ObjetoImp: concepto.ObjetoImpuesto,
           Impuestos: {
             Retenciones: concepto.Retenciones

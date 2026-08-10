@@ -4,8 +4,8 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     MaterialReactTable,
     useMaterialReactTable,
-    MRT_Localization_ES
 } from 'material-react-table';
+import { MRT_Localization_ES } from 'material-react-table/locales/es';
 import {
     Box,
     IconButton,

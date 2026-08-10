@@ -25,7 +25,9 @@ import {
     ContentCopy as CloneIcon,
     Payment as PaymentIcon,
     MoreVert as MoreVertIcon,
-    ViewList as ViewListIcon
+    ViewList as ViewListIcon,
+    Delete as DeleteIcon,
+    Cancel as CancelIcon
 } from '@mui/icons-material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -38,6 +40,7 @@ import TextField from '@mui/material/TextField';
 import { WithPermission } from '@/components/WithPermission';
 import PagoModalWithPayPal from '@/components/CompraTimbres/PagoModal';
 
+import ModalExito from '@/components/Home/Modales/modalExito';
 import ModalError from '@/components/Home/Modales/modalError';
 import ModalTimbrar from '@/components/Home/Modales/modalTimbrar';
 import ModalCancelar from '../Modales/modalCancelar';

@@ -126,6 +126,7 @@ export function useAuth() {
   // Efecto para cargar el usuario al montar el componente
   useEffect(() => {
     loadUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Función de login

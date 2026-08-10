@@ -226,8 +226,6 @@ export default function UserMenu() {
         </WithPermission>
 
         {(bod === 'false' || bod === undefined || bod === null || bod === '' || bod === 'undefined') && (
-          <>
-
             <WithPermission permission="crear_compras">
               <MenuItem
                 onClick={handleBuyClick}
@@ -254,7 +252,9 @@ export default function UserMenu() {
                 </Typography>
               </MenuItem>
             </WithPermission>
+        )}
 
+        {(bod === 'false' || bod === undefined || bod === null || bod === '' || bod === 'undefined') && (
             <WithPermission permission="ver_compras">
               <MenuItem
                 onClick={handleViewOrdersClick}
@@ -281,7 +281,6 @@ export default function UserMenu() {
                 </Typography>
               </MenuItem>
             </WithPermission>
-          </>
         )}
 
         <WithPermission permission="invitar_usuarios">

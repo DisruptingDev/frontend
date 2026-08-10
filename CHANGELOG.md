@@ -12,6 +12,11 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.01] - 2026-08-10
+### [TR]
+* TR - Liberación de cambios en módulo de Cobranza (alumnos, cargos, conciliación y reportes).
+* FIX - Corrección de error de compilación en vista de Facturación al importar AddIcon faltante.
+
 ## [0.0.10] - 2026-07-23
 ### [BUG]
 * BUG - Ajuste en cálculo de impuestos al editar complemento de pago

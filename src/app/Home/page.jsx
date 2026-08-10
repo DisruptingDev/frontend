@@ -8,7 +8,7 @@ import Header from "@/components/Header/Header.jsx";
 
 import SideBarMenu from "@/components/Dashborard/SideBarMenu.jsx";
 // import SearchFilter from "@/components/Home/Busqueda/Busqueda.jsx";
-// import Tabla from "@/components/Home/Tabla/Tabla.jsx";
+import Tabla from "@/components/Home/Tabla/Tabla.jsx";
 import DataTable from "@/components/Home/Tabla/DataTable.jsx";
 import DataTableMRT from "@/components/Home/Tabla/DataTableMRT.jsx";
 import ModalWizard from "@/components/Home/Modales/modalWizard";
@@ -171,6 +171,7 @@ export default function Home() {
                     <div ref={datatableRef}>
 
                         <DataTableMRT token={token} isBOD={isBOD} />
+                        {/* <Tabla token={token} filtro={null} /> */}
                     </div>
 
                     {/* <Button

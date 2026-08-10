@@ -28,7 +28,10 @@ import {
   FileUpload as ImportarXMLIcon,
   ExpandLess,
   ExpandMore,
-  Email as BuzonIcon
+  Email as BuzonIcon,
+  School as SchoolIcon,
+  AccountBalance as ConciliacionIcon,
+  BarChart as BarChartIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { WithPermission } from '@/components/WithPermission';
@@ -40,6 +43,13 @@ const baseMenuItems = [
     icon: <HomeIcon />,
     path: "/Home",
     permission: "ver_facturas",
+    subItems: null
+  },
+  {
+    title: "Cobranza & Pagos",
+    icon: <SchoolIcon />,
+    path: "/Cobranza/Dashboard",
+    permission: "PAGOS_VER",
     subItems: null
   },
   {
