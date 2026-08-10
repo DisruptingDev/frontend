@@ -18,15 +18,20 @@ export async function GET(request) {
             tipo_de_comprobante: {
                 not: 'N', // Exclude Payroll invoices
             },
+            NOT: [
+                { uuid: "" },
+                { fecha_timbrado: "" }
+            ]
         };
 
         if (startDate && endDate) {
-            // Assuming fecha_timbrado is stored as 'YYYY-MM-DD...' string
-            // We'll use string comparison which works for ISO formats
+            // Append time suffix to include records stamped up to the end of the selected day
+            const end = endDate.includes('T') ? endDate : `${endDate}T23:59:59`;
+            const start = startDate.includes('T') ? startDate : `${startDate}T00:00:00`;
             where.fecha_timbrado = {
                 ...where.fecha_timbrado,
-                gte: startDate,
-                lte: endDate,
+                gte: start,
+                lte: end,
             };
         }
 

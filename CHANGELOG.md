@@ -12,6 +12,10 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.02] - 2026-08-10
+### [FIX]
+* FIX - Corrección en conteo de facturas timbradas en el dashboard de super admin (rango de fechas ahora incluye el día límite completo y excluye registros vacíos).
+
 ## [0.01.01] - 2026-08-10
 ### [TR]
 * TR - Liberación de cambios en módulo de Cobranza (alumnos, cargos, conciliación y reportes).
