@@ -290,7 +290,7 @@ model grupos {
 }
 
 model impuesto_claves {
-  id          BigInt       @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   clave       String?
   descripcion String?
   tipo        String?
