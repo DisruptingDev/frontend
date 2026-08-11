@@ -774,11 +774,11 @@ model Alumno {
   programa_academico_id BigInt?
   programa_academico    ProgramaAcademico?     @relation(fields: [programa_academico_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_programa_academico")
   ConceptoCobro         ConceptoCobro?         @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_concepto")
-  emisors               emisors?               @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_emisor")
+  emisor                emisors?               @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_emisor")
   grupos                grupos?                @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_grupo")
-  receptors             receptors?             @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_receptor")
+  receptor              receptors?             @relation(fields: [receptor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_receptor")
   CargoAlumno           CargoAlumno[]
-  HistorialMontoAlumno  HistorialMontoAlumno[]
+  historial_montos      HistorialMontoAlumno[]
   PagoAlumno            PagoAlumno[]
 }
 
@@ -817,8 +817,8 @@ model CargoAlumno {
   codigo_ficha        String?
   detalles_items      String?
   producto_id         BigInt?
-  Alumno              Alumno        @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cargo_alumno")
-  ConceptoCobro       ConceptoCobro @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_concepto")
+  alumno              Alumno        @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cargo_alumno")
+  concepto            ConceptoCobro @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_concepto")
   grupos              grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_grupo")
   PagoAlumno          PagoAlumno[]
 }
@@ -864,10 +864,10 @@ model PagoAlumno {
   estado_conciliacion String           @default("CONCILIADO")
   comprobante_id      BigInt?
   created_at          DateTime?        @default(now()) @db.Timestamptz(6)
-  Alumno              Alumno           @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pagoalumno_alumno")
+  alumno              Alumno           @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pagoalumno_alumno")
   ArchivoBancario     ArchivoBancario? @relation(fields: [archivo_bancario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_archivo")
-  CargoAlumno         CargoAlumno?     @relation(fields: [cargo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_cargo")
-  comprobantes        comprobantes?    @relation(fields: [comprobante_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_comprobante")
+  cargo               CargoAlumno?     @relation(fields: [cargo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_cargo")
+  comprobante         comprobantes?    @relation(fields: [comprobante_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_comprobante")
   grupos              grupos?          @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pagoalumno_grupo")
 }
 
