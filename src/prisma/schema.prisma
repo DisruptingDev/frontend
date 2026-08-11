@@ -772,6 +772,7 @@ model Alumno {
   ids_alumno            String?
   informacion_pago      String?
   programa_academico_id BigInt?
+  programa_academico    ProgramaAcademico?     @relation(fields: [programa_academico_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_programa_academico")
   ConceptoCobro         ConceptoCobro?         @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_concepto")
   emisors               emisors?               @relation(fields: [emisor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_emisor")
   grupos                grupos?                @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_grupo")
@@ -884,6 +885,7 @@ model ProgramaAcademico {
   rvoe       String?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
   updated_at DateTime? @db.Timestamptz(6)
+  Alumno     Alumno[]
 }
 
 model deduccions {
