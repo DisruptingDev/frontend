@@ -20,6 +20,25 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
+function sanitizeNullBytes(val) {
+    if (val === null || val === undefined) return val;
+    if (typeof val === 'string') {
+        return val.replace(/\u0000/g, '');
+    }
+    if (typeof val === 'object') {
+        if (Array.isArray(val)) {
+            return val.map(sanitizeNullBytes);
+        }
+        if (typeof val.toNumber === 'function' || (val.d && Array.isArray(val.d))) {
+            return val; // Skip Decimal/Prisma types
+        }
+        return Object.fromEntries(
+            Object.entries(val).map(([k, v]) => [k, sanitizeNullBytes(v)])
+        );
+    }
+    return val;
+}
+
 function getFechaLocalSAT() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -267,7 +286,7 @@ export async function POST(request) {
                 const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id);
 
                 const comprobanteAuto = await prisma.comprobantes.create({
-                    data: {
+                    data: sanitizeNullBytes({
                         emisor_id: emisor.id,
                         receptor_id: receptorId,
                         grupo_id: emisor.grupo_id,
@@ -290,7 +309,7 @@ export async function POST(request) {
                         descuento: 0,
                         descuento_string: '0',
                         estatus: 'PENDIENTE'
-                    }
+                    })
                 });
 
                 const eInfo = {
@@ -463,7 +482,7 @@ export async function POST(request) {
                     const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id);
 
                     const comprobanteAuto = await prisma.comprobantes.create({
-                        data: {
+                        data: sanitizeNullBytes({
                             emisor_id: emisor.id,
                             receptor_id: receptorId,
                             grupo_id: emisor.grupo_id,
@@ -486,7 +505,7 @@ export async function POST(request) {
                             descuento: 0,
                             descuento_string: '0',
                             estatus: 'PENDIENTE'
-                        }
+                        })
                     });
 
                     const carreraStr = alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL';
