@@ -1418,8 +1418,15 @@ export default function MóduloCobranzaUnificadoPage() {
                                         <Typography variant="h4" fontWeight="bold" sx={{ fontFamily: 'monospace', color: '#1976d2', letterSpacing: 2, my: 1 }}>
                                             {cargoSeleccionado.alumno?.clabe_interbancaria || cargoSeleccionado.referencia_bancaria}
                                         </Typography>
-                                        <Typography variant="caption" color="textSecondary">
-                                            Ingresa exactamente esta referencia en tu App Bancaria o Ventanilla.
+                                        <Divider sx={{ my: 1 }} />
+                                        <Typography variant="caption" display="block" color="textSecondary" fontWeight="bold">
+                                            CONCEPTO / DESCRIPCIÓN DE PAGO (DOBLE CONTROL)
+                                        </Typography>
+                                        <Typography variant="h5" fontWeight="bold" color="secondary.main" sx={{ fontFamily: 'monospace', letterSpacing: 1, my: 1 }}>
+                                            {cargoSeleccionado.codigo_ficha || 'N/A'}
+                                        </Typography>
+                                        <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                                            Escribe este código exactamente en el campo de Concepto de tu transferencia SPEI
                                         </Typography>
                                     </Paper>
                                 </Grid>

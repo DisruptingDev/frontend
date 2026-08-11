@@ -568,11 +568,18 @@ export default function CargosPage() {
                                 <Typography variant="caption" color="textSecondary" display="block">
                                     REFERENCIA BANCARIA ÚNICA (CLABE / MÓDULO 10):
                                 </Typography>
-                                <Typography variant="h4" fontWeight="bold" color="primary" sx={{ fontFamily: 'monospace', letterSpacing: 2 }}>
+                                <Typography variant="h4" fontWeight="bold" color="primary" sx={{ fontFamily: 'monospace', letterSpacing: 2, mb: 1 }}>
                                     {cargoSeleccionado.alumno?.clabe_interbancaria || cargoSeleccionado.referencia_bancaria}
                                 </Typography>
+                                <Divider sx={{ my: 1 }} />
+                                <Typography variant="caption" color="textSecondary" display="block">
+                                    CONCEPTO / DESCRIPCIÓN DE PAGO (DOBLE CONTROL):
+                                </Typography>
+                                <Typography variant="h5" fontWeight="bold" color="secondary.main" sx={{ fontFamily: 'monospace', letterSpacing: 1 }}>
+                                    {cargoSeleccionado.codigo_ficha || 'N/A'}
+                                </Typography>
                                 <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                                    Transferencia SPEI / Sucursal BBVA / Banamex / Santander
+                                    Escribe este código exactamente en el campo de Concepto de tu transferencia SPEI
                                 </Typography>
                             </Paper>
 

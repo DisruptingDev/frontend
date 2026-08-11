@@ -439,12 +439,20 @@ export async function POST(request) {
                         const concId = concDef ? concDef.id : BigInt(1);
                         
                         // Creamos un cargo virtual negativo para representar el saldo a favor
+                        let refSAF = `SAF-${referencia_bancaria || Date.now()}`;
+                        const refExiste = await prisma.cargoAlumno.findFirst({
+                            where: { referencia_bancaria: refSAF }
+                        });
+                        if (refExiste) {
+                            refSAF = `${refSAF}-${Math.floor(Math.random() * 10000)}`;
+                        }
+
                         const cargoSaldoAFavor = await prisma.cargoAlumno.create({
                             data: {
                                 alumno_id: alumnoObj.id,
                                 concepto_id: concId,
                                 codigo_ficha: `SAF-${String(Math.floor(Math.random()*90000+10000))}`,
-                                referencia_bancaria: `SAF-${referencia_bancaria || Date.now()}`,
+                                referencia_bancaria: refSAF,
                                 monto_total: -montoRestante,
                                 monto_pagado: 0,
                                 monto_pendiente: -montoRestante,
@@ -663,34 +671,51 @@ export async function POST(request) {
             }
 
             if (alumnoEncontrado) {
-                conciliadosCount++;
-                
                 const alumnoCargosPendientes = cargosPendientes.filter(cp => cp.alumno_id === alumnoEncontrado.id);
 
-                let montoDisponible = mov.monto;
-                const cargosSeleccionadosSugeridos = [];
-                for (const cargo of alumnoCargosPendientes) {
-                    if (montoDisponible <= 0) break;
-                    cargosSeleccionadosSugeridos.push(cargo.id.toString());
-                    montoDisponible -= Number(cargo.monto_pendiente);
-                }
+                if (alumnoCargosPendientes.length === 0) {
+                    // Si se encuentra el alumno pero no tiene fichas de cobro (cargos) creadas
+                    pendientesCount++;
+                    pagosProcesados.push({
+                        id_tmp: `MOV-REV-${pendientesCount}`,
+                        referencia_bancaria: mov.referencia || 'SIN_REF',
+                        monto: mov.monto,
+                        fecha_pago: mov.fecha,
+                        descripcion: mov.descripcion,
+                        estado_conciliacion: 'REVISION',
+                        linea: mov.linea,
+                        alumno_id: alumnoEncontrado.id.toString(),
+                        alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
+                        alumno_matricula: alumnoEncontrado.matricula,
+                        metodo_matcheo: `${metodoMatcheo} - Sin Ficha de Cobro`
+                    });
+                } else {
+                    conciliadosCount++;
+                    let montoDisponible = mov.monto;
+                    const cargosSeleccionadosSugeridos = [];
+                    for (const cargo of alumnoCargosPendientes) {
+                        if (montoDisponible <= 0) break;
+                        cargosSeleccionadosSugeridos.push(cargo.id.toString());
+                        montoDisponible -= Number(cargo.monto_pendiente);
+                    }
 
-                pagosProcesados.push({
-                    id_tmp: `MOV-${conciliadosCount}`,
-                    fecha_pago: mov.fecha,
-                    monto: mov.monto,
-                    referencia_bancaria: mov.referencia || `REF-${Date.now()}`,
-                    descripcion: mov.descripcion || '',
-                    linea: mov.linea,
-                    alumno_id: alumnoEncontrado.id.toString(),
-                    cargos_sugeridos: cargosSeleccionadosSugeridos,
-                    alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
-                    alumno_matricula: alumnoEncontrado.matricula,
-                    metodo_matcheo: metodoMatcheo,
-                    requiere_factura: alumnoEncontrado.requiere_factura,
-                    estado_conciliacion: 'SUGERIDO',
-                    cargos_pendientes: serializeBigIntsAndDecimals(alumnoCargosPendientes)
-                });
+                    pagosProcesados.push({
+                        id_tmp: `MOV-${conciliadosCount}`,
+                        fecha_pago: mov.fecha,
+                        monto: mov.monto,
+                        referencia_bancaria: mov.referencia || `REF-${Date.now()}`,
+                        descripcion: mov.descripcion || '',
+                        linea: mov.linea,
+                        alumno_id: alumnoEncontrado.id.toString(),
+                        cargos_sugeridos: cargosSeleccionadosSugeridos,
+                        alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
+                        alumno_matricula: alumnoEncontrado.matricula,
+                        metodo_matcheo: metodoMatcheo,
+                        requiere_factura: alumnoEncontrado.requiere_factura,
+                        estado_conciliacion: 'SUGERIDO',
+                        cargos_pendientes: serializeBigIntsAndDecimals(alumnoCargosPendientes)
+                    });
+                }
             } else {
                 pendientesCount++;
                 pagosProcesados.push({
