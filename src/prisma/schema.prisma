@@ -820,6 +820,7 @@ model CargoAlumno {
   alumno              Alumno        @relation(fields: [alumno_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cargo_alumno")
   concepto            ConceptoCobro @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_concepto")
   grupos              grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_grupo")
+  producto            ProductoFicha? @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_cargo_producto")
   PagoAlumno          PagoAlumno[]
 }
 
@@ -877,6 +878,7 @@ model ProductoFicha {
   concepto_utilizado String?
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
   updated_at         DateTime? @db.Timestamptz(6)
+  CargoAlumno        CargoAlumno[]
 }
 
 model ProgramaAcademico {
