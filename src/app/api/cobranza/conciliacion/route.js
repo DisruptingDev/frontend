@@ -191,7 +191,7 @@ export async function POST(request) {
         // CASO A: ASIGNACIÓN MANUAL DE MOVIMIENTO A UN ALUMNO (JSON)
         // =========================================================================
         if (contentType.includes('application/json')) {
-            const body = await request.json();
+            const body = sanitizeNullBytes(await request.json());
             const { action, alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, emisor_id, grupo_id } = body;
 
             if (action === 'ASIGNAR_MANUAL') {
@@ -590,6 +590,8 @@ export async function POST(request) {
             const textContent = buffer.toString('utf-8');
             movimientos = parseGenerico(textContent);
         }
+
+        movimientos = sanitizeNullBytes(movimientos);
 
         if (movimientos.length === 0) {
             return NextResponse.json({ error: 'El archivo no contiene movimientos bancarios válidos o con formato reconocible.' }, { status: 400 });
