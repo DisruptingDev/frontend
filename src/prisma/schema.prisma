@@ -166,9 +166,9 @@ model comprobantes {
   total_string        String?
   descuento_string    String?
   xml_timbrado        String?
-  sub_total           Decimal?              @db.Decimal
-  total               Decimal?              @db.Decimal
-  descuento           Decimal?              @db.Decimal
+  sub_total           String?
+  total               String?
+  descuento           String?
   Conceptos           Conceptos[]
   PagoAlumno          PagoAlumno[]
   complementos        complementos[]
