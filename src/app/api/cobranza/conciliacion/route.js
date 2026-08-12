@@ -39,6 +39,25 @@ function sanitizeNullBytes(val) {
     return val;
 }
 
+function parseFechaSegura(val) {
+    if (!val) return new Date();
+    if (val instanceof Date) {
+        return isNaN(val.getTime()) ? new Date() : val;
+    }
+    const str = String(val).trim();
+    if (str.includes('/')) {
+        const parts = str.split('/');
+        if (parts[0].length === 4) {
+            val = `${parts[0]}-${parts[1]}-${parts[2]}`;
+        } else if (parts[2]?.length === 4) {
+            val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+    }
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return new Date();
+    return d;
+}
+
 function getFechaLocalSAT() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -325,7 +344,7 @@ export async function POST(request) {
                     matricula: alumnoObj.matricula || 'N/A',
                     rvoe: alumnoObj.programa_academico?.rvoe || 'N/A'
                 };
-                const dateForMonth = fecha_pago ? new Date(fecha_pago) : new Date();
+                const dateForMonth = parseFechaSegura(fecha_pago);
                 const currentMonth = dateForMonth.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
                 const descConcepto = `PAGO A ${eInfo.producto} DE ${eInfo.carrera} REALIZADO EL MES DE ${currentMonth} , DEL ESTUDIANTE ${eInfo.nombre}, CURP: ${eInfo.curp}, MATRICULA: ${eInfo.matricula}, PROGRAMA CON RVOE SEP NO. ${eInfo.rvoe}`.toUpperCase();
 
@@ -342,7 +361,7 @@ export async function POST(request) {
                     data: {
                         alumno_id: BigInt(alumno_id),
                         cargo_id: cargoEncontrado.id,
-                        fecha_pago: fecha_pago ? new Date(fecha_pago) : new Date(),
+                        fecha_pago: parseFechaSegura(fecha_pago),
                         monto: montoNum,
                         referencia_bancaria: refBancariaSegura,
                         metodo_pago: '03',
@@ -528,7 +547,7 @@ export async function POST(request) {
 
                         const carreraStr = alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL';
                         const nombreStr = `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim();
-                        const dateForMonth = fecha_pago ? new Date(fecha_pago) : new Date();
+                        const dateForMonth = parseFechaSegura(fecha_pago);
                         const currentMonth = dateForMonth.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
                         
                         const descConcepto = `PAGO DE MULTIPLES FICHAS / SALDO A FAVOR DE ${carreraStr} REALIZADO EL MES DE ${currentMonth} , DEL ESTUDIANTE ${nombreStr}, CURP: ${alumnoObj.curp || 'N/A'}, MATRICULA: ${alumnoObj.matricula || 'N/A'}, PROGRAMA CON RVOE SEP NO. ${alumnoObj.programa_academico?.rvoe || 'N/A'}`.toUpperCase();
@@ -549,7 +568,7 @@ export async function POST(request) {
                                 data: {
                                     alumno_id: alumnoObj.id,
                                     cargo_id: cargo.id,
-                                    fecha_pago: fecha_pago ? new Date(fecha_pago) : new Date(),
+                                    fecha_pago: parseFechaSegura(fecha_pago),
                                     monto: montoAplicado,
                                     referencia_bancaria: referencia_bancaria || `MANUAL-${Date.now()}`,
                                     metodo_pago: '03',
