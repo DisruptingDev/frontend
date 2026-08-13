@@ -294,7 +294,7 @@ export async function POST(request) {
         // =========================================================================
         // ACCIÓN DE PERSISTENCIA DB: ESTABLECER EMISOR PREDETERMINADO GLOBAL
         // =========================================================================
-        if (action === 'SET_EMISOR_PREDETERMINADO') {
+        if (action === 'SET_EMISOR_PREDETERMINADO' || action === 'ESTABLECER_EMISOR_PREDETERMINADO') {
             if (!emisor_id) {
                 return NextResponse.json({ error: 'Debe especificar el ID del emisor a establecer como predeterminado.' }, { status: 400 });
             }
@@ -305,8 +305,7 @@ export async function POST(request) {
                 `);
                 await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false`);
                 await prisma.$executeRawUnsafe(
-                    `UPDATE "public"."emisors" SET "es_predeterminado" = true WHERE id = $1`,
-                    BigInt(emisor_id)
+                    `UPDATE "public"."emisors" SET "es_predeterminado" = true WHERE id = ${BigInt(emisor_id)}`
                 );
             } catch (e) {
                 console.error('Error actualizando emisor_predeterminado:', e.message);

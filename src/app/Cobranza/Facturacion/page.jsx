@@ -205,8 +205,21 @@ export default function FacturacionCobranzaPage() {
                 : (data.emisores && Array.isArray(data.emisores) ? data.emisores : []);
 
             setEmisores(listaEmisoresFinal);
-            if (listaEmisoresFinal.length > 0 && !emisorSeleccionado) {
-                setEmisorSeleccionado(listaEmisoresFinal[0].id);
+            
+            let idPref = data.emisor_predeterminado_id;
+            if (!idPref) {
+                const emisorDbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
+                if (emisorDbPred) idPref = emisorDbPred.id;
+            }
+            if (!idPref && typeof window !== 'undefined') {
+                idPref = localStorage.getItem('emisor_id_predeterminado');
+            }
+            if (!idPref && listaEmisoresFinal.length > 0) {
+                idPref = listaEmisoresFinal[0].id;
+            }
+
+            if (idPref) {
+                setEmisorSeleccionado(idPref.toString());
             }
 
             if (Array.isArray(data.pre_facturas)) setPreFacturas(data.pre_facturas);
@@ -216,6 +229,26 @@ export default function FacturacionCobranzaPage() {
             console.error('Error cargando facturación:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleCambiarEmisor = async (nuevoId) => {
+        setEmisorSeleccionado(nuevoId);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('emisor_id_predeterminado', nuevoId);
+        }
+
+        try {
+            await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'SET_EMISOR_PREDETERMINADO',
+                    emisor_id: nuevoId
+                })
+            });
+        } catch (e) {
+            console.error('Error guardando emisor predeterminado en BD:', e.message);
         }
     };
 
@@ -533,7 +566,7 @@ export default function FacturacionCobranzaPage() {
                                             labelId="emisor-select-label"
                                             value={emisorSeleccionado}
                                             label="Razón Social Emisora (Módulo de Empresas)"
-                                            onChange={(e) => setEmisorSeleccionado(e.target.value)}
+                                            onChange={(e) => handleCambiarEmisor(e.target.value)}
                                         >
                                             {emisores.length === 0 ? (
                                                 <MenuItem value="">Sin Emisores configurados en su cuenta</MenuItem>
