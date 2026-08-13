@@ -692,10 +692,10 @@ export default function CargosPage() {
                         startIcon={<EmailIcon />} 
                         variant="outlined" 
                         color="info"
-                        disabled={enviandoCorreo}
+                        disabled={enviandoCorreoId === cargoSeleccionado?.id}
                         onClick={() => handleReenviarCorreo(cargoSeleccionado?.id)}
                     >
-                        {enviandoCorreo ? 'Enviando PDF...' : 'Enviar por Correo'}
+                        {enviandoCorreoId === cargoSeleccionado?.id ? 'Enviando PDF...' : 'Enviar por Correo'}
                     </Button>
                     <Button startIcon={<PrintIcon />} variant="outlined" onClick={() => window.print()}>
                         Imprimir Ficha
@@ -704,6 +704,8 @@ export default function CargosPage() {
                         Cerrar
                     </Button>
                 </DialogActions>
+            </Dialog>
+
             {/* MODAL 3: 1-CLICK GENERACIÓN AUTOMÁTICA */}
             <Dialog open={openAutoModal} onClose={() => setOpenAutoModal(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
