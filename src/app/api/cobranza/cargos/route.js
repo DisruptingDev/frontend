@@ -75,13 +75,37 @@ function obtenerPrefijoConcepto(nombreConcepto) {
     return palabras.map(p => p[0]).join('').toUpperCase();
 }
 
-async function generarCodigoFichaUnico(nombreConcepto) {
-    const prefijo = obtenerPrefijoConcepto(nombreConcepto);
-    
+function obtenerPrefijoFicha(conceptosInput) {
+    if (!conceptosInput) return 'F';
+
+    const listaConceptos = Array.isArray(conceptosInput)
+        ? conceptosInput
+        : (typeof conceptosInput === 'string' ? [conceptosInput] : []);
+
+    if (listaConceptos.length === 0) return 'F';
+
+    const prefijos = [];
+    for (const item of listaConceptos) {
+        const nombreStr = typeof item === 'string' ? item : (item.concepto || item.nombre || '');
+        if (nombreStr) {
+            const p = obtenerPrefijoConcepto(nombreStr);
+            if (p && !prefijos.includes(p)) {
+                prefijos.push(p);
+            }
+        }
+    }
+
+    return prefijos.length > 0 ? prefijos.join('-') : 'F';
+}
+
+async function generarCodigoFichaUnico(conceptosInput) {
+    const prefijo = obtenerPrefijoFicha(conceptosInput);
+    const prefijoBusqueda = `${prefijo}-`;
+
     // Buscar todas las fichas emitidas que inicien con el prefijo determinado
     const ultimos = await prisma.cargoAlumno.findMany({
         where: {
-            codigo_ficha: { startsWith: prefijo }
+            codigo_ficha: { startsWith: prefijoBusqueda }
         },
         select: { codigo_ficha: true },
         orderBy: { id: 'desc' },
@@ -90,9 +114,10 @@ async function generarCodigoFichaUnico(nombreConcepto) {
 
     let maxNum = 0;
     for (const c of ultimos) {
-        if (c.codigo_ficha && c.codigo_ficha.toUpperCase().startsWith(prefijo)) {
-            // Extraer solo la parte numérica (ej: MO-00005 o MO00005 -> 5)
-            const numPart = parseInt(c.codigo_ficha.replace(/[^0-9]/g, ''), 10);
+        if (c.codigo_ficha && c.codigo_ficha.toUpperCase().startsWith(prefijoBusqueda.toUpperCase())) {
+            const partes = c.codigo_ficha.split('-');
+            const ultPart = partes[partes.length - 1];
+            const numPart = parseInt(ultPart, 10);
             if (!isNaN(numPart) && numPart > maxNum) {
                 maxNum = numPart;
             }
@@ -386,7 +411,8 @@ export async function POST(request) {
                 });
             }
 
-            const codigoFicha = await generarCodigoFichaUnico(nombreConceptoPrimerItem);
+            const conceptosParaCodigo = itemsFinales.length > 0 ? itemsFinales : [nombreConceptoPrimerItem];
+            const codigoFicha = await generarCodigoFichaUnico(conceptosParaCodigo);
 
             const nuevoCargo = await prisma.cargoAlumno.create({
                 data: {

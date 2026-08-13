@@ -248,6 +248,147 @@ export async function POST(request) {
         } = body;
 
         // =========================================================================
+        // ACCIÓN 0: CREAR FACTURA INDIVIDUAL DIRECTA DESDE FICHA DE CARGO (SIN CONCILIACIÓN PREVIA)
+        // =========================================================================
+        if (action === 'MANUAL_CARGO' || action === 'CREAR_FACTURA_CARGO' || body.tipo_facturacion === 'MANUAL_CARGO') {
+            const cargoIdTarget = body.cargo_id || comprobante_id;
+            if (!cargoIdTarget) {
+                return NextResponse.json({ error: 'Debe especificar el ID de la ficha de cargo a facturar.' }, { status: 400 });
+            }
+
+            const cargo = await prisma.cargoAlumno.findUnique({
+                where: { id: BigInt(cargoIdTarget) },
+                include: {
+                    alumno: { include: { receptor: true, emisor: true } },
+                    concepto: true
+                }
+            });
+
+            if (!cargo) {
+                return NextResponse.json({ error: 'No se encontró la ficha de pago especificada.' }, { status: 404 });
+            }
+
+            // 1. Emisor
+            const emisor = await obtenerOGenerarEmisorPredeterminado(emisor_id || cargo.alumno?.emisor_id);
+
+            // 2. Receptor Fiscal
+            let receptor = cargo.alumno?.receptor;
+            if (!cargo.alumno?.requiere_factura || !receptor) {
+                let receptorGenerico = await prisma.receptors.findFirst({
+                    where: { rfc: 'XAXX010101000' }
+                });
+                if (!receptorGenerico) {
+                    receptorGenerico = await prisma.receptors.create({
+                        data: {
+                            rfc: 'XAXX010101000',
+                            nombre: 'PUBLICO EN GENERAL',
+                            domicilio_fiscal_receptor: emisor.lugar_expedicion || '01000',
+                            regimen_fiscal_receptor: '616',
+                            uso_cfdi: 'S01'
+                        }
+                    });
+                }
+                receptor = receptorGenerico;
+            }
+
+            // 3. Extraer ítems de la ficha de pago
+            let itemsFinales = [];
+            if (cargo.detalles_items) {
+                try {
+                    const parsed = typeof cargo.detalles_items === 'string' ? JSON.parse(cargo.detalles_items) : cargo.detalles_items;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        itemsFinales = parsed.map(it => ({
+                            concepto: it.concepto || 'Colegiatura y Servicios Educativos',
+                            monto: Number(it.monto || 0),
+                            clave_prod_serv: '86121500'
+                        }));
+                    }
+                } catch (e) {}
+            }
+
+            if (itemsFinales.length === 0) {
+                itemsFinales = [{
+                    concepto: cargo.concepto?.nombre || 'Colegiatura y Servicios Educativos Integrales',
+                    monto: Number(cargo.monto_total || 0),
+                    clave_prod_serv: '86121500'
+                }];
+            }
+
+            const montoTotal = Number(cargo.monto_total || itemsFinales.reduce((sum, i) => sum + i.monto, 0));
+
+            // 4. Folio y Serie
+            const serieFolio = await obtenerSiguienteFolioSerie(emisor.id, 'FM');
+
+            // 5. Crear Comprobante Pre-factura
+            const nuevoComprobante = await prisma.comprobantes.create({
+                data: {
+                    emisor_id: emisor.id,
+                    receptor_id: receptor.id,
+                    serie: serieFolio.serie,
+                    folio: serieFolio.folio,
+                    fecha: getFechaLocalSAT(),
+                    tipo_comprobante: 'I',
+                    forma_pago: '03',
+                    metodo_pago: 'PUE',
+                    moneda: 'MXN',
+                    tipo_cambio: '1',
+                    exportacion: '01',
+                    sub_total: montoTotal,
+                    total: montoTotal,
+                    sub_total_string: montoTotal.toFixed(2),
+                    total_string: montoTotal.toFixed(2),
+                    descuento: 0,
+                    descuento_string: '0',
+                    estatus: 'PENDIENTE',
+                    uso_cfdi: receptor.uso_cfdi || 'S01',
+                    version: '4.0',
+                    lugar_expedicion: emisor.lugar_expedicion || '01000'
+                }
+            });
+
+            // 6. Crear Estructura CFDI
+            await crearEstructuraCompletaCFDI({
+                comprobante: nuevoComprobante,
+                emisor,
+                receptor,
+                descripcionConcepto: itemsFinales.map(i => i.concepto).join(', '),
+                monto: montoTotal,
+                grupoId: emisor.grupo_id,
+                claveProdServ: '86121500',
+                items: itemsFinales
+            });
+
+            // 7. Asociar o Crear PagoAlumno si no existía
+            const pagoExistente = await prisma.pagoAlumno.findFirst({
+                where: { cargo_id: cargo.id }
+            });
+
+            if (pagoExistente) {
+                await prisma.pagoAlumno.update({
+                    where: { id: pagoExistente.id },
+                    data: { comprobante_id: nuevoComprobante.id }
+                });
+            } else {
+                await prisma.pagoAlumno.create({
+                    data: {
+                        alumno_id: cargo.alumno_id,
+                        cargo_id: cargo.id,
+                        comprobante_id: nuevoComprobante.id,
+                        monto: montoTotal,
+                        fecha_pago: new Date(),
+                        referencia_bancaria: cargo.referencia_bancaria || `FAC-${nuevoComprobante.folio}`,
+                        estado_conciliacion: 'FACTURADO_MANUAL'
+                    }
+                });
+            }
+
+            return NextResponse.json({
+                mensaje: `Pre-factura ${nuevoComprobante.serie}-${nuevoComprobante.folio} generada individualmente para ${cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno}` : 'Alumno'} por $${montoTotal.toFixed(2)} MXN.`,
+                comprobante: serializeBigIntsAndDecimals(nuevoComprobante)
+            }, { status: 201 });
+        }
+
+        // =========================================================================
         // ACCIÓN 1: EDITAR PRE-FACTURA EN BORRADOR
         // =========================================================================
         if (action === 'EDITAR_PREFACTURA') {
