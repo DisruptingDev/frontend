@@ -3,12 +3,10 @@
 export const onSuplantar = (token, nombre, grupoId, usuarioObj) => {
     console.log('Suplantando usuario:', nombre, 'Token:', token, 'GrupoID:', grupoId);
     
-    // Backup de sesión de SuperAdmin
-    const currentSuperUser = localStorage.getItem("superUser");
+    // Backup del grupo_id original del SuperAdmin
     const currentGrupoId = localStorage.getItem("grupo_id");
     const currentUsuario = localStorage.getItem("usuario");
 
-    if (currentSuperUser !== null) localStorage.setItem("superUser_backup", currentSuperUser);
     if (currentGrupoId !== null) localStorage.setItem("grupo_id_backup", currentGrupoId);
     if (currentUsuario !== null) localStorage.setItem("usuario_backup", currentUsuario);
 
@@ -25,7 +23,8 @@ export const onSuplantar = (token, nombre, grupoId, usuarioObj) => {
     }
 
     localStorage.setItem('usuarioSuplantado', nombre);
-    localStorage.setItem('superUser', 'false'); // Se comporta como usuario regular durante suplantación
+    // IMPORTANTE: Mantener superUser en true para conservar el menú lateral completo de navegación
+    localStorage.setItem('superUser', 'true');
     
     if (grupoId) {
         localStorage.setItem('grupo_id', grupoId.toString());
