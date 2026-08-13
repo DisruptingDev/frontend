@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import nodemailer from 'nodemailer';
 
 /**
@@ -24,7 +25,7 @@ function formatDate(dateInput) {
 }
 
 /**
- * Genera el documento HTML estilizado para la Ficha de Cargo con 1 o más conceptos
+ * Genera el documento HTML estilizado para la Ficha de Cargo con 1 o más conceptos (para vista previa en navegador si se requiere)
  */
 export function generarHtmlFichaCargo(cargo) {
     const alumno = cargo.alumno || {};
@@ -42,7 +43,6 @@ export function generarHtmlFichaCargo(cargo) {
     const fechaEmision = formatDate(cargo.fecha_emision || new Date());
     const fechaVencimiento = formatDate(cargo.fecha_vencimiento);
 
-    // Procesar conceptos (desglose multi-concepto o concepto principal)
     let items = [];
     if (cargo.detalles_items) {
         try {
@@ -50,7 +50,6 @@ export function generarHtmlFichaCargo(cargo) {
                 ? JSON.parse(cargo.detalles_items) 
                 : cargo.detalles_items;
         } catch (e) {
-            console.warn('Error al parsear detalles_items en generarHtmlFichaCargo:', e);
             items = [];
         }
     }
@@ -82,170 +81,32 @@ export function generarHtmlFichaCargo(cargo) {
         <meta charset="UTF-8">
         <title>Ficha de Cargo - ${codigoFicha}</title>
         <style>
-            @page {
-                size: Letter;
-                margin: 15mm;
-            }
-            body {
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                color: #1f2937;
-                background-color: #ffffff;
-                margin: 0;
-                padding: 0;
-                -webkit-print-color-adjust: exact;
-            }
-            .container {
-                max-width: 750px;
-                margin: 0 auto;
-                border: 1px solid #cbd5e1;
-                border-radius: 8px;
-                overflow: hidden;
-            }
-            .header {
-                background: linear-gradient(135deg, #1b384a 0%, #0f2533 100%);
-                color: #ffffff;
-                padding: 24px;
-                text-align: center;
-            }
-            .header h1 {
-                margin: 0 0 4px 0;
-                font-size: 20px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            .header p {
-                margin: 2px 0 0 0;
-                font-size: 12px;
-                opacity: 0.85;
-            }
-            .title-strip {
-                background-color: #2563eb;
-                color: #ffffff;
-                text-align: center;
-                padding: 8px 16px;
-                font-size: 13px;
-                font-weight: bold;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-            }
-            .section {
-                padding: 20px;
-            }
-            .grid {
-                display: table;
-                width: 100%;
-                table-layout: fixed;
-                margin-bottom: 20px;
-            }
-            .row {
-                display: table-row;
-            }
-            .col {
-                display: table-cell;
-                width: 50%;
-                padding: 6px 10px;
-                vertical-align: top;
-            }
-            .label {
-                font-size: 11px;
-                color: #64748b;
-                text-transform: uppercase;
-                font-weight: bold;
-                margin-bottom: 2px;
-            }
-            .value {
-                font-size: 14px;
-                color: #0f172a;
-                font-weight: 600;
-            }
-            .code-badge {
-                font-family: monospace;
-                background-color: #eff6ff;
-                color: #1d4ed8;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 15px;
-                font-weight: bold;
-                display: inline-block;
-            }
-            .table-container {
-                margin-top: 10px;
-                margin-bottom: 20px;
-                border: 1px solid #e2e8f0;
-                border-radius: 6px;
-                overflow: hidden;
-            }
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            th {
-                background-color: #f1f5f9;
-                color: #334155;
-                font-size: 12px;
-                font-weight: bold;
-                text-transform: uppercase;
-                padding: 10px 14px;
-                text-align: left;
-                border-bottom: 2px solid #cbd5e1;
-            }
-            th.right {
-                text-align: right;
-            }
-            .total-box {
-                background-color: #f8fafc;
-                padding: 14px 20px;
-                border-top: 2px solid #e2e8f0;
-                text-align: right;
-            }
-            .total-label {
-                font-size: 13px;
-                color: #475569;
-                font-weight: bold;
-                margin-right: 15px;
-            }
-            .total-amount {
-                font-size: 20px;
-                color: #1e3a8a;
-                font-weight: 800;
-            }
-            .bank-card {
-                background-color: #f0f7ff;
-                border: 2px dashed #3b82f6;
-                border-radius: 8px;
-                padding: 18px;
-                text-align: center;
-                margin-top: 20px;
-            }
-            .bank-title {
-                font-size: 11px;
-                color: #475569;
-                text-transform: uppercase;
-                font-weight: bold;
-                letter-spacing: 0.5px;
-            }
-            .bank-reference {
-                font-family: monospace;
-                font-size: 22px;
-                font-weight: 800;
-                color: #1d4ed8;
-                letter-spacing: 2px;
-                margin: 8px 0;
-            }
-            .bank-instructions {
-                font-size: 11px;
-                color: #64748b;
-                line-height: 1.5;
-                margin-top: 10px;
-            }
-            .footer {
-                text-align: center;
-                padding: 16px;
-                font-size: 11px;
-                color: #94a3b8;
-                border-top: 1px solid #f1f5f9;
-                background-color: #fafafa;
-            }
+            @page { size: Letter; margin: 15mm; }
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; background-color: #ffffff; margin: 0; padding: 0; }
+            .container { max-width: 750px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+            .header { background: linear-gradient(135deg, #1b384a 0%, #0f2533 100%); color: #ffffff; padding: 24px; text-align: center; }
+            .header h1 { margin: 0 0 4px 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+            .header p { margin: 2px 0 0 0; font-size: 12px; opacity: 0.85; }
+            .title-strip { background-color: #2563eb; color: #ffffff; text-align: center; padding: 8px 16px; font-size: 13px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+            .section { padding: 20px; }
+            .grid { display: table; width: 100%; table-layout: fixed; margin-bottom: 20px; }
+            .row { display: table-row; }
+            .col { display: table-cell; width: 50%; padding: 6px 10px; vertical-align: top; }
+            .label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+            .value { font-size: 14px; color: #0f172a; font-weight: 600; }
+            .code-badge { font-family: monospace; background-color: #eff6ff; color: #1d4ed8; padding: 4px 8px; border-radius: 4px; font-size: 15px; font-weight: bold; display: inline-block; }
+            .table-container { margin-top: 10px; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background-color: #f1f5f9; color: #334155; font-size: 12px; font-weight: bold; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 2px solid #cbd5e1; }
+            th.right { text-align: right; }
+            .total-box { background-color: #f8fafc; padding: 14px 20px; border-top: 2px solid #e2e8f0; text-align: right; }
+            .total-label { font-size: 13px; color: #475569; font-weight: bold; margin-right: 15px; }
+            .total-amount { font-size: 20px; color: #1e3a8a; font-weight: 800; }
+            .bank-card { background-color: #f0f7ff; border: 2px dashed #3b82f6; border-radius: 8px; padding: 18px; text-align: center; margin-top: 20px; }
+            .bank-title { font-size: 11px; color: #475569; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px; }
+            .bank-reference { font-family: monospace; font-size: 22px; font-weight: 800; color: #1d4ed8; letter-spacing: 2px; margin: 8px 0; }
+            .bank-instructions { font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 10px; }
+            .footer { text-align: center; padding: 16px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; background-color: #fafafa; }
         </style>
     </head>
     <body>
@@ -340,33 +201,209 @@ export function generarHtmlFichaCargo(cargo) {
 }
 
 /**
- * Genera el Buffer PDF usando Puppeteer
+ * Genera el Buffer PDF de la Ficha de Cargo utilizando jsPDF + jspdf-autotable (100% nativo en Node.js, sin dependencias de Chrome/Puppeteer)
  */
 export async function generarPdfBufferFicha(cargo) {
-    const htmlContent = generarHtmlFichaCargo(cargo);
-    
-    let browser = null;
-    try {
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-        const pdfBuffer = await page.pdf({
-            format: 'Letter',
-            printBackground: true,
-            margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }
-        });
-        await browser.close();
-        return Buffer.from(pdfBuffer);
-    } catch (error) {
-        if (browser) {
-            try { await browser.close(); } catch (e) {}
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+
+    const alumno = cargo.alumno || {};
+    const emisor = alumno.emisor || cargo.emisor || {};
+    const emisorNombre = emisor.nombre || 'UNIVERSIDAD HISPANOAMERICANA S.C.';
+    const emisorRfc = emisor.rfc || 'UHI980415XXX';
+
+    const alumnoNombre = `${alumno.nombre || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.trim() || 'Estudiante';
+    const matricula = alumno.matricula || 'N/A';
+    const carrera = alumno.carrera || 'General / Licenciatura';
+    const emailAlumno = alumno.email || alumno.receptor?.email || 'No registrado';
+
+    const codigoFicha = cargo.codigo_ficha || `F-${cargo.id || '00000'}`;
+    const referenciaBancaria = alumno.clabe_interbancaria || cargo.referencia_bancaria || 'N/A';
+    const fechaEmision = formatDate(cargo.fecha_emision || new Date());
+    const fechaVencimiento = formatDate(cargo.fecha_vencimiento);
+
+    let items = [];
+    if (cargo.detalles_items) {
+        try {
+            items = typeof cargo.detalles_items === 'string' ? JSON.parse(cargo.detalles_items) : cargo.detalles_items;
+        } catch (e) {
+            items = [];
         }
-        console.error('Error al generar PDF de Ficha con Puppeteer:', error.message);
-        throw error;
     }
+
+    if (!Array.isArray(items) || items.length === 0) {
+        items = [{
+            concepto: cargo.concepto?.nombre || 'Colegiatura Mensual / Concepto de Cobro',
+            monto: Number(cargo.monto_total || 0)
+        }];
+    }
+
+    const montoTotal = Number(cargo.monto_total || items.reduce((sum, item) => sum + (parseFloat(item.monto) || 0), 0));
+
+    // Header Banner (Azul Marino #1b384a)
+    doc.setFillColor(27, 56, 74);
+    doc.rect(0, 0, 612, 70, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(emisorNombre.toUpperCase(), 306, 32, { align: 'center' });
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`RFC: ${emisorRfc} | Servicios Financieros y Cobranza Institucional`, 306, 48, { align: 'center' });
+
+    // Subtitle Strip (#2563eb)
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 70, 612, 22, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FICHA OFICIAL DE CARGO Y PAGO DE COLEGIATURA', 306, 85, { align: 'center' });
+
+    // Tarjeta: Datos del Alumno y Ficha
+    let y = 110;
+    doc.setDrawColor(203, 213, 225);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(40, y, 532, 90, 4, 4, 'FD');
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('CÓDIGO ÚNICO DE FICHA:', 55, y + 20);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(29, 78, 216);
+    doc.text(codigoFicha, 55, y + 36);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('ESTUDIANTE / ALUMNO:', 310, y + 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text(alumnoNombre, 310, y + 36);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('MATRÍCULA ID:', 55, y + 56);
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(matricula, 55, y + 70);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('PROGRAMA / CARRERA:', 310, y + 56);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(carrera, 310, y + 70);
+
+    // Fechas y Correo
+    y += 105;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text('CORREO REGISTRADO:', 55, y);
+    doc.setTextColor(51, 65, 85);
+    doc.text(emailAlumno, 175, y);
+
+    doc.setTextColor(100, 116, 139);
+    doc.text('FECHA EMISIÓN:', 350, y);
+    doc.setTextColor(51, 65, 85);
+    doc.text(fechaEmision, 440, y);
+
+    y += 15;
+    doc.setTextColor(100, 116, 139);
+    doc.text('FECHA VENCIMIENTO:', 350, y);
+    doc.setTextColor(220, 38, 38);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fechaVencimiento, 470, y);
+
+    // Tabla de Conceptos
+    y += 20;
+    const tableBody = items.map(it => [it.concepto, formatMoney(it.monto)]);
+
+    if (typeof doc.autoTable === 'function') {
+        doc.autoTable({
+            startY: y,
+            margin: { left: 40, right: 40 },
+            head: [['Concepto / Descripción de Cobro', 'Importe']],
+            body: tableBody,
+            headStyles: {
+                fillColor: [241, 245, 249],
+                textColor: [51, 65, 85],
+                fontStyle: 'bold',
+                fontSize: 9,
+                halign: 'left'
+            },
+            columnStyles: {
+                0: { halign: 'left', cellWidth: 380, fontSize: 9 },
+                1: { halign: 'right', cellWidth: 152, fontSize: 9, fontStyle: 'bold' }
+            },
+            theme: 'grid',
+            styles: { cellPadding: 8 }
+        });
+    }
+
+    const finalY = doc.lastAutoTable?.finalY || (y + 60);
+
+    // Total Box
+    doc.setFillColor(248, 250, 252);
+    doc.rect(40, finalY, 532, 32, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(40, finalY, 572, finalY);
+    doc.line(40, finalY + 32, 572, finalY + 32);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text('MONTO TOTAL A PAGAR:', 360, finalY + 20);
+
+    doc.setFontSize(13);
+    doc.setTextColor(30, 58, 138);
+    doc.text(formatMoney(montoTotal), 560, finalY + 20, { align: 'right' });
+
+    // Tarjeta de Pago Bancario
+    const bankY = finalY + 50;
+    doc.setDrawColor(59, 130, 246);
+    doc.setFillColor(240, 247, 255);
+    doc.roundedRect(40, bankY, 532, 110, 6, 6, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.text('REFERENCIA BANCARIA ÚNICA (CLABE INTERBANCARIA / MÓDULO 10)', 306, bankY + 20, { align: 'center' });
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(29, 78, 216);
+    doc.text(referenciaBancaria, 306, bankY + 44, { align: 'center' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(71, 85, 105);
+    doc.text('CONCEPTO / DESCRIPCIÓN DE PAGO EN TRANSFERENCIA SPEI:', 306, bankY + 65, { align: 'center' });
+
+    doc.setFont('courier', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(3, 105, 161);
+    doc.text(codigoFicha, 306, bankY + 78, { align: 'center' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Instrucciones: Puede realizar su depósito en Ventanilla/Practicaja BBVA o transferencia electrónica SPEI.', 306, bankY + 96, { align: 'center' });
+
+    // Pie de página
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Este documento es una Ficha de Cargo oficial expedida por la institución. Conserve su comprobante de pago.', 306, 750, { align: 'center' });
+
+    const arrayBuf = doc.output('arraybuffer');
+    return Buffer.from(arrayBuf);
 }
 
 /**
