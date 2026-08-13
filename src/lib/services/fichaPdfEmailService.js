@@ -409,7 +409,7 @@ export async function generarPdfBufferFicha(cargo) {
 /**
  * Envía el PDF de la Ficha por correo electrónico al alumno
  */
-export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino }) {
+export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, remitenteNombre, remitenteEmail, replyTo }) {
     const alumno = cargo.alumno || {};
     const correoFinal = emailDestino || alumno.email || alumno.receptor?.email;
 
@@ -427,6 +427,11 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino }) {
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
 
+    // Configuración de Remitente Enmascarado y Dirección de Respuesta (Exclusivo Módulo de Cobranza)
+    const fromName = remitenteNombre || process.env.SMTP_COBRANZA_FROM_NAME || process.env.SMTP_FROM_NAME || "Cobranza Institucional";
+    const fromAddr = remitenteEmail || process.env.SMTP_COBRANZA_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || smtpUser || 'no-reply@wisefacturacion.com';
+    const replyToAddr = replyTo || process.env.SMTP_COBRANZA_REPLY_TO || process.env.SMTP_REPLY_TO || fromAddr;
+
     const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
@@ -442,7 +447,8 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino }) {
     const referencia = alumno.clabe_interbancaria || cargo.referencia_bancaria || 'N/A';
 
     const mailOptions = {
-        from: smtpUser ? `"Cobranza Institucional" <${smtpUser}>` : '"Sistema de Cobranza" <no-reply@wisefacturacion.com>',
+        from: `"${fromName}" <${fromAddr}>`,
+        replyTo: replyToAddr,
         to: correoFinal,
         subject: `📄 Ficha de Cargo Emitida - ${codigoFicha} | ${alumnoNombre}`,
         html: `
@@ -491,13 +497,16 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino }) {
 /**
  * Función integrada que genera el PDF y envía el correo al alumno de forma segura
  */
-export async function generarYEnviarFichaPorCorreo(cargo, customEmail = null) {
+export async function generarYEnviarFichaPorCorreo(cargo, customEmail = null, opcionesEnvio = {}) {
     try {
         const pdfBuffer = await generarPdfBufferFicha(cargo);
         const resultadoEnvio = await enviarFichaPorCorreo({
             cargo,
             pdfBuffer,
-            emailDestino: customEmail
+            emailDestino: customEmail,
+            remitenteNombre: opcionesEnvio.remitenteNombre,
+            remitenteEmail: opcionesEnvio.remitenteEmail,
+            replyTo: opcionesEnvio.replyTo
         });
 
         return {
@@ -518,3 +527,4 @@ export async function generarYEnviarFichaPorCorreo(cargo, customEmail = null) {
         };
     }
 }
+

@@ -81,11 +81,15 @@ export async function POST(request, { params }) {
     try {
         const { id } = params;
         let emailDestino = null;
+        let opcionesEnvio = {};
 
         try {
             const body = await request.json();
-            if (body && body.email_destino) {
-                emailDestino = body.email_destino;
+            if (body) {
+                if (body.email_destino) emailDestino = body.email_destino;
+                if (body.remitente_nombre) opcionesEnvio.remitenteNombre = body.remitente_nombre;
+                if (body.remitente_email) opcionesEnvio.remitenteEmail = body.remitente_email;
+                if (body.reply_to) opcionesEnvio.replyTo = body.reply_to;
             }
         } catch (e) {
             // Body opcional
@@ -110,7 +114,8 @@ export async function POST(request, { params }) {
             }
         } catch (e) {}
 
-        const resultado = await generarYEnviarFichaPorCorreo(cargo, emailDestino);
+        const resultado = await generarYEnviarFichaPorCorreo(cargo, emailDestino, opcionesEnvio);
+
 
         if (resultado.correoEnviado) {
             return NextResponse.json({

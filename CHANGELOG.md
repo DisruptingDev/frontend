@@ -12,6 +12,10 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.04] - 2026-08-12
+### [FEAT]
+* FEAT - Soporte para enmascaramiento de remitente (`SMTP_COBRANZA_FROM_EMAIL`), nombre de remitente visible (`SMTP_COBRANZA_FROM_NAME`) y dirección de respuesta (`SMTP_COBRANZA_REPLY_TO`) exclusivo para los envíos de correo en el módulo de Cobranza.
+
 ## [0.01.03] - 2026-08-12
 ### [FEAT]
 * FEAT - Generación automática de Ficha de Cargo en PDF con desglose de 1 o múltiples conceptos al crear fichas.
