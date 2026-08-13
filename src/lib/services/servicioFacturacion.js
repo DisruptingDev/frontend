@@ -298,11 +298,11 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
     await prisma.comprobantes.update({
         where: { id: comprobante.id },
         data: {
-            sub_total: subtotalAcumulado,
+            sub_total: String(subtotalAcumulado),
             sub_total_string: subtotalAcumulado.toFixed(2),
-            total: totalAcumulado,
+            total: String(totalAcumulado),
             total_string: totalAcumulado.toFixed(2),
-            descuento: 0,
+            descuento: '0',
             descuento_string: '0',
             exportacion: '01',
             tipo_cambio: '1',

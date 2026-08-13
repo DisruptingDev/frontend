@@ -267,9 +267,9 @@ ${xmlConceptosList.trimEnd()}
     await dbClient.comprobantes.update({
         where: { id: comprobante.id },
         data: {
-            sub_total: subtotalAcumulado,
+            sub_total: String(subtotalAcumulado),
             sub_total_string: subtotalAcumulado.toFixed(2),
-            total: totalAcumulado,
+            total: String(totalAcumulado),
             total_string: totalAcumulado.toFixed(2),
             xml_timbrado: xmlBase
         }

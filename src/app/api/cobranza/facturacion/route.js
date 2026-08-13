@@ -376,11 +376,11 @@ export async function POST(request) {
                     moneda: 'MXN',
                     tipo_cambio: '1',
                     exportacion: '01',
-                    sub_total: montoTotal,
-                    total: montoTotal,
+                    sub_total: String(montoTotal),
+                    total: String(montoTotal),
                     sub_total_string: montoTotal.toFixed(2),
                     total_string: montoTotal.toFixed(2),
-                    descuento: 0,
+                    descuento: '0',
                     descuento_string: '0',
                     estatus: 'PENDIENTE',
                     uso_cfdi: receptor.uso_cfdi || 'S01',
@@ -498,8 +498,10 @@ export async function POST(request) {
                     emisor_id: emisor.id,
                     receptor_id: receptorId,
                     uso_cfdi: uso_cfdi || comprobante.uso_cfdi,
-                    sub_total: montoFinal,
-                    total: montoFinal
+                    sub_total: String(montoFinal),
+                    sub_total_string: Number(montoFinal).toFixed(2),
+                    total: String(montoFinal),
+                    total_string: Number(montoFinal).toFixed(2)
                 }
             });
 
