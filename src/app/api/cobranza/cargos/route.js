@@ -45,38 +45,58 @@ async function obtenerOGenerarConceptoDefault(grupoId = null) {
 function obtenerPrefijoConcepto(nombreConcepto) {
     if (!nombreConcepto) return 'M';
     const norm = nombreConcepto.toLowerCase().trim();
-    if (norm.includes('mensual') || norm.includes('colegiatura')) return 'M';
-    if (norm.includes('titula') || norm.includes('grado')) return 'T';
-    if (norm.includes('constancia') || norm.includes('certifica')) return 'C';
-    if (norm.includes('inscr') || norm.includes('reinscr')) return 'I';
-    if (norm.includes('examen') || norm.includes('extraordinario') || norm.includes('regulariz')) return 'E';
-    return 'X';
+
+    // 1. Reglas explícitas asignadas por el usuario
+    if (norm === 'mensualidad' || norm.startsWith('mensual')) return 'M';
+    if (norm === 'materia ordinaria') return 'MO';
+    if (norm === 'materia de revalidación' || norm === 'materia de revalidacion') return 'MR';
+    if (norm === 'materia de adelanto') return 'MA';
+    if (norm === 'materia recursada') return 'MRC';
+    if (norm === 'constancia' || norm.startsWith('constancia')) return 'CO';
+    if (norm === 'credencial' || norm.startsWith('credencial')) return 'C';
+    if (norm === 'kardex') return 'K';
+    if (norm.includes('titula')) return 'AT';
+    if (norm.includes('gradua')) return 'G';
+    if (norm === 'inscripción' || norm === 'inscripcion') return 'I';
+    if (norm === 'reinscripción' || norm === 'reinscripcion') return 'RE';
+
+    // 2. Algoritmo dinámico por iniciales (omitir artículos / preposiciones)
+    const stopWords = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'a', 'en', 'por', 'para']);
+    const palabras = norm.split(/\s+/).filter(p => p.length > 0 && !stopWords.has(p));
+
+    if (palabras.length === 0) return 'X';
+    if (palabras.length === 1) {
+        const p = palabras[0];
+        if (p.startsWith('co')) return 'CO';
+        return p.substring(0, 1).toUpperCase();
+    }
+
+    // Tomar primera letra de cada palabra significativa (ej. Materia Adelanto -> MA)
+    return palabras.map(p => p[0]).join('').toUpperCase();
 }
 
 async function generarCodigoFichaUnico(nombreConcepto) {
     const prefijo = obtenerPrefijoConcepto(nombreConcepto);
+    
+    // Buscar todas las fichas emitidas que inicien con el prefijo determinado
     const ultimos = await prisma.cargoAlumno.findMany({
         where: {
-            codigo_ficha: { startsWith: `${prefijo}-` }
+            codigo_ficha: { startsWith: prefijo }
         },
         select: { codigo_ficha: true },
         orderBy: { id: 'desc' },
-        take: 100
+        take: 500
     });
 
     let maxNum = 0;
     for (const c of ultimos) {
-        if (c.codigo_ficha && c.codigo_ficha.startsWith(`${prefijo}-`)) {
-            const numPart = parseInt(c.codigo_ficha.slice(2), 10);
+        if (c.codigo_ficha && c.codigo_ficha.toUpperCase().startsWith(prefijo)) {
+            // Extraer solo la parte numérica (ej: MO-00005 o MO00005 -> 5)
+            const numPart = parseInt(c.codigo_ficha.replace(/[^0-9]/g, ''), 10);
             if (!isNaN(numPart) && numPart > maxNum) {
                 maxNum = numPart;
             }
         }
-    }
-
-    if (maxNum === 0) {
-        const totalCount = await prisma.cargoAlumno.count();
-        maxNum = totalCount;
     }
 
     const proximoNum = maxNum + 1;
@@ -260,10 +280,22 @@ export async function POST(request) {
         }
         
         const { items, nombre_concepto, alumno_id, producto_id: manual_producto_id } = body;
+        const prodIdTarget = manual_producto_id || producto_id;
 
         let itemsFinales = [];
         let montoCalculado = 0;
         let nombreConceptoPrimerItem = nombre_concepto || 'Mensualidad';
+
+        if (prodIdTarget) {
+            try {
+                const prodObj = await prisma.productoFicha.findUnique({
+                    where: { id: BigInt(prodIdTarget) }
+                });
+                if (prodObj && prodObj.nombre) {
+                    nombreConceptoPrimerItem = prodObj.nombre;
+                }
+            } catch (e) {}
+        }
 
         if (Array.isArray(items) && items.length > 0) {
             itemsFinales = items.map(it => ({
@@ -273,7 +305,9 @@ export async function POST(request) {
 
             if (itemsFinales.length > 0) {
                 montoCalculado = itemsFinales.reduce((acc, curr) => acc + curr.monto, 0);
-                nombreConceptoPrimerItem = itemsFinales[0].concepto;
+                if (!prodIdTarget) {
+                    nombreConceptoPrimerItem = itemsFinales[0].concepto;
+                }
             }
         }
 

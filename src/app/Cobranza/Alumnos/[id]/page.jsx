@@ -18,6 +18,7 @@ export default function DetalleAlumnoPage({ params }) {
     const [historialData, setHistorialData] = useState({ pagos: [], cargos: [] });
     const [loading, setLoading] = useState(true);
     const [tabIndex, setTabIndex] = useState(0);
+    const [filtroProductoEstatus, setFiltroProductoEstatus] = useState('TODOS');
 
     // Edit state
     const [isEditing, setIsEditing] = useState(false);
@@ -378,6 +379,151 @@ export default function DetalleAlumnoPage({ params }) {
                                 </Grid>
                             </Grid>
                         </Box>
+
+                        {/* DESGLOSE DETALLADO DE PRODUCTOS / CONCEPTOS POR FICHA DE PAGO */}
+                        {(() => {
+                            const productosDesglosados = [];
+                            (historialData.cargos || []).forEach(cargo => {
+                                let itemsList = [];
+                                if (cargo.detalles_items) {
+                                    try {
+                                        itemsList = typeof cargo.detalles_items === 'string'
+                                            ? JSON.parse(cargo.detalles_items)
+                                            : cargo.detalles_items;
+                                    } catch (e) { itemsList = []; }
+                                }
+                                
+                                if (!Array.isArray(itemsList) || itemsList.length === 0) {
+                                    itemsList = [{
+                                        concepto: cargo.concepto?.nombre || 'Colegiatura Mensual',
+                                        monto: parseMonto(cargo.monto_total)
+                                    }];
+                                }
+
+                                itemsList.forEach((it, idx) => {
+                                    productosDesglosados.push({
+                                        id: `${cargo.id}-${idx}`,
+                                        cargoId: cargo.id,
+                                        codigoFicha: cargo.codigo_ficha || `F-${cargo.id}`,
+                                        referencia: alumnoSeleccionado.clabe_interbancaria || cargo.referencia_bancaria,
+                                        nombreProducto: (it.concepto || 'Colegiatura Mensual').trim(),
+                                        monto: parseMonto(it.monto),
+                                        fechaVencimiento: cargo.fecha_vencimiento,
+                                        fechaEmision: cargo.fecha_emision,
+                                        estatus: cargo.estatus || 'PENDIENTE'
+                                    });
+                                });
+                            });
+
+                            const totalPagados = productosDesglosados.filter(p => p.estatus === 'PAGADO').reduce((acc, curr) => acc + curr.monto, 0);
+                            const totalPendientes = productosDesglosados.filter(p => p.estatus !== 'PAGADO').reduce((acc, curr) => acc + curr.monto, 0);
+
+                            const productosFiltrados = productosDesglosados.filter(p => {
+                                if (filtroProductoEstatus === 'TODOS') return true;
+                                if (filtroProductoEstatus === 'PAGADO') return p.estatus === 'PAGADO';
+                                if (filtroProductoEstatus === 'PENDIENTE') return p.estatus !== 'PAGADO';
+                                return true;
+                            });
+
+                            return (
+                                <Box sx={{ mb: 4 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+                                        <Typography variant="h6" fontWeight="bold" sx={{ color: '#1b384a' }}>
+                                            📦 Desglose de Productos y Conceptos Relacionados a Fichas de Pago
+                                        </Typography>
+                                        <TextField
+                                            select
+                                            size="small"
+                                            label="Filtrar Productos"
+                                            value={filtroProductoEstatus}
+                                            onChange={(e) => setFiltroProductoEstatus(e.target.value)}
+                                            sx={{ minWidth: 200, bgcolor: 'white' }}
+                                        >
+                                            <MenuItem value="TODOS">Todos los Productos ({productosDesglosados.length})</MenuItem>
+                                            <MenuItem value="PAGADO">🟢 Pagados (${totalPagados.toFixed(2)})</MenuItem>
+                                            <MenuItem value="PENDIENTE">🔴 Pendientes (${totalPendientes.toFixed(2)})</MenuItem>
+                                        </TextField>
+                                    </Box>
+
+                                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                                        <Grid item xs={12} sm={6}>
+                                            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: '#f0fdf4', borderColor: '#bbf7d0', textAlign: 'center' }}>
+                                                <Typography variant="caption" color="textSecondary" display="block">TOTAL PRODUCTOS PAGADOS:</Typography>
+                                                <Typography variant="h6" fontWeight="bold" color="success.main">
+                                                    ${totalPagados.toFixed(2)} MXN
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: '#fef2f2', borderColor: '#fca5a5', textAlign: 'center' }}>
+                                                <Typography variant="caption" color="textSecondary" display="block">TOTAL PRODUCTOS PENDIENTES:</Typography>
+                                                <Typography variant="h6" fontWeight="bold" color="error.main">
+                                                    ${totalPendientes.toFixed(2)} MXN
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                    </Grid>
+
+                                    <TableContainer component={Paper} variant="outlined">
+                                        <Table size="small">
+                                            <TableHead sx={{ bgcolor: '#1b384a' }}>
+                                                <TableRow>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Producto / Concepto</TableCell>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Ficha de Pago Relacionada</TableCell>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>CLABE / Ref. Bancaria</TableCell>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto Importe</TableCell>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha Vencimiento</TableCell>
+                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Estatus</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {productosFiltrados.length > 0 ? (
+                                                    productosFiltrados.map((item) => (
+                                                        <TableRow key={item.id} hover sx={{ backgroundColor: item.estatus === 'PAGADO' ? '#f0fdf4' : '#ffffff' }}>
+                                                            <TableCell sx={{ fontWeight: 'bold', color: '#0f172a' }}>
+                                                                {item.nombreProducto}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Chip
+                                                                    label={item.codigoFicha}
+                                                                    color="secondary"
+                                                                    size="small"
+                                                                    sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell sx={{ fontFamily: 'monospace', color: '#1d4ed8' }}>
+                                                                {item.referencia}
+                                                            </TableCell>
+                                                            <TableCell sx={{ fontWeight: 'bold' }}>
+                                                                ${item.monto.toFixed(2)}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString('es-MX') : 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell align="center">
+                                                                {item.estatus === 'PAGADO' ? (
+                                                                    <Chip label="🟢 PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : item.estatus === 'PARCIAL' ? (
+                                                                    <Chip label="🟡 PARCIAL" color="warning" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : (
+                                                                    <Chip label="🔴 PENDIENTE" color="error" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} align="center" sx={{ py: 3, color: '#888' }}>
+                                                            No hay productos registrados en las fichas del alumno.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Box>
+                            );
+                        })()}
 
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: '#1b384a' }}>
                             📑 Fichas y Cargos Emitidos al Alumno

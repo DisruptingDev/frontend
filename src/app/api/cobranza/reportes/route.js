@@ -54,9 +54,27 @@ export async function GET(request) {
 
             const cargos = await prisma.cargoAlumno.findMany({
                 where: { alumno_id: BigInt(alumnoId) },
-                include: { concepto: true },
+                include: { concepto: true, producto: true },
                 orderBy: { fecha_vencimiento: 'desc' }
             });
+
+            if (cargos.length > 0) {
+                const ids = cargos.map(c => c.id.toString());
+                try {
+                    const rawItems = await prisma.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${ids.join(',')})`);
+                    const rawItemsMap = {};
+                    for (const r of rawItems) {
+                        rawItemsMap[r.id.toString()] = r.detalles_items;
+                    }
+                    for (const cargo of cargos) {
+                        if (rawItemsMap[cargo.id.toString()]) {
+                            cargo.detalles_items = rawItemsMap[cargo.id.toString()];
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error raw details_items:', e.message);
+                }
+            }
 
             let totalPagado = 0;
             pagos.forEach(p => totalPagado += Number(p.monto));

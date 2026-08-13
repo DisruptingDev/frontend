@@ -786,17 +786,34 @@ export default function CargosPage() {
                         <Grid item xs={12}>
                             <TextField
                                 select
-                                label="Seleccionar Producto (Concepto Utilizado)"
+                                label="Seleccionar Producto Principal"
                                 name="producto_id"
                                 fullWidth
                                 value={form.producto_id || ''}
-                                onChange={handleChange}
-                                helperText="Selecciona el producto que define el concepto contable a utilizar"
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    const selProd = productos.find(p => p.id.toString() === val.toString());
+                                    setForm(prev => {
+                                        const updatedItems = [...prev.items];
+                                        if (selProd && updatedItems.length > 0) {
+                                            updatedItems[0] = {
+                                                ...updatedItems[0],
+                                                concepto: selProd.concepto_utilizado || selProd.nombre
+                                            };
+                                        }
+                                        return {
+                                            ...prev,
+                                            producto_id: val,
+                                            items: updatedItems
+                                        };
+                                    });
+                                }}
+                                helperText="Selecciona un producto del catálogo para autocompletar el concepto contable"
                             >
-                                <MenuItem value="">-- Ninguno (Opcional) --</MenuItem>
+                                <MenuItem value="">-- Ninguno (Personalizado) --</MenuItem>
                                 {productos.map(prod => (
                                     <MenuItem key={prod.id} value={prod.id.toString()}>
-                                        {prod.nombre} (Referencia: {prod.concepto_utilizado})
+                                        {prod.nombre} (Concepto SAT: {prod.concepto_utilizado})
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -849,14 +866,35 @@ export default function CargosPage() {
                                         label={`Concepto ${idx + 1} *`}
                                         fullWidth
                                         size="small"
-                                        value={item.concepto || 'Mensualidad'}
+                                        value={item.concepto || 'MATERIA'}
                                         onChange={(e) => handleItemChange(idx, 'concepto', e.target.value)}
                                     >
-                                        <MenuItem value="Mensualidad">Mensualidad</MenuItem>
-                                        <MenuItem value="Inscripción">Inscripción</MenuItem>
-                                        <MenuItem value="Titulación">Titulación</MenuItem>
-                                        <MenuItem value="Examen Extraordinario">Examen Extraordinario</MenuItem>
-                                        <MenuItem value="Constancia">Constancia</MenuItem>
+                                        {productos.length > 0 ? (
+                                            productos.map(prod => (
+                                                <MenuItem key={prod.id} value={prod.concepto_utilizado}>
+                                                    {prod.nombre}
+                                                </MenuItem>
+                                            ))
+                                        ) : (
+                                            [
+                                                { nombre: 'Mensualidad', concepto: 'MATERIA' },
+                                                { nombre: 'Materia Ordinaria', concepto: 'MATERIA' },
+                                                { nombre: 'Materia de Revalidación', concepto: 'MATERIA' },
+                                                { nombre: 'Materia de Adelanto', concepto: 'MATERIA' },
+                                                { nombre: 'Materia Recursada', concepto: 'MATERIA' },
+                                                { nombre: 'Constancia', concepto: 'CONSTANCIA' },
+                                                { nombre: 'Kardex', concepto: 'KARDEX' },
+                                                { nombre: 'Credencial', concepto: 'CREDENCIAL' },
+                                                { nombre: 'Abono a Titulación', concepto: 'TITULACIÓN' },
+                                                { nombre: 'Graduación', concepto: 'GRADUACIÓN' },
+                                                { nombre: 'Inscripción', concepto: 'INSCRIPCIÓN' },
+                                                { nombre: 'Reinscripción', concepto: 'REINSCRIPCIÓN' }
+                                            ].map((prod, pIdx) => (
+                                                <MenuItem key={pIdx} value={prod.concepto}>
+                                                    {prod.nombre}
+                                                </MenuItem>
+                                            ))
+                                        )}
                                     </TextField>
                                     <TextField
                                         label="Monto ($) *"
