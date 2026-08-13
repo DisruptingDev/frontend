@@ -522,51 +522,78 @@ export default function MóduloCobranzaUnificadoPage() {
     const [programas, setProgramas] = useState([]);
 
     // CARGA DE DATOS UNIFICADA
+    // CARGA DE DATOS UNIFICADA
     const loadDataForTab = useCallback(async () => {
         setLoading(true);
         try {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            let token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '') : '';
             let grupoId = '';
-            if (token) {
-                try {
-                    const parsed = JSON.parse(atob(token.split('.')[1]));
-                    grupoId = parsed.grupo_id || '';
-                } catch (e) { }
+            if (typeof window !== 'undefined') {
+                const storedUser = localStorage.getItem('usuario') || localStorage.getItem('user');
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || '';
+                    } catch (e) { }
+                }
+                if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
-            if (!grupoId && typeof window !== 'undefined') {
-                try {
-                    const userStr = localStorage.getItem('user');
-                    if (userStr) {
-                        const parsed = JSON.parse(userStr);
-                        grupoId = parsed.grupo_id || '';
-                    }
-                } catch (e) { }
+
+            const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+            const queryParams = [];
+            if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
+            if (isSuper) queryParams.push(`is_superadmin=true`);
+            const qStr = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+
+            // 1. Cargar SIEMPRE la lista de Emisores para la Razón Social Emisora Vincular
+            try {
+                const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qStr}`;
+                const resFact = await fetch(urlFactEmisores).then(r => r.json()).catch(() => ({}));
+                const listEm = resFact.emisores || [];
+                setEmisores(listEm);
+
+                let idPref = null;
+                if (typeof window !== 'undefined') {
+                    idPref = localStorage.getItem('emisor_id_predeterminado');
+                }
+                if (!idPref && resFact.emisor_predeterminado_id) {
+                    idPref = resFact.emisor_predeterminado_id;
+                }
+                if (!idPref && listEm.length > 0) {
+                    const dbPred = listEm.find(e => e.es_predeterminado === true);
+                    idPref = dbPred ? dbPred.id : listEm[0].id;
+                }
+                if (idPref && !emisorSeleccionado) {
+                    setEmisorSeleccionado(idPref.toString());
+                }
+            } catch (e) {
+                console.error('Error cargando emisores:', e);
             }
-            if (!grupoId && typeof window !== 'undefined') grupoId = localStorage.getItem('grupo_id') || '';
-            const qGrupo = grupoId ? `grupo_id=${grupoId}` : '';
             
             // Tab 2: Fichas & Cargos
             if (currentTab === 2) {
-                const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qGrupo ? `&${qGrupo}` : ''}`;
+                const qCargos = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
+                const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qCargos}`;
                 const res = await fetch(urlCargos).then(r => r.json()).catch(() => []);
                 setCargos(Array.isArray(res) ? res : []);
             }
-            // Tab 3: Conciliación (No requiere fetch inicial pesado, usa cargos existentes)
+            // Tab 3: Conciliación
             else if (currentTab === 3) {
-                const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qGrupo ? `&${qGrupo}` : ''}`;
+                const qCargos = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
+                const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qCargos}`;
                 const res = await fetch(urlCargos).then(r => r.json()).catch(() => []);
                 setCargos(Array.isArray(res) ? res : []);
 
-                const urlAlumnos = `${baseUrl}/api/cobranza/alumnos${qGrupo ? `?${qGrupo}` : ''}`;
+                const urlAlumnos = `${baseUrl}/api/cobranza/alumnos${qStr}`;
                 const resAlumnos = await fetch(urlAlumnos).then(r => r.json()).catch(() => []);
                 setAlumnos(Array.isArray(resAlumnos) ? resAlumnos : []);
             }
             // Tab 4: Facturación CFDI
             else if (currentTab === 4) {
-                const baseQuery = qGrupo ? `?${qGrupo}` : '';
-                const emisorQuery = emisorSeleccionado ? (qGrupo ? `&emisor_id=${emisorSeleccionado}` : `?emisor_id=${emisorSeleccionado}`) : '';
-                const urlFact = `${baseUrl}/api/cobranza/facturacion${baseQuery}${emisorQuery}`;
+                const factParams = [...queryParams];
+                if (emisorSeleccionado) factParams.push(`emisor_id=${emisorSeleccionado}`);
+                const qFact = factParams.length > 0 ? `?${factParams.join('&')}` : '';
+                const urlFact = `${baseUrl}/api/cobranza/facturacion${qFact}`;
                 const resFact = await fetch(urlFact).then(r => r.json()).catch(() => ({}));
                 
                 if (Array.isArray(resFact.pre_facturas)) {
@@ -580,37 +607,12 @@ export default function MóduloCobranzaUnificadoPage() {
             }
             // Tab 5: Reporte Mensual
             else if (currentTab === 5) {
-                const urlRep = `${baseUrl}/api/cobranza/reportes?periodo=${mesPeriodo}${emisorSeleccionado ? `&emisor_id=${emisorSeleccionado}` : ''}${qGrupo ? `&${qGrupo}` : ''}`;
+                const repParams = [`periodo=${mesPeriodo}`, ...queryParams];
+                if (emisorSeleccionado) repParams.push(`emisor_id=${emisorSeleccionado}`);
+                const urlRep = `${baseUrl}/api/cobranza/reportes?${repParams.join('&')}`;
                 const resRep = await fetch(urlRep).then(r => r.json()).catch(() => ({}));
                 if (resRep && resRep.pagos) {
                     setReporteMensual(resRep);
-                }
-            }
-
-            // Always fetch emisores fast from local API if empty
-            if (emisores.length === 0) {
-                try {
-                    const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qGrupo ? `?${qGrupo}` : ''}`;
-                    const resFact = await fetch(urlFactEmisores).then(r => r.json()).catch(() => ({}));
-                    const listEm = resFact.emisores || [];
-                    setEmisores(listEm);
-
-                    let idPref = null;
-                    if (typeof window !== 'undefined') {
-                        idPref = localStorage.getItem('emisor_id_predeterminado');
-                    }
-                    if (!idPref && resFact.emisor_predeterminado_id) {
-                        idPref = resFact.emisor_predeterminado_id;
-                    }
-                    if (!idPref && listEm.length > 0) {
-                        const dbPred = listEm.find(e => e.es_predeterminado === true);
-                        idPref = dbPred ? dbPred.id : listEm[0].id;
-                    }
-                    if (idPref && !emisorSeleccionado) {
-                        setEmisorSeleccionado(idPref.toString());
-                    }
-                } catch (e) {
-                    console.error('Error cargando emisores:', e);
                 }
             }
         } catch (err) {
@@ -618,15 +620,10 @@ export default function MóduloCobranzaUnificadoPage() {
         } finally {
             setLoading(false);
         }
-    }, [currentTab, mesPeriodo, emisorSeleccionado, emisores.length]);
+    }, [currentTab, mesPeriodo, emisorSeleccionado]);
 
     useEffect(() => {
-        // Tab 0 and 1 fetch their own data internally now.
-        if (currentTab >= 2) {
-            loadDataForTab();
-        } else {
-            setLoading(false); // Make sure we don't hang on loading
-        }
+        loadDataForTab();
         
         // Fetch programas independently once
         fetch('/api/cobranza/programas')
