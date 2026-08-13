@@ -115,8 +115,9 @@ const VistaUsuarios = ({ token }) => {
             const data = await response.json();
             console.log('Suplantar:', data);
             if (data) {
-                if(onSuplantar(data.token, Nombre)){
-                    console.log('Suplantado exitosamente', Nombre);
+                const targetGrupoId = menuRow.GrupoID || menuRow.grupo_id || data?.grupo_id || data?.GrupoID || '';
+                if(onSuplantar(data.token, Nombre, targetGrupoId, { nombre: Nombre, grupo_id: targetGrupoId, id: ID })){
+                    console.log('Suplantado exitosamente', Nombre, 'Grupo:', targetGrupoId);
                     router.push('/Home');
                 }
                 else{

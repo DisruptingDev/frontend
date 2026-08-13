@@ -31,17 +31,19 @@ export async function GET(request) {
                             request.headers.get('x-super-user') === 'true' ||
                             grupoId === 'ALL' || grupoId === 'TODOS';
 
-        // Filtro multitenant dinámico
-        const whereComprobante = {};
-        if (emisorId) whereComprobante.emisor_id = BigInt(emisorId);
+        // Filtro multitenant dinámico seguro usando arrays AND
+        const andFiltersComprobante = [];
+        if (emisorId) andFiltersComprobante.push({ emisor_id: BigInt(emisorId) });
 
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            whereComprobante.OR = [
-                { grupo_id: BigInt(grupoId) },
-                { grupo_id: null }
-            ];
+            andFiltersComprobante.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
         } else if (!isSuperUser) {
-            whereComprobante.grupo_id = BigInt(-1);
+            andFiltersComprobante.push({ grupo_id: BigInt(-1) });
         }
 
         // Limpiar automáticamente registros de prueba falsos que hayan quedado con UUIDs de simulación
@@ -67,16 +69,18 @@ export async function GET(request) {
         // 1. Obtener Pre-Facturas en Borrador (PENDIENTES DE TIMBRADO) asociadas al grupo/emisor
         const preFacturas = await prisma.comprobantes.findMany({
             where: {
-                ...whereComprobante,
-                OR: [
-                    { estatus: 'PENDIENTE' },
-                    { estatus: 'BORRADOR' },
-                    { estatus: null },
-                    { uuid: null }
-                ],
-                NOT: {
-                    estatus: 'TIMBRADO'
-                }
+                AND: [
+                    ...andFiltersComprobante,
+                    {
+                        OR: [
+                            { estatus: 'PENDIENTE' },
+                            { estatus: 'BORRADOR' },
+                            { estatus: null },
+                            { uuid: null }
+                        ]
+                    },
+                    { NOT: { estatus: 'TIMBRADO' } }
+                ]
             },
             include: {
                 emisors: true,
@@ -99,9 +103,11 @@ export async function GET(request) {
         // 2. Obtener Facturas Oficiales TIMBRADAS por Go / PAC (con UUID real) asociadas al grupo/emisor
         const facturasTimbradas = await prisma.comprobantes.findMany({
             where: {
-                ...whereComprobante,
-                estatus: 'TIMBRADO',
-                NOT: { uuid: null }
+                AND: [
+                    ...andFiltersComprobante,
+                    { estatus: 'TIMBRADO' },
+                    { NOT: { uuid: null } }
+                ]
             },
             include: {
                 emisors: true,
@@ -225,17 +231,18 @@ export async function GET(request) {
         const pendientesGlobal = preFacturasFormatted.filter(p => p.es_generico);
 
         // 3. Obtener Emisores asignados al grupo del usuario o vista global de SuperAdmin
-        const whereEmisores = {
-            NOT: { rfc: 'UHI950412XX1' }
-        };
+        const andFiltersEmisores = [{ NOT: { rfc: 'UHI950412XX1' } }];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            whereEmisores.OR = [
-                { grupo_id: BigInt(grupoId) },
-                { grupo_id: null }
-            ];
+            andFiltersEmisores.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
         } else if (!isSuperUser) {
-            whereEmisores.grupo_id = BigInt(-1);
+            andFiltersEmisores.push({ grupo_id: BigInt(-1) });
         }
+        const whereEmisores = { AND: andFiltersEmisores };
 
         try {
             await prisma.$executeRawUnsafe(`

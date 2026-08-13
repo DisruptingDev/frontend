@@ -35,18 +35,22 @@ export async function GET(request) {
                             request.headers.get('x-super-user') === 'true' ||
                             grupoId === 'ALL' || grupoId === 'TODOS';
 
-        const where = {};
+        const andFiltersAlumnos = [];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            where.OR = [
-                { grupo_id: BigInt(grupoId) },
-                { grupo_id: null }
-            ];
+            andFiltersAlumnos.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
         } else if (!isSuperUser) {
-            where.grupo_id = BigInt(-1);
+            andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
-        if (carrera) where.carrera = carrera;
-        if (semestre) where.semestre = parseInt(semestre);
-        if (estatus && estatus !== 'TODOS') where.estatus = estatus.toUpperCase();
+        if (carrera) andFiltersAlumnos.push({ carrera });
+        if (semestre) andFiltersAlumnos.push({ semestre: parseInt(semestre) });
+        if (estatus && estatus !== 'TODOS') andFiltersAlumnos.push({ estatus: estatus.toUpperCase() });
+
+        const where = andFiltersAlumnos.length > 0 ? { AND: andFiltersAlumnos } : {};
 
         const alumnos = await prisma.alumno.findMany({
             where,

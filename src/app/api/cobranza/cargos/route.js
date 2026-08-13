@@ -197,17 +197,22 @@ export async function GET(request) {
             });
         } catch (e) {}
 
-        const where = {};
-        if (alumnoId) where.alumno_id = BigInt(alumnoId);
-        if (estatus && estatus !== 'TODOS') where.estatus = estatus;
+        const andFiltersCargos = [];
+        if (alumnoId) andFiltersCargos.push({ alumno_id: BigInt(alumnoId) });
+        if (estatus && estatus !== 'TODOS') andFiltersCargos.push({ estatus });
+
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            where.OR = [
-                { grupo_id: BigInt(grupoId) },
-                { grupo_id: null }
-            ];
+            andFiltersCargos.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
         } else if (!isSuperUser) {
-            where.grupo_id = BigInt(-1);
+            andFiltersCargos.push({ grupo_id: BigInt(-1) });
         }
+
+        const where = andFiltersCargos.length > 0 ? { AND: andFiltersCargos } : {};
 
         const cargos = await prisma.cargoAlumno.findMany({
             where,

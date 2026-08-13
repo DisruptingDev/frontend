@@ -109,20 +109,24 @@ export async function GET(request) {
                             request.headers.get('x-super-user') === 'true' ||
                             grupoId === 'ALL' || grupoId === 'TODOS';
 
-        const wherePagos = {
+        const andFiltersReportes = [{
             fecha_pago: {
                 gte: fechaInicio,
                 lte: fechaFin
             }
-        };
+        }];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            wherePagos.OR = [
-                { grupo_id: BigInt(grupoId) },
-                { grupo_id: null }
-            ];
+            andFiltersReportes.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
         } else if (!isSuperUser) {
-            wherePagos.grupo_id = BigInt(-1);
+            andFiltersReportes.push({ grupo_id: BigInt(-1) });
         }
+
+        const wherePagos = { AND: andFiltersReportes };
 
         const pagosMes = await prisma.pagoAlumno.findMany({
             where: wherePagos,
