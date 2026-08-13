@@ -19,17 +19,32 @@ function parseMonto(val) {
 
 function parseFecha(val) {
     if (!val) return new Date();
-    if (val instanceof Date) return val;
+    if (val instanceof Date) return isNaN(val.getTime()) ? new Date() : val;
     if (typeof val === 'number') {
-        return new Date(Math.round((val - 25569) * 86400 * 1000));
+        const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+        return isNaN(d.getTime()) ? new Date() : d;
     }
     const str = String(val).trim();
     if (str.includes('/')) {
         const parts = str.split('/');
         if (parts[0].length === 4) {
-            return new Date(`${parts[0]}-${parts[1]}-${parts[2]}`);
-        } else if (parts[2]?.length === 4) {
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            const d = new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`);
+            if (!isNaN(d.getTime())) return d;
+        } else if (parts[2]) {
+            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+            const d = new Date(`${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+            if (!isNaN(d.getTime())) return d;
+        }
+    }
+    if (str.includes('-')) {
+        const parts = str.split('-');
+        if (parts[0].length === 4) {
+            const d = new Date(`${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`);
+            if (!isNaN(d.getTime())) return d;
+        } else if (parts[2]) {
+            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+            const d = new Date(`${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+            if (!isNaN(d.getTime())) return d;
         }
     }
     const parsed = new Date(str);

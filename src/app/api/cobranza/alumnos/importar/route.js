@@ -4,6 +4,9 @@ import prisma from '@/lib/prisma';
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'bigint') return obj.toString();
+    if (obj instanceof Date) {
+        return isNaN(obj.getTime()) ? null : obj.toISOString();
+    }
     if (typeof obj === 'object') {
         if (obj.d && Array.isArray(obj.d) && obj.s !== undefined) {
             return obj.toString();

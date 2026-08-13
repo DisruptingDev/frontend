@@ -38,7 +38,9 @@ import {
     Visibility as EyeIcon,
     Receipt as ReceiptIcon,
     Print as PrintIcon,
-    Delete as DeleteIcon
+    Delete as DeleteIcon,
+    Email as EmailIcon,
+    PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 
 function parseMonto(val) {
@@ -74,8 +76,27 @@ export default function CargosPage() {
     const [emisorSeleccionado, setEmisorSeleccionado] = useState('');
 
     const [saving, setSaving] = useState(false);
+    const [enviandoCorreo, setEnviandoCorreo] = useState(false);
     const [error, setError] = useState('');
     const [exito, setExito] = useState('');
+
+    const handleReenviarCorreo = async (cargoId) => {
+        if (!cargoId) return;
+        setEnviandoCorreo(true);
+        try {
+            const res = await fetch(`/api/cobranza/cargos/${cargoId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al enviar correo');
+            alert(data.mensaje || 'Ficha de cargo enviada en PDF por correo exitosamente.');
+        } catch (err) {
+            alert('Error al enviar correo: ' + err.message);
+        } finally {
+            setEnviandoCorreo(false);
+        }
+    };
 
     const [form, setForm] = useState({
         alumnos_ids: 'TODOS',
@@ -600,7 +621,24 @@ export default function CargosPage() {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
+                <DialogActions sx={{ p: 2, flexWrap: 'wrap', gap: 1 }}>
+                    <Button 
+                        startIcon={<PdfIcon />} 
+                        variant="outlined" 
+                        color="secondary"
+                        onClick={() => window.open(`/api/cobranza/cargos/${cargoSeleccionado?.id}`, '_blank')}
+                    >
+                        Descargar PDF
+                    </Button>
+                    <Button 
+                        startIcon={<EmailIcon />} 
+                        variant="outlined" 
+                        color="info"
+                        disabled={enviandoCorreo}
+                        onClick={() => handleReenviarCorreo(cargoSeleccionado?.id)}
+                    >
+                        {enviandoCorreo ? 'Enviando PDF...' : 'Enviar por Correo'}
+                    </Button>
                     <Button startIcon={<PrintIcon />} variant="outlined" onClick={() => window.print()}>
                         Imprimir Ficha
                     </Button>

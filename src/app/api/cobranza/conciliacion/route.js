@@ -5,6 +5,9 @@ import { parseExcelFile, parseGenerico } from '@/libs/bankParsers/bankParsers';
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'bigint') return obj.toString();
+    if (obj instanceof Date) {
+        return isNaN(obj.getTime()) ? null : obj.toISOString();
+    }
     if (typeof obj === 'object') {
         if (obj.d && Array.isArray(obj.d) && obj.s !== undefined) {
             return obj.toString();
@@ -44,13 +47,26 @@ function parseFechaSegura(val) {
     if (val instanceof Date) {
         return isNaN(val.getTime()) ? new Date() : val;
     }
+    if (typeof val === 'object') {
+        return new Date();
+    }
     const str = String(val).trim();
+    if (str === '[object Object]' || str === 'Invalid Date') return new Date();
     if (str.includes('/')) {
         const parts = str.split('/');
         if (parts[0].length === 4) {
-            val = `${parts[0]}-${parts[1]}-${parts[2]}`;
-        } else if (parts[2]?.length === 4) {
-            val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            val = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        } else if (parts[2]) {
+            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+            val = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+    } else if (str.includes('-')) {
+        const parts = str.split('-');
+        if (parts[0].length === 4) {
+            val = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        } else if (parts[2]) {
+            const year = parts[2].length === 2 ? `20${parts[2]}` : parts[2];
+            val = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
         }
     }
     const d = new Date(val);

@@ -413,8 +413,27 @@ export default function MóduloCobranzaUnificadoPage() {
     const [historialData, setHistorialData] = useState({ pagos: [], cargos: [], resumen: {} });
 
     const [saving, setSaving] = useState(false);
+    const [enviandoCorreoFicha, setEnviandoCorreoFicha] = useState(false);
     const [mensajeExito, setMensajeExito] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
+
+    const handleReenviarCorreoFicha = async (cargoId) => {
+        if (!cargoId) return;
+        setEnviandoCorreoFicha(true);
+        try {
+            const res = await fetch(`/api/cobranza/cargos/${cargoId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al enviar correo');
+            setMensajeExito(data.mensaje || 'Ficha de cargo enviada en PDF por correo exitosamente.');
+        } catch (err) {
+            setErrorMsg('Error al enviar correo: ' + err.message);
+        } finally {
+            setEnviandoCorreoFicha(false);
+        }
+    };
 
     // FORMULARIO ALUMNO
     const [alumnoForm, setAlumnoForm] = useState({
@@ -1447,10 +1466,29 @@ export default function MóduloCobranzaUnificadoPage() {
                         </Box>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenFichaModal(false)} color="secondary">Cerrar</Button>
-                    <Button variant="contained" color="primary" startIcon={<PrintIcon />} onClick={() => window.print()}>
+                <DialogActions sx={{ p: 2, flexWrap: 'wrap', gap: 1 }}>
+                    <Button 
+                        startIcon={<PdfIcon />} 
+                        variant="outlined" 
+                        color="secondary"
+                        onClick={() => window.open(`/api/cobranza/cargos/${cargoSeleccionado?.id}`, '_blank')}
+                    >
+                        Descargar PDF
+                    </Button>
+                    <Button 
+                        startIcon={<EmailIcon />} 
+                        variant="outlined" 
+                        color="info"
+                        disabled={enviandoCorreoFicha}
+                        onClick={() => handleReenviarCorreoFicha(cargoSeleccionado?.id)}
+                    >
+                        {enviandoCorreoFicha ? 'Enviando PDF...' : 'Enviar por Correo'}
+                    </Button>
+                    <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>
                         Imprimir Ficha
+                    </Button>
+                    <Button onClick={() => setOpenFichaModal(false)} variant="contained" color="primary">
+                        Cerrar
                     </Button>
                 </DialogActions>
             </Dialog>
