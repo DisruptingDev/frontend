@@ -423,15 +423,37 @@ export default function AlumnosView() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
-            // 1. Cargar Emisores desde el Módulo de Empresas
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            // 1. Cargar Emisores de forma rápida e instantánea desde la API local de facturación
             let emisoresList = [];
+            const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+            const queryParams = [];
+            if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
+            if (isSuper) queryParams.push(`is_superadmin=true`);
+            const qStr = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
 
-            if (token && apiUrl) {
+            try {
+                const resFact = await fetch(`/api/cobranza/facturacion${qStr}`);
+                if (resFact.ok) {
+                    const dataFact = await resFact.json();
+                    if (dataFact.emisores && Array.isArray(dataFact.emisores)) {
+                        emisoresList = dataFact.emisores;
+                    }
+                }
+            } catch (e) {
+                console.log('Error cargando emisores locales:', e.message);
+            }
+
+            // Fallback secundario a API externa solo si localmente no hubo respuesta
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            if (emisoresList.length === 0 && token && apiUrl) {
                 try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2000);
                     const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        signal: controller.signal
                     });
+                    clearTimeout(timeoutId);
                     if (resEmp.ok) {
                         const dataEmp = await resEmp.json();
                         if (Array.isArray(dataEmp)) {
@@ -443,29 +465,18 @@ export default function AlumnosView() {
                             }));
                         }
                     }
-                } catch (e) {
-                    console.log('Error cargando empresas:', e.message);
-                }
-            }
-
-            if (emisoresList.length === 0) {
-                const urlFact = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
-                const resFact = await fetch(urlFact);
-                const dataFact = await resFact.json();
-                if (dataFact.emisores && Array.isArray(dataFact.emisores)) {
-                    emisoresList = dataFact.emisores;
-                }
+                } catch (e) {}
             }
 
             setEmisores(emisoresList);
 
-            // 2. Cargar Alumnos asociados al grupo del usuario
-            const urlAlum = grupoId ? `/api/cobranza/alumnos?grupo_id=${grupoId}` : '/api/cobranza/alumnos';
+            // 2. Cargar Alumnos asociados al grupo del usuario o vista global SuperAdmin
+            const urlAlum = `/api/cobranza/alumnos${qStr}`;
             const resAlum = await fetch(urlAlum).then(r => r.json()).catch(() => []);
             if (Array.isArray(resAlum)) setAlumnos(resAlum);
 
             // 3. Cargar Programas Académicos asociados al grupo del usuario
-            const urlProg = grupoId ? `/api/cobranza/programas?grupo_id=${grupoId}` : '/api/cobranza/programas';
+            const urlProg = `/api/cobranza/programas${qStr}`;
             const resProg = await fetch(urlProg).then(r => r.json()).catch(() => []);
             if (Array.isArray(resProg)) {
                 setProgramas(resProg);

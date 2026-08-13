@@ -30,12 +30,18 @@ export async function GET(request) {
         const carrera = searchParams.get('carrera');
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
+                            searchParams.get('super_user') === 'true' || 
+                            request.headers.get('x-super-user') === 'true' ||
+                            grupoId === 'ALL' || grupoId === 'TODOS';
 
         const where = {};
-        if (grupoId) {
-            where.grupo_id = BigInt(grupoId);
-        } else {
-            // Seguridad Multitenant: Si no se provee grupo_id, no se muestran alumnos globales
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            where.OR = [
+                { grupo_id: BigInt(grupoId) },
+                { grupo_id: null }
+            ];
+        } else if (!isSuperUser) {
             where.grupo_id = BigInt(-1);
         }
         if (carrera) where.carrera = carrera;

@@ -172,7 +172,13 @@ export default function FacturacionCobranzaPage() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
-            const url = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
+            const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+            const queryParams = [];
+            if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
+            if (isSuper) queryParams.push(`is_superadmin=true`);
+            const qStr = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+
+            const url = `/api/cobranza/facturacion${qStr}`;
             const res = await fetch(url);
             const data = await res.json();
 

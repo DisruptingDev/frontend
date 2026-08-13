@@ -104,15 +104,23 @@ export async function GET(request) {
         const fechaInicio = new Date(year, month - 1, 1);
         const fechaFin = new Date(year, month, 0, 23, 59, 59);
 
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
+                            searchParams.get('super_user') === 'true' || 
+                            request.headers.get('x-super-user') === 'true' ||
+                            grupoId === 'ALL' || grupoId === 'TODOS';
+
         const wherePagos = {
             fecha_pago: {
                 gte: fechaInicio,
                 lte: fechaFin
             }
         };
-        if (grupoId) {
-            wherePagos.grupo_id = BigInt(grupoId);
-        } else {
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            wherePagos.OR = [
+                { grupo_id: BigInt(grupoId) },
+                { grupo_id: null }
+            ];
+        } else if (!isSuperUser) {
             wherePagos.grupo_id = BigInt(-1);
         }
 

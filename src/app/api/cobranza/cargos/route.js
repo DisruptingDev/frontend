@@ -177,12 +177,16 @@ export async function GET(request) {
         const alumnoId = searchParams.get('alumno_id');
         const estatus = searchParams.get('estatus');
         const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
+                            searchParams.get('super_user') === 'true' || 
+                            request.headers.get('x-super-user') === 'true' ||
+                            grupoId === 'ALL' || grupoId === 'TODOS';
 
         const ahora = new Date();
         try {
             await prisma.cargoAlumno.updateMany({
                 where: {
-                    ...(grupoId ? { grupo_id: BigInt(grupoId) } : {}),
+                    ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahora },
                     monto_pendiente: { gt: 0 },
                     estatus: { in: ['PENDIENTE', 'PARCIAL'] }
@@ -196,10 +200,12 @@ export async function GET(request) {
         const where = {};
         if (alumnoId) where.alumno_id = BigInt(alumnoId);
         if (estatus && estatus !== 'TODOS') where.estatus = estatus;
-        if (grupoId) {
-            where.grupo_id = BigInt(grupoId);
-        } else {
-            // Seguridad Multitenant: Si no se especifica grupo_id, no se muestran fichas globales
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            where.OR = [
+                { grupo_id: BigInt(grupoId) },
+                { grupo_id: null }
+            ];
+        } else if (!isSuperUser) {
             where.grupo_id = BigInt(-1);
         }
 

@@ -26,16 +26,23 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
         const emisorId = searchParams.get('emisor_id');
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
+                            searchParams.get('super_user') === 'true' || 
+                            request.headers.get('x-super-user') === 'true' ||
+                            grupoId === 'ALL' || grupoId === 'TODOS';
 
-        // Filtro estricto por grupo del usuario / colaborador y emisor asignado (Multitenancy)
+        // Filtro multitenant dinámico
         const whereComprobante = {};
-        if (grupoId) {
-            whereComprobante.grupo_id = BigInt(grupoId);
-        } else {
-            // Seguridad Multitenant: Si no se provee grupo_id, no se muestran comprobantes globales
+        if (emisorId) whereComprobante.emisor_id = BigInt(emisorId);
+
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            whereComprobante.OR = [
+                { grupo_id: BigInt(grupoId) },
+                { grupo_id: null }
+            ];
+        } else if (!isSuperUser) {
             whereComprobante.grupo_id = BigInt(-1);
         }
-        if (emisorId) whereComprobante.emisor_id = BigInt(emisorId);
 
         // Limpiar automáticamente registros de prueba falsos que hayan quedado con UUIDs de simulación
         try {
@@ -217,13 +224,16 @@ export async function GET(request) {
         const pendientesRFC = preFacturasFormatted.filter(p => !p.es_generico);
         const pendientesGlobal = preFacturasFormatted.filter(p => p.es_generico);
 
-        // 3. Obtener Emisores del grupo exclusivo del usuario (sin fallback inseguro a otras empresas)
+        // 3. Obtener Emisores asignados al grupo del usuario o vista global de SuperAdmin
         const whereEmisores = {
             NOT: { rfc: 'UHI950412XX1' }
         };
-        if (grupoId) {
-            whereEmisores.grupo_id = BigInt(grupoId);
-        } else {
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            whereEmisores.OR = [
+                { grupo_id: BigInt(grupoId) },
+                { grupo_id: null }
+            ];
+        } else if (!isSuperUser) {
             whereEmisores.grupo_id = BigInt(-1);
         }
 
