@@ -201,30 +201,6 @@ export default function CargosPage() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            let emisoresEmpresas = null;
-
-            if (token && apiUrl) {
-                try {
-                    const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (resEmp.ok) {
-                        const dataEmp = await resEmp.json();
-                        if (Array.isArray(dataEmp)) {
-                            emisoresEmpresas = dataEmp.map(e => ({
-                                id: (e.ID || e.id).toString(),
-                                rfc: e.Rfc || e.rfc,
-                                nombre: e.Nombre || e.nombre,
-                                regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
-                            }));
-                        }
-                    }
-                } catch (e) {
-                    console.log('Cargando emisores por fallback de cobranza:', e.message);
-                }
-            }
-
             const queryGrupo = grupoId ? `grupo_id=${grupoId}` : '';
             const urlCargos = queryGrupo ? `/api/cobranza/cargos?${queryGrupo}` : '/api/cobranza/cargos';
             const urlAlum = queryGrupo ? `/api/cobranza/alumnos?${queryGrupo}` : '/api/cobranza/alumnos';
@@ -242,22 +218,23 @@ export default function CargosPage() {
             if (Array.isArray(resAlumnos)) setAlumnos(resAlumnos);
             if (Array.isArray(resProd)) setProductos(resProd);
             
-            const listaEmisoresFinal = (resFact.emisores && Array.isArray(resFact.emisores) && resFact.emisores.length > 0)
-                ? resFact.emisores
-                : (emisoresEmpresas && Array.isArray(emisoresEmpresas) ? emisoresEmpresas : []);
-
+            const listaEmisoresFinal = resFact.emisores || [];
             setEmisores(listaEmisoresFinal);
-            const savedEmisorId = typeof window !== 'undefined' ? localStorage.getItem('cobranza_emisor_id') : null;
-            const emisorExiste = listaEmisoresFinal.find(e => e.id.toString() === savedEmisorId?.toString());
 
-            if (emisorExiste) {
-                setEmisorSeleccionado(emisorExiste.id.toString());
-            } else if (listaEmisoresFinal.length > 0) {
-                const defaultId = listaEmisoresFinal[0].id.toString();
-                setEmisorSeleccionado(defaultId);
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('cobranza_emisor_id', defaultId);
-                }
+            let idPref = null;
+            if (typeof window !== 'undefined') {
+                idPref = localStorage.getItem('emisor_id_predeterminado');
+            }
+            if (!idPref && resFact.emisor_predeterminado_id) {
+                idPref = resFact.emisor_predeterminado_id;
+            }
+            if (!idPref && listaEmisoresFinal.length > 0) {
+                const dbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
+                idPref = dbPred ? dbPred.id : listaEmisoresFinal[0].id;
+            }
+
+            if (idPref) {
+                setEmisorSeleccionado(idPref.toString());
             }
         } catch (err) {
             console.error('Error cargando cargos:', err);

@@ -117,41 +117,26 @@ export default function ConciliacionPage() {
                 }
 
                 // 1. Cargar Emisores desde el Módulo de Empresas
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-                let emisoresList = [];
-
-                if (token && apiUrl) {
-                    try {
-                        const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (resEmp.ok) {
-                            const dataEmp = await resEmp.json();
-                            if (Array.isArray(dataEmp)) {
-                                emisoresList = dataEmp.map(e => ({
-                                    id: (e.ID || e.id).toString(),
-                                    rfc: e.Rfc || e.rfc,
-                                    nombre: e.Nombre || e.nombre,
-                                    regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
-                                }));
-                            }
-                        }
-                    } catch (e) {
-                        console.log('Error cargando empresas:', e.message);
-                    }
-                }
-
-                if (emisoresList.length === 0) {
-                    const resFact = await fetch('/api/cobranza/facturacion');
-                    const dataFact = await resFact.json();
-                    if (dataFact.emisores && Array.isArray(dataFact.emisores)) {
-                        emisoresList = dataFact.emisores;
-                    }
-                }
+                // 1. Cargar Emisores de forma rápida desde API local
+                const resFact = await fetch('/api/cobranza/facturacion');
+                const dataFact = await resFact.json();
+                const emisoresList = dataFact.emisores || [];
 
                 setEmisores(emisoresList);
-                if (emisoresList.length > 0 && !emisorSeleccionado) {
-                    setEmisorSeleccionado(emisoresList[0].id);
+
+                let idPref = null;
+                if (typeof window !== 'undefined') {
+                    idPref = localStorage.getItem('emisor_id_predeterminado');
+                }
+                if (!idPref && dataFact.emisor_predeterminado_id) {
+                    idPref = dataFact.emisor_predeterminado_id;
+                }
+                if (!idPref && emisoresList.length > 0) {
+                    const dbPred = emisoresList.find(e => e.es_predeterminado === true);
+                    idPref = dbPred ? dbPred.id : emisoresList[0].id;
+                }
+                if (idPref) {
+                    setEmisorSeleccionado(idPref.toString());
                 }
 
                 // 2. Cargar Alumnos
@@ -296,6 +281,20 @@ export default function ConciliacionPage() {
         }
     };
 
+    const handleCambiarEmisor = async (nuevoId) => {
+        setEmisorSeleccionado(nuevoId);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('emisor_id_predeterminado', nuevoId);
+        }
+        try {
+            await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'SET_EMISOR_PREDETERMINADO', emisor_id: nuevoId })
+            });
+        } catch (e) {}
+    };
+
     return (
         <WithPermission permission="PAGOS_VER" fallback={<AccesoDenegado />}>
             <div>
@@ -333,7 +332,7 @@ export default function ConciliacionPage() {
                                             labelId="emisor-concil-label"
                                             value={emisorSeleccionado}
                                             label="Razón Social Emisora de Pre-facturas (Módulo de Empresas)"
-                                            onChange={(e) => setEmisorSeleccionado(e.target.value)}
+                                            onChange={(e) => handleCambiarEmisor(e.target.value)}
                                         >
                                             {emisores.length === 0 ? (
                                                 <MenuItem value="">Cargando Emisores autorizados...</MenuItem>

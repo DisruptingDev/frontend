@@ -587,51 +587,30 @@ export default function MóduloCobranzaUnificadoPage() {
                 }
             }
 
-            // Always fetch emisores just in case
+            // Always fetch emisores fast from local API if empty
             if (emisores.length === 0) {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.sandbox.wisefacturacion.com';
-                let fetchSuccess = false;
-                
-                if (apiUrl && token) {
-                    try {
-                        const resApi = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
-                            headers: { 
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }).then(r => r.json()).catch(err => {
-                            console.error("Error fetching from C# API:", err);
-                            return [];
-                        });
-                        
-                        console.log("C# API returned emisores:", resApi);
-                        
-                        if (Array.isArray(resApi) && resApi.length > 0) {
-                            const mappedEmisores = resApi.map(e => ({
-                                id: e.ID,
-                                rfc: e.Rfc,
-                                nombre: e.Nombre
-                            }));
-                            setEmisores(mappedEmisores);
-                            if (!emisorSeleccionado) {
-                                setEmisorSeleccionado(mappedEmisores[0].id);
-                            }
-                            fetchSuccess = true;
-                        }
-                    } catch (err) {}
-                }
-                
-                // Fallback to Node backend if C# API failed or returned empty
-                if (!fetchSuccess) {
-                    console.warn("C# API FETCH FAILED OR EMPTY. Falling back to Node API.");
+                try {
                     const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qGrupo ? `?${qGrupo}` : ''}`;
                     const resFact = await fetch(urlFactEmisores).then(r => r.json()).catch(() => ({}));
-                    if (resFact.emisores && Array.isArray(resFact.emisores)) {
-                        setEmisores(resFact.emisores);
-                        if (resFact.emisores.length > 0 && !emisorSeleccionado) {
-                            setEmisorSeleccionado(resFact.emisores[0].id);
-                        }
+                    const listEm = resFact.emisores || [];
+                    setEmisores(listEm);
+
+                    let idPref = null;
+                    if (typeof window !== 'undefined') {
+                        idPref = localStorage.getItem('emisor_id_predeterminado');
                     }
+                    if (!idPref && resFact.emisor_predeterminado_id) {
+                        idPref = resFact.emisor_predeterminado_id;
+                    }
+                    if (!idPref && listEm.length > 0) {
+                        const dbPred = listEm.find(e => e.es_predeterminado === true);
+                        idPref = dbPred ? dbPred.id : listEm[0].id;
+                    }
+                    if (idPref && !emisorSeleccionado) {
+                        setEmisorSeleccionado(idPref.toString());
+                    }
+                } catch (e) {
+                    console.error('Error cargando emisores:', e);
                 }
             }
         } catch (err) {
@@ -662,9 +641,19 @@ export default function MóduloCobranzaUnificadoPage() {
             .catch(console.error);
     }, [loadDataForTab, currentTab]);
 
-    const handleEmisorChange = (e) => {
+    const handleEmisorChange = async (e) => {
         const val = e.target.value;
         setEmisorSeleccionado(val);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('emisor_id_predeterminado', val);
+        }
+        try {
+            await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'SET_EMISOR_PREDETERMINADO', emisor_id: val })
+            });
+        } catch (err) {}
         setMensajeExito(`Razón Social Emisora vinculada correctamente para todas las operaciones.`);
     };
 

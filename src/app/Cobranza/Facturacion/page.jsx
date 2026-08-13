@@ -172,50 +172,24 @@ export default function FacturacionCobranzaPage() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-            let emisoresEmpresas = null;
-
-            if (token && apiUrl) {
-                try {
-                    const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (resEmp.ok) {
-                        const dataEmp = await resEmp.json();
-                        if (Array.isArray(dataEmp)) {
-                            emisoresEmpresas = dataEmp.map(e => ({
-                                id: (e.ID || e.id).toString(),
-                                rfc: e.Rfc || e.rfc,
-                                nombre: e.Nombre || e.nombre,
-                                regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
-                            }));
-                        }
-                    }
-                } catch (e) {
-                    console.log('Cargando emisores por fallback de cobranza:', e.message);
-                }
-            }
-
             const url = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
             const res = await fetch(url);
             const data = await res.json();
 
-            const listaEmisoresFinal = emisoresEmpresas && emisoresEmpresas.length > 0 
-                ? emisoresEmpresas 
-                : (data.emisores && Array.isArray(data.emisores) ? data.emisores : []);
+            const listaEmisoresFinal = data.emisores && Array.isArray(data.emisores) ? data.emisores : [];
 
             setEmisores(listaEmisoresFinal);
             
-            let idPref = data.emisor_predeterminado_id;
-            if (!idPref) {
-                const emisorDbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
-                if (emisorDbPred) idPref = emisorDbPred.id;
-            }
-            if (!idPref && typeof window !== 'undefined') {
+            let idPref = null;
+            if (typeof window !== 'undefined') {
                 idPref = localStorage.getItem('emisor_id_predeterminado');
             }
+            if (!idPref && data.emisor_predeterminado_id) {
+                idPref = data.emisor_predeterminado_id;
+            }
             if (!idPref && listaEmisoresFinal.length > 0) {
-                idPref = listaEmisoresFinal[0].id;
+                const emisorDbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
+                idPref = emisorDbPred ? emisorDbPred.id : listaEmisoresFinal[0].id;
             }
 
             if (idPref) {
