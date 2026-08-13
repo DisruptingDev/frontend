@@ -429,8 +429,17 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, rem
 
     // Configuración de Remitente Enmascarado y Dirección de Respuesta (Exclusivo Módulo de Cobranza)
     const fromName = remitenteNombre || process.env.SMTP_COBRANZA_FROM_NAME || process.env.SMTP_FROM_NAME || "Cobranza Institucional";
-    const fromAddr = remitenteEmail || process.env.SMTP_COBRANZA_FROM_EMAIL || process.env.SMTP_FROM_EMAIL || smtpUser || 'no-reply@wisefacturacion.com';
-    const replyToAddr = replyTo || process.env.SMTP_COBRANZA_REPLY_TO || process.env.SMTP_REPLY_TO || fromAddr;
+    const requestedFromAddr = remitenteEmail || process.env.SMTP_COBRANZA_FROM_EMAIL || process.env.SMTP_FROM_EMAIL;
+
+    // La mayoría de los servidores SMTP (Postfix, cPanel, Gmail, Office365) rechazan (error 553 5.7.1)
+    // los correos donde la dirección RFC822 en 'from' no pertenece al usuario autenticado (smtpUser).
+    // Para enmascarar correctamente sin causar rechazo:
+    // 1. Usamos smtpUser como la casilla real de envío en 'from' (o requestedFromAddr si se activa SMTP_ALLOW_CUSTOM_FROM=true).
+    // 2. Usamos 'fromName' (ej: "UNIMCO Pagos") como el nombre remitente visible.
+    // 3. Asignamos requestedFromAddr a 'replyTo' (ej: pagos@unimco.edu.mx) para que las respuestas de los alumnos lleguen ahí.
+    const allowCustomFrom = process.env.SMTP_ALLOW_CUSTOM_FROM === 'true';
+    const fromAddr = (allowCustomFrom && requestedFromAddr) ? requestedFromAddr : (smtpUser || requestedFromAddr || 'no-reply@wisefacturacion.com');
+    const replyToAddr = replyTo || process.env.SMTP_COBRANZA_REPLY_TO || process.env.SMTP_REPLY_TO || requestedFromAddr || fromAddr;
 
     const transporter = nodemailer.createTransport({
         host: smtpHost,
