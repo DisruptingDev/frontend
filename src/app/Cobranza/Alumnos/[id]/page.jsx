@@ -1,5 +1,27 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { WithPermission } from '@/components/WithPermission';
+
+function AccesoDenegado() {
+    return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" p={4}>
+            <Paper elevation={4} sx={{ p: 5, textAlign: 'center', maxWidth: 500, borderRadius: 3 }}>
+                <Typography variant="h1" color="error" sx={{ fontSize: '4rem', mb: 1 }}>
+                    🚫
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: '#1b384a' }}>
+                    Acceso Restringido
+                </Typography>
+                <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+                    No cuentas con los permisos necesarios (<strong>PAGOS_VER</strong>) para acceder al Detalle del Alumno.
+                </Typography>
+                <Button variant="contained" color="primary" href="/Home">
+                    Volver al Inicio
+                </Button>
+            </Paper>
+        </Box>
+    );
+}
 import { useRouter } from 'next/navigation';
 import { 
     Box, Typography, Grid, Paper, Chip, Divider, Button, CircularProgress, 
@@ -135,7 +157,8 @@ export default function DetalleAlumnoPage({ params }) {
     }
 
     return (
-        <Box sx={{ p: 4, maxWidth: '1200px', margin: '0 auto' }}>
+        <WithPermission permission="PAGOS_VER" fallback={<AccesoDenegado />}>
+            <Box sx={{ p: 4, maxWidth: '1200px', margin: '0 auto' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                 <IconButton onClick={() => router.push('/Cobranza/Dashboard?tab=1')} sx={{ mr: 2, bgcolor: '#f1f5f9' }}>
                     <ArrowBackIcon />
@@ -651,5 +674,6 @@ export default function DetalleAlumnoPage({ params }) {
             </Dialog>
 
         </Box>
+        </WithPermission>
     );
 }

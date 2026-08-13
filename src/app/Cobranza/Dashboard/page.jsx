@@ -3,6 +3,29 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { isAuthenticated } from "@/utils/authRedirect";
 
+import { WithPermission } from '@/components/WithPermission';
+
+function AccesoDenegado() {
+    return (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" p={4}>
+            <Paper elevation={4} sx={{ p: 5, textAlign: 'center', maxWidth: 500, borderRadius: 3 }}>
+                <Typography variant="h1" color="error" sx={{ fontSize: '4rem', mb: 1 }}>
+                    🚫
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: '#1b384a' }}>
+                    Acceso Restringido
+                </Typography>
+                <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+                    No cuentas con los permisos necesarios (<strong>PAGOS_VER</strong>) para acceder al Módulo de Cobranza.
+                </Typography>
+                <Button variant="contained" color="primary" href="/Home">
+                    Volver al Inicio
+                </Button>
+            </Paper>
+        </Box>
+    );
+}
+
 import Header from '@/components/Header/Header.jsx';
 import SideBarMenu from '@/components/Dashborard/SideBarMenu';
 import AlumnosView from '@/components/Cobranza/AlumnosView';
@@ -940,7 +963,8 @@ export default function MóduloCobranzaUnificadoPage() {
     };
 
     return (
-        <div>
+        <WithPermission permission="PAGOS_VER" fallback={<AccesoDenegado />}>
+            <div>
             <Header title="Módulo Unificado de Cobranza y Facturación" />
             <Grid container>
                 <Grid item>
@@ -2029,5 +2053,6 @@ export default function MóduloCobranzaUnificadoPage() {
                 </DialogActions>
             </Dialog>
         </div>
+        </WithPermission>
     );
 }

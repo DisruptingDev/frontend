@@ -243,7 +243,14 @@ export function useAuth() {
   // Verificar permisos
   const hasPermission = (permissionKey) => {
     if (authState.isSuperUser) return true;
-    return authState.permissions.some((p) => p.Clave === permissionKey);
+    if (!permissionKey) return true;
+    return authState.permissions.some(
+      (p) => 
+        p.Clave === permissionKey || 
+        p.clave === permissionKey || 
+        (p.Clave && p.Clave.toUpperCase() === permissionKey.toUpperCase()) ||
+        (p.clave && p.clave.toUpperCase() === permissionKey.toUpperCase())
+    );
   };
 
   // Verificar si está autenticado
