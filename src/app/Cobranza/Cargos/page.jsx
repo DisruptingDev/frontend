@@ -92,7 +92,6 @@ export default function CargosPage() {
     const [openModal, setOpenModal] = useState(false);
     const [openAutoModal, setOpenAutoModal] = useState(false);
     const [openFichaModal, setOpenFichaModal] = useState(false);
-    const [openFacturaManualModal, setOpenFacturaManualModal] = useState(false);
 
     // Selección
     const [cargoSeleccionado, setCargoSeleccionado] = useState(null);
@@ -126,13 +125,13 @@ export default function CargosPage() {
     };
 
     const [saving, setSaving] = useState(false);
-    const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+    const [enviandoCorreoId, setEnviandoCorreoId] = useState(null);
     const [error, setError] = useState('');
     const [exito, setExito] = useState('');
 
     const handleReenviarCorreo = async (cargoId) => {
         if (!cargoId) return;
-        setEnviandoCorreo(true);
+        setEnviandoCorreoId(cargoId);
         try {
             const res = await fetch(`/api/cobranza/cargos/${cargoId}`, {
                 method: 'POST',
@@ -144,7 +143,7 @@ export default function CargosPage() {
         } catch (err) {
             alert('Error al enviar correo: ' + err.message);
         } finally {
-            setEnviandoCorreo(false);
+            setEnviandoCorreoId(null);
         }
     };
 
@@ -306,48 +305,6 @@ export default function CargosPage() {
         } catch (error) {
             console.error('Error:', error);
             alert('Error de conexión al intentar eliminar la ficha.');
-        }
-    };
-
-    const handleAbrirFacturaManual = (cargo) => {
-        setCargoSeleccionado(cargo);
-        const savedId = (typeof window !== 'undefined' ? localStorage.getItem('cobranza_emisor_id') : '') || emisorSeleccionado;
-        if (savedId) {
-            setEmisorSeleccionado(savedId.toString());
-        }
-        setSerieSeleccionada('F');
-        setError('');
-        setOpenFacturaManualModal(true);
-    };
-
-    const handleFacturarManualSubmit = async () => {
-        if (!cargoSeleccionado) return;
-        setSaving(true);
-        setError('');
-        setExito('');
-
-        try {
-            const res = await fetch('/api/cobranza/facturacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tipo_facturacion: 'MANUAL_CARGO',
-                    cargo_id: cargoSeleccionado.id,
-                    emisor_id: emisorSeleccionado,
-                    serie_clave: serieSeleccionada || 'F'
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error al emitir factura manual');
-
-            setExito(data.mensaje);
-            setOpenFacturaManualModal(false);
-            fetchData();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setSaving(false);
         }
     };
 
@@ -518,7 +475,7 @@ export default function CargosPage() {
                                                     <TableCell>Vencimiento</TableCell>
                                                     <TableCell>Monto Total</TableCell>
                                                     <TableCell>Estatus</TableCell>
-                                                    <TableCell align="center">Acciones y Facturación</TableCell>
+                                                    <TableCell align="center">Acciones</TableCell>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -560,11 +517,13 @@ export default function CargosPage() {
                                                             </TableCell>
                                                             <TableCell>
                                                                 {cargo.estatus === 'PAGADO' ? (
-                                                                    <Chip label="PAGADO" color="success" size="small" />
+                                                                    <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                                                 ) : cargo.estatus === 'PARCIAL' ? (
-                                                                    <Chip label="PARCIAL" color="warning" size="small" />
+                                                                    <Chip label={`PARCIAL ($${parseMonto(cargo.monto_pendiente).toFixed(2)})`} color="warning" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : cargo.estatus === 'VENCIDO' ? (
+                                                                    <Chip label="VENCIDO" color="error" size="small" sx={{ fontWeight: 'bold' }} />
                                                                 ) : (
-                                                                    <Chip label="PENDIENTE" color="error" size="small" />
+                                                                    <Chip label="PENDIENTE" color="error" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
                                                                 )}
                                                             </TableCell>
                                                             <TableCell align="center">
@@ -577,16 +536,17 @@ export default function CargosPage() {
                                                                         <EyeIcon />
                                                                     </IconButton>
                                                                 </Tooltip>
-                                                                <Tooltip title="Facturar Manualmente CFDI 4.0">
+                                                                <Tooltip title="Enviar / Reenviar PDF por Correo">
                                                                     <IconButton
-                                                                        color="secondary"
+                                                                        color="info"
                                                                         size="small"
-                                                                        onClick={() => handleAbrirFacturaManual(cargo)}
+                                                                        disabled={enviandoCorreoId === cargo.id}
+                                                                        onClick={() => handleReenviarCorreo(cargo.id)}
                                                                     >
-                                                                        <ReceiptIcon />
+                                                                        {enviandoCorreoId === cargo.id ? <CircularProgress size={18} color="inherit" /> : <EmailIcon />}
                                                                     </IconButton>
                                                                 </Tooltip>
-                                                                {cargo.estatus === 'PENDIENTE' && (
+                                                                {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') && (
                                                                     <Tooltip title="Eliminar Ficha">
                                                                         <IconButton
                                                                             color="error"
@@ -744,92 +704,6 @@ export default function CargosPage() {
                         Cerrar
                     </Button>
                 </DialogActions>
-            </Dialog>
-
-            {/* MODAL 2: FACTURACIÓN MANUAL DIRECTA */}
-            <Dialog open={openFacturaManualModal} onClose={() => setOpenFacturaManualModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontWeight: 'bold' }}>
-                    🧾 Emisión Manual Directa de CFDI 4.0
-                </DialogTitle>
-                <DialogContent dividers>
-                    {cargoSeleccionado && (
-                        <Box>
-                            <Typography variant="body2" sx={{ mb: 2 }}>
-                                Se emitirá inmediatamente una factura CFDI 4.0 manual asociada a la ficha de pago <strong>{cargoSeleccionado.referencia_bancaria}</strong> del alumno <strong>{cargoSeleccionado.alumno?.nombre} {cargoSeleccionado.alumno?.apellido_paterno}</strong> por un monto de <strong>${parseMonto(cargoSeleccionado.monto_total).toFixed(2)}</strong>.
-                            </Typography>
-                            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                            <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
-                                <InputLabel id="emisor-manual-select-label">Razón Social Emisora (Universidad)</InputLabel>
-                                <Select
-                                    labelId="emisor-manual-select-label"
-                                    value={emisorSeleccionado}
-                                    label="Razón Social Emisora (Universidad)"
-                                    onChange={(e) => setEmisorSeleccionado(e.target.value)}
-                                >
-                                    {emisores.length === 0 ? (
-                                        <MenuItem value="">Universidad General (Predeterminado)</MenuItem>
-                                    ) : (
-                                        emisores.map(e => (
-                                            <MenuItem key={e.id} value={e.id}>
-                                                {e.nombre} ({e.rfc})
-                                            </MenuItem>
-                                        ))
-                                    )}
-                                </Select>
-                            </FormControl>
-
-                            <FormControl fullWidth>
-                                <InputLabel id="serie-manual-select-label">Serie de Facturación CFDI *</InputLabel>
-                                <Select
-                                    labelId="serie-manual-select-label"
-                                    value={serieSeleccionada || 'F'}
-                                    label="Serie de Facturación CFDI *"
-                                    onChange={(e) => setSerieSeleccionada(e.target.value)}
-                                >
-                                    {(() => {
-                                        const emisorObj = emisores.find(e => e.id.toString() === emisorSeleccionado.toString());
-                                        const seriesEmisor = emisorObj && Array.isArray(emisorObj.series) ? emisorObj.series : [];
-                                        
-                                        if (seriesEmisor.length > 0) {
-                                            return seriesEmisor.map(s => (
-                                                <MenuItem key={s.id || s.clave} value={s.clave}>
-                                                    Serie {s.clave} - {s.descripcion || 'Serie de Facturación'} (Último folio: {s.ultimo_folio || 0})
-                                                </MenuItem>
-                                            ));
-                                        }
-
-                                        return [
-                                            { clave: 'F', desc: 'Serie F - Principal Colegiaturas (Predeterminada)' },
-                                            { clave: 'FM', desc: 'Serie FM - Facturación Manual Directa' },
-                                            { clave: 'FA', desc: 'Serie FA - Servicios Complementarios' },
-                                            { clave: 'FG', desc: 'Serie FG - Factura Global Público en General' }
-                                        ].map(s => (
-                                            <MenuItem key={s.clave} value={s.clave}>
-                                                {s.desc}
-                                            </MenuItem>
-                                        ));
-                                    })()}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenFacturaManualModal(false)} color="secondary">
-                        Cancelar
-                    </Button>
-                    <Button
-                        onClick={handleFacturarManualSubmit}
-                        variant="contained"
-                        color="secondary"
-                        disabled={saving}
-                        startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <ReceiptIcon />}
-                    >
-                        {saving ? 'Generando CFDI...' : 'Timbrar Factura Manual'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
             {/* MODAL 3: 1-CLICK GENERACIÓN AUTOMÁTICA */}
             <Dialog open={openAutoModal} onClose={() => setOpenAutoModal(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold', color: '#2e7d32' }}>

@@ -422,7 +422,6 @@ export default function MóduloCobranzaUnificadoPage() {
     const [openCargoManualModal, setOpenCargoManualModal] = useState(false);
     const [openAutoModal, setOpenAutoModal] = useState(false);
     const [openFichaModal, setOpenFichaModal] = useState(false);
-    const [openFacturaManualModal, setOpenFacturaManualModal] = useState(false);
 
     // MODAL ENVIAR CORREO FACTURA
     const [openCorreoModal, setOpenCorreoModal] = useState(false);
@@ -866,35 +865,6 @@ export default function MóduloCobranzaUnificadoPage() {
         }
     };
 
-    const handleFacturarManualSubmit = async () => {
-        if (!cargoSeleccionado) return;
-        setSaving(true);
-        setErrorMsg('');
-
-        try {
-            const res = await fetch('/api/cobranza/facturacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tipo_facturacion: 'MANUAL_CARGO',
-                    cargo_id: cargoSeleccionado.id,
-                    emisor_id: emisorSeleccionado
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error al emitir factura manual');
-
-            setMensajeExito(data.mensaje);
-            setOpenFacturaManualModal(false);
-            loadDataForTab();
-        } catch (err) {
-            setErrorMsg(err.message);
-        } finally {
-            setSaving(false);
-        }
-    };
-
     // CONCILIACIÓN BANCARIA
     const handleProcesarConciliacion = async () => {
         if (!archivoBancario) {
@@ -1080,19 +1050,29 @@ export default function MóduloCobranzaUnificadoPage() {
                                                             <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno}` : 'N/A'}</TableCell>
                                                             <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
                                                             <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
-                                                            <TableCell><Chip label={cargo.estatus} color={cargo.estatus === 'PAGADO' ? 'success' : 'error'} size="small" /></TableCell>
+                                                            <TableCell>
+                                                                {cargo.estatus === 'PAGADO' ? (
+                                                                    <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : cargo.estatus === 'PARCIAL' ? (
+                                                                    <Chip label={`PARCIAL ($${parseMonto(cargo.monto_pendiente).toFixed(2)})`} color="warning" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : cargo.estatus === 'VENCIDO' ? (
+                                                                    <Chip label="VENCIDO" color="error" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                ) : (
+                                                                    <Chip label="PENDIENTE" color="error" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                )}
+                                                            </TableCell>
                                                             <TableCell align="center">
                                                                 <Tooltip title="Ver Ficha Imprimible">
                                                                     <IconButton color="primary" size="small" onClick={() => { setCargoSeleccionado(cargo); setOpenFichaModal(true); }}>
                                                                         <EyeIcon />
                                                                     </IconButton>
                                                                 </Tooltip>
-                                                                <Tooltip title="Facturar Manualmente CFDI">
-                                                                    <IconButton color="secondary" size="small" onClick={() => { setCargoSeleccionado(cargo); setOpenFacturaManualModal(true); }}>
-                                                                        <ReceiptIcon />
+                                                                <Tooltip title="Enviar / Reenviar PDF por Correo">
+                                                                    <IconButton color="info" size="small" onClick={() => handleReenviarCorreoFicha(cargo.id)} disabled={enviandoCorreoFicha}>
+                                                                        <EmailIcon />
                                                                     </IconButton>
                                                                 </Tooltip>
-                                                                {cargo.estatus === 'PENDIENTE' && (
+                                                                {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') && (
                                                                     <Tooltip title="Eliminar Ficha">
                                                                         <IconButton color="error" size="small" onClick={() => handleDeleteFicha(cargo.id)}>
                                                                             <DeleteIcon />
@@ -1515,36 +1495,6 @@ export default function MóduloCobranzaUnificadoPage() {
                         Cerrar
                     </Button>
                 </DialogActions>
-            </Dialog>
-
-            {/* MODAL 2: FACTURAR MANUALMENTE UNA FICHA */}
-            <Dialog open={openFacturaManualModal} onClose={() => setOpenFacturaManualModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    🧾 Facturar Manualmente Ficha de Cobro
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    {cargoSeleccionado && (
-                        <Box>
-                            <Alert severity="info" sx={{ mb: 2 }}>
-                                Esta acción creará la Factura borrador (PENDIENTE DE TIMBRADO) para la referencia <strong>{cargoSeleccionado.referencia_bancaria}</strong> y marcará la ficha como PAGADA.
-                            </Alert>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                                Alumno: {cargoSeleccionado.alumno ? `${cargoSeleccionado.alumno.nombre} ${cargoSeleccionado.alumno.apellido_paterno}` : 'N/A'}
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                                Monto a Facturar: <strong>${parseMonto(cargoSeleccionado.monto_total).toFixed(2)}</strong>
-                            </Typography>
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenFacturaManualModal(false)} color="secondary">Cancelar</Button>
-                    <Button onClick={handleFacturarManualSubmit} variant="contained" color="primary" disabled={saving}>
-                        {saving ? 'Creando...' : 'Crear Factura Borrador'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
             {/* MODAL 3: REGISTRAR NUEVO ALUMNO */}
             <Dialog open={openAlumnoModal} onClose={() => setOpenAlumnoModal(false)} maxWidth="md" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar Alumno y Configuración de Cobro</DialogTitle>

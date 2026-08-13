@@ -490,9 +490,25 @@ export async function POST(request) {
                         if (cargos_ids && Array.isArray(cargos_ids) && cargos_ids.length > 0) {
                             const cargosSeleccionados = await tx.cargoAlumno.findMany({
                                 where: { id: { in: cargos_ids.map(id => BigInt(id)) } },
-                                include: { producto: true },
+                                include: { producto: true, concepto: true },
                                 orderBy: { id: 'asc' }
                             });
+
+                            if (cargosSeleccionados.length > 0) {
+                                try {
+                                    const cIdsStr = cargosSeleccionados.map(c => c.id.toString()).join(',');
+                                    const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cIdsStr})`);
+                                    const rawMap = {};
+                                    for (const r of rawItems) {
+                                        rawMap[r.id.toString()] = r.detalles_items;
+                                    }
+                                    for (const c of cargosSeleccionados) {
+                                        if (rawMap[c.id.toString()]) {
+                                            c.detalles_items = rawMap[c.id.toString()];
+                                        }
+                                    }
+                                } catch (e) {}
+                            }
                             
                             for (const cargo of cargosSeleccionados) {
                                 if (montoRestante <= 0) break;
@@ -520,11 +536,18 @@ export async function POST(request) {
                         } else {
                             // Si no se seleccionó cargo (quizás no había pendientes), intentar con el más antiguo si existe
                             let cargoEncontrado = await tx.cargoAlumno.findFirst({
-                                where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL'] } },
-                                include: { producto: true },
+                                where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
+                                include: { producto: true, concepto: true },
                                 orderBy: { id: 'asc' }
                             });
                             if (cargoEncontrado) {
+                                try {
+                                    const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id = ${cargoEncontrado.id}`);
+                                    if (rawItems && rawItems.length > 0) {
+                                        cargoEncontrado.detalles_items = rawItems[0].detalles_items;
+                                    }
+                                } catch (e) {}
+
                                 const pendiente = Number(cargoEncontrado.monto_pendiente);
                                 const aplicar = Math.min(pendiente, montoRestante);
                                 montoRestante -= aplicar;
@@ -629,22 +652,70 @@ export async function POST(request) {
                             WHERE id = ${comprobanteAuto.id}
                         `);
 
-                        const itemsList = cargosAplicados.map(({ cargo, montoAplicado, esSaldoAFavor }) => {
-                            const prodNombre = esSaldoAFavor ? 'SALDO A FAVOR' : (cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD');
-                            return {
-                                descripcion: construirDescripcionConcepto({
-                                    producto: prodNombre,
-                                    carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
-                                    fechaPago: fecha_pago,
-                                    nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
-                                    curp: alumnoObj.curp,
-                                    matricula: alumnoObj.matricula,
-                                    rvoe: alumnoObj.programa_academico?.rvoe
-                                }),
-                                monto: montoAplicado,
-                                clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
-                            };
-                        });
+                        const itemsList = [];
+                        for (const { cargo, montoAplicado, esSaldoAFavor } of cargosAplicados) {
+                            if (esSaldoAFavor) {
+                                itemsList.push({
+                                    descripcion: construirDescripcionConcepto({
+                                        producto: 'SALDO A FAVOR',
+                                        carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                        fechaPago: fecha_pago,
+                                        nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                        curp: alumnoObj.curp,
+                                        matricula: alumnoObj.matricula,
+                                        rvoe: alumnoObj.programa_academico?.rvoe
+                                    }),
+                                    monto: montoAplicado,
+                                    clave_prod_serv: '86121500'
+                                });
+                                continue;
+                            }
+
+                            let parsedItems = null;
+                            if (cargo.detalles_items) {
+                                try {
+                                    parsedItems = typeof cargo.detalles_items === 'string' ? JSON.parse(cargo.detalles_items) : cargo.detalles_items;
+                                } catch (e) {}
+                            }
+
+                            if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+                                const sumaMontoDetalles = parsedItems.reduce((acc, it) => acc + (parseFloat(it.monto) || 0), 0);
+                                for (const itemDet of parsedItems) {
+                                    const itemMontoBase = parseFloat(itemDet.monto) || 0;
+                                    const proporcion = sumaMontoDetalles > 0 ? (itemMontoBase / sumaMontoDetalles) : (1 / parsedItems.length);
+                                    const itemMontoCalc = Math.round(montoAplicado * proporcion * 100) / 100;
+
+                                    itemsList.push({
+                                        descripcion: construirDescripcionConcepto({
+                                            producto: (itemDet.concepto || cargo.concepto?.nombre || 'Colegiatura').toUpperCase(),
+                                            carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                            fechaPago: fecha_pago,
+                                            nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                            curp: alumnoObj.curp,
+                                            matricula: alumnoObj.matricula,
+                                            rvoe: alumnoObj.programa_academico?.rvoe
+                                        }),
+                                        monto: itemMontoCalc > 0 ? itemMontoCalc : itemMontoBase,
+                                        clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                    });
+                                }
+                            } else {
+                                const prodNombre = cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD';
+                                itemsList.push({
+                                    descripcion: construirDescripcionConcepto({
+                                        producto: prodNombre,
+                                        carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                        fechaPago: fecha_pago,
+                                        nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                        curp: alumnoObj.curp,
+                                        matricula: alumnoObj.matricula,
+                                        rvoe: alumnoObj.programa_academico?.rvoe
+                                    }),
+                                    monto: montoAplicado,
+                                    clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                });
+                            }
+                        }
 
                         if (itemsList.length === 0) {
                             itemsList.push({
@@ -743,15 +814,60 @@ export async function POST(request) {
             include: { receptor: true, programa_academico: true }
         });
 
+        const ahoraConc = new Date();
+        try {
+            await prisma.cargoAlumno.updateMany({
+                where: {
+                    fecha_vencimiento: { lt: ahoraConc },
+                    monto_pendiente: { gt: 0 },
+                    estatus: { in: ['PENDIENTE', 'PARCIAL'] }
+                },
+                data: {
+                    estatus: 'VENCIDO'
+                }
+            });
+        } catch (e) {}
+
         const cargosPendientes = await prisma.cargoAlumno.findMany({
-            where: { estatus: { in: ['PENDIENTE', 'PARCIAL'] } },
-            include: { producto: true }
+            where: { estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
+            include: { producto: true, concepto: true }
         });
+
+        if (cargosPendientes.length > 0) {
+            try {
+                const cpIdsStr = cargosPendientes.map(c => c.id.toString()).join(',');
+                const rawItems = await prisma.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cpIdsStr})`);
+                const rawMap = {};
+                for (const r of rawItems) {
+                    rawMap[r.id.toString()] = r.detalles_items;
+                }
+                for (const c of cargosPendientes) {
+                    if (rawMap[c.id.toString()]) {
+                        c.detalles_items = rawMap[c.id.toString()];
+                    }
+                }
+            } catch (e) {}
+        }
 
         let conciliadosCount = 0;
         let pendientesCount = 0;
         let montoTotal = 0;
         const pagosProcesados = [];
+
+        const coincideFicha = (c, refClean, dClean) => {
+            if (!c) return false;
+            const refB = (c.referencia_bancaria || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (refB && (refB === refClean || refClean.includes(refB) || dClean.includes(refB))) return true;
+            const codF = (c.codigo_ficha || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            if (codF && (codF === refClean || refClean.includes(codF) || dClean.includes(codF))) return true;
+            if (c.codigo_ficha) {
+                const partes = c.codigo_ficha.split(/\s+/).map(p => p.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()).filter(Boolean);
+                for (const p of partes) {
+                    if (p.length >= 3 && (refClean.includes(p) || dClean.includes(p))) return true;
+                }
+            }
+            return false;
+        };
 
         for (const mov of movimientos) {
             montoTotal += mov.monto;
@@ -787,19 +903,12 @@ export async function POST(request) {
 
             // 2. Matcheo buscando la referencia en CargosPendientes (si pagó una ficha en específico)
             if (!alumnoEncontrado) {
-                const cargoMatcheado = cargosPendientes.find(c => {
-                    const codFicha = cleanStr(c.codigo_ficha);
-                    const refBanc = cleanStr(c.referencia_bancaria);
-                    return (codFicha && (codFicha === refMovClean || codFicha.includes(refMovClean) || refMovClean.includes(codFicha))) ||
-                           (refBanc && (refBanc === refMovClean || refBanc.includes(refMovClean) || refMovClean.includes(refBanc))) ||
-                           (codFicha && descClean.includes(codFicha)) ||
-                           (refBanc && descClean.includes(refBanc));
-                });
+                const cargoMatcheado = cargosPendientes.find(c => coincideFicha(c, refMovClean, descClean));
 
                 if (cargoMatcheado) {
                     alumnoEncontrado = todosLosAlumnos.find(a => a.id === cargoMatcheado.alumno_id);
                     if (alumnoEncontrado) {
-                        metodoMatcheo = `Código/Referencia Ficha (${cargoMatcheado.referencia_bancaria})`;
+                        metodoMatcheo = `Código/Referencia Ficha (${cargoMatcheado.codigo_ficha || cargoMatcheado.referencia_bancaria})`;
                     }
                 }
             }
@@ -808,16 +917,33 @@ export async function POST(request) {
             if (!alumnoEncontrado && mov.descripcion) {
                 alumnoEncontrado = todosLosAlumnos.find(a => {
                     const nombreCompleto = cleanStr(`${a.nombre} ${a.apellido_paterno}`);
-                    return descClean.includes(nombreCompleto) ;
+                    return descClean.includes(nombreCompleto);
                 });
                 if (alumnoEncontrado) metodoMatcheo = 'Coincidencia Nombre Alumno SPEI';
             }
 
             if (alumnoEncontrado) {
-                const alumnoCargosPendientes = cargosPendientes.filter(cp => cp.alumno_id === alumnoEncontrado.id);
+                let alumnoCargosPendientes = cargosPendientes.filter(cp => cp.alumno_id === alumnoEncontrado.id);
+
+                // Priorización inteligente de los cargos del alumno:
+                // 1º Coincidencia explícita de código de ficha / referencia
+                // 2º Coincidencia exacta de monto
+                // 3º Antigüedad ID asc
+                alumnoCargosPendientes.sort((a, b) => {
+                    const matchA = coincideFicha(a, refMovClean, descClean);
+                    const matchB = coincideFicha(b, refMovClean, descClean);
+                    if (matchA && !matchB) return -1;
+                    if (!matchA && matchB) return 1;
+
+                    const exactMontoA = Math.abs(Number(a.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(a.monto_total) - mov.monto) < 0.01;
+                    const exactMontoB = Math.abs(Number(b.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(b.monto_total) - mov.monto) < 0.01;
+                    if (exactMontoA && !exactMontoB) return -1;
+                    if (!exactMontoA && exactMontoB) return 1;
+
+                    return Number(a.id) - Number(b.id);
+                });
 
                 if (alumnoCargosPendientes.length === 0) {
-                    // Si se encuentra el alumno pero no tiene fichas de cobro (cargos) creadas
                     pendientesCount++;
                     pagosProcesados.push({
                         id_tmp: `MOV-REV-${pendientesCount}`,

@@ -148,8 +148,8 @@ export async function DELETE(request, { params }) {
             return NextResponse.json({ error: 'Cargo/Ficha no encontrada.' }, { status: 404 });
         }
 
-        if (cargo.estatus !== 'PENDIENTE') {
-            return NextResponse.json({ error: 'Solo se pueden eliminar fichas con estatus PENDIENTE.' }, { status: 400 });
+        if (cargo.estatus !== 'PENDIENTE' && cargo.estatus !== 'VENCIDO') {
+            return NextResponse.json({ error: 'Solo se pueden eliminar fichas con estatus PENDIENTE o VENCIDO.' }, { status: 400 });
         }
 
         await prisma.cargoAlumno.delete({

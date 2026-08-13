@@ -98,34 +98,76 @@ function obtenerPrefijoFicha(conceptosInput) {
     return prefijos.length > 0 ? prefijos.join('-') : 'F';
 }
 
-async function generarCodigoFichaUnico(conceptosInput) {
-    const prefijo = obtenerPrefijoFicha(conceptosInput);
+async function obtenerSiguienteCodigoPorPrefijo(prefijo, codigosGeneradosEnLote = []) {
     const prefijoBusqueda = `${prefijo}-`;
-
-    // Buscar todas las fichas emitidas que inicien con el prefijo determinado
     const ultimos = await prisma.cargoAlumno.findMany({
         where: {
-            codigo_ficha: { startsWith: prefijoBusqueda }
+            codigo_ficha: { contains: prefijoBusqueda, mode: 'insensitive' }
         },
         select: { codigo_ficha: true },
         orderBy: { id: 'desc' },
-        take: 500
+        take: 1000
     });
 
     let maxNum = 0;
+    const escapedPrefijo = prefijo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(?:^|\\s)${escapedPrefijo}-(\\d+)(?:\\s|$)`, 'i');
+
     for (const c of ultimos) {
-        if (c.codigo_ficha && c.codigo_ficha.toUpperCase().startsWith(prefijoBusqueda.toUpperCase())) {
-            const partes = c.codigo_ficha.split('-');
-            const ultPart = partes[partes.length - 1];
-            const numPart = parseInt(ultPart, 10);
-            if (!isNaN(numPart) && numPart > maxNum) {
-                maxNum = numPart;
+        if (c.codigo_ficha) {
+            const match = c.codigo_ficha.trim().match(regex);
+            if (match) {
+                const numPart = parseInt(match[1], 10);
+                if (!isNaN(numPart) && numPart > maxNum) {
+                    maxNum = numPart;
+                }
+            }
+        }
+    }
+
+    for (const cod of codigosGeneradosEnLote) {
+        if (cod) {
+            const match = cod.trim().match(regex);
+            if (match) {
+                const numPart = parseInt(match[1], 10);
+                if (!isNaN(numPart) && numPart > maxNum) {
+                    maxNum = numPart;
+                }
             }
         }
     }
 
     const proximoNum = maxNum + 1;
     return `${prefijo}-${String(proximoNum).padStart(5, '0')}`;
+}
+
+async function generarCodigoFichaUnico(conceptosInput, codigosGeneradosEnLote = []) {
+    const listaConceptos = Array.isArray(conceptosInput)
+        ? conceptosInput
+        : (typeof conceptosInput === 'string' ? [conceptosInput] : []);
+
+    if (listaConceptos.length === 0) {
+        return await obtenerSiguienteCodigoPorPrefijo('F', codigosGeneradosEnLote);
+    }
+
+    const codigosFicha = [];
+    for (const item of listaConceptos) {
+        const nombreStr = typeof item === 'string' ? item : (item.concepto || item.nombre || '');
+        if (nombreStr) {
+            const prefijo = obtenerPrefijoConcepto(nombreStr);
+            const codigoIndiv = await obtenerSiguienteCodigoPorPrefijo(
+                prefijo, 
+                [...codigosGeneradosEnLote, ...codigosFicha]
+            );
+            codigosFicha.push(codigoIndiv);
+        }
+    }
+
+    if (codigosFicha.length === 0) {
+        return await obtenerSiguienteCodigoPorPrefijo('F', codigosGeneradosEnLote);
+    }
+
+    return codigosFicha.join(' ');
 }
 
 // GET: Obtener cargos con relación a alumno y concepto
@@ -135,6 +177,20 @@ export async function GET(request) {
         const alumnoId = searchParams.get('alumno_id');
         const estatus = searchParams.get('estatus');
         const grupoId = searchParams.get('grupo_id');
+
+        const ahora = new Date();
+        try {
+            await prisma.cargoAlumno.updateMany({
+                where: {
+                    fecha_vencimiento: { lt: ahora },
+                    monto_pendiente: { gt: 0 },
+                    estatus: { in: ['PENDIENTE', 'PARCIAL'] }
+                },
+                data: {
+                    estatus: 'VENCIDO'
+                }
+            });
+        } catch (e) {}
 
         const where = {};
         if (alumnoId) where.alumno_id = BigInt(alumnoId);
@@ -173,7 +229,7 @@ export async function GET(request) {
 
         const cargosFormateados = cargos.map(c => ({
             ...c,
-            codigo_ficha: c.codigo_ficha || `${obtenerPrefijoConcepto(c.concepto?.nombre)}${String(c.id).padStart(5, '0')}`
+            codigo_ficha: c.codigo_ficha || `${obtenerPrefijoConcepto(c.concepto?.nombre)}-${String(c.id).padStart(5, '0')}`
         }));
 
         return NextResponse.json(serializeBigIntsAndDecimals(cargosFormateados), { status: 200 });
@@ -221,6 +277,7 @@ export async function POST(request) {
 
             const cargosCreados = [];
             const errores = [];
+            const codigosGeneradosLote = [];
             const fechaEmision = new Date();
 
             for (const alumno of alumnos) {
@@ -251,7 +308,8 @@ export async function POST(request) {
                 });
 
                 if (!existe) {
-                    const codigoFicha = await generarCodigoFichaUnico(conceptoActual.nombre);
+                    const codigoFicha = await generarCodigoFichaUnico(conceptoActual.nombre, codigosGeneradosLote);
+                    codigosGeneradosLote.push(codigoFicha);
                     const nuevoCargo = await prisma.cargoAlumno.create({
                         data: {
                             alumno_id: alumno.id,
