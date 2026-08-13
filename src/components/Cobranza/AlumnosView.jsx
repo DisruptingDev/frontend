@@ -74,6 +74,7 @@ export default function AlumnosView() {
     const router = useRouter();
     const [alumnos, setAlumnos] = useState([]);
     const [emisores, setEmisores] = useState([]);
+    const [productos, setProductos] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [openModal, setOpenModal] = useState(false);
@@ -459,6 +460,10 @@ export default function AlumnosView() {
             } else if (resProg && Array.isArray(resProg.programas)) {
                 setProgramas(resProg.programas);
             }
+
+            // 4. Cargar Catálogo de Productos de Cobranza
+            const resProd = await fetch('/api/cobranza/productos').then(r => r.json()).catch(() => []);
+            if (Array.isArray(resProd)) setProductos(resProd);
 
         } catch (err) {
             console.error('Error fetching data:', err);
@@ -945,14 +950,35 @@ export default function AlumnosView() {
                                                     label={`Concepto ${idx + 1} *`}
                                                     fullWidth
                                                     size="small"
-                                                    value={item.concepto || 'Mensualidad'}
+                                                    value={item.concepto || (productos[0]?.nombre || 'Mensualidad')}
                                                     onChange={(e) => handleItemChangeComplementario(idx, 'concepto', e.target.value)}
                                                 >
-                                                    <MenuItem value="Mensualidad">Mensualidad</MenuItem>
-                                                    <MenuItem value="Inscripción">Inscripción</MenuItem>
-                                                    <MenuItem value="Titulación">Titulación</MenuItem>
-                                                    <MenuItem value="Examen Extraordinario">Examen Extraordinario</MenuItem>
-                                                    <MenuItem value="Constancia">Constancia</MenuItem>
+                                                    {productos.length > 0 ? (
+                                                         productos.map(prod => (
+                                                             <MenuItem key={prod.id} value={prod.nombre}>
+                                                                 {prod.nombre} (SAT: {prod.concepto_utilizado})
+                                                             </MenuItem>
+                                                         ))
+                                                     ) : (
+                                                         [
+                                                             'Mensualidad',
+                                                             'Materia Ordinaria',
+                                                             'Materia de Revalidación',
+                                                             'Materia de Adelanto',
+                                                             'Materia Recursada',
+                                                             'Constancia',
+                                                             'Kardex',
+                                                             'Credencial',
+                                                             'Abono a Titulación',
+                                                             'Graduación',
+                                                             'Inscripción',
+                                                             'Reinscripción'
+                                                         ].map((prodNombre, pIdx) => (
+                                                             <MenuItem key={pIdx} value={prodNombre}>
+                                                                 {prodNombre}
+                                                             </MenuItem>
+                                                         ))
+                                                     )}
                                                 </TextField>
                                                 <TextField
                                                     label="Monto ($) *"

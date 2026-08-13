@@ -30,7 +30,8 @@ import {
     Divider,
     FormControl,
     InputLabel,
-    Select
+    Select,
+    Autocomplete
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -771,47 +772,36 @@ export default function CargosPage() {
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="🔍 Filtrar alumno por matrícula, nombre o carrera..."
-                                value={busquedaAlumnoModal}
-                                onChange={(e) => setBusquedaAlumnoModal(e.target.value)}
-                                sx={{ mb: 1.5 }}
+                            <Autocomplete
+                                options={alumnos.filter(alum => (alum.estatus || 'ACTIVO').toUpperCase() === 'ACTIVO')}
+                                getOptionLabel={(option) => typeof option === 'string' ? option : `🎓 ${option.matricula} - ${option.nombre} ${option.apellido_paterno} ${option.apellido_materno || ''} (${option.carrera || 'General'})`}
+                                value={alumnos.find(a => a.id.toString() === form.alumnos_ids) || null}
+                                onChange={(event, newValue) => {
+                                    setForm(prev => ({
+                                        ...prev,
+                                        alumnos_ids: newValue ? newValue.id.toString() : ''
+                                    }));
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Seleccionar Alumno Destinatario (Solo Activos) *"
+                                        placeholder="Escribe la matrícula o nombre del alumno para buscar..."
+                                        helperText="Empieza a escribir matrícula o nombre para encontrar al alumno rápidamente"
+                                        size="small"
+                                    />
+                                )}
+                                noOptionsText="No se encontraron alumnos activos coincidentes"
                             />
-                            <TextField
-                                select
-                                label="Seleccionar Alumno Destinatario *"
-                                name="alumnos_ids"
-                                fullWidth
-                                value={form.alumnos_ids || ''}
-                                onChange={handleChange}
-                                helperText="Selecciona el alumno individual al que le emitirás la ficha"
-                            >
-                                <MenuItem value="">-- Seleccionar Alumno Específico --</MenuItem>
-                                <MenuItem value="TODOS">👥 Todos los alumnos activos (Emisión Masiva)</MenuItem>
-                                {alumnos
-                                    .filter(alum => {
-                                        if (!busquedaAlumnoModal) return true;
-                                        const q = busquedaAlumnoModal.toLowerCase().trim();
-                                        const fullText = `${alum.matricula} ${alum.nombre} ${alum.apellido_paterno} ${alum.apellido_materno || ''} ${alum.carrera || ''}`.toLowerCase();
-                                        return fullText.includes(q);
-                                    })
-                                    .map(alum => (
-                                        <MenuItem key={alum.id} value={alum.id.toString()}>
-                                            🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} {alum.apellido_materno || ''} ({alum.carrera || 'General'})
-                                        </MenuItem>
-                                    ))
-                                }
-                            </TextField>
                         </Grid>
 
                         <Grid item xs={12}>
                             <TextField
                                 select
-                                label="Seleccionar Producto Principal"
+                                label="Seleccionar Producto Principal del Catálogo"
                                 name="producto_id"
                                 fullWidth
+                                size="small"
                                 value={form.producto_id || ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -821,7 +811,7 @@ export default function CargosPage() {
                                         if (selProd && updatedItems.length > 0) {
                                             updatedItems[0] = {
                                                 ...updatedItems[0],
-                                                concepto: selProd.concepto_utilizado || selProd.nombre
+                                                concepto: selProd.nombre
                                             };
                                         }
                                         return {
@@ -831,12 +821,12 @@ export default function CargosPage() {
                                         };
                                     });
                                 }}
-                                helperText="Selecciona un producto del catálogo para autocompletar el concepto contable"
+                                helperText="Selecciona un producto del catálogo para autocompletar el concepto"
                             >
                                 <MenuItem value="">-- Ninguno (Personalizado) --</MenuItem>
                                 {productos.map(prod => (
                                     <MenuItem key={prod.id} value={prod.id.toString()}>
-                                        {prod.nombre} (Concepto SAT: {prod.concepto_utilizado})
+                                        {prod.nombre} (Ref. SAT: {prod.concepto_utilizado})
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -889,32 +879,32 @@ export default function CargosPage() {
                                         label={`Concepto ${idx + 1} *`}
                                         fullWidth
                                         size="small"
-                                        value={item.concepto || 'MATERIA'}
+                                        value={item.concepto || (productos[0]?.nombre || 'Mensualidad')}
                                         onChange={(e) => handleItemChange(idx, 'concepto', e.target.value)}
                                     >
                                         {productos.length > 0 ? (
                                             productos.map(prod => (
-                                                <MenuItem key={prod.id} value={prod.concepto_utilizado}>
-                                                    {prod.nombre}
+                                                <MenuItem key={prod.id} value={prod.nombre}>
+                                                    {prod.nombre} (SAT: {prod.concepto_utilizado})
                                                 </MenuItem>
                                             ))
                                         ) : (
                                             [
-                                                { nombre: 'Mensualidad', concepto: 'MATERIA' },
-                                                { nombre: 'Materia Ordinaria', concepto: 'MATERIA' },
-                                                { nombre: 'Materia de Revalidación', concepto: 'MATERIA' },
-                                                { nombre: 'Materia de Adelanto', concepto: 'MATERIA' },
-                                                { nombre: 'Materia Recursada', concepto: 'MATERIA' },
-                                                { nombre: 'Constancia', concepto: 'CONSTANCIA' },
-                                                { nombre: 'Kardex', concepto: 'KARDEX' },
-                                                { nombre: 'Credencial', concepto: 'CREDENCIAL' },
-                                                { nombre: 'Abono a Titulación', concepto: 'TITULACIÓN' },
-                                                { nombre: 'Graduación', concepto: 'GRADUACIÓN' },
-                                                { nombre: 'Inscripción', concepto: 'INSCRIPCIÓN' },
-                                                { nombre: 'Reinscripción', concepto: 'REINSCRIPCIÓN' }
-                                            ].map((prod, pIdx) => (
-                                                <MenuItem key={pIdx} value={prod.concepto}>
-                                                    {prod.nombre}
+                                                'Mensualidad',
+                                                'Materia Ordinaria',
+                                                'Materia de Revalidación',
+                                                'Materia de Adelanto',
+                                                'Materia Recursada',
+                                                'Constancia',
+                                                'Kardex',
+                                                'Credencial',
+                                                'Abono a Titulación',
+                                                'Graduación',
+                                                'Inscripción',
+                                                'Reinscripción'
+                                            ].map((prodNombre, pIdx) => (
+                                                <MenuItem key={pIdx} value={prodNombre}>
+                                                    {prodNombre}
                                                 </MenuItem>
                                             ))
                                         )}
