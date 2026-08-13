@@ -112,8 +112,8 @@ export async function GET(request, { params }) {
         }
 
         const emisor = comprobante.emisors || {
-            nombre: 'UNIVERSIDAD HISPANOAMERICANA S.C.',
-            rfc: 'UHI950412XX1',
+            nombre: 'Razón Social Emisora',
+            rfc: '',
             regimen_fiscal: '601',
             lugar_expedicion: '01000'
         };

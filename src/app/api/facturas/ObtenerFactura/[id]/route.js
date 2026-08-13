@@ -34,8 +34,8 @@ export async function GET(request, { params }) {
 
         const emisorObj = comprobante.emisors || {
             id: 1,
-            rfc: 'UHI950412XX1',
-            nombre: 'UNIVERSIDAD HISPANOAMERICANA S.C.',
+            rfc: '',
+            nombre: 'Razón Social Emisora',
             regimen_fiscal: '601',
             lugar_expedicion: '01000'
         };
@@ -87,8 +87,8 @@ export async function GET(request, { params }) {
                 ID: comprobante.id.toString(),
                 EmisorID: emisorObj.id?.toString(),
                 Emisor: {
-                    Rfc: emisorObj.rfc || 'UHI950412XX1',
-                    Nombre: emisorObj.nombre || 'UNIVERSIDAD HISPANOAMERICANA S.C.',
+                    Rfc: emisorObj.rfc || '',
+                    Nombre: emisorObj.nombre || 'Razón Social Emisora',
                     RegimenFiscal: emisorObj.regimen_fiscal || '601',
                     LugarExpedicion: emisorObj.lugar_expedicion || '01000',
                     Calle: emisorObj.calle || '',

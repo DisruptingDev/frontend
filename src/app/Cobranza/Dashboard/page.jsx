@@ -976,7 +976,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                         displayEmpty
                                     >
                                         {emisores.length === 0 ? (
-                                            <MenuItem value="">UHI950412XX1 - UNIVERSIDAD HISPANOAMERICANA S.C.</MenuItem>
+                                            <MenuItem value="">Cargando emisores registrados...</MenuItem>
                                         ) : (
                                             emisores.map(e => (
                                                 <MenuItem key={e.id} value={e.id}>

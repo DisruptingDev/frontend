@@ -88,24 +88,25 @@ export async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
         if (emisorEncontrado) return emisorEncontrado;
     }
 
-    // Priorizar Universidad Hispanoamericana
     let emisor = await prisma.emisors.findFirst({
-        where: { rfc: 'UHI950412XX1' }
+        where: { es_predeterminado: true }
     });
-    
-    // Si no existe la Universidad, tomar el primero que exista o crearlo
+
     if (!emisor) {
-        emisor = await prisma.emisors.findFirst();
-        if (!emisor) {
-            emisor = await prisma.emisors.create({
-                data: {
-                    rfc: 'UHI950412XX1',
-                    nombre: 'UNIVERSIDAD HISPANOAMERICANA S.C.',
-                    regimen_fiscal: '601',
-                    lugar_expedicion: '01000'
-                }
-            });
-        }
+        emisor = await prisma.emisors.findFirst({
+            where: { NOT: { rfc: 'UHI950412XX1' } },
+            orderBy: { id: 'asc' }
+        });
+    }
+
+    if (!emisor) {
+        emisor = await prisma.emisors.findFirst({
+            orderBy: { id: 'asc' }
+        });
+    }
+
+    if (!emisor) {
+        throw new Error('No existe ninguna Razón Social Emisora registrada en el sistema. Por favor configure su empresa en la plataforma.');
     }
     return emisor;
 }

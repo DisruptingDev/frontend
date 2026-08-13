@@ -100,23 +100,25 @@ async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
         }
     }
 
-    // Priorizar Universidad Hispanoamericana
     let emisor = await prisma.emisors.findFirst({
-        where: { rfc: 'UHI950412XX1' }
+        where: { es_predeterminado: true }
     });
 
     if (!emisor) {
-        emisor = await prisma.emisors.findFirst();
-        if (!emisor) {
-            emisor = await prisma.emisors.create({
-                data: {
-                    rfc: 'UHI950412XX1',
-                    nombre: 'UNIVERSIDAD HISPANOAMERICANA S.C.',
-                    regimen_fiscal: '601',
-                    lugar_expedicion: '01000'
-                }
-            });
-        }
+        emisor = await prisma.emisors.findFirst({
+            where: { NOT: { rfc: 'UHI950412XX1' } },
+            orderBy: { id: 'asc' }
+        });
+    }
+
+    if (!emisor) {
+        emisor = await prisma.emisors.findFirst({
+            orderBy: { id: 'asc' }
+        });
+    }
+
+    if (!emisor) {
+        throw new Error('No existe ninguna Razón Social Emisora registrada en el sistema. Por favor configure su empresa en la plataforma.');
     }
     return emisor;
 }
@@ -383,9 +385,9 @@ export async function POST(request) {
 
                 const comprobanteAuto = await prisma.comprobantes.create({
                     data: sanitizeNullBytes({
-                        emisor_id: emisor.id,
-                        receptor_id: receptorId,
-                        grupo_id: emisor.grupo_id,
+                        emisors: { connect: { id: BigInt(emisor.id) } },
+                        receptors: { connect: { id: BigInt(receptorId) } },
+                        ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
                         version: '4.0',
                         serie: serie,
                         folio: folio,
@@ -405,11 +407,11 @@ export async function POST(request) {
                     })
                 });
 
-                await prisma.$executeRaw`
-                    UPDATE comprobantes 
-                    SET sub_total = ${subTotalStr}, total = ${subTotalStr}, descuento = '0.00' 
+                await prisma.$executeRawUnsafe(`
+                    UPDATE "comprobantes" 
+                    SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
                     WHERE id = ${comprobanteAuto.id}
-                `;
+                `);
 
                 const descConcepto = construirDescripcionConcepto({
                     producto: cargoEncontrado.producto?.nombre || 'MENSUALIDAD',
@@ -594,9 +596,9 @@ export async function POST(request) {
 
                         const comprobanteAuto = await tx.comprobantes.create({
                             data: sanitizeNullBytes({
-                                emisor_id: emisor.id,
-                                receptor_id: receptorId,
-                                grupo_id: emisor.grupo_id,
+                                emisors: { connect: { id: BigInt(emisor.id) } },
+                                receptors: { connect: { id: BigInt(receptorId) } },
+                                ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
                                 version: '4.0',
                                 serie: serie,
                                 folio: folio,
@@ -616,11 +618,11 @@ export async function POST(request) {
                             })
                         });
 
-                        await tx.$executeRaw`
-                            UPDATE comprobantes 
-                            SET sub_total = ${subTotalStr}, total = ${subTotalStr}, descuento = '0.00' 
+                        await tx.$executeRawUnsafe(`
+                            UPDATE "comprobantes" 
+                            SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
                             WHERE id = ${comprobanteAuto.id}
-                        `;
+                        `);
 
                         const itemsList = cargosAplicados.map(({ cargo, montoAplicado, esSaldoAFavor }) => {
                             const prodNombre = esSaldoAFavor ? 'SALDO A FAVOR' : (cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD');

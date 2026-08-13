@@ -185,8 +185,8 @@ export async function GET(request) {
                 folio: comp.folio || comp.id.toString(),
                 fecha: comp.fecha,
                 tipo_cfdi: tipoCFDI,
-                emisor_nombre: comp.emisors?.nombre || 'UNIVERSIDAD HISPANOAMERICANA S.C.',
-                emisor_rfc: comp.emisors?.rfc || 'UHI950412XX1',
+                emisor_nombre: comp.emisors?.nombre || 'Razón Social Emisora',
+                emisor_rfc: comp.emisors?.rfc || '',
                 receptor_nombre: comp.receptors?.nombre || 'PUBLICO EN GENERAL',
                 receptor_rfc: comp.receptors?.rfc || 'XAXX010101000',
                 total: Number(comp.total),
@@ -205,12 +205,15 @@ export async function GET(request) {
         const pendientesGlobal = preFacturasFormatted.filter(p => p.es_generico);
 
         // 3. Obtener Emisores disponibles filtrados por grupo_id si aplica
-        const whereEmisores = {};
+        const whereEmisores = {
+            NOT: { rfc: 'UHI950412XX1' }
+        };
         if (grupoId) whereEmisores.grupo_id = BigInt(grupoId);
 
         try {
             await prisma.$executeRawUnsafe(`
                 ALTER TABLE "public"."emisors" ADD COLUMN IF NOT EXISTS "es_predeterminado" BOOLEAN DEFAULT false;
+                DELETE FROM "public"."emisors" WHERE rfc = 'UHI950412XX1';
             `);
         } catch (e) {}
 
@@ -365,8 +368,9 @@ export async function POST(request) {
             // 5. Crear Comprobante Pre-factura
             const nuevoComprobante = await prisma.comprobantes.create({
                 data: {
-                    emisor_id: emisor.id,
-                    receptor_id: receptor.id,
+                    emisors: { connect: { id: BigInt(emisor.id) } },
+                    receptors: { connect: { id: BigInt(receptor.id) } },
+                    ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
                     serie: serieFolio.serie,
                     folio: serieFolio.folio,
                     fecha: getFechaLocalSAT(),
@@ -376,18 +380,25 @@ export async function POST(request) {
                     moneda: 'MXN',
                     tipo_cambio: '1',
                     exportacion: '01',
-                    sub_total: String(montoTotal),
-                    total: String(montoTotal),
                     sub_total_string: montoTotal.toFixed(2),
                     total_string: montoTotal.toFixed(2),
-                    descuento: '0',
-                    descuento_string: '0',
+                    descuento_string: '0.00',
                     estatus: 'PENDIENTE',
                     uso_cfdi: receptor.uso_cfdi || 'S01',
                     version: '4.0',
                     lugar_expedicion: emisor.lugar_expedicion || '01000'
                 }
             });
+
+            await prisma.$executeRawUnsafe(`
+                UPDATE "comprobantes"
+                SET "sub_total" = '${montoTotal.toFixed(2)}',
+                    "total" = '${montoTotal.toFixed(2)}',
+                    "descuento" = '0.00',
+                    "emisor_id" = ${emisor.id},
+                    "receptor_id" = ${receptor.id}
+                WHERE id = ${nuevoComprobante.id}
+            `);
 
             // 6. Crear Estructura CFDI
             await crearEstructuraCompletaCFDI({
