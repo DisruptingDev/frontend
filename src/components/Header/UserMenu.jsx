@@ -37,7 +37,14 @@ export default function UserMenu() {
       setSuperUser(superUser || '');
       setBod(bod || '');
       setCorreo(storedCorreo || '');
-      setUsuario(storedUsuario || '');
+      let nombreFinal = storedUsuario || '';
+      if (storedUsuario && (storedUsuario.startsWith('{') || storedUsuario.startsWith('['))) {
+        try {
+          const parsed = JSON.parse(storedUsuario);
+          nombreFinal = parsed.nombre || parsed.username || parsed.email || storedUsuario;
+        } catch (e) {}
+      }
+      setUsuario(nombreFinal);
 
       const usuarioSuplantado = localStorage.getItem('usuarioSuplantado');
       setUsuarioSuplantado(usuarioSuplantado || '');

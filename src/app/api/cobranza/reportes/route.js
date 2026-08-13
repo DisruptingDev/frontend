@@ -28,7 +28,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const mesPeriodo = searchParams.get('mes_periodo'); // YYYY-MM
         const alumnoId = searchParams.get('alumno_id');
-        const grupoId = searchParams.get('grupo_id');
+        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
 
         // =========================================================================
         // CASO 1: HISTORIAL DE PAGOS INDIVIDUAL DE UN ALUMNO
@@ -110,7 +110,11 @@ export async function GET(request) {
                 lte: fechaFin
             }
         };
-        if (grupoId) wherePagos.grupo_id = BigInt(grupoId);
+        if (grupoId) {
+            wherePagos.grupo_id = BigInt(grupoId);
+        } else {
+            wherePagos.grupo_id = BigInt(-1);
+        }
 
         const pagosMes = await prisma.pagoAlumno.findMany({
             where: wherePagos,

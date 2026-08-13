@@ -195,7 +195,7 @@ export default function CargosPage() {
                 if (storedUser) {
                     try {
                         const parsed = JSON.parse(storedUser);
-                        grupoId = parsed.grupo_id || '';
+                        grupoId = parsed.grupo_id || parsed.grupoId || '';
                     } catch (e) {}
                 }
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';

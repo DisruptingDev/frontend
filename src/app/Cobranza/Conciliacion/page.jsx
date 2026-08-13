@@ -110,15 +110,15 @@ export default function ConciliacionPage() {
                     if (storedUser) {
                         try {
                             const parsed = JSON.parse(storedUser);
-                            grupoId = parsed.grupo_id || '';
+                            grupoId = parsed.grupo_id || parsed.grupoId || '';
                         } catch (e) {}
                     }
                     if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
                 }
 
-                // 1. Cargar Emisores desde el Módulo de Empresas
-                // 1. Cargar Emisores de forma rápida desde API local
-                const resFact = await fetch('/api/cobranza/facturacion');
+                // 1. Cargar Emisores de forma rápida desde API local con grupo_id
+                const urlFact = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
+                const resFact = await fetch(urlFact);
                 const dataFact = await resFact.json();
                 const emisoresList = dataFact.emisores || [];
 
@@ -145,8 +145,9 @@ export default function ConciliacionPage() {
                 const dataAlum = await resAlum.json();
                 if (Array.isArray(dataAlum)) setAlumnos(dataAlum);
 
-                // 3. Cargar Cargos Pendientes Globales (para asignaciones manuales en REVISION)
-                const resCargos = await fetch('/api/cobranza/cargos');
+                // 3. Cargar Cargos Pendientes del grupo
+                const urlCargos = grupoId ? `/api/cobranza/cargos?grupo_id=${grupoId}` : '/api/cobranza/cargos';
+                const resCargos = await fetch(urlCargos);
                 const dataCargos = await resCargos.json();
                 if (Array.isArray(dataCargos)) {
                     setCargosPendientesGlobales(dataCargos.filter(c => c.estatus === 'PENDIENTE' || c.estatus === 'PARCIAL'));

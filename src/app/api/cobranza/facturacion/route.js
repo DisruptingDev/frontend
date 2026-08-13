@@ -24,7 +24,18 @@ function getFechaLocalSAT() {
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const grupoId = searchParams.get('grupo_id');
+        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        const emisorId = searchParams.get('emisor_id');
+
+        // Filtro estricto por grupo del usuario / colaborador y emisor asignado (Multitenancy)
+        const whereComprobante = {};
+        if (grupoId) {
+            whereComprobante.grupo_id = BigInt(grupoId);
+        } else {
+            // Seguridad Multitenant: Si no se provee grupo_id, no se muestran comprobantes globales
+            whereComprobante.grupo_id = BigInt(-1);
+        }
+        if (emisorId) whereComprobante.emisor_id = BigInt(emisorId);
 
         // Limpiar automáticamente registros de prueba falsos que hayan quedado con UUIDs de simulación
         try {
@@ -46,9 +57,10 @@ export async function GET(request) {
             console.log('Limpieza previa de datos ficticios:', e.message);
         }
 
-        // 1. Obtener TODAS las Pre-Facturas en Borrador (PENDIENTES DE TIMBRADO) sin excluir por grupo_id
+        // 1. Obtener Pre-Facturas en Borrador (PENDIENTES DE TIMBRADO) asociadas al grupo/emisor
         const preFacturas = await prisma.comprobantes.findMany({
             where: {
+                ...whereComprobante,
                 OR: [
                     { estatus: 'PENDIENTE' },
                     { estatus: 'BORRADOR' },
@@ -77,9 +89,10 @@ export async function GET(request) {
             orderBy: { id: 'desc' }
         });
 
-        // 2. Obtener TODAS las Facturas Oficiales TIMBRADAS por Go / PAC (con UUID real) sin excluir por grupo_id
+        // 2. Obtener Facturas Oficiales TIMBRADAS por Go / PAC (con UUID real) asociadas al grupo/emisor
         const facturasTimbradas = await prisma.comprobantes.findMany({
             where: {
+                ...whereComprobante,
                 estatus: 'TIMBRADO',
                 NOT: { uuid: null }
             },
@@ -204,11 +217,15 @@ export async function GET(request) {
         const pendientesRFC = preFacturasFormatted.filter(p => !p.es_generico);
         const pendientesGlobal = preFacturasFormatted.filter(p => p.es_generico);
 
-        // 3. Obtener Emisores disponibles (filtrar por grupo_id o fallback a todos los de DB)
+        // 3. Obtener Emisores del grupo exclusivo del usuario (sin fallback inseguro a otras empresas)
         const whereEmisores = {
             NOT: { rfc: 'UHI950412XX1' }
         };
-        if (grupoId) whereEmisores.grupo_id = BigInt(grupoId);
+        if (grupoId) {
+            whereEmisores.grupo_id = BigInt(grupoId);
+        } else {
+            whereEmisores.grupo_id = BigInt(-1);
+        }
 
         try {
             await prisma.$executeRawUnsafe(`
@@ -230,22 +247,6 @@ export async function GET(request) {
                 select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, series: true },
                 orderBy: { id: 'asc' }
             });
-        }
-
-        if (emisores.length === 0) {
-            try {
-                emisores = await prisma.emisors.findMany({
-                    where: { NOT: { rfc: 'UHI950412XX1' } },
-                    select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
-                    orderBy: { id: 'asc' }
-                });
-            } catch (e) {
-                emisores = await prisma.emisors.findMany({
-                    where: { NOT: { rfc: 'UHI950412XX1' } },
-                    select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, series: true },
-                    orderBy: { id: 'asc' }
-                });
-            }
         }
 
         let emisorPredeterminadoId = null;
@@ -303,7 +304,14 @@ export async function POST(request) {
                 await prisma.$executeRawUnsafe(`
                     ALTER TABLE "public"."emisors" ADD COLUMN IF NOT EXISTS "es_predeterminado" BOOLEAN DEFAULT false;
                 `);
-                await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false`);
+                const emTarget = await prisma.emisors.findUnique({ where: { id: BigInt(emisor_id) } });
+                if (emTarget && emTarget.grupo_id) {
+                    await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false WHERE "grupo_id" = ${emTarget.grupo_id}`);
+                } else if (body.grupo_id) {
+                    await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false WHERE "grupo_id" = ${BigInt(body.grupo_id)}`);
+                } else {
+                    await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false WHERE id = ${BigInt(emisor_id)}`);
+                }
                 await prisma.$executeRawUnsafe(
                     `UPDATE "public"."emisors" SET "es_predeterminado" = true WHERE id = ${BigInt(emisor_id)}`
                 );

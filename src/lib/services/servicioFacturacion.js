@@ -79,8 +79,8 @@ export async function invocarServicioGoTimbrado(facturasIds, token = null) {
     }
 }
 
-// Obtener o auto-generar Emisor predeterminado
-export async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
+// Obtener o auto-generar Emisor predeterminado de un grupo
+export async function obtenerOGenerarEmisorPredeterminado(emisorId = null, grupoId = null) {
     if (emisorId) {
         const emisorEncontrado = await prisma.emisors.findUnique({
             where: { id: BigInt(emisorId) }
@@ -88,10 +88,13 @@ export async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
         if (emisorEncontrado) return emisorEncontrado;
     }
 
+    const whereBase = { NOT: { rfc: 'UHI950412XX1' } };
+    if (grupoId) whereBase.grupo_id = BigInt(grupoId);
+
     let emisor = null;
     try {
         emisor = await prisma.emisors.findFirst({
-            where: { es_predeterminado: true }
+            where: { ...whereBase, es_predeterminado: true }
         });
     } catch (e) {
         console.warn('[obtenerOGenerarEmisorPredeterminado] Warning searching by es_predeterminado:', e.message);
@@ -99,19 +102,21 @@ export async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
 
     if (!emisor) {
         emisor = await prisma.emisors.findFirst({
-            where: { NOT: { rfc: 'UHI950412XX1' } },
+            where: whereBase,
             orderBy: { id: 'asc' }
         });
     }
 
-    if (!emisor) {
+    if (!emisor && grupoId) {
+        // Retry without es_predeterminado constraint for that grupo_id
         emisor = await prisma.emisors.findFirst({
+            where: { grupo_id: BigInt(grupoId) },
             orderBy: { id: 'asc' }
         });
     }
 
     if (!emisor) {
-        throw new Error('No existe ninguna Razón Social Emisora registrada en el sistema. Por favor configure su empresa en la plataforma.');
+        throw new Error('No existe ninguna Razón Social Emisora registrada para esta cuenta o grupo. Por favor configure su empresa en la plataforma.');
     }
     return emisor;
 }

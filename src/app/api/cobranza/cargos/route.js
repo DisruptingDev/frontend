@@ -176,12 +176,13 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const alumnoId = searchParams.get('alumno_id');
         const estatus = searchParams.get('estatus');
-        const grupoId = searchParams.get('grupo_id');
+        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
 
         const ahora = new Date();
         try {
             await prisma.cargoAlumno.updateMany({
                 where: {
+                    ...(grupoId ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahora },
                     monto_pendiente: { gt: 0 },
                     estatus: { in: ['PENDIENTE', 'PARCIAL'] }
@@ -195,7 +196,12 @@ export async function GET(request) {
         const where = {};
         if (alumnoId) where.alumno_id = BigInt(alumnoId);
         if (estatus && estatus !== 'TODOS') where.estatus = estatus;
-        if (grupoId) where.grupo_id = BigInt(grupoId);
+        if (grupoId) {
+            where.grupo_id = BigInt(grupoId);
+        } else {
+            // Seguridad Multitenant: Si no se especifica grupo_id, no se muestran fichas globales
+            where.grupo_id = BigInt(-1);
+        }
 
         const cargos = await prisma.cargoAlumno.findMany({
             where,

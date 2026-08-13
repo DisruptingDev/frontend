@@ -26,13 +26,18 @@ function serializeBigIntsAndDecimals(obj) {
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const grupoId = searchParams.get('grupo_id');
+        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
         const carrera = searchParams.get('carrera');
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
 
         const where = {};
-        if (grupoId) where.grupo_id = BigInt(grupoId);
+        if (grupoId) {
+            where.grupo_id = BigInt(grupoId);
+        } else {
+            // Seguridad Multitenant: Si no se provee grupo_id, no se muestran alumnos globales
+            where.grupo_id = BigInt(-1);
+        }
         if (carrera) where.carrera = carrera;
         if (semestre) where.semestre = parseInt(semestre);
         if (estatus && estatus !== 'TODOS') where.estatus = estatus.toUpperCase();

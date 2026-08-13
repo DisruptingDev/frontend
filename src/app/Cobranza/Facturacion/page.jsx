@@ -166,7 +166,7 @@ export default function FacturacionCobranzaPage() {
                 if (storedUser) {
                     try {
                         const parsed = JSON.parse(storedUser);
-                        grupoId = parsed.grupo_id || '';
+                        grupoId = parsed.grupo_id || parsed.grupoId || '';
                     } catch (e) {}
                 }
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
@@ -208,8 +208,17 @@ export default function FacturacionCobranzaPage() {
 
     const handleCambiarEmisor = async (nuevoId) => {
         setEmisorSeleccionado(nuevoId);
+        let grupoId = '';
         if (typeof window !== 'undefined') {
             localStorage.setItem('emisor_id_predeterminado', nuevoId);
+            const storedUser = localStorage.getItem('usuario');
+            if (storedUser) {
+                try {
+                    const parsed = JSON.parse(storedUser);
+                    grupoId = parsed.grupo_id || parsed.grupoId || '';
+                } catch (e) {}
+            }
+            if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
         }
 
         try {
@@ -218,7 +227,8 @@ export default function FacturacionCobranzaPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'SET_EMISOR_PREDETERMINADO',
-                    emisor_id: nuevoId
+                    emisor_id: nuevoId,
+                    grupo_id: grupoId
                 })
             });
         } catch (e) {

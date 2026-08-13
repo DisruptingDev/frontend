@@ -410,8 +410,17 @@ export default function AlumnosView() {
         setLoading(true);
         try {
             let token = '';
+            let grupoId = '';
             if (typeof window !== 'undefined') {
                 token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+                const storedUser = localStorage.getItem('usuario');
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        grupoId = parsed.grupo_id || parsed.grupoId || '';
+                    } catch (e) {}
+                }
+                if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
             // 1. Cargar Emisores desde el Módulo de Empresas
@@ -440,7 +449,8 @@ export default function AlumnosView() {
             }
 
             if (emisoresList.length === 0) {
-                const resFact = await fetch('/api/cobranza/facturacion');
+                const urlFact = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
+                const resFact = await fetch(urlFact);
                 const dataFact = await resFact.json();
                 if (dataFact.emisores && Array.isArray(dataFact.emisores)) {
                     emisoresList = dataFact.emisores;
@@ -449,12 +459,14 @@ export default function AlumnosView() {
 
             setEmisores(emisoresList);
 
-            // 2. Cargar Alumnos
-            const resAlum = await fetch('/api/cobranza/alumnos').then(r => r.json()).catch(() => []);
+            // 2. Cargar Alumnos asociados al grupo del usuario
+            const urlAlum = grupoId ? `/api/cobranza/alumnos?grupo_id=${grupoId}` : '/api/cobranza/alumnos';
+            const resAlum = await fetch(urlAlum).then(r => r.json()).catch(() => []);
             if (Array.isArray(resAlum)) setAlumnos(resAlum);
 
-            // 3. Cargar Programas Académicos
-            const resProg = await fetch('/api/cobranza/programas').then(r => r.json()).catch(() => []);
+            // 3. Cargar Programas Académicos asociados al grupo del usuario
+            const urlProg = grupoId ? `/api/cobranza/programas?grupo_id=${grupoId}` : '/api/cobranza/programas';
+            const resProg = await fetch(urlProg).then(r => r.json()).catch(() => []);
             if (Array.isArray(resProg)) {
                 setProgramas(resProg);
             } else if (resProg && Array.isArray(resProg.programas)) {

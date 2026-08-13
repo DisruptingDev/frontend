@@ -171,9 +171,19 @@ export function useAuth() {
       }
 
       // Guardar datos adicionales
+      const grupoIdResolved = result.grupo_id || result.grupoId || result.GrupoID || '';
+      if (grupoIdResolved) {
+        localStorage.setItem("grupo_id", grupoIdResolved.toString());
+        sessionStorage.setItem("grupo_id", grupoIdResolved.toString());
+      }
       localStorage.setItem("correo", credentials.usuario);
       const nombreUsuario = credentials.usuario.split("@")[0];
-      localStorage.setItem("usuario", nombreUsuario);
+      localStorage.setItem("usuario", JSON.stringify({
+        nombre: nombreUsuario,
+        email: credentials.usuario,
+        grupo_id: grupoIdResolved,
+        id: result.id || result.usuario_id || result.UsuarioID || ''
+      }));
       localStorage.setItem("superUser", result.sudo);
       localStorage.setItem("BOD", result.BOD);
 
