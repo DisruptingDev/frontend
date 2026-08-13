@@ -98,11 +98,12 @@ export default function CargosPage() {
         }
     };
 
+    const [busquedaAlumnoModal, setBusquedaAlumnoModal] = useState('');
     const [form, setForm] = useState({
-        alumnos_ids: 'TODOS',
+        alumnos_ids: '',
         producto_id: '',
         items: [
-            { concepto: 'Mensualidad', monto: '' }
+            { concepto: 'MATERIA', monto: '' }
         ],
         fecha_vencimiento: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
@@ -315,6 +316,11 @@ export default function CargosPage() {
     };
 
     const handleGenerarManual = async () => {
+        if (!form.alumnos_ids) {
+            setError('Por favor selecciona un alumno destinatario específico para emitir la ficha.');
+            return;
+        }
+
         const itemsValidos = (form.items || []).map(it => ({
             concepto: (it.concepto || 'Mensualidad').trim(),
             monto: parseFloat(it.monto || 0)
@@ -766,20 +772,37 @@ export default function CargosPage() {
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
                             <TextField
+                                fullWidth
+                                size="small"
+                                placeholder="🔍 Filtrar alumno por matrícula, nombre o carrera..."
+                                value={busquedaAlumnoModal}
+                                onChange={(e) => setBusquedaAlumnoModal(e.target.value)}
+                                sx={{ mb: 1.5 }}
+                            />
+                            <TextField
                                 select
                                 label="Seleccionar Alumno Destinatario *"
                                 name="alumnos_ids"
                                 fullWidth
-                                value={form.alumnos_ids}
+                                value={form.alumnos_ids || ''}
                                 onChange={handleChange}
-                                helperText="Selecciona un alumno específico o todos los alumnos activos"
+                                helperText="Selecciona el alumno individual al que le emitirás la ficha"
                             >
-                                <MenuItem value="TODOS">👥 Todos los alumnos activos</MenuItem>
-                                {alumnos.map(alum => (
-                                    <MenuItem key={alum.id} value={alum.id.toString()}>
-                                        🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} ({alum.carrera})
-                                    </MenuItem>
-                                ))}
+                                <MenuItem value="">-- Seleccionar Alumno Específico --</MenuItem>
+                                <MenuItem value="TODOS">👥 Todos los alumnos activos (Emisión Masiva)</MenuItem>
+                                {alumnos
+                                    .filter(alum => {
+                                        if (!busquedaAlumnoModal) return true;
+                                        const q = busquedaAlumnoModal.toLowerCase().trim();
+                                        const fullText = `${alum.matricula} ${alum.nombre} ${alum.apellido_paterno} ${alum.apellido_materno || ''} ${alum.carrera || ''}`.toLowerCase();
+                                        return fullText.includes(q);
+                                    })
+                                    .map(alum => (
+                                        <MenuItem key={alum.id} value={alum.id.toString()}>
+                                            🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} {alum.apellido_materno || ''} ({alum.carrera || 'General'})
+                                        </MenuItem>
+                                    ))
+                                }
                             </TextField>
                         </Grid>
 
