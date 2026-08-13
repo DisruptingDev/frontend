@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { parseExcelFile, parseGenerico } from '@/libs/bankParsers/bankParsers';
+import { construirDescripcionConcepto } from '@/lib/services/servicioFacturacion';
 
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
@@ -175,7 +176,22 @@ async function obtenerSiguienteFolioSerie(emisorId, dbClient = prisma) {
 }
 
 // Helper para poblar estructura completa de Conceptos y XML Base CFDI 4.0
-async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, descripcionConcepto, monto, grupoId, dbClient = prisma }) {
+async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, descripcionConcepto, monto, grupoId, dbClient = prisma, items = [] }) {
+    const prevHeaders = await dbClient.conceptos.findMany({
+        where: { comprobante_id: comprobante.id },
+        select: { id: true }
+    });
+
+    if (prevHeaders.length > 0) {
+        const prevHeaderIds = prevHeaders.map(h => h.id);
+        await dbClient.concepto.deleteMany({
+            where: { conceptos_id: { in: prevHeaderIds } }
+        });
+        await dbClient.conceptos.deleteMany({
+            where: { id: { in: prevHeaderIds } }
+        });
+    }
+
     const conceptosHeader = await dbClient.conceptos.create({
         data: {
             comprobante_id: comprobante.id,
@@ -187,33 +203,76 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
         }
     });
 
-    await dbClient.concepto.create({
-        data: {
-            conceptos_id: conceptosHeader.id,
-            clave_prod_serv: '86121500',
-            clave_unidad: 'E48',
-            unidad: 'Servicio',
-            cantidad: 1n,
+    let listaItemsFinal = [];
+    if (Array.isArray(items) && items.length > 0) {
+        listaItemsFinal = items.map(it => ({
+            descripcion: (it.descripcion || it.concepto || 'Servicios Educativos').trim(),
+            monto: Number(it.monto || it.valor_unitario || 0),
+            clave_prod_serv: it.clave_prod_serv || '86121500'
+        })).filter(it => it.monto > 0);
+    }
+
+    if (listaItemsFinal.length === 0) {
+        listaItemsFinal = [{
             descripcion: descripcionConcepto || 'Colegiatura y Servicios Educativos Integrales',
-            valor_unitario: monto,
-            importe: monto,
-            importe_string: String(Number(monto).toFixed(2)),
-            objeto_imp: '01'
-        }
-    });
+            monto: Number(monto || 0),
+            clave_prod_serv: '86121500'
+        }];
+    }
+
+    let subtotalAcumulado = 0;
+    let totalAcumulado = 0;
+    let xmlConceptosList = '';
+
+    for (const item of listaItemsFinal) {
+        const montoNeto = Number(item.monto.toFixed(2));
+        subtotalAcumulado += montoNeto;
+        totalAcumulado += montoNeto;
+
+        const descSat = (item.descripcion || 'Servicios Educativos').trim();
+
+        await dbClient.concepto.create({
+            data: {
+                conceptos_id: conceptosHeader.id,
+                clave_prod_serv: item.clave_prod_serv || '86121500',
+                clave_unidad: 'E48',
+                unidad: 'Servicio',
+                cantidad: 1n,
+                descripcion: descSat,
+                valor_unitario: montoNeto,
+                valor_unitario_string: montoNeto.toFixed(2),
+                importe: montoNeto,
+                importe_string: montoNeto.toFixed(2),
+                descuento: 0,
+                descuento_string: '0',
+                objeto_imp: '01'
+            }
+        });
+
+        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || '86121500'}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="01"/>\n`;
+    }
+
+    subtotalAcumulado = Number(subtotalAcumulado.toFixed(2));
+    totalAcumulado = Number(totalAcumulado.toFixed(2));
 
     const xmlBase = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="${comprobante.serie}" Folio="${comprobante.folio}" Fecha="${comprobante.fecha}" FormaPago="03" MetodoPago="PUE" Moneda="MXN" SubTotal="${monto}" Total="${monto}" TipoDeComprobante="I" LugarExpedicion="${emisor.lugar_expedicion || '01000'}">
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="${comprobante.serie}" Folio="${comprobante.folio}" Fecha="${comprobante.fecha}" FormaPago="03" MetodoPago="PUE" Moneda="MXN" SubTotal="${subtotalAcumulado.toFixed(2)}" Total="${totalAcumulado.toFixed(2)}" TipoDeComprobante="I" LugarExpedicion="${emisor.lugar_expedicion || '01000'}">
   <cfdi:Emisor Rfc="${emisor.rfc}" Nombre="${emisor.nombre}" RegimenFiscal="${emisor.regimen_fiscal || '601'}"/>
   <cfdi:Receptor Rfc="${receptor.rfc}" Nombre="${receptor.nombre}" DomicilioFiscalReceptor="${receptor.domicilio_fiscal_receptor || emisor.lugar_expedicion || '01000'}" RegimenFiscalReceptor="${receptor.regimen_fiscal_receptor || '616'}" UsoCFDI="${receptor.uso_cfdi || 'S01'}"/>
   <cfdi:Conceptos>
-    <cfdi:Concepto ClaveProdServ="86121500" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descripcionConcepto}" ValorUnitario="${monto}" Importe="${monto}" ObjetoImp="01"/>
+${xmlConceptosList.trimEnd()}
   </cfdi:Conceptos>
 </cfdi:Comprobante>`;
 
     await dbClient.comprobantes.update({
         where: { id: comprobante.id },
-        data: { xml_timbrado: xmlBase }
+        data: {
+            sub_total: subtotalAcumulado,
+            sub_total_string: subtotalAcumulado.toFixed(2),
+            total: totalAcumulado,
+            total_string: totalAcumulado.toFixed(2),
+            xml_timbrado: xmlBase
+        }
     });
 }
 
@@ -352,25 +411,27 @@ export async function POST(request) {
                     WHERE id = ${comprobanteAuto.id}
                 `;
 
-                const eInfo = {
+                const descConcepto = construirDescripcionConcepto({
                     producto: cargoEncontrado.producto?.nombre || 'MENSUALIDAD',
                     carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
-                    nombre: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
-                    curp: alumnoObj.curp || 'N/A',
-                    matricula: alumnoObj.matricula || 'N/A',
-                    rvoe: alumnoObj.programa_academico?.rvoe || 'N/A'
-                };
-                const dateForMonth = parseFechaSegura(fecha_pago);
-                const currentMonth = dateForMonth.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
-                const descConcepto = `PAGO A ${eInfo.producto} DE ${eInfo.carrera} REALIZADO EL MES DE ${currentMonth} , DEL ESTUDIANTE ${eInfo.nombre}, CURP: ${eInfo.curp}, MATRICULA: ${eInfo.matricula}, PROGRAMA CON RVOE SEP NO. ${eInfo.rvoe}`.toUpperCase();
+                    fechaPago: fecha_pago,
+                    nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                    curp: alumnoObj.curp,
+                    matricula: alumnoObj.matricula,
+                    rvoe: alumnoObj.programa_academico?.rvoe
+                });
 
                 await crearEstructuraCompletaCFDI({
                     comprobante: comprobanteAuto,
                     emisor,
                     receptor: receptorObj,
-                    descripcionConcepto: descConcepto,
                     monto: montoNum,
-                    grupoId: emisor.grupo_id
+                    grupoId: emisor.grupo_id,
+                    items: [{
+                        descripcion: descConcepto,
+                        monto: montoNum,
+                        clave_prod_serv: cargoEncontrado.producto?.clave_prod_serv || '86121500'
+                    }]
                 });
 
                 const pago = await prisma.pagoAlumno.create({
@@ -561,20 +622,46 @@ export async function POST(request) {
                             WHERE id = ${comprobanteAuto.id}
                         `;
 
-                        const carreraStr = alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL';
-                        const nombreStr = `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim();
-                        const dateForMonth = parseFechaSegura(fecha_pago);
-                        const currentMonth = dateForMonth.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
-                        
-                        const descConcepto = `PAGO DE MULTIPLES FICHAS / SALDO A FAVOR DE ${carreraStr} REALIZADO EL MES DE ${currentMonth} , DEL ESTUDIANTE ${nombreStr}, CURP: ${alumnoObj.curp || 'N/A'}, MATRICULA: ${alumnoObj.matricula || 'N/A'}, PROGRAMA CON RVOE SEP NO. ${alumnoObj.programa_academico?.rvoe || 'N/A'}`.toUpperCase();
+                        const itemsList = cargosAplicados.map(({ cargo, montoAplicado, esSaldoAFavor }) => {
+                            const prodNombre = esSaldoAFavor ? 'SALDO A FAVOR' : (cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD');
+                            return {
+                                descripcion: construirDescripcionConcepto({
+                                    producto: prodNombre,
+                                    carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                    fechaPago: fecha_pago,
+                                    nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                    curp: alumnoObj.curp,
+                                    matricula: alumnoObj.matricula,
+                                    rvoe: alumnoObj.programa_academico?.rvoe
+                                }),
+                                monto: montoAplicado,
+                                clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                            };
+                        });
+
+                        if (itemsList.length === 0) {
+                            itemsList.push({
+                                descripcion: construirDescripcionConcepto({
+                                    producto: 'MENSUALIDAD',
+                                    carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                    fechaPago: fecha_pago,
+                                    nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                    curp: alumnoObj.curp,
+                                    matricula: alumnoObj.matricula,
+                                    rvoe: alumnoObj.programa_academico?.rvoe
+                                }),
+                                monto: Number(monto),
+                                clave_prod_serv: '86121500'
+                            });
+                        }
 
                         await crearEstructuraCompletaCFDI({
                             comprobante: comprobanteAuto,
                             emisor,
                             receptor: receptorObj,
-                            descripcionConcepto: descConcepto,
                             monto: Number(monto),
                             grupoId: emisor.grupo_id,
+                            items: itemsList,
                             dbClient: tx
                         });
 

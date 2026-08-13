@@ -1959,24 +1959,16 @@ export default function MóduloCobranzaUnificadoPage() {
                         <Grid item xs={12}>
                             {(() => {
                                 const totalSum = (editForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
-                                const subtotalBase = totalSum > 0 ? (totalSum / 1.16) : 0;
-                                const ivaTotal = totalSum > 0 ? (totalSum - subtotalBase) : 0;
                                 return (
                                     <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
                                         <Grid container spacing={2} textAlign="center">
-                                            <Grid item xs={4}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (BASE FISCAL):</Typography>
+                                            <Grid item xs={6}>
+                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (EXENTO DE IVA):</Typography>
                                                 <Typography variant="h6" fontWeight="bold" color="textPrimary">
-                                                    ${subtotalBase.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </Typography>
                                             </Grid>
-                                            <Grid item xs={4}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">IVA (16% TRASLADADO):</Typography>
-                                                <Typography variant="h6" fontWeight="bold" color="warning.main">
-                                                    ${ivaTotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={4}>
+                                            <Grid item xs={6}>
                                                 <Typography variant="caption" color="textSecondary" fontWeight="bold">TOTAL PRE-FACTURA (FICHA):</Typography>
                                                 <Typography variant="h6" fontWeight="bold" color="success.main">
                                                     ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN

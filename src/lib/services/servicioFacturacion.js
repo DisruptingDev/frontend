@@ -163,6 +163,23 @@ export async function obtenerSiguienteFolioSerie(emisorId) {
     };
 }
 
+// Helper para construir la descripción estandarizada del concepto por producto
+export function construirDescripcionConcepto({ producto, carrera, fechaPago, nombreAlumno, curp, matricula, rvoe }) {
+    const dateObj = fechaPago ? (fechaPago instanceof Date ? fechaPago : new Date(fechaPago)) : new Date();
+    const monthYear = isNaN(dateObj.getTime())
+        ? new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase()
+        : dateObj.toLocaleString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
+
+    const prodStr = (producto || 'MENSUALIDAD').toUpperCase();
+    const carreraStr = (carrera || 'GENERAL').toUpperCase();
+    const nombreStr = (nombreAlumno || 'ESTUDIANTE GENERAL').toUpperCase().trim();
+    const curpStr = (curp || 'N/A').toUpperCase();
+    const matStr = (matricula || 'N/A').toUpperCase();
+    const rvoeStr = (rvoe || 'N/A').toUpperCase();
+
+    return `PAGO A ${prodStr} DE ${carreraStr} REALIZADO EL MES DE ${monthYear} DEL ESTUDIANTE ${nombreStr} CURP ${curpStr} Matricula ${matStr} Programa con RVOE SEP NO. ${rvoeStr}`;
+}
+
 // Helper para poblar estructura completa de Conceptos y XML Base CFDI 4.0
 export async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, descripcionConcepto, monto, grupoId, claveProdServ, items }) {
     // 1. Limpiar conceptos anteriores si existen (para permitir ediciones)

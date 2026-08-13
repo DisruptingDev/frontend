@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getDescripcionRegimen, getDescripcionUsoCFDI } from '@/utils/catalogoSAT';
+import { construirDescripcionConcepto } from '@/lib/services/servicioFacturacion';
 
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
@@ -180,7 +181,15 @@ export async function GET(request, { params }) {
                 if (cGroup.Concepto && Array.isArray(cGroup.Concepto)) {
                     cGroup.Concepto.forEach(item => {
                         const eInfo = estudiantes[0] || {};
-                        const descFallback = `PAGO A ${eInfo.producto || 'MENSUALIDAD'} DE ${eInfo.carrera || 'GENERAL'} REALIZADO EL MES DE ${mesAnio} , DEL ESTUDIANTE ${eInfo.nombre}, CURP: ${eInfo.curp}, MATRICULA: ${eInfo.matricula}, PROGRAMA CON RVOE SEP NO. ${eInfo.rvoe}`;
+                        const descFallback = construirDescripcionConcepto({
+                            producto: eInfo.producto || 'MENSUALIDAD',
+                            carrera: eInfo.carrera || 'GENERAL',
+                            fechaPago: comprobante.fecha,
+                            nombreAlumno: eInfo.nombre,
+                            curp: eInfo.curp,
+                            matricula: eInfo.matricula,
+                            rvoe: eInfo.rvoe
+                        });
                         partidas.push({
                             clave_prod_serv: item.clave_prod_serv || '86121500',
                             clave_unidad: item.clave_unidad || 'E48',
@@ -197,18 +206,58 @@ export async function GET(request, { params }) {
         }
 
         if (partidas.length === 0) {
-            const eInfo = estudiantes[0] || {};
-            const desc = `PAGO A ${eInfo.producto || 'MENSUALIDAD'} DE ${eInfo.carrera || 'GENERAL'} REALIZADO EL MES DE ${mesAnio} , DEL ESTUDIANTE ${eInfo.nombre}, CURP: ${eInfo.curp}, MATRICULA: ${eInfo.matricula}, PROGRAMA CON RVOE SEP NO. ${eInfo.rvoe}`;
-            partidas.push({
-                clave_prod_serv: '86121500',
-                clave_unidad: 'E48',
-                unidad: 'Servicio',
-                cantidad: 1,
-                descripcion: desc,
-                valor_unitario: totalNum,
-                importe: totalNum,
-                objeto_imp: '01'
-            });
+            if (comprobante.PagoAlumno && comprobante.PagoAlumno.length > 0) {
+                comprobante.PagoAlumno.forEach(p => {
+                    const eInfo = {
+                        producto: p.cargo?.producto?.nombre || p.cargo?.concepto?.nombre || 'MENSUALIDAD',
+                        carrera: p.alumno?.programa_academico?.nombre || p.alumno?.carrera || 'GENERAL',
+                        nombre: p.alumno ? `${p.alumno.nombre} ${p.alumno.apellido_paterno} ${p.alumno.apellido_materno || ''}`.trim() : 'ESTUDIANTE GENERAL',
+                        curp: p.alumno?.curp,
+                        matricula: p.alumno?.matricula,
+                        rvoe: p.alumno?.programa_academico?.rvoe
+                    };
+                    const desc = construirDescripcionConcepto({
+                        producto: eInfo.producto,
+                        carrera: eInfo.carrera,
+                        fechaPago: comprobante.fecha,
+                        nombreAlumno: eInfo.nombre,
+                        curp: eInfo.curp,
+                        matricula: eInfo.matricula,
+                        rvoe: eInfo.rvoe
+                    });
+                    partidas.push({
+                        clave_prod_serv: p.cargo?.producto?.clave_prod_serv || '86121500',
+                        clave_unidad: 'E48',
+                        unidad: 'Servicio',
+                        cantidad: 1,
+                        descripcion: desc,
+                        valor_unitario: Number(p.monto),
+                        importe: Number(p.monto),
+                        objeto_imp: '01'
+                    });
+                });
+            } else {
+                const eInfo = estudiantes[0] || {};
+                const desc = construirDescripcionConcepto({
+                    producto: eInfo.producto || 'MENSUALIDAD',
+                    carrera: eInfo.carrera || 'GENERAL',
+                    fechaPago: comprobante.fecha,
+                    nombreAlumno: eInfo.nombre,
+                    curp: eInfo.curp,
+                    matricula: eInfo.matricula,
+                    rvoe: eInfo.rvoe
+                });
+                partidas.push({
+                    clave_prod_serv: '86121500',
+                    clave_unidad: 'E48',
+                    unidad: 'Servicio',
+                    cantidad: 1,
+                    descripcion: desc,
+                    valor_unitario: totalNum,
+                    importe: totalNum,
+                    objeto_imp: '01'
+                });
+            }
         }
 
         const logoHtml = emisor.logo_url || emisor.logo_path ?
@@ -363,10 +412,6 @@ export async function GET(request, { params }) {
                     </div>
                     <div class="totals-row">
                         <span>Descuento:</span>
-                        <span>$0.00</span>
-                    </div>
-                    <div class="totals-row">
-                        <span>IVA (0% Colegiaturas / Exento):</span>
                         <span>$0.00</span>
                     </div>
                     <div class="totals-row total-final">
