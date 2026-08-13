@@ -100,9 +100,14 @@ async function obtenerOGenerarEmisorPredeterminado(emisorId = null) {
         }
     }
 
-    let emisor = await prisma.emisors.findFirst({
-        where: { es_predeterminado: true }
-    });
+    let emisor = null;
+    try {
+        emisor = await prisma.emisors.findFirst({
+            where: { es_predeterminado: true }
+        });
+    } catch (e) {
+        console.warn('[conciliacion] Warning searching by es_predeterminado:', e.message);
+    }
 
     if (!emisor) {
         emisor = await prisma.emisors.findFirst({

@@ -217,18 +217,35 @@ export async function GET(request) {
             `);
         } catch (e) {}
 
-        let emisores = await prisma.emisors.findMany({
-            where: whereEmisores,
-            select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
-            orderBy: { id: 'asc' }
-        });
-
-        if (emisores.length === 0) {
+        let emisores = [];
+        try {
             emisores = await prisma.emisors.findMany({
-                where: { NOT: { rfc: 'UHI950412XX1' } },
+                where: whereEmisores,
                 select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
                 orderBy: { id: 'asc' }
             });
+        } catch (e) {
+            emisores = await prisma.emisors.findMany({
+                where: whereEmisores,
+                select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, series: true },
+                orderBy: { id: 'asc' }
+            });
+        }
+
+        if (emisores.length === 0) {
+            try {
+                emisores = await prisma.emisors.findMany({
+                    where: { NOT: { rfc: 'UHI950412XX1' } },
+                    select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
+                    orderBy: { id: 'asc' }
+                });
+            } catch (e) {
+                emisores = await prisma.emisors.findMany({
+                    where: { NOT: { rfc: 'UHI950412XX1' } },
+                    select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, series: true },
+                    orderBy: { id: 'asc' }
+                });
+            }
         }
 
         let emisorPredeterminadoId = null;

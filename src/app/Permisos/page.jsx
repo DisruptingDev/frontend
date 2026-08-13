@@ -68,36 +68,57 @@ export default function AdministraRoles() {
     });
   };
 
-  // Obtener permisos desde la API
+  // Obtener permisos desde la API (incluyendo Módulo de Cobranza)
   const fetchPermisos = async () => {
     try {
       setLoading(prev => ({ ...prev, permisos: true }));
-      const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Permiso`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      let data = [];
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Permiso`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const resData = await response.json();
+          if (Array.isArray(resData)) data = resData;
+        }
+      } catch (e) {
+        console.warn('Error fetching main catalog permissions:', e.message);
       }
 
-      const data = await response.json();
+      // Obtener y unificar permisos del módulo de cobranza
+      try {
+        const resCob = await fetch('/api/cobranza/permisos').then(r => r.json()).catch(() => []);
+        if (Array.isArray(resCob) && resCob.length > 0) {
+          const clavesExistentes = new Set(data.map(p => (p.Clave || p.clave)));
+          resCob.forEach(p => {
+            if (!clavesExistentes.has(p.Clave || p.clave)) {
+              data.push(p);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error fetching local cobranza permissions:', e.message);
+      }
+
       setPermisos(data);
 
       // Organizar permisos por sección
       const seccionesOrganizadas = {};
       data.forEach(permiso => {
-        if (!seccionesOrganizadas[permiso.Seccion.Clave]) {
-          seccionesOrganizadas[permiso.Seccion.Clave] = {
-            nombre: permiso.Seccion.Descripcion,
+        const secClave = permiso.Seccion?.Clave || permiso.seccion?.clave || 'GENERAL';
+        const secNombre = permiso.Seccion?.Descripcion || permiso.seccion?.descripcion || secClave;
+
+        if (!seccionesOrganizadas[secClave]) {
+          seccionesOrganizadas[secClave] = {
+            nombre: secNombre,
             permisos: []
           };
         }
-        seccionesOrganizadas[permiso.Seccion.Clave].permisos.push({
-          id: permiso.ID,
-          clave: permiso.Clave,
-          descripcion: permiso.Descripcion
+        seccionesOrganizadas[secClave].permisos.push({
+          id: permiso.ID || permiso.id,
+          clave: permiso.Clave || permiso.clave,
+          descripcion: permiso.Descripcion || permiso.descripcion
         });
       });
 

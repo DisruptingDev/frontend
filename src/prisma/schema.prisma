@@ -240,6 +240,7 @@ model emisors {
   banco            String?
   cuenta_bancaria  String?
   clabe_bancaria   String?
+  es_predeterminado Boolean?       @default(false)
   Alumno           Alumno[]
   comprobantes     comprobantes[]
   grupos           grupos?        @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_emisors_grupo")
