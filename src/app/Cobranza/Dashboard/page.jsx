@@ -1495,6 +1495,8 @@ export default function MóduloCobranzaUnificadoPage() {
                         Cerrar
                     </Button>
                 </DialogActions>
+            </Dialog>
+
             {/* MODAL 3: REGISTRAR NUEVO ALUMNO */}
             <Dialog open={openAlumnoModal} onClose={() => setOpenAlumnoModal(false)} maxWidth="md" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar Alumno y Configuración de Cobro</DialogTitle>
