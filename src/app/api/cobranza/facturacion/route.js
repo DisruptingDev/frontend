@@ -208,13 +208,29 @@ export async function GET(request) {
         const whereEmisores = {};
         if (grupoId) whereEmisores.grupo_id = BigInt(grupoId);
 
+        try {
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "public"."emisors" ADD COLUMN IF NOT EXISTS "es_predeterminado" BOOLEAN DEFAULT false;
+            `);
+        } catch (e) {}
+
         const emisores = await prisma.emisors.findMany({
             where: whereEmisores,
-            select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true }
+            select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
+            orderBy: { id: 'asc' }
         });
+
+        let emisorPredeterminadoId = null;
+        const predeterminado = emisores.find(e => e.es_predeterminado === true);
+        if (predeterminado) {
+            emisorPredeterminadoId = predeterminado.id.toString();
+        } else if (emisores.length > 0) {
+            emisorPredeterminadoId = emisores[0].id.toString();
+        }
 
         return NextResponse.json({
             emisores: serializeBigIntsAndDecimals(emisores),
+            emisor_predeterminado_id: emisorPredeterminadoId,
             pre_facturas: preFacturasFormatted,
             pendientes_rfc: pendientesRFC,
             pendientes_global: pendientesGlobal,
@@ -246,6 +262,32 @@ export async function POST(request) {
             receptor_nombre,
             token
         } = body;
+
+        // =========================================================================
+        // ACCIÓN DE PERSISTENCIA DB: ESTABLECER EMISOR PREDETERMINADO GLOBAL
+        // =========================================================================
+        if (action === 'SET_EMISOR_PREDETERMINADO') {
+            if (!emisor_id) {
+                return NextResponse.json({ error: 'Debe especificar el ID del emisor a establecer como predeterminado.' }, { status: 400 });
+            }
+
+            try {
+                await prisma.$executeRawUnsafe(`
+                    ALTER TABLE "public"."emisors" ADD COLUMN IF NOT EXISTS "es_predeterminado" BOOLEAN DEFAULT false;
+                `);
+                await prisma.$executeRawUnsafe(`UPDATE "public"."emisors" SET "es_predeterminado" = false`);
+                await prisma.$executeRawUnsafe(
+                    `UPDATE "public"."emisors" SET "es_predeterminado" = true WHERE id = $1`,
+                    BigInt(emisor_id)
+                );
+            } catch (e) {
+                console.error('Error actualizando emisor_predeterminado:', e.message);
+            }
+
+            return NextResponse.json({
+                mensaje: 'Razón Social Emisora predeterminada guardada exitosamente en la base de datos para todos los dispositivos y sesiones.'
+            }, { status: 200 });
+        }
 
         // =========================================================================
         // ACCIÓN 0: CREAR FACTURA INDIVIDUAL DIRECTA DESDE FICHA DE CARGO (SIN CONCILIACIÓN PREVIA)
@@ -317,7 +359,8 @@ export async function POST(request) {
             const montoTotal = Number(cargo.monto_total || itemsFinales.reduce((sum, i) => sum + i.monto, 0));
 
             // 4. Folio y Serie
-            const serieFolio = await obtenerSiguienteFolioSerie(emisor.id, 'FM');
+            const serieTarget = body.serie_clave || 'F';
+            const serieFolio = await obtenerSiguienteFolioSerie(emisor.id, serieTarget);
 
             // 5. Crear Comprobante Pre-factura
             const nuevoComprobante = await prisma.comprobantes.create({

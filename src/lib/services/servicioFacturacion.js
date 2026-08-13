@@ -128,14 +128,28 @@ export async function obtenerOGenerarReceptorGenerico() {
 }
 
 // Obtener y reservar el siguiente Folio y Serie
-export async function obtenerSiguienteFolioSerie(emisorId) {
-    let serie = await prisma.series.findFirst({
-        where: {
-            emisor_id: BigInt(emisorId),
-            tipo_comprobante: 'I',
-            clave: 'F'
-        }
-    });
+export async function obtenerSiguienteFolioSerie(emisorId, clavePreferida = null) {
+    let serie = null;
+    
+    if (clavePreferida) {
+        serie = await prisma.series.findFirst({
+            where: {
+                emisor_id: BigInt(emisorId),
+                tipo_comprobante: 'I',
+                clave: clavePreferida
+            }
+        });
+    }
+
+    if (!serie) {
+        serie = await prisma.series.findFirst({
+            where: {
+                emisor_id: BigInt(emisorId),
+                tipo_comprobante: 'I'
+            },
+            orderBy: { id: 'asc' }
+        });
+    }
 
     if (!serie) {
         serie = await prisma.series.create({

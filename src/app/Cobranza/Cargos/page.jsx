@@ -74,7 +74,34 @@ export default function CargosPage() {
 
     // Selección
     const [cargoSeleccionado, setCargoSeleccionado] = useState(null);
-    const [emisorSeleccionado, setEmisorSeleccionado] = useState('');
+    const [emisorSeleccionado, setEmisorSeleccionado] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('cobranza_emisor_id') || '';
+        }
+        return '';
+    });
+    const [serieSeleccionada, setSerieSeleccionada] = useState('F');
+
+    const handleCambiarEmisorGlobal = async (newEmisorId) => {
+        setEmisorSeleccionado(newEmisorId);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('cobranza_emisor_id', newEmisorId.toString());
+        }
+        setSerieSeleccionada('F');
+
+        try {
+            await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'SET_EMISOR_PREDETERMINADO',
+                    emisor_id: newEmisorId
+                })
+            });
+        } catch (e) {
+            console.warn('Error guardando emisor predeterminado en DB:', e.message);
+        }
+    };
 
     const [saving, setSaving] = useState(false);
     const [enviandoCorreo, setEnviandoCorreo] = useState(false);
@@ -199,8 +226,17 @@ export default function CargosPage() {
                 : (resFact.emisores && Array.isArray(resFact.emisores) ? resFact.emisores : []);
 
             setEmisores(listaEmisoresFinal);
-            if (listaEmisoresFinal.length > 0 && !emisorSeleccionado) {
-                setEmisorSeleccionado(listaEmisoresFinal[0].id);
+            const savedEmisorId = typeof window !== 'undefined' ? localStorage.getItem('cobranza_emisor_id') : null;
+            const emisorExiste = listaEmisoresFinal.find(e => e.id.toString() === savedEmisorId?.toString());
+
+            if (emisorExiste) {
+                setEmisorSeleccionado(emisorExiste.id.toString());
+            } else if (listaEmisoresFinal.length > 0) {
+                const defaultId = listaEmisoresFinal[0].id.toString();
+                setEmisorSeleccionado(defaultId);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('cobranza_emisor_id', defaultId);
+                }
             }
         } catch (err) {
             console.error('Error cargando cargos:', err);
@@ -253,6 +289,12 @@ export default function CargosPage() {
 
     const handleAbrirFacturaManual = (cargo) => {
         setCargoSeleccionado(cargo);
+        const savedId = (typeof window !== 'undefined' ? localStorage.getItem('cobranza_emisor_id') : '') || emisorSeleccionado;
+        if (savedId) {
+            setEmisorSeleccionado(savedId.toString());
+        }
+        setSerieSeleccionada('F');
+        setError('');
         setOpenFacturaManualModal(true);
     };
 
@@ -269,7 +311,8 @@ export default function CargosPage() {
                 body: JSON.stringify({
                     tipo_facturacion: 'MANUAL_CARGO',
                     cargo_id: cargoSeleccionado.id,
-                    emisor_id: emisorSeleccionado
+                    emisor_id: emisorSeleccionado,
+                    serie_clave: serieSeleccionada || 'F'
                 })
             });
 
@@ -383,11 +426,36 @@ export default function CargosPage() {
                         borderRadius={2}
                         width={{ xs: "80%", md: "93%" }}
                     >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                                Fichas de Pago Emitidas y Referencias Módulo 10
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+                            <Box>
+                                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1b384a' }}>
+                                    Fichas de Pago Emitidas y Referencias Módulo 10
+                                </Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                    Control de Emisión Institucional y Facturación CFDI 4.0
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                                <TextField
+                                    select
+                                    size="small"
+                                    label="🏢 Razón Social Emisora Activa *"
+                                    value={emisorSeleccionado}
+                                    onChange={(e) => handleCambiarEmisorGlobal(e.target.value)}
+                                    sx={{ minWidth: 260, bgcolor: 'white' }}
+                                    helperText="Selección única persistente"
+                                >
+                                    {emisores.length === 0 ? (
+                                        <MenuItem value="">Cargando emisores...</MenuItem>
+                                    ) : (
+                                        emisores.map(e => (
+                                            <MenuItem key={e.id} value={e.id.toString()}>
+                                                🏢 {e.nombre} ({e.rfc})
+                                            </MenuItem>
+                                        ))
+                                    )}
+                                </TextField>
+
                                 <Button
                                     variant="contained"
                                     color="success"
@@ -667,7 +735,7 @@ export default function CargosPage() {
                                 Se emitirá inmediatamente una factura CFDI 4.0 manual asociada a la ficha de pago <strong>{cargoSeleccionado.referencia_bancaria}</strong> del alumno <strong>{cargoSeleccionado.alumno?.nombre} {cargoSeleccionado.alumno?.apellido_paterno}</strong> por un monto de <strong>${parseMonto(cargoSeleccionado.monto_total).toFixed(2)}</strong>.
                             </Typography>
                             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                            <FormControl fullWidth sx={{ mt: 1 }}>
+                            <FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
                                 <InputLabel id="emisor-manual-select-label">Razón Social Emisora (Universidad)</InputLabel>
                                 <Select
                                     labelId="emisor-manual-select-label"
@@ -684,6 +752,40 @@ export default function CargosPage() {
                                             </MenuItem>
                                         ))
                                     )}
+                                </Select>
+                            </FormControl>
+
+                            <FormControl fullWidth>
+                                <InputLabel id="serie-manual-select-label">Serie de Facturación CFDI *</InputLabel>
+                                <Select
+                                    labelId="serie-manual-select-label"
+                                    value={serieSeleccionada || 'F'}
+                                    label="Serie de Facturación CFDI *"
+                                    onChange={(e) => setSerieSeleccionada(e.target.value)}
+                                >
+                                    {(() => {
+                                        const emisorObj = emisores.find(e => e.id.toString() === emisorSeleccionado.toString());
+                                        const seriesEmisor = emisorObj && Array.isArray(emisorObj.series) ? emisorObj.series : [];
+                                        
+                                        if (seriesEmisor.length > 0) {
+                                            return seriesEmisor.map(s => (
+                                                <MenuItem key={s.id || s.clave} value={s.clave}>
+                                                    Serie {s.clave} - {s.descripcion || 'Serie de Facturación'} (Último folio: {s.ultimo_folio || 0})
+                                                </MenuItem>
+                                            ));
+                                        }
+
+                                        return [
+                                            { clave: 'F', desc: 'Serie F - Principal Colegiaturas (Predeterminada)' },
+                                            { clave: 'FM', desc: 'Serie FM - Facturación Manual Directa' },
+                                            { clave: 'FA', desc: 'Serie FA - Servicios Complementarios' },
+                                            { clave: 'FG', desc: 'Serie FG - Factura Global Público en General' }
+                                        ].map(s => (
+                                            <MenuItem key={s.clave} value={s.clave}>
+                                                {s.desc}
+                                            </MenuItem>
+                                        ));
+                                    })()}
                                 </Select>
                             </FormControl>
                         </Box>
