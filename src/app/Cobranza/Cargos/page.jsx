@@ -221,9 +221,9 @@ export default function CargosPage() {
             if (Array.isArray(resAlumnos)) setAlumnos(resAlumnos);
             if (Array.isArray(resProd)) setProductos(resProd);
             
-            const listaEmisoresFinal = emisoresEmpresas && emisoresEmpresas.length > 0 
-                ? emisoresEmpresas 
-                : (resFact.emisores && Array.isArray(resFact.emisores) ? resFact.emisores : []);
+            const listaEmisoresFinal = (resFact.emisores && Array.isArray(resFact.emisores) && resFact.emisores.length > 0)
+                ? resFact.emisores
+                : (emisoresEmpresas && Array.isArray(emisoresEmpresas) ? emisoresEmpresas : []);
 
             setEmisores(listaEmisoresFinal);
             const savedEmisorId = typeof window !== 'undefined' ? localStorage.getItem('cobranza_emisor_id') : null;

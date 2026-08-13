@@ -204,7 +204,7 @@ export async function GET(request) {
         const pendientesRFC = preFacturasFormatted.filter(p => !p.es_generico);
         const pendientesGlobal = preFacturasFormatted.filter(p => p.es_generico);
 
-        // 3. Obtener Emisores disponibles filtrados por grupo_id si aplica
+        // 3. Obtener Emisores disponibles (filtrar por grupo_id o fallback a todos los de DB)
         const whereEmisores = {
             NOT: { rfc: 'UHI950412XX1' }
         };
@@ -217,11 +217,19 @@ export async function GET(request) {
             `);
         } catch (e) {}
 
-        const emisores = await prisma.emisors.findMany({
+        let emisores = await prisma.emisors.findMany({
             where: whereEmisores,
             select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
             orderBy: { id: 'asc' }
         });
+
+        if (emisores.length === 0) {
+            emisores = await prisma.emisors.findMany({
+                where: { NOT: { rfc: 'UHI950412XX1' } },
+                select: { id: true, rfc: true, nombre: true, regimen_fiscal: true, grupo_id: true, plantilla_id: true, es_predeterminado: true, series: true },
+                orderBy: { id: 'asc' }
+            });
+        }
 
         let emisorPredeterminadoId = null;
         const predeterminado = emisores.find(e => e.es_predeterminado === true);
