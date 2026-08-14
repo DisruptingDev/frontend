@@ -262,7 +262,7 @@ export async function POST(request) {
             const alumnoActualizado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: { estatus: estatusNormalizado },
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             return NextResponse.json(serializeBigIntsAndDecimals(alumnoActualizado), { status: 200 });
@@ -275,15 +275,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Matrícula, Nombre, Apellido Paterno y Monto Mensual son obligatorios' }, { status: 400 });
         }
 
-        const searchParams = new URL(request.url).searchParams;
-        let activeGrupoId = grupo_id || searchParams.get('grupo_id') || request.headers.get('x-grupo-id');
-        if (!activeGrupoId && request.headers.get('authorization')) {
-            try {
-                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
-                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
-                activeGrupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
-            } catch (e) {}
-        }
+        let activeGrupoId = grupo_id || (await getGrupoIdFromRequest(request));
 
         let receptorId = null;
 
@@ -350,10 +342,14 @@ export async function POST(request) {
         if (alumno_id) {
             const original = await prisma.alumno.findUnique({ where: { id: BigInt(alumno_id) } });
 
+            if (!activeGrupoId && original?.grupo_id) {
+                dataAlumno.grupo_id = original.grupo_id;
+            }
+
             alumnoResultado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: dataAlumno,
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             if (original && Number(original.monto_personalizado) !== Number(dataAlumno.monto_personalizado)) {
@@ -369,7 +365,7 @@ export async function POST(request) {
         } else {
             alumnoResultado = await prisma.alumno.create({
                 data: dataAlumno,
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             await prisma.historialMontoAlumno.create({
