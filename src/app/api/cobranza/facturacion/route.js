@@ -245,12 +245,9 @@ export async function GET(request) {
         // 3. Obtener Emisores asignados al grupo del usuario o vista global de SuperAdmin
         const andFiltersEmisores = [{ NOT: { rfc: 'UHI950412XX1' } }];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            andFiltersEmisores.push({
-                OR: [
-                    { grupo_id: BigInt(grupoId) },
-                    { grupo_id: null }
-                ]
-            });
+            try {
+                andFiltersEmisores.push({ grupo_id: BigInt(grupoId) });
+            } catch(e) {}
         } else if (!isSuperUser) {
             andFiltersEmisores.push({ grupo_id: BigInt(-1) });
         }

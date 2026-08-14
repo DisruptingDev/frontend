@@ -68,7 +68,7 @@ export async function GET(request) {
         const alumnos = await prisma.alumno.findMany({
             where,
             include: {
-                receptors: true
+                receptor: true
             },
             orderBy: {
                 matricula: 'asc'
