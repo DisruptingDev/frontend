@@ -119,7 +119,7 @@ export async function GET(request) {
         const alumnos = await prisma.alumno.findMany({
             where,
             include: {
-                receptors: true
+                receptor: true
             },
             orderBy: {
                 matricula: 'asc'
@@ -160,7 +160,7 @@ export async function GET(request) {
 
         const alumnosFormatted = alumnos.map(a => ({
             ...a,
-            receptor: a.receptors || null,
+            receptor: a.receptor || null,
             programa_academico: a.programa_academico_id ? (programasMap[a.programa_academico_id.toString()] || null) : null,
             carrera: a.programa_academico_id ? (programasMap[a.programa_academico_id.toString()]?.nombre || a.carrera) : a.carrera,
             emisor: a.emisor_id ? (emisoresMap[a.emisor_id.toString()] || null) : null
@@ -195,6 +195,7 @@ export async function POST(request) {
             apellido_materno,
             email,
             telefono,
+            curp,
             carrera,
             semestre,
             estatus,
@@ -267,12 +268,12 @@ export async function POST(request) {
             const alumnoActualizado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: { estatus: estatusNormalizado },
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             const alumnoFormatted = {
                 ...alumnoActualizado,
-                receptor: alumnoActualizado.receptors || null
+                receptor: alumnoActualizado.receptor || null
             };
 
             return NextResponse.json(serializeBigIntsAndDecimals(alumnoFormatted), { status: 200 });
@@ -331,6 +332,7 @@ export async function POST(request) {
             apellido_materno: apellido_materno ? apellido_materno.trim() : null,
             email: email ? email.trim() : null,
             telefono: telefono ? telefono.trim() : null,
+            curp: curp ? curp.trim().toUpperCase() : null,
             carrera: carrera ? carrera.trim() : null,
             semestre: semestre ? parseInt(semestre) : 1,
             estatus: estatus ? estatus.trim().toUpperCase() : 'ACTIVO',
@@ -360,7 +362,7 @@ export async function POST(request) {
             alumnoResultado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: dataAlumno,
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             if (original && Number(original.monto_personalizado) !== Number(dataAlumno.monto_personalizado)) {
@@ -376,7 +378,7 @@ export async function POST(request) {
         } else {
             alumnoResultado = await prisma.alumno.create({
                 data: dataAlumno,
-                include: { receptors: true }
+                include: { receptor: true }
             });
 
             await prisma.historialMontoAlumno.create({
@@ -391,7 +393,7 @@ export async function POST(request) {
 
         const alumnoFinal = {
             ...alumnoResultado,
-            receptor: alumnoResultado.receptors || null
+            receptor: alumnoResultado.receptor || null
         };
 
         return NextResponse.json(serializeBigIntsAndDecimals(alumnoFinal), { status: 201 });

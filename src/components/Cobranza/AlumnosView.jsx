@@ -105,6 +105,7 @@ export default function AlumnosView() {
             "Apellido Materno",
             "Email",
             "Teléfono",
+            "CURP",
             "Carrera",
             "Semestre",
             "Monto Mensual",
@@ -129,6 +130,7 @@ export default function AlumnosView() {
                 "Apellido Materno": "López",
                 "Email": "juan.perez@example.com",
                 "Teléfono": "5551234567",
+                "CURP": "XAXX010101MDFXXX01",
                 "Carrera": "Ingeniería en Sistemas",
                 "Semestre": 3,
                 "Monto Mensual": 3500.00,
@@ -173,6 +175,7 @@ export default function AlumnosView() {
                     apellido_materno: String(row["Apellido Materno"] || row["apellido_materno"] || "").trim(),
                     email: String(row["Email"] || row["email"] || "").trim(),
                     telefono: String(row["Teléfono"] || row["telefono"] || "").trim(),
+                    curp: String(row["CURP"] || row["curp"] || "").trim().toUpperCase(),
                     carrera: String(row["Carrera"] || row["carrera"] || "").trim(),
                     semestre: parseInt(row["Semestre"] || row["semestre"] || "1"),
                     monto_personalizado: parseFloat(row["Monto Mensual"] || row["monto_mensual"] || "0"),
@@ -410,6 +413,7 @@ export default function AlumnosView() {
         apellido_materno: '',
         email: '',
         telefono: '',
+        curp: '',
         carrera: '',
         programa_academico_id: '',
         semestre: 1,
@@ -606,6 +610,7 @@ export default function AlumnosView() {
             apellido_materno: '',
             email: '',
             telefono: '',
+            curp: '',
             carrera: 'Ingeniería en Sistemas',
             semestre: 1,
             estatus: 'ACTIVO',
@@ -638,6 +643,7 @@ export default function AlumnosView() {
             apellido_materno: alum.apellido_materno || '',
             email: alum.email || '',
             telefono: alum.telefono || '',
+            curp: alum.curp || '',
             carrera: alum.carrera || '',
             programa_academico_id: alum.programa_academico_id ? alum.programa_academico_id.toString() : '',
             semestre: alum.semestre || 1,
@@ -930,7 +936,7 @@ export default function AlumnosView() {
                                                         </Typography>
                                                     </Box>
                                                     <Typography variant="caption" color="textSecondary">
-                                                        {alum.email || 'Sin correo electrónico'}
+                                                        {alum.email || 'Sin correo electrónico'}{alum.curp ? ` | CURP: ${alum.curp}` : ''}
                                                     </Typography>
                                                     {alum.ids_alumno && (
                                                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
@@ -1305,6 +1311,9 @@ export default function AlumnosView() {
                                     </Grid>
                                     <Grid item xs={12} sm={4}>
                                         <TextField label="Teléfono" name="telefono" fullWidth value={form.telefono} onChange={handleChange} />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField label="CURP Alumno" name="curp" fullWidth value={form.curp || ''} onChange={handleChange} placeholder="Ej. XAXX010101MDFXXX01" inputProps={{ maxLength: 18 }} />
                                     </Grid>
 
                                     <Grid item xs={12} sm={4}>

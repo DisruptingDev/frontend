@@ -116,6 +116,7 @@ export async function POST(request) {
                 const apellido_materno = a.apellido_materno ? String(a.apellido_materno).trim() : null;
                 const email = a.email ? String(a.email).trim() : null;
                 const telefono = a.telefono ? String(a.telefono).trim() : null;
+                const curp = a.curp ? String(a.curp).trim().toUpperCase() : null;
                 const carrera = a.carrera ? String(a.carrera).trim() : null;
                 const semestre = a.semestre ? parseInt(a.semestre) : 1;
                 const estatus = a.estatus ? String(a.estatus).trim().toUpperCase() : 'ACTIVO';
@@ -204,6 +205,7 @@ export async function POST(request) {
                         apellido_materno,
                         email,
                         telefono,
+                        curp,
                         carrera,
                         semestre,
                         estatus,
