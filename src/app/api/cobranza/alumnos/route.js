@@ -196,6 +196,16 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Matrícula, Nombre, Apellido Paterno y Monto Mensual son obligatorios' }, { status: 400 });
         }
 
+        const searchParams = new URL(request.url).searchParams;
+        let activeGrupoId = grupo_id || searchParams.get('grupo_id') || request.headers.get('x-grupo-id');
+        if (!activeGrupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                activeGrupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+
         let receptorId = null;
 
         if (requiere_factura && rfc && razon_social) {
@@ -211,7 +221,8 @@ export async function POST(request) {
                         domicilio_fiscal_receptor: codigo_postal || receptorExistente.domicilio_fiscal_receptor,
                         regimen_fiscal_receptor: regimen_fiscal || receptorExistente.regimen_fiscal_receptor,
                         uso_cfdi: uso_cfdi || receptorExistente.uso_cfdi,
-                        email: email || receptorExistente.email
+                        email: email || receptorExistente.email,
+                        grupo_id: activeGrupoId ? BigInt(activeGrupoId) : receptorExistente.grupo_id
                     }
                 });
                 receptorId = receptorActualizado.id;
@@ -224,7 +235,7 @@ export async function POST(request) {
                         regimen_fiscal_receptor: regimen_fiscal || '605',
                         uso_cfdi: uso_cfdi || 'S01',
                         email: email || null,
-                        grupo_id: grupo_id ? BigInt(grupo_id) : null
+                        grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null
                     }
                 });
                 receptorId = nuevoReceptor.id;
@@ -248,7 +259,7 @@ export async function POST(request) {
             requiere_factura: Boolean(requiere_factura),
             receptor_id: receptorId,
             emisor_id: emisor_id ? BigInt(emisor_id) : null,
-            grupo_id: grupo_id ? BigInt(grupo_id) : null,
+            grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null,
             programa_academico_id: programa_academico_id ? BigInt(programa_academico_id) : null,
             monto_personalizado: parseFloat(monto_personalizado)
         };

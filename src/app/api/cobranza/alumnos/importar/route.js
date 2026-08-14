@@ -42,6 +42,16 @@ export async function POST(request) {
         let creados = 0;
         const errores = [];
 
+        const searchParams = new URL(request.url).searchParams;
+        let activeGrupoId = body.grupo_id || searchParams.get('grupo_id') || request.headers.get('x-grupo-id');
+        if (!activeGrupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                activeGrupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+
         for (const [index, a] of alumnos.entries()) {
             const rowNumber = index + 2; // Rows are 1-based, plus header row is row 1.
             try {
@@ -109,7 +119,8 @@ export async function POST(request) {
                                 domicilio_fiscal_receptor: codigo_postal || receptorExistente.domicilio_fiscal_receptor,
                                 regimen_fiscal_receptor: regimen_fiscal || receptorExistente.regimen_fiscal_receptor,
                                 uso_cfdi: uso_cfdi || receptorExistente.uso_cfdi,
-                                email: email || receptorExistente.email
+                                email: email || receptorExistente.email,
+                                grupo_id: activeGrupoId ? BigInt(activeGrupoId) : receptorExistente.grupo_id
                             }
                         });
                         receptorId = receptorActualizado.id;
@@ -121,7 +132,8 @@ export async function POST(request) {
                                 domicilio_fiscal_receptor: codigo_postal || null,
                                 regimen_fiscal_receptor: regimen_fiscal,
                                 uso_cfdi,
-                                email
+                                email,
+                                grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null
                             }
                         });
                         receptorId = nuevoReceptor.id;
@@ -146,6 +158,7 @@ export async function POST(request) {
                         ids_alumno,
                         requiere_factura,
                         receptor_id: receptorId,
+                        grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null,
                         monto_personalizado,
                         dia_pago,
                         programa_academico_id: programaAcademicoId

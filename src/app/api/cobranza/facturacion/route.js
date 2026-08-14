@@ -173,7 +173,7 @@ export async function GET(request) {
                 alumno_email: alumno?.email || comp.receptors?.email || 'estudiante@universidad.edu.mx',
                 carrera: alumno?.carrera || 'General',
                 receptor_id: comp.receptors?.id?.toString() || null,
-                receptor_nombre: comp.receptors?.nombre || 'PUBLICO EN GENERAL',
+                receptor_nombre: (esRFCGenerico && alumno) ? `${alumno.nombre} ${alumno.apellido_paterno} ${alumno.apellido_materno || ''}`.trim() : (comp.receptors?.nombre || 'PUBLICO EN GENERAL'),
                 receptor_rfc: comp.receptors?.rfc || 'XAXX010101000',
                 uso_cfdi: comp.uso_cfdi || comp.receptors?.uso_cfdi || 'S01',
                 descripcion_concepto: primerConcepto?.descripcion || (itemsFinal.length > 0 ? itemsFinal.map(it => `${it.concepto} ($${Number(it.monto).toFixed(2)})`).join(', ') : (pago?.cargo?.concepto?.nombre ? `Pago de Colegiatura - ${alumno ? `${alumno.nombre} ${alumno.apellido_paterno}` : ''}` : 'Colegiatura y Servicios Educativos Integrales')),
@@ -198,8 +198,11 @@ export async function GET(request) {
                 concepto: p.cargo?.concepto?.nombre || 'Colegiatura'
             }));
 
+            const primerAlumno = alumnosList.length > 0 ? alumnosList[0] : null;
+            const esRFCGen = comp.receptors?.rfc === 'XAXX010101000';
+
             let tipoCFDI = 'Factura Individual Estudiante';
-            if (comp.serie === 'FG' || comp.receptors?.rfc === 'XAXX010101000') {
+            if (comp.serie === 'FG' || esRFCGen) {
                 tipoCFDI = 'Factura Individual (RFC Genérico Público en General)';
             } else if (comp.serie === 'FM') {
                 tipoCFDI = 'Factura Manual Estudiante';
@@ -213,7 +216,7 @@ export async function GET(request) {
                 tipo_cfdi: tipoCFDI,
                 emisor_nombre: comp.emisors?.nombre || 'Razón Social Emisora',
                 emisor_rfc: comp.emisors?.rfc || '',
-                receptor_nombre: comp.receptors?.nombre || 'PUBLICO EN GENERAL',
+                receptor_nombre: (esRFCGen && primerAlumno) ? primerAlumno.nombre_completo : (comp.receptors?.nombre || 'PUBLICO EN GENERAL'),
                 receptor_rfc: comp.receptors?.rfc || 'XAXX010101000',
                 total: Number(comp.total),
                 estatus: 'TIMBRADO',

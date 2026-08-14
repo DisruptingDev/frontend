@@ -614,10 +614,24 @@ export default function AlumnosView() {
         setError('');
 
         try {
+            let activeGrupoId = '';
+            if (typeof window !== 'undefined') {
+                const storedUser = localStorage.getItem('usuario');
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        activeGrupoId = parsed.grupo_id || parsed.grupoId || '';
+                    } catch (e) {}
+                }
+                if (!activeGrupoId) activeGrupoId = localStorage.getItem('grupo_id') || '';
+            }
+
+            const payload = { ...form, grupo_id: activeGrupoId };
+
             const res = await fetch('/api/cobranza/alumnos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
