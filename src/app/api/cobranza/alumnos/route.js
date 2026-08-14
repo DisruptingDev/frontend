@@ -22,7 +22,18 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
-async function getGrupoIdFromRequest(request) {
+async function getGrupoIdFromRequest(request, body = null) {
+    let activeGrupoId = body?.grupo_id || body?.grupoId;
+    if (activeGrupoId && activeGrupoId !== 'undefined' && activeGrupoId !== 'null') {
+        return activeGrupoId.toString();
+    }
+
+    const { searchParams } = new URL(request.url);
+    let grupoIdParam = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+    if (grupoIdParam && grupoIdParam !== 'undefined' && grupoIdParam !== 'null') {
+        return grupoIdParam;
+    }
+
     const authHeader = request.headers.get('authorization');
     let tokenGrupoId = null;
     let dbGrupoId = null;
@@ -71,12 +82,6 @@ async function getGrupoIdFromRequest(request) {
         return dbGrupoId;
     }
 
-    const { searchParams } = new URL(request.url);
-    let grupoIdParam = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
-    if (grupoIdParam && grupoIdParam !== 'undefined' && grupoIdParam !== 'null') {
-        return grupoIdParam;
-    }
-
     return null;
 }
 
@@ -114,7 +119,7 @@ export async function GET(request) {
         const alumnos = await prisma.alumno.findMany({
             where,
             include: {
-                receptor: true
+                receptors: true
             },
             orderBy: {
                 matricula: 'asc'
@@ -262,10 +267,15 @@ export async function POST(request) {
             const alumnoActualizado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: { estatus: estatusNormalizado },
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
-            return NextResponse.json(serializeBigIntsAndDecimals(alumnoActualizado), { status: 200 });
+            const alumnoFormatted = {
+                ...alumnoActualizado,
+                receptor: alumnoActualizado.receptors || null
+            };
+
+            return NextResponse.json(serializeBigIntsAndDecimals(alumnoFormatted), { status: 200 });
         }
 
         // =========================================================================
@@ -275,13 +285,14 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Matrícula, Nombre, Apellido Paterno y Monto Mensual son obligatorios' }, { status: 400 });
         }
 
-        let activeGrupoId = grupo_id || (await getGrupoIdFromRequest(request));
+        let activeGrupoId = await getGrupoIdFromRequest(request, body);
 
         let receptorId = null;
 
         if (requiere_factura && rfc && razon_social) {
+            const rfcTrimmed = rfc.trim().toUpperCase();
             const receptorExistente = await prisma.receptors.findFirst({
-                where: { rfc: rfc.trim().toUpperCase() }
+                where: { rfc: rfcTrimmed }
             });
 
             if (receptorExistente) {
@@ -300,11 +311,11 @@ export async function POST(request) {
             } else {
                 const nuevoReceptor = await prisma.receptors.create({
                     data: {
-                        rfc: rfc.trim().toUpperCase(),
+                        rfc: rfcTrimmed,
                         nombre: razon_social.trim(),
                         domicilio_fiscal_receptor: codigo_postal || null,
                         regimen_fiscal_receptor: regimen_fiscal || '605',
-                        uso_cfdi: uso_cfdi || 'S01',
+                        uso_cfdi: uso_cfdi || 'D10',
                         email: email || null,
                         grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null
                     }
@@ -349,7 +360,7 @@ export async function POST(request) {
             alumnoResultado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: dataAlumno,
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
             if (original && Number(original.monto_personalizado) !== Number(dataAlumno.monto_personalizado)) {
@@ -365,7 +376,7 @@ export async function POST(request) {
         } else {
             alumnoResultado = await prisma.alumno.create({
                 data: dataAlumno,
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
             await prisma.historialMontoAlumno.create({
@@ -378,7 +389,12 @@ export async function POST(request) {
             });
         }
 
-        return NextResponse.json(serializeBigIntsAndDecimals(alumnoResultado), { status: 201 });
+        const alumnoFinal = {
+            ...alumnoResultado,
+            receptor: alumnoResultado.receptors || null
+        };
+
+        return NextResponse.json(serializeBigIntsAndDecimals(alumnoFinal), { status: 201 });
 
     } catch (error) {
         console.error('Error creating/updating alumno:', error);

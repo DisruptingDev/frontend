@@ -262,10 +262,40 @@ export default function AlumnosView() {
         setImportSuccessMessage('');
 
         try {
+            let token = '';
+            let grupoId = '';
+            if (typeof window !== 'undefined') {
+                token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+                if (token) {
+                    try {
+                        const payloadStr = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+                        const payload = JSON.parse(payloadStr);
+                        grupoId = payload.grupo_id || payload.grupoId || payload.GrupoID || '';
+                    } catch (e) {}
+                }
+                if (!grupoId) {
+                    const storedUser = localStorage.getItem('usuario');
+                    if (storedUser) {
+                        try {
+                            const parsed = JSON.parse(storedUser);
+                            grupoId = parsed.grupo_id || parsed.grupoId || '';
+                        } catch (e) {}
+                    }
+                }
+                if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
+            }
+
             const res = await fetch('/api/cobranza/alumnos/importar', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ alumnos: importRows })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'x-grupo-id': grupoId || ''
+                },
+                body: JSON.stringify({
+                    alumnos: importRows,
+                    grupo_id: grupoId
+                })
             });
 
             const data = await res.json();
@@ -652,14 +682,25 @@ export default function AlumnosView() {
         setError('');
 
         try {
+            let token = '';
             let activeGrupoId = '';
             if (typeof window !== 'undefined') {
-                const storedUser = localStorage.getItem('usuario');
-                if (storedUser) {
+                token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+                if (token) {
                     try {
-                        const parsed = JSON.parse(storedUser);
-                        activeGrupoId = parsed.grupo_id || parsed.grupoId || '';
+                        const payloadStr = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+                        const payload = JSON.parse(payloadStr);
+                        activeGrupoId = payload.grupo_id || payload.grupoId || payload.GrupoID || '';
                     } catch (e) {}
+                }
+                if (!activeGrupoId) {
+                    const storedUser = localStorage.getItem('usuario');
+                    if (storedUser) {
+                        try {
+                            const parsed = JSON.parse(storedUser);
+                            activeGrupoId = parsed.grupo_id || parsed.grupoId || '';
+                        } catch (e) {}
+                    }
                 }
                 if (!activeGrupoId) activeGrupoId = localStorage.getItem('grupo_id') || '';
             }
@@ -668,7 +709,11 @@ export default function AlumnosView() {
 
             const res = await fetch('/api/cobranza/alumnos', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'x-grupo-id': activeGrupoId || ''
+                },
                 body: JSON.stringify(payload)
             });
 

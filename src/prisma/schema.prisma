@@ -772,6 +772,7 @@ model Alumno {
   referencia_pago       String?
   ids_alumno            String?
   informacion_pago      String?
+  curp                  String?
   programa_academico_id BigInt?
   programa_academico    ProgramaAcademico?     @relation(fields: [programa_academico_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_programa_academico")
   ConceptoCobro         ConceptoCobro?         @relation(fields: [concepto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_alumno_concepto")
