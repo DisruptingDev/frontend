@@ -472,8 +472,16 @@ export default function AlumnosView() {
 
             // 2. Cargar Alumnos asociados al grupo del usuario o vista global SuperAdmin
             const urlAlum = `/api/cobranza/alumnos${qStr}`;
-            const resAlum = await fetch(urlAlum).then(r => r.json()).catch(() => []);
-            if (Array.isArray(resAlum)) setAlumnos(resAlum);
+            const resAlum = await fetch(urlAlum).then(r => r.json()).catch(err => {
+                console.error("Fetch API error en alumnos:", err);
+                return [];
+            });
+            console.log("Respuesta de /api/cobranza/alumnos:", resAlum);
+            if (Array.isArray(resAlum)) {
+                setAlumnos(resAlum);
+            } else {
+                console.error("resAlum NO es un arreglo:", resAlum);
+            }
 
             // 3. Cargar Programas Académicos asociados al grupo del usuario
             const urlProg = `/api/cobranza/programas${qStr}`;

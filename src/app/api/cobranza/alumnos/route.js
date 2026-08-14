@@ -38,6 +38,12 @@ export async function GET(request) {
         const carrera = searchParams.get('carrera');
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
+        
+        // Sanitizar grupoId para evitar strings literales 'undefined' o 'null'
+        if (grupoId === 'undefined' || grupoId === 'null') {
+            grupoId = null;
+        }
+
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 
                             request.headers.get('x-super-user') === 'true' ||
@@ -45,7 +51,11 @@ export async function GET(request) {
 
         const andFiltersAlumnos = [];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            andFiltersAlumnos.push({ grupo_id: BigInt(grupoId) });
+            try {
+                andFiltersAlumnos.push({ grupo_id: BigInt(grupoId) });
+            } catch (err) {
+                console.error("Error convirtiendo grupoId a BigInt:", grupoId);
+            }
         } else if (!isSuperUser) {
             andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
