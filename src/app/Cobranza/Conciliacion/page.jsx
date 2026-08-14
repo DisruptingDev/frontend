@@ -116,38 +116,85 @@ export default function ConciliacionPage() {
                     if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
                 }
 
+                const reqHeaders = {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'x-grupo-id': grupoId || ''
+                };
+
                 // 1. Cargar Emisores de forma rápida desde API local con grupo_id
                 const urlFact = grupoId ? `/api/cobranza/facturacion?grupo_id=${grupoId}` : '/api/cobranza/facturacion';
-                const resFact = await fetch(urlFact);
+                const resFact = await fetch(urlFact, { headers: reqHeaders });
                 const dataFact = await resFact.json();
-                const emisoresList = dataFact.emisores || [];
+                let emisoresList = dataFact.emisores || [];
+
+                // Fallback a API de catálogos si no hay emisores locales
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                if (emisoresList.length === 0 && token && apiUrl) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 2500);
+                        const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        if (resEmp.ok) {
+                            const dataEmp = await resEmp.json();
+                            if (Array.isArray(dataEmp)) {
+                                emisoresList = dataEmp.map(e => ({
+                                    id: (e.ID || e.id).toString(),
+                                    rfc: e.Rfc || e.rfc,
+                                    nombre: e.Nombre || e.nombre,
+                                    regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
+                                }));
+                            }
+                        }
+                    } catch (e) {}
+                }
 
                 setEmisores(emisoresList);
 
+                // Validar de forma estricta que idPref de localStorage corresponda a la lista de emisores autorizados
                 let idPref = null;
                 if (typeof window !== 'undefined') {
                     idPref = localStorage.getItem('emisor_id_predeterminado');
                 }
+
+                const existeEnLista = idPref && emisoresList.some(e => e.id.toString() === idPref.toString());
+                if (!existeEnLista) {
+                    idPref = null;
+                }
+
                 if (!idPref && dataFact.emisor_predeterminado_id) {
-                    idPref = dataFact.emisor_predeterminado_id;
+                    const emisorPredValido = emisoresList.find(e => e.id.toString() === dataFact.emisor_predeterminado_id.toString());
+                    if (emisorPredValido) {
+                        idPref = emisorPredValido.id;
+                    }
                 }
                 if (!idPref && emisoresList.length > 0) {
                     const dbPred = emisoresList.find(e => e.es_predeterminado === true);
                     idPref = dbPred ? dbPred.id : emisoresList[0].id;
                 }
+
                 if (idPref) {
-                    setEmisorSeleccionado(idPref.toString());
+                    const finalIdStr = idPref.toString();
+                    setEmisorSeleccionado(finalIdStr);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('emisor_id_predeterminado', finalIdStr);
+                    }
+                } else {
+                    setEmisorSeleccionado('');
                 }
 
                 // 2. Cargar Alumnos
                 const urlAlum = grupoId ? `/api/cobranza/alumnos?grupo_id=${grupoId}` : '/api/cobranza/alumnos';
-                const resAlum = await fetch(urlAlum);
+                const resAlum = await fetch(urlAlum, { headers: reqHeaders });
                 const dataAlum = await resAlum.json();
                 if (Array.isArray(dataAlum)) setAlumnos(dataAlum);
 
                 // 3. Cargar Cargos Pendientes del grupo
                 const urlCargos = grupoId ? `/api/cobranza/cargos?grupo_id=${grupoId}` : '/api/cobranza/cargos';
-                const resCargos = await fetch(urlCargos);
+                const resCargos = await fetch(urlCargos, { headers: reqHeaders });
                 const dataCargos = await resCargos.json();
                 if (Array.isArray(dataCargos)) {
                     setCargosPendientesGlobales(dataCargos.filter(c => c.estatus === 'PENDIENTE' || c.estatus === 'PARCIAL'));

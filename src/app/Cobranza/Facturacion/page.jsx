@@ -97,7 +97,7 @@ export default function FacturacionCobranzaPage() {
     const [loading, setLoading] = useState(true);
     const [emisores, setEmisores] = useState([]);
     const [emisorSeleccionado, setEmisorSeleccionado] = useState('');
-    
+
     const [preFacturas, setPreFacturas] = useState([]);
     const [facturasEmitidas, setFacturasEmitidas] = useState([]);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -167,7 +167,7 @@ export default function FacturacionCobranzaPage() {
                     try {
                         const parsed = JSON.parse(storedUser);
                         grupoId = parsed.grupo_id || parsed.grupoId || '';
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
@@ -176,22 +176,61 @@ export default function FacturacionCobranzaPage() {
             const queryParams = [];
             if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
             if (isSuper) queryParams.push(`is_superadmin=true`);
-            const qStr = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+            const reqHeaders = {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'x-grupo-id': grupoId || ''
+            };
 
             const url = `/api/cobranza/facturacion${qStr}`;
-            const res = await fetch(url);
+            const res = await fetch(url, { headers: reqHeaders });
             const data = await res.json();
 
-            const listaEmisoresFinal = data.emisores && Array.isArray(data.emisores) ? data.emisores : [];
+            let listaEmisoresFinal = data.emisores && Array.isArray(data.emisores) ? data.emisores : [];
+
+            // Fallback secundario a API externa de catálogos si localmente no devolvió emisores
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            if (listaEmisoresFinal.length === 0 && token && apiUrl) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    if (resEmp.ok) {
+                        const dataEmp = await resEmp.json();
+                        if (Array.isArray(dataEmp)) {
+                            listaEmisoresFinal = dataEmp.map(e => ({
+                                id: (e.ID || e.id).toString(),
+                                rfc: e.Rfc || e.rfc,
+                                nombre: e.Nombre || e.nombre,
+                                regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
+                            }));
+                        }
+                    }
+                } catch (e) {}
+            }
 
             setEmisores(listaEmisoresFinal);
-            
+
+            // Validar de forma estricta que idPref de localStorage corresponda a los emisores del usuario actual
             let idPref = null;
             if (typeof window !== 'undefined') {
                 idPref = localStorage.getItem('emisor_id_predeterminado');
             }
+
+            const existeEnLista = idPref && listaEmisoresFinal.some(e => e.id.toString() === idPref.toString());
+
+            if (!existeEnLista) {
+                idPref = null;
+            }
+
             if (!idPref && data.emisor_predeterminado_id) {
-                idPref = data.emisor_predeterminado_id;
+                const emisorPredValido = listaEmisoresFinal.find(e => e.id.toString() === data.emisor_predeterminado_id.toString());
+                if (emisorPredValido) {
+                    idPref = emisorPredValido.id;
+                }
             }
             if (!idPref && listaEmisoresFinal.length > 0) {
                 const emisorDbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
@@ -199,7 +238,13 @@ export default function FacturacionCobranzaPage() {
             }
 
             if (idPref) {
-                setEmisorSeleccionado(idPref.toString());
+                const finalIdStr = idPref.toString();
+                setEmisorSeleccionado(finalIdStr);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('emisor_id_predeterminado', finalIdStr);
+                }
+            } else {
+                setEmisorSeleccionado('');
             }
 
             if (Array.isArray(data.pre_facturas)) setPreFacturas(data.pre_facturas);
@@ -222,7 +267,7 @@ export default function FacturacionCobranzaPage() {
                 try {
                     const parsed = JSON.parse(storedUser);
                     grupoId = parsed.grupo_id || parsed.grupoId || '';
-                } catch (e) {}
+                } catch (e) { }
             }
             if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
         }
@@ -266,7 +311,7 @@ export default function FacturacionCobranzaPage() {
     // EDITAR PRE-FACTURA Y CONCEPTOS (MODAL DIRECTO)
     const handleAbrirEditar = (preFactura) => {
         if (!preFactura || !preFactura.id) return;
-        
+
         let initialItems = [{ concepto: preFactura.descripcion_concepto || 'Mensualidad', monto: preFactura.monto || 0 }];
         if (preFactura.items && Array.isArray(preFactura.items) && preFactura.items.length > 0) {
             initialItems = preFactura.items.map(it => ({ concepto: it.concepto || it.descripcion, monto: it.monto || it.valor_unitario }));
@@ -509,7 +554,7 @@ export default function FacturacionCobranzaPage() {
 
     const preFacturasFiltradas = preFacturas.filter(filterItem);
     const facturasEmitidasFiltradas = facturasEmitidas.filter(filterItem);
-    
+
     // Lista unificada para la pestaña 0 (Todas)
     const todasFacturas = [
         ...preFacturasFiltradas.map(p => ({ ...p, es_borrador: true })),
@@ -519,619 +564,619 @@ export default function FacturacionCobranzaPage() {
     return (
         <WithPermission permission="PAGOS_VER" fallback={<AccesoDenegado />}>
             <div>
-            <Header title="Visor Unificado de Facturación y CFDI 4.0 - Módulo Cobranza" />
-            <Grid container>
-                <Grid item>
-                    <SideBarMenu />
-                </Grid>
-                <Grid item xs>
-                    <Box
-                        bgcolor="white"
-                        ml={{ xs: 10, md: 10 }}
-                        mr={2}
-                        mt={2}
-                        p={3}
-                        boxShadow={3}
-                        borderRadius={2}
-                        width={{ xs: "80%", md: "93%" }}
-                    >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                            <Box>
-                                <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1b384a' }}>
-                                    Visor Principal de Facturas y Pre-facturas de Cobranza
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                    Consolidado de facturación automática por conciliación: Edita conceptos, timbra con 1-Clic o elimina borradores.
-                                </Typography>
-                            </Box>
-                        </Box>
-
-                        <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f8fafc' }}>
-                            <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <BusinessIcon color="primary" sx={{ fontSize: 36 }} />
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel id="emisor-select-label">Razón Social Emisora (Módulo de Empresas)</InputLabel>
-                                        <Select
-                                            labelId="emisor-select-label"
-                                            value={emisorSeleccionado}
-                                            label="Razón Social Emisora (Módulo de Empresas)"
-                                            onChange={(e) => handleCambiarEmisor(e.target.value)}
-                                        >
-                                            {emisores.length === 0 ? (
-                                                <MenuItem value="">Sin Emisores configurados en su cuenta</MenuItem>
-                                            ) : (
-                                                emisores.map(e => (
-                                                    <MenuItem key={e.id} value={e.id}>
-                                                        {e.rfc} - {e.nombre} ({getDescripcionRegimen(e.regimen_fiscal || '601')})
-                                                    </MenuItem>
-                                                ))
-                                            )}
-                                        </Select>
-                                    </FormControl>
+                <Header title="Visor Unificado de Facturación y CFDI 4.0 - Módulo Cobranza" />
+                <Grid container>
+                    <Grid item>
+                        <SideBarMenu />
+                    </Grid>
+                    <Grid item xs>
+                        <Box
+                            bgcolor="white"
+                            ml={{ xs: 10, md: 10 }}
+                            mr={2}
+                            mt={2}
+                            p={3}
+                            boxShadow={3}
+                            borderRadius={2}
+                            width={{ xs: "80%", md: "93%" }}
+                        >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                                <Box>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1b384a' }}>
+                                        Visor Principal de Facturas y Pre-facturas de Cobranza
+                                    </Typography>
+                                    <Typography variant="body2" color="textSecondary">
+                                        Consolidado de facturación automática por conciliación: Edita conceptos, timbra con 1-Clic o elimina borradores.
+                                    </Typography>
                                 </Box>
-                            </CardContent>
-                        </Card>
-
-                        {mensaje && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensaje('')}>{mensaje}</Alert>}
-                        {error && <Alert severity="error" sx={{ mb: 2, fontWeight: 'bold' }} onClose={() => setError('')}>{error}</Alert>}
-
-                        {/* BARRA DE BÚSQUEDA Y NAVEGACIÓN */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
-                            <Tabs value={tab} onChange={(e, val) => setTab(val)}>
-                                <Tab label={`Todas las Facturas (${todasFacturas.length})`} icon={<ListAltIcon />} iconPosition="start" />
-                                <Tab label={`Pre-facturas Pendientes (${preFacturasFiltradas.length})`} icon={<PendingIcon color="warning" />} iconPosition="start" />
-                                <Tab label={`Facturas Timbradas SAT (${facturasEmitidasFiltradas.length})`} icon={<CheckIcon color="success" />} iconPosition="start" />
-                            </Tabs>
-
-                            <TextField
-                                size="small"
-                                placeholder="Buscar por Folio, Alumno, RFC o Matrícula..."
-                                value={busqueda}
-                                onChange={(e) => setBusqueda(e.target.value)}
-                                sx={{ minWidth: 320 }}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                        </Box>
-
-                        {loading ? (
-                            <Box display="flex" justifyContent="center" p={5}>
-                                <CircularProgress />
                             </Box>
-                        ) : tab === 0 ? (
-                            /* PESTAÑA 0: TODAS LAS FACTURAS */
-                            <Card elevation={3}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6" fontWeight="bold">
-                                            Visor General de Comprobantes (Borradores y Timbradas SAT)
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            color="success"
-                                            size="medium"
-                                            disabled={procesando || preFacturas.length === 0}
-                                            onClick={handleTimbrarMasivo}
-                                            startIcon={procesando ? <CircularProgress size={20} color="inherit" /> : <FlashIcon />}
-                                            sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                        >
-                                            {procesando ? 'Procesando...' : `⚡ Timbrar Masivo (${selectedIds.length > 0 ? selectedIds.length : preFacturas.length})`}
-                                        </Button>
-                                    </Box>
 
-                                    <TableContainer component={Paper} variant="outlined">
-                                        <Table size="small">
-                                            <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                                                <TableRow>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie-Folio</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante / Matrícula</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor Fiscal (RFC - Nombre)</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Concepto</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Total</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {todasFacturas.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
-                                                            No se encontraron facturas o pre-facturas registradas.
-                                                        </TableCell>
-                                                    </TableRow>
+                            <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f8fafc' }}>
+                                <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <BusinessIcon color="primary" sx={{ fontSize: 36 }} />
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel id="emisor-select-label">Razón Social Emisora (Módulo de Empresas)</InputLabel>
+                                            <Select
+                                                labelId="emisor-select-label"
+                                                value={emisorSeleccionado}
+                                                label="Razón Social Emisora (Módulo de Empresas)"
+                                                onChange={(e) => handleCambiarEmisor(e.target.value)}
+                                            >
+                                                {emisores.length === 0 ? (
+                                                    <MenuItem value="">Sin Emisores configurados en su cuenta</MenuItem>
                                                 ) : (
-                                                    todasFacturas.map(item => (
-                                                        <TableRow key={item.id} hover>
-                                                            <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                                                                {item.serie}-{item.folio}
+                                                    emisores.map(e => (
+                                                        <MenuItem key={e.id} value={e.id}>
+                                                            {e.rfc} - {e.nombre} ({getDescripcionRegimen(e.regimen_fiscal || '601')})
+                                                        </MenuItem>
+                                                    ))
+                                                )}
+                                            </Select>
+                                        </FormControl>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+
+                            {mensaje && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensaje('')}>{mensaje}</Alert>}
+                            {error && <Alert severity="error" sx={{ mb: 2, fontWeight: 'bold' }} onClose={() => setError('')}>{error}</Alert>}
+
+                            {/* BARRA DE BÚSQUEDA Y NAVEGACIÓN */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
+                                <Tabs value={tab} onChange={(e, val) => setTab(val)}>
+                                    <Tab label={`Todas las Facturas (${todasFacturas.length})`} icon={<ListAltIcon />} iconPosition="start" />
+                                    <Tab label={`Pre-facturas Pendientes (${preFacturasFiltradas.length})`} icon={<PendingIcon color="warning" />} iconPosition="start" />
+                                    <Tab label={`Facturas Timbradas SAT (${facturasEmitidasFiltradas.length})`} icon={<CheckIcon color="success" />} iconPosition="start" />
+                                </Tabs>
+
+                                <TextField
+                                    size="small"
+                                    placeholder="Buscar por Folio, Alumno, RFC o Matrícula..."
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    sx={{ minWidth: 320 }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                />
+                            </Box>
+
+                            {loading ? (
+                                <Box display="flex" justifyContent="center" p={5}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : tab === 0 ? (
+                                /* PESTAÑA 0: TODAS LAS FACTURAS */
+                                <Card elevation={3}>
+                                    <CardContent sx={{ p: 2 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                            <Typography variant="h6" fontWeight="bold">
+                                                Visor General de Comprobantes (Borradores y Timbradas SAT)
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                size="medium"
+                                                disabled={procesando || preFacturas.length === 0}
+                                                onClick={handleTimbrarMasivo}
+                                                startIcon={procesando ? <CircularProgress size={20} color="inherit" /> : <FlashIcon />}
+                                                sx={{ fontWeight: 'bold', textTransform: 'none' }}
+                                            >
+                                                {procesando ? 'Procesando...' : `⚡ Timbrar Masivo (${selectedIds.length > 0 ? selectedIds.length : preFacturas.length})`}
+                                            </Button>
+                                        </Box>
+
+                                        <TableContainer component={Paper} variant="outlined">
+                                            <Table size="small">
+                                                <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                                                    <TableRow>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie-Folio</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante / Matrícula</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor Fiscal (RFC - Nombre)</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Concepto</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Total</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {todasFacturas.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
+                                                                No se encontraron facturas o pre-facturas registradas.
                                                             </TableCell>
-                                                            <TableCell>{new Date(item.fecha).toLocaleDateString('es-MX')}</TableCell>
-                                                            <TableCell>
-                                                                <Typography variant="body2" fontWeight="bold">
-                                                                    {item.alumno_nombre || (item.alumnos?.[0]?.nombre_completo) || 'Estudiante'}
-                                                                </Typography>
-                                                                <Typography variant="caption" color="textSecondary">
-                                                                    {item.alumno_matricula || (item.alumnos?.[0]?.matricula) || 'N/A'} - {item.carrera || 'General'}
-                                                                </Typography>
+                                                        </TableRow>
+                                                    ) : (
+                                                        todasFacturas.map(item => (
+                                                            <TableRow key={item.id} hover>
+                                                                <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                                                    {item.serie}-{item.folio}
+                                                                </TableCell>
+                                                                <TableCell>{new Date(item.fecha).toLocaleDateString('es-MX')}</TableCell>
+                                                                <TableCell>
+                                                                    <Typography variant="body2" fontWeight="bold">
+                                                                        {item.alumno_nombre || (item.alumnos?.[0]?.nombre_completo) || 'Estudiante'}
+                                                                    </Typography>
+                                                                    <Typography variant="caption" color="textSecondary">
+                                                                        {item.alumno_matricula || (item.alumnos?.[0]?.matricula) || 'N/A'} - {item.carrera || 'General'}
+                                                                    </Typography>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                                        {item.receptor_rfc}
+                                                                    </Typography>
+                                                                    <Typography variant="caption" display="block">
+                                                                        {item.receptor_nombre}
+                                                                    </Typography>
+                                                                </TableCell>
+                                                                <TableCell sx={{ maxWidth: 200 }}>
+                                                                    <Typography variant="body2" noWrap title={item.descripcion_concepto}>
+                                                                        {item.descripcion_concepto || 'Colegiatura y Servicios Educativos'}
+                                                                    </Typography>
+                                                                </TableCell>
+                                                                <TableCell sx={{ fontWeight: 'bold', color: item.es_borrador ? 'warning.main' : 'success.main' }}>
+                                                                    ${parseMonto(item.monto || item.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {item.es_borrador ? (
+                                                                        <Chip label="PRE-FACTURA (BORRADOR)" color="warning" size="small" variant="outlined" />
+                                                                    ) : (
+                                                                        <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
+                                                                    )}
+                                                                </TableCell>
+                                                                <TableCell align="center">
+                                                                    {item.es_borrador ? (
+                                                                        <>
+                                                                            <Tooltip title="Editar Pre-factura (Concepto, Monto, RFC)">
+                                                                                <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(item)}>
+                                                                                    <EditIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                            <Tooltip title="Timbrar esta Pre-factura">
+                                                                                <IconButton color="primary" size="small" disabled={procesando} onClick={() => handleTimbrarIndividual(item.id)}>
+                                                                                    <SendIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                            <Tooltip title="Eliminar Pre-factura Borrador">
+                                                                                <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(item)}>
+                                                                                    <DeleteIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Tooltip title="Ver PDF Oficial SAT">
+                                                                                <IconButton color="error" size="small" onClick={() => handleDescargarPDF(item.id)}>
+                                                                                    <PdfIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                            <Tooltip title="Descargar XML CFDI 4.0">
+                                                                                <IconButton color="primary" size="small" onClick={() => handleDescargarXML(item.id)}>
+                                                                                    <XmlIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                            <Tooltip title="Reenviar por Correo">
+                                                                                <IconButton color="info" size="small" onClick={() => handleAbrirEnviarCorreo(item)}>
+                                                                                    <EmailIcon />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                        </>
+                                                                    )}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </CardContent>
+                                </Card>
+                            ) : tab === 1 ? (
+                                /* PESTAÑA 1: PRE-FACTURAS EN BORRADOR */
+                                <Card elevation={3}>
+                                    <CardContent sx={{ p: 2 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                            <Typography variant="h6" fontWeight="bold">
+                                                Pre-facturas Pendientes de Timbrado (Borradores)
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                size="large"
+                                                disabled={procesando || preFacturasFiltradas.length === 0}
+                                                onClick={handleTimbrarMasivo}
+                                                startIcon={procesando ? <CircularProgress size={22} color="inherit" /> : <FlashIcon />}
+                                                sx={{ fontWeight: 'bold', textTransform: 'none', px: 3, py: 1 }}
+                                            >
+                                                {procesando ? 'Procesando Timbrado...' : `⚡ Timbrar Masivamente (${selectedIds.length > 0 ? selectedIds.length : preFacturasFiltradas.length})`}
+                                            </Button>
+                                        </Box>
+
+                                        <TableContainer component={Paper} variant="outlined">
+                                            <Table size="small">
+                                                <TableHead sx={{ backgroundColor: '#f1f5f9' }}>
+                                                    <TableRow>
+                                                        <TableCell padding="checkbox">
+                                                            <Checkbox
+                                                                indeterminate={selectedIds.length > 0 && selectedIds.length < preFacturasFiltradas.length}
+                                                                checked={preFacturasFiltradas.length > 0 && selectedIds.length === preFacturasFiltradas.length}
+                                                                onChange={handleSelectAll}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Serie-Folio</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Estudiante / Matrícula</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Receptor Fiscal (RFC - Nombre)</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Concepto Colegiatura</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Monto</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }}>Estatus Borrador</TableCell>
+                                                        <TableCell sx={{ fontWeight: 'bold' }} align="center">Acciones</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {preFacturasFiltradas.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
+                                                                No hay pre-facturas pendientes en este momento.
                                                             </TableCell>
-                                                            <TableCell>
-                                                                <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                                    {item.receptor_rfc}
-                                                                </Typography>
-                                                                <Typography variant="caption" display="block">
-                                                                    {item.receptor_nombre}
-                                                                </Typography>
-                                                            </TableCell>
-                                                            <TableCell sx={{ maxWidth: 200 }}>
-                                                                <Typography variant="body2" noWrap title={item.descripcion_concepto}>
-                                                                    {item.descripcion_concepto || 'Colegiatura y Servicios Educativos'}
-                                                                </Typography>
-                                                            </TableCell>
-                                                            <TableCell sx={{ fontWeight: 'bold', color: item.es_borrador ? 'warning.main' : 'success.main' }}>
-                                                                ${parseMonto(item.monto || item.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {item.es_borrador ? (
-                                                                    <Chip label="PRE-FACTURA (BORRADOR)" color="warning" size="small" variant="outlined" />
-                                                                ) : (
-                                                                    <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell align="center">
-                                                                {item.es_borrador ? (
-                                                                    <>
+                                                        </TableRow>
+                                                    ) : (
+                                                        preFacturasFiltradas.map(pf => {
+                                                            const isSelected = selectedIds.includes(pf.id);
+                                                            return (
+                                                                <TableRow key={pf.id} hover selected={isSelected}>
+                                                                    <TableCell padding="checkbox">
+                                                                        <Checkbox
+                                                                            checked={isSelected}
+                                                                            onChange={() => handleSelectOne(pf.id)}
+                                                                        />
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                                                        {pf.serie}-{pf.folio}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Typography variant="body2" fontWeight="bold">{pf.alumno_nombre}</Typography>
+                                                                        <Typography variant="caption" color="textSecondary">{pf.alumno_matricula} - {pf.carrera}</Typography>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                                            {pf.receptor_rfc}
+                                                                        </Typography>
+                                                                        <Typography variant="caption" display="block">
+                                                                            {pf.receptor_nombre} {pf.es_generico ? '(RFC Genérico)' : ''}
+                                                                        </Typography>
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ maxWidth: 220 }}>
+                                                                        <Typography variant="body2" noWrap title={pf.descripcion_concepto}>
+                                                                            {pf.descripcion_concepto}
+                                                                        </Typography>
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                                                                        ${parseMonto(pf.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Chip label="PRE-FACTURA PENDIENTE" color="warning" size="small" variant="outlined" />
+                                                                    </TableCell>
+                                                                    <TableCell align="center">
                                                                         <Tooltip title="Editar Pre-factura (Concepto, Monto, RFC)">
-                                                                            <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(item)}>
+                                                                            <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(pf)}>
                                                                                 <EditIcon />
                                                                             </IconButton>
                                                                         </Tooltip>
                                                                         <Tooltip title="Timbrar esta Pre-factura">
-                                                                            <IconButton color="primary" size="small" disabled={procesando} onClick={() => handleTimbrarIndividual(item.id)}>
+                                                                            <IconButton color="primary" size="small" disabled={procesando} onClick={() => handleTimbrarIndividual(pf.id)}>
                                                                                 <SendIcon />
                                                                             </IconButton>
                                                                         </Tooltip>
                                                                         <Tooltip title="Eliminar Pre-factura Borrador">
-                                                                            <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(item)}>
+                                                                            <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(pf)}>
                                                                                 <DeleteIcon />
                                                                             </IconButton>
                                                                         </Tooltip>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <Tooltip title="Ver PDF Oficial SAT">
-                                                                            <IconButton color="error" size="small" onClick={() => handleDescargarPDF(item.id)}>
-                                                                                <PdfIcon />
-                                                                            </IconButton>
-                                                                        </Tooltip>
-                                                                        <Tooltip title="Descargar XML CFDI 4.0">
-                                                                            <IconButton color="primary" size="small" onClick={() => handleDescargarXML(item.id)}>
-                                                                                <XmlIcon />
-                                                                            </IconButton>
-                                                                        </Tooltip>
-                                                                        <Tooltip title="Reenviar por Correo">
-                                                                            <IconButton color="info" size="small" onClick={() => handleAbrirEnviarCorreo(item)}>
-                                                                                <EmailIcon />
-                                                                            </IconButton>
-                                                                        </Tooltip>
-                                                                    </>
-                                                                )}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                /* PESTAÑA 2: FACTURAS EMITIDAS Y TIMBRADAS */
+                                <Card elevation={3}>
+                                    <CardContent sx={{ p: 0 }}>
+                                        <TableContainer component={Paper}>
+                                            <Table size="small">
+                                                <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                                                    <TableRow>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie - Folio</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tipo CFDI</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha Emisión</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante(s) Vinculado(s)</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor (RFC - Razón Social)</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto Total</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
+                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {facturasEmitidasFiltradas.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
+                                                                No hay facturas timbradas registradas.
                                                             </TableCell>
                                                         </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        ) : tab === 1 ? (
-                            /* PESTAÑA 1: PRE-FACTURAS EN BORRADOR */
-                            <Card elevation={3}>
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                        <Typography variant="h6" fontWeight="bold">
-                                            Pre-facturas Pendientes de Timbrado (Borradores)
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            color="success"
-                                            size="large"
-                                            disabled={procesando || preFacturasFiltradas.length === 0}
-                                            onClick={handleTimbrarMasivo}
-                                            startIcon={procesando ? <CircularProgress size={22} color="inherit" /> : <FlashIcon />}
-                                            sx={{ fontWeight: 'bold', textTransform: 'none', px: 3, py: 1 }}
-                                        >
-                                            {procesando ? 'Procesando Timbrado...' : `⚡ Timbrar Masivamente (${selectedIds.length > 0 ? selectedIds.length : preFacturasFiltradas.length})`}
-                                        </Button>
-                                    </Box>
-
-                                    <TableContainer component={Paper} variant="outlined">
-                                        <Table size="small">
-                                            <TableHead sx={{ backgroundColor: '#f1f5f9' }}>
-                                                <TableRow>
-                                                    <TableCell padding="checkbox">
-                                                        <Checkbox
-                                                            indeterminate={selectedIds.length > 0 && selectedIds.length < preFacturasFiltradas.length}
-                                                            checked={preFacturasFiltradas.length > 0 && selectedIds.length === preFacturasFiltradas.length}
-                                                            onChange={handleSelectAll}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Serie-Folio</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Estudiante / Matrícula</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Receptor Fiscal (RFC - Nombre)</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Concepto Colegiatura</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Monto</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }}>Estatus Borrador</TableCell>
-                                                    <TableCell sx={{ fontWeight: 'bold' }} align="center">Acciones</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {preFacturasFiltradas.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
-                                                            No hay pre-facturas pendientes en este momento.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    preFacturasFiltradas.map(pf => {
-                                                        const isSelected = selectedIds.includes(pf.id);
-                                                        return (
-                                                            <TableRow key={pf.id} hover selected={isSelected}>
-                                                                <TableCell padding="checkbox">
-                                                                    <Checkbox
-                                                                        checked={isSelected}
-                                                                        onChange={() => handleSelectOne(pf.id)}
+                                                    ) : (
+                                                        facturasEmitidasFiltradas.map(fac => (
+                                                            <TableRow key={fac.id} hover>
+                                                                <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                                                                    {fac.serie}-{fac.folio}
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Chip
+                                                                        label={fac.tipo_cfdi}
+                                                                        color={fac.tipo_cfdi.includes('Genérico') ? 'secondary' : 'primary'}
+                                                                        size="small"
                                                                     />
                                                                 </TableCell>
-                                                                <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                                                                    {pf.serie}-{pf.folio}
+                                                                <TableCell>{new Date(fac.fecha).toLocaleDateString('es-MX')}</TableCell>
+                                                                <TableCell>
+                                                                    {fac.alumnos && fac.alumnos.length > 0 ? (
+                                                                        fac.alumnos.map((alum, idx) => (
+                                                                            <Typography key={idx} variant="body2">
+                                                                                <strong>{alum.nombre_completo}</strong> ({alum.matricula})
+                                                                            </Typography>
+                                                                        ))
+                                                                    ) : (
+                                                                        <Typography variant="caption" color="textSecondary">Público en General</Typography>
+                                                                    )}
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    <Typography variant="body2" fontWeight="bold">{pf.alumno_nombre}</Typography>
-                                                                    <Typography variant="caption" color="textSecondary">{pf.alumno_matricula} - {pf.carrera}</Typography>
+                                                                    <Typography fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                                        {fac.receptor_rfc} - {fac.receptor_nombre}
+                                                                    </Typography>
+                                                                </TableCell>
+                                                                <TableCell sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                                                                    ${parseMonto(fac.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                                 </TableCell>
                                                                 <TableCell>
-                                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                                        {pf.receptor_rfc}
-                                                                    </Typography>
-                                                                    <Typography variant="caption" display="block">
-                                                                        {pf.receptor_nombre} {pf.es_generico ? '(RFC Genérico)' : ''}
-                                                                    </Typography>
-                                                                </TableCell>
-                                                                <TableCell sx={{ maxWidth: 220 }}>
-                                                                    <Typography variant="body2" noWrap title={pf.descripcion_concepto}>
-                                                                        {pf.descripcion_concepto}
-                                                                    </Typography>
-                                                                </TableCell>
-                                                                <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                                                    ${parseMonto(pf.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Chip label="PRE-FACTURA PENDIENTE" color="warning" size="small" variant="outlined" />
+                                                                    <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
                                                                 </TableCell>
                                                                 <TableCell align="center">
-                                                                    <Tooltip title="Editar Pre-factura (Concepto, Monto, RFC)">
-                                                                        <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(pf)}>
-                                                                            <EditIcon />
+                                                                    <Tooltip title="Ver PDF Oficial">
+                                                                        <IconButton color="error" size="small" onClick={() => handleDescargarPDF(fac.id)}>
+                                                                            <PdfIcon />
                                                                         </IconButton>
                                                                     </Tooltip>
-                                                                    <Tooltip title="Timbrar esta Pre-factura">
-                                                                        <IconButton color="primary" size="small" disabled={procesando} onClick={() => handleTimbrarIndividual(pf.id)}>
-                                                                            <SendIcon />
+                                                                    <Tooltip title="Descargar XML CFDI 4.0">
+                                                                        <IconButton color="primary" size="small" onClick={() => handleDescargarXML(fac.id)}>
+                                                                            <XmlIcon />
                                                                         </IconButton>
                                                                     </Tooltip>
-                                                                    <Tooltip title="Eliminar Pre-factura Borrador">
-                                                                        <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(pf)}>
-                                                                            <DeleteIcon />
+                                                                    <Tooltip title="Reenviar por Correo">
+                                                                        <IconButton color="info" size="small" onClick={() => handleAbrirEnviarCorreo(fac)}>
+                                                                            <EmailIcon />
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 </TableCell>
                                                             </TableRow>
-                                                        );
-                                                    })
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            /* PESTAÑA 2: FACTURAS EMITIDAS Y TIMBRADAS */
-                            <Card elevation={3}>
-                                <CardContent sx={{ p: 0 }}>
-                                    <TableContainer component={Paper}>
-                                        <Table size="small">
-                                            <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                                                <TableRow>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie - Folio</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tipo CFDI</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha Emisión</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante(s) Vinculado(s)</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor (RFC - Razón Social)</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto Total</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
-                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {facturasEmitidasFiltradas.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={8} align="center" sx={{ py: 5, color: '#888' }}>
-                                                            No hay facturas timbradas registradas.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    facturasEmitidasFiltradas.map(fac => (
-                                                        <TableRow key={fac.id} hover>
-                                                            <TableCell sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                                                                {fac.serie}-{fac.folio}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Chip
-                                                                    label={fac.tipo_cfdi}
-                                                                    color={fac.tipo_cfdi.includes('Genérico') ? 'secondary' : 'primary'}
-                                                                    size="small"
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell>{new Date(fac.fecha).toLocaleDateString('es-MX')}</TableCell>
-                                                            <TableCell>
-                                                                {fac.alumnos && fac.alumnos.length > 0 ? (
-                                                                    fac.alumnos.map((alum, idx) => (
-                                                                        <Typography key={idx} variant="body2">
-                                                                            <strong>{alum.nombre_completo}</strong> ({alum.matricula})
-                                                                        </Typography>
-                                                                    ))
-                                                                ) : (
-                                                                    <Typography variant="caption" color="textSecondary">Público en General</Typography>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Typography fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                                    {fac.receptor_rfc} - {fac.receptor_nombre}
-                                                                </Typography>
-                                                            </TableCell>
-                                                            <TableCell sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                                                                ${parseMonto(fac.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
-                                                            </TableCell>
-                                                            <TableCell align="center">
-                                                                <Tooltip title="Ver PDF Oficial">
-                                                                    <IconButton color="error" size="small" onClick={() => handleDescargarPDF(fac.id)}>
-                                                                        <PdfIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="Descargar XML CFDI 4.0">
-                                                                    <IconButton color="primary" size="small" onClick={() => handleDescargarXML(fac.id)}>
-                                                                        <XmlIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="Reenviar por Correo">
-                                                                    <IconButton color="info" size="small" onClick={() => handleAbrirEnviarCorreo(fac)}>
-                                                                        <EmailIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </Box>
-                </Grid>
-            </Grid>
-
-            {/* MODAL EDITAR PRE-FACTURA Y CONCEPTOS */}
-            <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    ✏️ Editar Pre-factura {editForm.folio}
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    <Grid container spacing={2}>
-                        {/* SECCIÓN 1: DATOS FISCALES DEL RECEPTOR */}
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
-                                👤 Datos Fiscales del Receptor / Estudiante:
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="RFC Receptor *"
-                                fullWidth
-                                value={editForm.receptor_rfc}
-                                onChange={(e) => setEditForm({ ...editForm, receptor_rfc: e.target.value })}
-                                helperText="RFC fiscal del estudiante/tutor o XAXX010101000 para Público en General"
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Nombre / Razón Social Receptor *"
-                                fullWidth
-                                value={editForm.receptor_nombre}
-                                onChange={(e) => setEditForm({ ...editForm, receptor_nombre: e.target.value })}
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Clave Producto/Servicio SAT *"
-                                fullWidth
-                                value={editForm.clave_prod_serv}
-                                onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
-                                helperText="Default 86121500 (Servicios Educativos)"
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <FormControl fullWidth>
-                                <InputLabel>Uso de CFDI *</InputLabel>
-                                <Select
-                                    value={editForm.uso_cfdi}
-                                    label="Uso de CFDI *"
-                                    onChange={(e) => setEditForm({ ...editForm, uso_cfdi: e.target.value })}
-                                >
-                                    <MenuItem value="D10">D10 - Pagos por servicios educativos (Colegiaturas)</MenuItem>
-                                    <MenuItem value="S01">S01 - Sin efectos fiscales</MenuItem>
-                                    <MenuItem value="G03">G03 - Gastos en general</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-
-                        {/* SECCIÓN 2: DESGLOSE DE CONCEPTOS DE COBRO Y FACTURACIÓN */}
-                        <Grid item xs={12} sx={{ mt: 1 }}>
-                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
-                                📑 Desglose de Conceptos y Partidas de Facturación:
-                            </Typography>
-                            {(editForm.items || []).map((item, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
-                                    <TextField
-                                        label={`Concepto / Descripción Partida ${idx + 1} *`}
-                                        fullWidth
-                                        size="small"
-                                        value={item.concepto || ''}
-                                        onChange={(e) => handleItemChangeEdit(idx, 'concepto', e.target.value)}
-                                        placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
-                                    />
-                                    <TextField
-                                        label="Monto ($) *"
-                                        type="number"
-                                        size="small"
-                                        sx={{ width: 180 }}
-                                        value={item.monto}
-                                        onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                    {(editForm.items || []).length > 1 && (
-                                        <IconButton color="error" size="small" onClick={() => handleRemoveItemEdit(idx)}>
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    )}
-                                </Box>
-                            ))}
-                            <Button
-                                startIcon={<AddIcon />}
-                                size="small"
-                                variant="outlined"
-                                onClick={handleAddItemEdit}
-                                sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
-                            >
-                                + Agregar otro concepto / partida a esta pre-factura
-                            </Button>
-                        </Grid>
-
-                        <Grid item xs={12}>
-                            {(() => {
-                                const totalSum = (editForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
-                                return (
-                                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
-                                        <Grid container spacing={2} textAlign="center">
-                                            <Grid item xs={6}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (EXENTO DE IVA):</Typography>
-                                                <Typography variant="h6" fontWeight="bold" color="textPrimary">
-                                                    ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={6}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">TOTAL PRE-FACTURA (FICHA):</Typography>
-                                                <Typography variant="h6" fontWeight="bold" color="success.main">
-                                                    ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
-                                                </Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </Paper>
-                                );
-                            })()}
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenEditModal(false)} color="secondary">Cancelar</Button>
-                    <Button
-                        onClick={handleGuardarEdicion}
-                        variant="contained"
-                        color="primary"
-                        disabled={guardandoEdicion}
-                    >
-                        {guardandoEdicion ? 'Guardando...' : 'Guardar Cambios de Pre-factura'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL ELIMINAR PRE-FACTURA */}
-            <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#d32f2f', color: 'white', fontWeight: 'bold' }}>
-                    🗑️ Eliminar Pre-factura Borrador
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    {itemAEliminar && (
-                        <Typography variant="body1">
-                            ¿Está seguro de que desea eliminar la pre-factura borrador <strong>{itemAEliminar.serie}-{itemAEliminar.folio}</strong> por <strong>${parseMonto(itemAEliminar.monto).toFixed(2)}</strong>?
-                            <br /><br />
-                            Esta acción eliminará el borrador sin timbrar y desvinculará el registro de pago.
-                        </Typography>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenDeleteModal(false)} color="secondary">Cancelar</Button>
-                    <Button
-                        onClick={handleConfirmarEliminar}
-                        variant="contained"
-                        color="error"
-                        disabled={eliminando}
-                    >
-                        {eliminando ? 'Eliminando...' : 'Sí, Eliminar Pre-factura'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL ENVIAR CORREO */}
-            <Dialog open={openCorreoModal} onClose={() => setOpenCorreoModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    ✉️ Enviar Factura por Correo Electrónico
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    {facturaSeleccionadaCorreo && (
-                        <Box>
-                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                                Factura {facturaSeleccionadaCorreo.serie}-{facturaSeleccionadaCorreo.folio}
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                                Ingrese el correo electrónico al que desea enviar los archivos PDF y XML timbrados.
-                            </Typography>
-                            <TextField
-                                label="Correo Electrónico Destino *"
-                                fullWidth
-                                value={emailDestino}
-                                onChange={(e) => setEmailDestino(e.target.value)}
-                                placeholder="estudiante@universidad.edu.mx"
-                            />
+                                                        ))
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </CardContent>
+                                </Card>
+                            )}
                         </Box>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenCorreoModal(false)} color="secondary">Cancelar</Button>
-                    <Button
-                        onClick={handleEnviarCorreo}
-                        variant="contained"
-                        color="primary"
-                        disabled={enviandoCorreo || !emailDestino}
-                    >
-                        {enviandoCorreo ? 'Enviando...' : 'Enviar Factura por Correo'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </div>
+                    </Grid>
+                </Grid>
+
+                {/* MODAL EDITAR PRE-FACTURA Y CONCEPTOS */}
+                <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
+                        ✏️ Editar Pre-factura {editForm.folio}
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Grid container spacing={2}>
+                            {/* SECCIÓN 1: DATOS FISCALES DEL RECEPTOR */}
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
+                                    👤 Datos Fiscales del Receptor / Estudiante:
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="RFC Receptor *"
+                                    fullWidth
+                                    value={editForm.receptor_rfc}
+                                    onChange={(e) => setEditForm({ ...editForm, receptor_rfc: e.target.value })}
+                                    helperText="RFC fiscal del estudiante/tutor o XAXX010101000 para Público en General"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Nombre / Razón Social Receptor *"
+                                    fullWidth
+                                    value={editForm.receptor_nombre}
+                                    onChange={(e) => setEditForm({ ...editForm, receptor_nombre: e.target.value })}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Clave Producto/Servicio SAT *"
+                                    fullWidth
+                                    value={editForm.clave_prod_serv}
+                                    onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
+                                    helperText="Default 86121500 (Servicios Educativos)"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Uso de CFDI *</InputLabel>
+                                    <Select
+                                        value={editForm.uso_cfdi}
+                                        label="Uso de CFDI *"
+                                        onChange={(e) => setEditForm({ ...editForm, uso_cfdi: e.target.value })}
+                                    >
+                                        <MenuItem value="D10">D10 - Pagos por servicios educativos (Colegiaturas)</MenuItem>
+                                        <MenuItem value="S01">S01 - Sin efectos fiscales</MenuItem>
+                                        <MenuItem value="G03">G03 - Gastos en general</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            {/* SECCIÓN 2: DESGLOSE DE CONCEPTOS DE COBRO Y FACTURACIÓN */}
+                            <Grid item xs={12} sx={{ mt: 1 }}>
+                                <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
+                                    📑 Desglose de Conceptos y Partidas de Facturación:
+                                </Typography>
+                                {(editForm.items || []).map((item, idx) => (
+                                    <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                                        <TextField
+                                            label={`Concepto / Descripción Partida ${idx + 1} *`}
+                                            fullWidth
+                                            size="small"
+                                            value={item.concepto || ''}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'concepto', e.target.value)}
+                                            placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
+                                        />
+                                        <TextField
+                                            label="Monto ($) *"
+                                            type="number"
+                                            size="small"
+                                            sx={{ width: 180 }}
+                                            value={item.monto}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        {(editForm.items || []).length > 1 && (
+                                            <IconButton color="error" size="small" onClick={() => handleRemoveItemEdit(idx)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </Box>
+                                ))}
+                                <Button
+                                    startIcon={<AddIcon />}
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={handleAddItemEdit}
+                                    sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
+                                >
+                                    + Agregar otro concepto / partida a esta pre-factura
+                                </Button>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                {(() => {
+                                    const totalSum = (editForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+                                    return (
+                                        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
+                                            <Grid container spacing={2} textAlign="center">
+                                                <Grid item xs={6}>
+                                                    <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (EXENTO DE IVA):</Typography>
+                                                    <Typography variant="h6" fontWeight="bold" color="textPrimary">
+                                                        ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6}>
+                                                    <Typography variant="caption" color="textSecondary" fontWeight="bold">TOTAL PRE-FACTURA (FICHA):</Typography>
+                                                    <Typography variant="h6" fontWeight="bold" color="success.main">
+                                                        ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+                                                    </Typography>
+                                                </Grid>
+                                            </Grid>
+                                        </Paper>
+                                    );
+                                })()}
+                            </Grid>
+                        </Grid>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenEditModal(false)} color="secondary">Cancelar</Button>
+                        <Button
+                            onClick={handleGuardarEdicion}
+                            variant="contained"
+                            color="primary"
+                            disabled={guardandoEdicion}
+                        >
+                            {guardandoEdicion ? 'Guardando...' : 'Guardar Cambios de Pre-factura'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL ELIMINAR PRE-FACTURA */}
+                <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)} maxWidth="xs" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#d32f2f', color: 'white', fontWeight: 'bold' }}>
+                        🗑️ Eliminar Pre-factura Borrador
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        {itemAEliminar && (
+                            <Typography variant="body1">
+                                ¿Está seguro de que desea eliminar la pre-factura borrador <strong>{itemAEliminar.serie}-{itemAEliminar.folio}</strong> por <strong>${parseMonto(itemAEliminar.monto).toFixed(2)}</strong>?
+                                <br /><br />
+                                Esta acción eliminará el borrador sin timbrar y desvinculará el registro de pago.
+                            </Typography>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenDeleteModal(false)} color="secondary">Cancelar</Button>
+                        <Button
+                            onClick={handleConfirmarEliminar}
+                            variant="contained"
+                            color="error"
+                            disabled={eliminando}
+                        >
+                            {eliminando ? 'Eliminando...' : 'Sí, Eliminar Pre-factura'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL ENVIAR CORREO */}
+                <Dialog open={openCorreoModal} onClose={() => setOpenCorreoModal(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
+                        ✉️ Enviar Factura por Correo Electrónico
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        {facturaSeleccionadaCorreo && (
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                                    Factura {facturaSeleccionadaCorreo.serie}-{facturaSeleccionadaCorreo.folio}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                    Ingrese el correo electrónico al que desea enviar los archivos PDF y XML timbrados.
+                                </Typography>
+                                <TextField
+                                    label="Correo Electrónico Destino *"
+                                    fullWidth
+                                    value={emailDestino}
+                                    onChange={(e) => setEmailDestino(e.target.value)}
+                                    placeholder="estudiante@universidad.edu.mx"
+                                />
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenCorreoModal(false)} color="secondary">Cancelar</Button>
+                        <Button
+                            onClick={handleEnviarCorreo}
+                            variant="contained"
+                            color="primary"
+                            disabled={enviandoCorreo || !emailDestino}
+                        >
+                            {enviandoCorreo ? 'Enviando...' : 'Enviar Factura por Correo'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </div>
         </WithPermission>
     );
 }

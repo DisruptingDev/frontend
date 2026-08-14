@@ -201,6 +201,11 @@ export default function CargosPage() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
+            const reqHeaders = {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'x-grupo-id': grupoId || ''
+            };
+
             const queryGrupo = grupoId ? `grupo_id=${grupoId}` : '';
             const urlCargos = queryGrupo ? `/api/cobranza/cargos?${queryGrupo}` : '/api/cobranza/cargos';
             const urlAlum = queryGrupo ? `/api/cobranza/alumnos?${queryGrupo}` : '/api/cobranza/alumnos';
@@ -208,25 +213,61 @@ export default function CargosPage() {
             const urlProd = queryGrupo ? `/api/cobranza/productos?${queryGrupo}` : '/api/cobranza/productos';
 
             const [resCargos, resAlumnos, resFact, resProd] = await Promise.all([
-                fetch(urlCargos).then(r => r.json()).catch(() => []),
-                fetch(urlAlum).then(r => r.json()).catch(() => []),
-                fetch(urlFact).then(r => r.json()).catch(() => ({})),
-                fetch(urlProd).then(r => r.json()).catch(() => [])
+                fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []),
+                fetch(urlAlum, { headers: reqHeaders }).then(r => r.json()).catch(() => []),
+                fetch(urlFact, { headers: reqHeaders }).then(r => r.json()).catch(() => ({})),
+                fetch(urlProd, { headers: reqHeaders }).then(r => r.json()).catch(() => [])
             ]);
 
             if (Array.isArray(resCargos)) setCargos(resCargos);
             if (Array.isArray(resAlumnos)) setAlumnos(resAlumnos);
             if (Array.isArray(resProd)) setProductos(resProd);
             
-            const listaEmisoresFinal = resFact.emisores || [];
+            let listaEmisoresFinal = resFact.emisores || [];
+
+            // Fallback a API de catálogos si no hay emisores locales
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+            if (listaEmisoresFinal.length === 0 && token && apiUrl) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 2500);
+                    const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    if (resEmp.ok) {
+                        const dataEmp = await resEmp.json();
+                        if (Array.isArray(dataEmp)) {
+                            listaEmisoresFinal = dataEmp.map(e => ({
+                                id: (e.ID || e.id).toString(),
+                                rfc: e.Rfc || e.rfc,
+                                nombre: e.Nombre || e.nombre,
+                                regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
+                            }));
+                        }
+                    }
+                } catch (e) {}
+            }
+
             setEmisores(listaEmisoresFinal);
 
+            // Validar localStorage contra emisores devueltos del usuario actual
             let idPref = null;
             if (typeof window !== 'undefined') {
                 idPref = localStorage.getItem('emisor_id_predeterminado');
             }
+
+            const existeEnLista = idPref && listaEmisoresFinal.some(e => e.id.toString() === idPref.toString());
+            if (!existeEnLista) {
+                idPref = null;
+            }
+
             if (!idPref && resFact.emisor_predeterminado_id) {
-                idPref = resFact.emisor_predeterminado_id;
+                const emisorPredValido = listaEmisoresFinal.find(e => e.id.toString() === resFact.emisor_predeterminado_id.toString());
+                if (emisorPredValido) {
+                    idPref = emisorPredValido.id;
+                }
             }
             if (!idPref && listaEmisoresFinal.length > 0) {
                 const dbPred = listaEmisoresFinal.find(e => e.es_predeterminado === true);
@@ -234,7 +275,13 @@ export default function CargosPage() {
             }
 
             if (idPref) {
-                setEmisorSeleccionado(idPref.toString());
+                const finalIdStr = idPref.toString();
+                setEmisorSeleccionado(finalIdStr);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('emisor_id_predeterminado', finalIdStr);
+                }
+            } else {
+                setEmisorSeleccionado('');
             }
         } catch (err) {
             console.error('Error cargando cargos:', err);

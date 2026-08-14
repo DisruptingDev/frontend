@@ -253,7 +253,7 @@ export default function MóduloCobranzaUnificadoPage() {
 
             setMensajeExito(data.mensaje);
             setOpenEditModal(false);
-            
+
             if (timbrarAlGuardar === true) {
                 handleTimbrarPendiente(editForm.comprobante_id);
             } else {
@@ -528,7 +528,9 @@ export default function MóduloCobranzaUnificadoPage() {
         try {
             const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
             let grupoId = '';
+            let token = '';
             if (typeof window !== 'undefined') {
+                token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
                 const storedUser = localStorage.getItem('usuario') || localStorage.getItem('user');
                 if (storedUser) {
                     try {
@@ -539,6 +541,11 @@ export default function MóduloCobranzaUnificadoPage() {
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
+            const reqHeaders = {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'x-grupo-id': grupoId || ''
+            };
+
             const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
             const queryParams = [];
             if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
@@ -548,44 +555,85 @@ export default function MóduloCobranzaUnificadoPage() {
             // 1. Cargar SIEMPRE la lista de Emisores para la Razón Social Emisora Vincular
             try {
                 const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qStr}`;
-                const resFact = await fetch(urlFactEmisores).then(r => r.json()).catch(() => ({}));
-                const listEm = resFact.emisores || [];
+                const resFact = await fetch(urlFactEmisores, { headers: reqHeaders }).then(r => r.json()).catch(() => ({}));
+                let listEm = resFact.emisores || [];
+
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                if (listEm.length === 0 && token && apiUrl) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 2500);
+                        const resEmp = await fetch(`${apiUrl}/api/catalogos/Catalogos/Emisor`, {
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        if (resEmp.ok) {
+                            const dataEmp = await resEmp.json();
+                            if (Array.isArray(dataEmp)) {
+                                listEm = dataEmp.map(e => ({
+                                    id: (e.ID || e.id).toString(),
+                                    rfc: e.Rfc || e.rfc,
+                                    nombre: e.Nombre || e.nombre,
+                                    regimen_fiscal: e.RegimenFiscal || e.regimen_fiscal || '601'
+                                }));
+                            }
+                        }
+                    } catch (e) {}
+                }
+
                 setEmisores(listEm);
 
                 let idPref = null;
                 if (typeof window !== 'undefined') {
                     idPref = localStorage.getItem('emisor_id_predeterminado');
                 }
+
+                const existeEnLista = idPref && listEm.some(e => e.id.toString() === idPref.toString());
+                if (!existeEnLista) {
+                    idPref = null;
+                }
+
                 if (!idPref && resFact.emisor_predeterminado_id) {
-                    idPref = resFact.emisor_predeterminado_id;
+                    const emisorPredValido = listEm.find(e => e.id.toString() === resFact.emisor_predeterminado_id.toString());
+                    if (emisorPredValido) {
+                        idPref = emisorPredValido.id;
+                    }
                 }
                 if (!idPref && listEm.length > 0) {
                     const dbPred = listEm.find(e => e.es_predeterminado === true);
                     idPref = dbPred ? dbPred.id : listEm[0].id;
                 }
-                if (idPref && !emisorSeleccionado) {
-                    setEmisorSeleccionado(idPref.toString());
+
+                if (idPref) {
+                    const finalIdStr = idPref.toString();
+                    setEmisorSeleccionado(finalIdStr);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('emisor_id_predeterminado', finalIdStr);
+                    }
+                } else {
+                    setEmisorSeleccionado('');
                 }
             } catch (e) {
                 console.error('Error cargando emisores:', e);
             }
-            
+
             // Tab 2: Fichas & Cargos
             if (currentTab === 2) {
                 const qCargos = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
                 const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qCargos}`;
-                const res = await fetch(urlCargos).then(r => r.json()).catch(() => []);
+                const res = await fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []);
                 setCargos(Array.isArray(res) ? res : []);
             }
             // Tab 3: Conciliación
             else if (currentTab === 3) {
                 const qCargos = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
                 const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qCargos}`;
-                const res = await fetch(urlCargos).then(r => r.json()).catch(() => []);
+                const res = await fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []);
                 setCargos(Array.isArray(res) ? res : []);
 
                 const urlAlumnos = `${baseUrl}/api/cobranza/alumnos${qStr}`;
-                const resAlumnos = await fetch(urlAlumnos).then(r => r.json()).catch(() => []);
+                const resAlumnos = await fetch(urlAlumnos, { headers: reqHeaders }).then(r => r.json()).catch(() => []);
                 setAlumnos(Array.isArray(resAlumnos) ? resAlumnos : []);
             }
             // Tab 4: Facturación CFDI
@@ -594,8 +642,8 @@ export default function MóduloCobranzaUnificadoPage() {
                 if (emisorSeleccionado) factParams.push(`emisor_id=${emisorSeleccionado}`);
                 const qFact = factParams.length > 0 ? `?${factParams.join('&')}` : '';
                 const urlFact = `${baseUrl}/api/cobranza/facturacion${qFact}`;
-                const resFact = await fetch(urlFact).then(r => r.json()).catch(() => ({}));
-                
+                const resFact = await fetch(urlFact, { headers: reqHeaders }).then(r => r.json()).catch(() => ({}));
+
                 if (Array.isArray(resFact.pre_facturas)) {
                     setPendientesRFC(resFact.pre_facturas.filter(p => !p.es_generico));
                     setPendientesGlobal(resFact.pre_facturas.filter(p => p.es_generico));
@@ -610,7 +658,7 @@ export default function MóduloCobranzaUnificadoPage() {
                 const repParams = [`periodo=${mesPeriodo}`, ...queryParams];
                 if (emisorSeleccionado) repParams.push(`emisor_id=${emisorSeleccionado}`);
                 const urlRep = `${baseUrl}/api/cobranza/reportes?${repParams.join('&')}`;
-                const resRep = await fetch(urlRep).then(r => r.json()).catch(() => ({}));
+                const resRep = await fetch(urlRep, { headers: reqHeaders }).then(r => r.json()).catch(() => ({}));
                 if (resRep && resRep.pagos) {
                     setReporteMensual(resRep);
                 }
@@ -624,7 +672,7 @@ export default function MóduloCobranzaUnificadoPage() {
 
     useEffect(() => {
         loadDataForTab();
-        
+
         // Fetch programas independently once
         fetch('/api/cobranza/programas')
             .then(res => res.json())
@@ -650,7 +698,7 @@ export default function MóduloCobranzaUnificadoPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'SET_EMISOR_PREDETERMINADO', emisor_id: val })
             });
-        } catch (err) {}
+        } catch (err) { }
         setMensajeExito(`Razón Social Emisora vinculada correctamente para todas las operaciones.`);
     };
 
@@ -868,7 +916,7 @@ export default function MóduloCobranzaUnificadoPage() {
                 try {
                     const parsed = JSON.parse(storedUser);
                     grupoId = parsed.grupo_id || parsed.grupoId || '';
-                } catch (e) {}
+                } catch (e) { }
             }
             if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
         }
@@ -893,7 +941,7 @@ export default function MóduloCobranzaUnificadoPage() {
             const initAlumnosSelec = {};
             if (data.pagos) {
                 data.pagos.forEach((p, idx) => {
-                    if (p.estado_conciliacion === 'SUGERIDO' || p.estado_conciliacion === 'CONCILIADO') { 
+                    if (p.estado_conciliacion === 'SUGERIDO' || p.estado_conciliacion === 'CONCILIADO') {
                         if (p.alumno_id) initAlumnosSelec[idx] = BigInt(p.alumno_id).toString();
                     }
                 });
@@ -936,1076 +984,1077 @@ export default function MóduloCobranzaUnificadoPage() {
     return (
         <WithPermission permission="PAGOS_VER" fallback={<AccesoDenegado />}>
             <div>
-            <Header title="Módulo Unificado de Cobranza y Facturación" />
-            <Grid container>
-                <Grid item>
-                    <SideBarMenu />
-                </Grid>
-                <Grid item xs>
-                    <Box
-                        bgcolor="white"
-                        ml={{ xs: 10, md: 10 }}
-                        mr={2}
-                        mt={2}
-                        p={3}
-                        boxShadow={3}
-                        borderRadius={2}
-                        width={{ xs: "80%", md: "93%" }}
-                    >
-                        {/* CONFIGURACIÓN DE RAZÓN SOCIAL EMISORA INSTITUCIONAL */}
-                        <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f0f7ff', borderLeft: '5px solid #1976d2' }}>
-                            <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <BusinessIcon color="primary" sx={{ fontSize: 36 }} />
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="subtitle2" fontWeight="bold" color="primary">
-                                        ⚙️ Razón Social Emisora Vincular de la Institución (Emisor Predeterminado)
-                                    </Typography>
-                                    <Typography variant="caption" color="textSecondary" display="block">
-                                        Esta Razón Social se vincula automáticamente a todas las conciliaciones, fichas y facturas CFDI emitidas a estudiantes.
-                                    </Typography>
-                                </Box>
-                                <FormControl size="small" sx={{ minWidth: 320 }}>
-                                    <Select
-                                        value={emisorSeleccionado}
-                                        onChange={handleEmisorChange}
-                                        displayEmpty
-                                    >
-                                        {emisores.length === 0 ? (
-                                            <MenuItem value="">Cargando emisores registrados...</MenuItem>
-                                        ) : (
-                                            emisores.map(e => (
-                                                <MenuItem key={e.id} value={e.id}>
-                                                    {e.rfc} - {e.nombre}
-                                                </MenuItem>
-                                            ))
-                                        )}
-                                    </Select>
-                                </FormControl>
-                            </CardContent>
-                        </Card>
+                <Header title="Módulo Unificado de Cobranza y Facturación" />
+                <Grid container>
+                    <Grid item>
+                        <SideBarMenu />
+                    </Grid>
+                    <Grid item xs>
+                        <Box
+                            bgcolor="white"
+                            ml={{ xs: 10, md: 10 }}
+                            mr={2}
+                            mt={2}
+                            p={3}
+                            boxShadow={3}
+                            borderRadius={2}
+                            width={{ xs: "80%", md: "93%" }}
+                        >
+                            {/* CONFIGURACIÓN DE RAZÓN SOCIAL EMISORA INSTITUCIONAL */}
+                            <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f0f7ff', borderLeft: '5px solid #1976d2' }}>
+                                <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <BusinessIcon color="primary" sx={{ fontSize: 36 }} />
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                                            ⚙️ Razón Social Emisora Vincular de la Institución (Emisor Predeterminado)
+                                        </Typography>
+                                        <Typography variant="caption" color="textSecondary" display="block">
+                                            Esta Razón Social se vincula automáticamente a todas las conciliaciones, fichas y facturas CFDI emitidas a estudiantes.
+                                        </Typography>
+                                    </Box>
+                                    <FormControl size="small" sx={{ minWidth: 320 }}>
+                                        <Select
+                                            value={emisorSeleccionado}
+                                            onChange={handleEmisorChange}
+                                            displayEmpty
+                                        >
+                                            {emisores.length === 0 ? (
+                                                <MenuItem value="">Cargando emisores registrados...</MenuItem>
+                                            ) : (
+                                                emisores.map(e => (
+                                                    <MenuItem key={e.id} value={e.id}>
+                                                        {e.rfc} - {e.nombre}
+                                                    </MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                </CardContent>
+                            </Card>
 
-                        {/* ENCABEZADO Y PESTAÑAS UNIFICADAS */}
-                        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                            <Tabs
-                                value={currentTab}
-                                onChange={(e, val) => setCurrentTab(val)}
-                                variant="scrollable"
-                                scrollButtons="auto"
-                            >
-                                <Tab label="📊 Dashboard Ejecutivo" icon={<DashboardIcon />} iconPosition="start" />
-                                <Tab label={`🎓 Alumnos (${alumnos.length})`} icon={<SchoolIcon />} iconPosition="start" />
-                                <Tab label={`💸 Fichas & Cargos (${cargos.length})`} icon={<MoneyIcon />} iconPosition="start" />
-                                <Tab label="🏛️ Conciliación Bancaria" icon={<BankIcon />} iconPosition="start" />
-                                <Tab label={`🧾 Facturación CFDI (${facturasEmitidas.length})`} icon={<ReceiptIcon />} iconPosition="start" />
-                                <Tab label="📈 Reporte Mensual" icon={<AssessmentIcon />} iconPosition="start" />
-                            </Tabs>
-                        </Box>
-
-                        {mensajeExito && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensajeExito('')}>{mensajeExito}</Alert>}
-                        {errorMsg && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>{errorMsg}</Alert>}
-
-                        {loading ? (
-                            <Box display="flex" justifyContent="center" p={5}>
-                                <CircularProgress />
+                            {/* ENCABEZADO Y PESTAÑAS UNIFICADAS */}
+                            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+                                <Tabs
+                                    value={currentTab}
+                                    onChange={(e, val) => setCurrentTab(val)}
+                                    variant="scrollable"
+                                    scrollButtons="auto"
+                                >
+                                    <Tab label="📊 Dashboard Ejecutivo" icon={<DashboardIcon />} iconPosition="start" />
+                                    <Tab label={`🎓 Alumnos (${alumnos.length})`} icon={<SchoolIcon />} iconPosition="start" />
+                                    <Tab label={`💸 Fichas & Cargos (${cargos.length})`} icon={<MoneyIcon />} iconPosition="start" />
+                                    <Tab label="🏛️ Conciliación Bancaria" icon={<BankIcon />} iconPosition="start" />
+                                    <Tab label={`🧾 Facturación CFDI (${facturasEmitidas.length})`} icon={<ReceiptIcon />} iconPosition="start" />
+                                    <Tab label="📈 Reporte Mensual" icon={<AssessmentIcon />} iconPosition="start" />
+                                </Tabs>
                             </Box>
-                        ) : (
-                            <>
-                                {/* PESTAÑA 0: DASHBOARD */}
-                                {currentTab === 0 && (
-                                    <ResumenTab emisorSeleccionado={emisorSeleccionado} />
-                                )}
 
-                                {/* PESTAÑA 1: PADRÓN DE ALUMNOS */}
-                                {currentTab === 1 && (
-                                    <Box sx={{ mt: 2 }}>
-                                        <AlumnosView />
-                                    </Box>
-                                )}
+                            {mensajeExito && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensajeExito('')}>{mensajeExito}</Alert>}
+                            {errorMsg && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>{errorMsg}</Alert>}
 
-                                {/* PESTAÑA 2: FICHAS & CARGOS */}
-                                {currentTab === 2 && (
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                            <Typography variant="h6" fontWeight="bold">Fichas de Cobro y Referencias Módulo 10</Typography>
-                                            <Box sx={{ display: 'flex', gap: 2 }}>
-                                                <Button variant="contained" color="success" startIcon={<AutoFixIcon />} onClick={() => setOpenAutoModal(true)}>⚡ Generación 1-Click</Button>
-                                                <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setOpenCargoManualModal(true)}>Emitir Ficha</Button>
-                                            </Box>
+                            {loading ? (
+                                <Box display="flex" justifyContent="center" p={5}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : (
+                                <>
+                                    {/* PESTAÑA 0: DASHBOARD */}
+                                    {currentTab === 0 && (
+                                        <ResumenTab emisorSeleccionado={emisorSeleccionado} />
+                                    )}
+
+                                    {/* PESTAÑA 1: PADRÓN DE ALUMNOS */}
+                                    {currentTab === 1 && (
+                                        <Box sx={{ mt: 2 }}>
+                                            <AlumnosView />
                                         </Box>
-                                        <TableContainer component={Paper} variant="outlined">
-                                            <Table size="small">
-                                                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                                                    <TableRow>
-                                                        <TableCell>Referencia Múl. 10</TableCell>
-                                                        <TableCell>Alumno / Carrera</TableCell>
-                                                        <TableCell>Vencimiento</TableCell>
-                                                        <TableCell>Monto Total</TableCell>
-                                                        <TableCell>Estatus</TableCell>
-                                                        <TableCell align="center">Acciones</TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {cargos.map(cargo => (
-                                                        <TableRow key={cargo.id} hover>
-                                                            <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#1976d2' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
-                                                            <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno}` : 'N/A'}</TableCell>
-                                                            <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
-                                                            <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
-                                                            <TableCell>
-                                                                {cargo.estatus === 'PAGADO' ? (
-                                                                    <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
-                                                                ) : cargo.estatus === 'PARCIAL' ? (
-                                                                    <Chip label={`PARCIAL ($${parseMonto(cargo.monto_pendiente).toFixed(2)})`} color="warning" size="small" sx={{ fontWeight: 'bold' }} />
-                                                                ) : cargo.estatus === 'VENCIDO' ? (
-                                                                    <Chip label="VENCIDO" color="error" size="small" sx={{ fontWeight: 'bold' }} />
-                                                                ) : (
-                                                                    <Chip label="PENDIENTE" color="error" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell align="center">
-                                                                <Tooltip title="Ver Ficha Imprimible">
-                                                                    <IconButton color="primary" size="small" onClick={() => { setCargoSeleccionado(cargo); setOpenFichaModal(true); }}>
-                                                                        <EyeIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="Enviar / Reenviar PDF por Correo">
-                                                                    <IconButton color="info" size="small" onClick={() => handleReenviarCorreoFicha(cargo.id)} disabled={enviandoCorreoFicha}>
-                                                                        <EmailIcon />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') && (
-                                                                    <Tooltip title="Eliminar Ficha">
-                                                                        <IconButton color="error" size="small" onClick={() => handleDeleteFicha(cargo.id)}>
-                                                                            <DeleteIcon />
-                                                                        </IconButton>
-                                                                    </Tooltip>
-                                                                )}
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Box>
-                                )}
+                                    )}
 
-                                {/* PESTAÑA 3: CONCILIACIÓN BANCARIA CON ASIGNACIÓN MANUAL */}
-                                {currentTab === 3 && (
-                                    <Box>
-                                        <Card elevation={3} sx={{ mb: 3, p: 3 }}>
-                                            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                                                🏛️ Subir Extracto Bancario / Reporte de Movimientos
-                                            </Typography>
-                                            <Grid container spacing={2} alignItems="center">
-                                                <Grid item xs={12} sm={4}>
-                                                    <TextField select label="Banco Origen" fullWidth size="small" value={bancoSeleccionado} onChange={(e) => setBancoSeleccionado(e.target.value)}>
-                                                        <MenuItem value="GENERICO">Excel / CSV Genérico</MenuItem>
-                                                        <MenuItem value="BBVA">BBVA Bancomer</MenuItem>
-                                                        <MenuItem value="BANORTE">Banorte</MenuItem>
-                                                        <MenuItem value="SANTANDER">Santander</MenuItem>
-                                                    </TextField>
-                                                </Grid>
-                                                <Grid item xs={12} sm={5}>
-                                                    <Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>
-                                                        {archivoBancario ? archivoBancario.name : 'Seleccionar Archivo (.xlsx, .csv)'}
-                                                        <input type="file" hidden accept=".xlsx, .xls, .csv, .txt" onChange={(e) => setArchivoBancario(e.target.files[0])} />
-                                                    </Button>
-                                                </Grid>
-                                                <Grid item xs={12} sm={3}>
-                                                    <Button variant="contained" color="primary" fullWidth disabled={procesandoConciliacion} onClick={handleProcesarConciliacion}>
-                                                        {procesandoConciliacion ? 'Procesando...' : '⚡ Ejecutar Conciliación'}
-                                                    </Button>
-                                                </Grid>
-                                            </Grid>
-                                        </Card>
-
-                                        {resultadoConciliacion && resultadoConciliacion.pagos && (
-                                            <Card elevation={3} sx={{ mt: 3 }}>
-                                                <CardContent sx={{ p: 3 }}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                                                        <Typography variant="h6" fontWeight="bold" sx={{ color: '#1b384a' }}>
-                                                            Resultado y Asignación de Movimientos Bancarios
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                                            <Button
-                                                                variant="contained"
-                                                                color="success"
-                                                                startIcon={procesandoConciliacion ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
-                                                                onClick={handleConfirmarConciliacionMasivaDashboard}
-                                                                disabled={procesandoConciliacion}
-                                                                sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                                            >
-                                                                {procesandoConciliacion ? 'Generando Pre-Facturas...' : '⚡ Confirmar Conciliación y Generar Pre-Facturas'}
-                                                            </Button>
-                                                            <Button
-                                                                variant="outlined"
-                                                                color="primary"
-                                                                startIcon={<PrintIcon />}
-                                                                onClick={() => setCurrentTab(2)}
-                                                                sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                                            >
-                                                                Ver Pre-Facturas
-                                                            </Button>
-                                                        </Box>
-                                                    </Box>
-                                                    <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
-                                                        <Table size="small" stickyHeader>
-                                                            <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                                                                <TableRow>
-                                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Referencia / Extracto</TableCell>
-                                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto</TableCell>
-                                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus Matcheo</TableCell>
-                                                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Alumno Asignado / Acción Manual</TableCell>
-                                                                </TableRow>
-                                                            </TableHead>
-                                                            <TableBody>
-                                                                {resultadoConciliacion.pagos.map((item, idx) => {
-                                                                    const isSugerido = item.estado_conciliacion === 'SUGERIDO' || item.estado_conciliacion === 'CONCILIADO';
-                                                                    const alumnoIdFila = alumnoSeleccionadoFilaDashboard[idx] || (isSugerido ? item.alumno_id : null);
-                                                                    
-                                                                    return (
-                                                                    <TableRow key={idx} sx={{ backgroundColor: isSugerido ? '#e8f5e9' : '#fff3e0' }}>
-                                                                        <TableCell sx={{ fontFamily: 'monospace' }}>
-                                                                            <Typography variant="body2" fontWeight="bold">{item.referencia_bancaria}</Typography>
-                                                                            {item.descripcion && (
-                                                                                <Typography variant="caption" color="textSecondary" display="block" noWrap sx={{ maxWidth: 220 }}>
-                                                                                    {item.descripcion}
-                                                                                </Typography>
-                                                                            )}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                                                            ${parseMonto(item.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                        </TableCell>
-                                                                        <TableCell>
-                                                                            {isSugerido ? (
-                                                                                <Chip label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'} color="success" size="small" icon={<CheckIcon />} />
-                                                                            ) : (
-                                                                                <Chip label="⚠️ SIN MATCHEAR" color="warning" size="small" icon={<WarningIcon />} />
-                                                                            )}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ minWidth: 260 }}>
-                                                                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                                                                    <Autocomplete
-                                                                                        size="small"
-                                                                                        options={alumnos}
-                                                                                        getOptionLabel={(al) => `${al.nombre} ${al.apellido_paterno} (${al.matricula})`}
-                                                                                        value={alumnos.find(a => a.id.toString() === (alumnoIdFila ? alumnoIdFila.toString() : '')) || null}
-                                                                                        onChange={(e, newValue) => setAlumnoSeleccionadoFilaDashboard({
-                                                                                            ...alumnoSeleccionadoFilaDashboard,
-                                                                                            [idx]: newValue ? newValue.id.toString() : ''
-                                                                                        })}
-                                                                                        renderInput={(params) => <TextField {...params} label="Buscar y asignar alumno..." />}
-                                                                                        sx={{ flexGrow: 1, minWidth: 260 }}
-                                                                                        noOptionsText="No se encontraron alumnos"
-                                                                                    />
-                                                                                    <Button
-                                                                                        variant="contained"
-                                                                                        color="warning"
-                                                                                        size="small"
-                                                                                        disabled={procesandoConciliacion || !alumnoIdFila}
-                                                                                        onClick={() => handleAsignarAlumnoManualDashboard(item, idx)}
-                                                                                        sx={{ textTransform: 'none', px: 1.5, whiteSpace: 'nowrap' }}
-                                                                                    >
-                                                                                        Asignar
-                                                                                    </Button>
-                                                                                </Box>
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                )})}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </TableContainer>
-                                                </CardContent>
-                                            </Card>
-                                        )}
-                                    </Box>
-                                )}
-
-                                {/* PESTAÑA 4: FACTURACIÓN CFDI UNIFICADA (BORRADORES Y TIMBRADAS SAT) */}
-                                {currentTab === 4 && (
-                                    <Box>
-                                        <TableContainer component={Paper} variant="outlined">
-                                            <Table size="small">
-                                                <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                                                    <TableRow>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie - Folio</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tipo CFDI</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante(s) Vinculado(s)</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor (RFC - Razón Social)</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Total</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
-                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length === 0 ? (
+                                    {/* PESTAÑA 2: FICHAS & CARGOS */}
+                                    {currentTab === 2 && (
+                                        <Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                <Typography variant="h6" fontWeight="bold">Fichas de Cobro y Referencias Módulo 10</Typography>
+                                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                                    <Button variant="contained" color="success" startIcon={<AutoFixIcon />} onClick={() => setOpenAutoModal(true)}>⚡ Generación 1-Click</Button>
+                                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setOpenCargoManualModal(true)}>Emitir Ficha</Button>
+                                                </Box>
+                                            </Box>
+                                            <TableContainer component={Paper} variant="outlined">
+                                                <Table size="small">
+                                                    <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                                                         <TableRow>
-                                                            <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>
-                                                                No hay pre-facturas pendientes ni facturas timbradas registradas aún.
-                                                            </TableCell>
+                                                            <TableCell>Referencia Múl. 10</TableCell>
+                                                            <TableCell>Alumno / Carrera</TableCell>
+                                                            <TableCell>Vencimiento</TableCell>
+                                                            <TableCell>Monto Total</TableCell>
+                                                            <TableCell>Estatus</TableCell>
+                                                            <TableCell align="center">Acciones</TableCell>
                                                         </TableRow>
-                                                    ) : (
-                                                        ([...pendientesRFC.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...pendientesGlobal.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...facturasEmitidas]).map(fac => (
-                                                            <TableRow key={fac.id} hover>
-                                                                <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.95rem' }}>
-                                                                    {fac.serie}-{fac.folio}
-                                                                </TableCell>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {cargos.map(cargo => (
+                                                            <TableRow key={cargo.id} hover>
+                                                                <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#1976d2' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
+                                                                <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno}` : 'N/A'}</TableCell>
+                                                                <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
+                                                                <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
                                                                 <TableCell>
-                                                                    <Chip
-                                                                        label={fac.tipo_cfdi || (fac.es_generico ? 'Factura RFC Genérico' : 'Factura Estudiante')}
-                                                                        color={fac.es_generico || (fac.tipo_cfdi && fac.tipo_cfdi.includes('Genérico')) ? 'secondary' : 'primary'}
-                                                                        size="small"
-                                                                    />
-                                                                </TableCell>
-                                                                <TableCell>{fac.fecha ? new Date(fac.fecha).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX')}</TableCell>
-                                                                <TableCell>
-                                                                    {fac.alumnos && fac.alumnos.length > 0 ? (
-                                                                        fac.alumnos.map((a, i) => <Typography key={i} variant="caption" display="block"><strong>{a.nombre_completo}</strong> ({a.matricula})</Typography>)
+                                                                    {cargo.estatus === 'PAGADO' ? (
+                                                                        <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                    ) : cargo.estatus === 'PARCIAL' ? (
+                                                                        <Chip label={`PARCIAL ($${parseMonto(cargo.monto_pendiente).toFixed(2)})`} color="warning" size="small" sx={{ fontWeight: 'bold' }} />
+                                                                    ) : cargo.estatus === 'VENCIDO' ? (
+                                                                        <Chip label="VENCIDO" color="error" size="small" sx={{ fontWeight: 'bold' }} />
                                                                     ) : (
-                                                                        <Typography variant="body2" fontWeight="bold">
-                                                                            {fac.alumno_nombre || 'Estudiante General'} ({fac.alumno_matricula || 'N/A'})
-                                                                        </Typography>
-                                                                    )}
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                                        {fac.receptor_rfc}
-                                                                    </Typography>
-                                                                    <Typography variant="caption" display="block">
-                                                                        {fac.receptor_nombre} {fac.es_generico ? '(RFC Genérico)' : ''}
-                                                                    </Typography>
-                                                                </TableCell>
-                                                                <TableCell sx={{ fontWeight: 'bold', color: fac.estatus === 'TIMBRADO' ? 'success.main' : 'warning.main' }}>
-                                                                    ${parseMonto(fac.total || fac.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    {fac.estatus === 'TIMBRADO' ? (
-                                                                        <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
-                                                                    ) : (
-                                                                        <Chip label="PRE-FACTURA PENDIENTE" color="warning" size="small" icon={<WarningIcon />} />
+                                                                        <Chip label="PENDIENTE" color="error" variant="outlined" size="small" sx={{ fontWeight: 'bold' }} />
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell align="center">
-                                                                    {fac.estatus !== 'TIMBRADO' ? (
-                                                                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                                                                            <Tooltip title="Editar Pre-factura (RFC, Nombre, Concepto, Monto)">
-                                                                                <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(fac)}>
-                                                                                    <EditIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                            <Tooltip title="Timbrar esta Pre-factura ante el SAT">
-                                                                                <IconButton color="primary" size="small" disabled={timbrandoFacturaId === fac.id} onClick={() => handleTimbrarPendiente(fac.id)}>
-                                                                                    {timbrandoFacturaId === fac.id ? <CircularProgress size={16} color="inherit" /> : <FlashIcon />}
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                            <Tooltip title="Eliminar Pre-factura Borrador">
-                                                                                <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(fac)}>
-                                                                                    <DeleteIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                        </Box>
-                                                                    ) : (
-                                                                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                                                                            <Tooltip title="Ver PDF Oficial SAT">
-                                                                                <IconButton color="error" size="small" onClick={() => handleDescargarPDF(fac.id)}>
-                                                                                    <PdfIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                            <Tooltip title="Descargar XML CFDI 4.0">
-                                                                                <IconButton color="primary" size="small" onClick={() => handleDescargarXML(fac.id)}>
-                                                                                    <XmlIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                            <Tooltip title="Reenviar por Correo">
-                                                                                <IconButton color="info" size="small" onClick={() => handleAbrirCorreoModal(fac)}>
-                                                                                    <EmailIcon />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                        </Box>
+                                                                    <Tooltip title="Ver Ficha Imprimible">
+                                                                        <IconButton color="primary" size="small" onClick={() => { setCargoSeleccionado(cargo); setOpenFichaModal(true); }}>
+                                                                            <EyeIcon />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                    <Tooltip title="Enviar / Reenviar PDF por Correo">
+                                                                        <IconButton color="info" size="small" onClick={() => handleReenviarCorreoFicha(cargo.id)} disabled={enviandoCorreoFicha}>
+                                                                            <EmailIcon />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                    {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') && (
+                                                                        <Tooltip title="Eliminar Ficha">
+                                                                            <IconButton color="error" size="small" onClick={() => handleDeleteFicha(cargo.id)}>
+                                                                                <DeleteIcon />
+                                                                            </IconButton>
+                                                                        </Tooltip>
                                                                     )}
                                                                 </TableCell>
                                                             </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                        </Box>
+                                    )}
+
+                                    {/* PESTAÑA 3: CONCILIACIÓN BANCARIA CON ASIGNACIÓN MANUAL */}
+                                    {currentTab === 3 && (
+                                        <Box>
+                                            <Card elevation={3} sx={{ mb: 3, p: 3 }}>
+                                                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                                                    🏛️ Subir Extracto Bancario / Reporte de Movimientos
+                                                </Typography>
+                                                <Grid container spacing={2} alignItems="center">
+                                                    <Grid item xs={12} sm={4}>
+                                                        <TextField select label="Banco Origen" fullWidth size="small" value={bancoSeleccionado} onChange={(e) => setBancoSeleccionado(e.target.value)}>
+                                                            <MenuItem value="GENERICO">Excel / CSV Genérico</MenuItem>
+                                                            <MenuItem value="BBVA">BBVA Bancomer</MenuItem>
+                                                            <MenuItem value="BANORTE">Banorte</MenuItem>
+                                                            <MenuItem value="SANTANDER">Santander</MenuItem>
+                                                        </TextField>
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={5}>
+                                                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>
+                                                            {archivoBancario ? archivoBancario.name : 'Seleccionar Archivo (.xlsx, .csv)'}
+                                                            <input type="file" hidden accept=".xlsx, .xls, .csv, .txt" onChange={(e) => setArchivoBancario(e.target.files[0])} />
+                                                        </Button>
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={3}>
+                                                        <Button variant="contained" color="primary" fullWidth disabled={procesandoConciliacion} onClick={handleProcesarConciliacion}>
+                                                            {procesandoConciliacion ? 'Procesando...' : '⚡ Ejecutar Conciliación'}
+                                                        </Button>
+                                                    </Grid>
+                                                </Grid>
+                                            </Card>
+
+                                            {resultadoConciliacion && resultadoConciliacion.pagos && (
+                                                <Card elevation={3} sx={{ mt: 3 }}>
+                                                    <CardContent sx={{ p: 3 }}>
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                                                            <Typography variant="h6" fontWeight="bold" sx={{ color: '#1b384a' }}>
+                                                                Resultado y Asignación de Movimientos Bancarios
+                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                                <Button
+                                                                    variant="contained"
+                                                                    color="success"
+                                                                    startIcon={procesandoConciliacion ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
+                                                                    onClick={handleConfirmarConciliacionMasivaDashboard}
+                                                                    disabled={procesandoConciliacion}
+                                                                    sx={{ fontWeight: 'bold', textTransform: 'none' }}
+                                                                >
+                                                                    {procesandoConciliacion ? 'Generando Pre-Facturas...' : '⚡ Confirmar Conciliación y Generar Pre-Facturas'}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outlined"
+                                                                    color="primary"
+                                                                    startIcon={<PrintIcon />}
+                                                                    onClick={() => setCurrentTab(2)}
+                                                                    sx={{ fontWeight: 'bold', textTransform: 'none' }}
+                                                                >
+                                                                    Ver Pre-Facturas
+                                                                </Button>
+                                                            </Box>
+                                                        </Box>
+                                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
+                                                            <Table size="small" stickyHeader>
+                                                                <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                                                                    <TableRow>
+                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Referencia / Extracto</TableCell>
+                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto</TableCell>
+                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus Matcheo</TableCell>
+                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Alumno Asignado / Acción Manual</TableCell>
+                                                                    </TableRow>
+                                                                </TableHead>
+                                                                <TableBody>
+                                                                    {resultadoConciliacion.pagos.map((item, idx) => {
+                                                                        const isSugerido = item.estado_conciliacion === 'SUGERIDO' || item.estado_conciliacion === 'CONCILIADO';
+                                                                        const alumnoIdFila = alumnoSeleccionadoFilaDashboard[idx] || (isSugerido ? item.alumno_id : null);
+
+                                                                        return (
+                                                                            <TableRow key={idx} sx={{ backgroundColor: isSugerido ? '#e8f5e9' : '#fff3e0' }}>
+                                                                                <TableCell sx={{ fontFamily: 'monospace' }}>
+                                                                                    <Typography variant="body2" fontWeight="bold">{item.referencia_bancaria}</Typography>
+                                                                                    {item.descripcion && (
+                                                                                        <Typography variant="caption" color="textSecondary" display="block" noWrap sx={{ maxWidth: 220 }}>
+                                                                                            {item.descripcion}
+                                                                                        </Typography>
+                                                                                    )}
+                                                                                </TableCell>
+                                                                                <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                                                                                    ${parseMonto(item.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                                </TableCell>
+                                                                                <TableCell>
+                                                                                    {isSugerido ? (
+                                                                                        <Chip label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'} color="success" size="small" icon={<CheckIcon />} />
+                                                                                    ) : (
+                                                                                        <Chip label="⚠️ SIN MATCHEAR" color="warning" size="small" icon={<WarningIcon />} />
+                                                                                    )}
+                                                                                </TableCell>
+                                                                                <TableCell sx={{ minWidth: 260 }}>
+                                                                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                                                                        <Autocomplete
+                                                                                            size="small"
+                                                                                            options={alumnos}
+                                                                                            getOptionLabel={(al) => `${al.nombre} ${al.apellido_paterno} (${al.matricula})`}
+                                                                                            value={alumnos.find(a => a.id.toString() === (alumnoIdFila ? alumnoIdFila.toString() : '')) || null}
+                                                                                            onChange={(e, newValue) => setAlumnoSeleccionadoFilaDashboard({
+                                                                                                ...alumnoSeleccionadoFilaDashboard,
+                                                                                                [idx]: newValue ? newValue.id.toString() : ''
+                                                                                            })}
+                                                                                            renderInput={(params) => <TextField {...params} label="Buscar y asignar alumno..." />}
+                                                                                            sx={{ flexGrow: 1, minWidth: 260 }}
+                                                                                            noOptionsText="No se encontraron alumnos"
+                                                                                        />
+                                                                                        <Button
+                                                                                            variant="contained"
+                                                                                            color="warning"
+                                                                                            size="small"
+                                                                                            disabled={procesandoConciliacion || !alumnoIdFila}
+                                                                                            onClick={() => handleAsignarAlumnoManualDashboard(item, idx)}
+                                                                                            sx={{ textTransform: 'none', px: 1.5, whiteSpace: 'nowrap' }}
+                                                                                        >
+                                                                                            Asignar
+                                                                                        </Button>
+                                                                                    </Box>
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        )
+                                                                    })}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableContainer>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+                                        </Box>
+                                    )}
+
+                                    {/* PESTAÑA 4: FACTURACIÓN CFDI UNIFICADA (BORRADORES Y TIMBRADAS SAT) */}
+                                    {currentTab === 4 && (
+                                        <Box>
+                                            <TableContainer component={Paper} variant="outlined">
+                                                <Table size="small">
+                                                    <TableHead sx={{ backgroundColor: '#1b384a' }}>
+                                                        <TableRow>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie - Folio</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tipo CFDI</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estudiante(s) Vinculado(s)</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Receptor (RFC - Razón Social)</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Total</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus SAT</TableCell>
+                                                            <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Acciones</TableCell>
+                                                        </TableRow>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length === 0 ? (
+                                                            <TableRow>
+                                                                <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>
+                                                                    No hay pre-facturas pendientes ni facturas timbradas registradas aún.
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ) : (
+                                                            ([...pendientesRFC.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...pendientesGlobal.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...facturasEmitidas]).map(fac => (
+                                                                <TableRow key={fac.id} hover>
+                                                                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.95rem' }}>
+                                                                        {fac.serie}-{fac.folio}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Chip
+                                                                            label={fac.tipo_cfdi || (fac.es_generico ? 'Factura RFC Genérico' : 'Factura Estudiante')}
+                                                                            color={fac.es_generico || (fac.tipo_cfdi && fac.tipo_cfdi.includes('Genérico')) ? 'secondary' : 'primary'}
+                                                                            size="small"
+                                                                        />
+                                                                    </TableCell>
+                                                                    <TableCell>{fac.fecha ? new Date(fac.fecha).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX')}</TableCell>
+                                                                    <TableCell>
+                                                                        {fac.alumnos && fac.alumnos.length > 0 ? (
+                                                                            fac.alumnos.map((a, i) => <Typography key={i} variant="caption" display="block"><strong>{a.nombre_completo}</strong> ({a.matricula})</Typography>)
+                                                                        ) : (
+                                                                            <Typography variant="body2" fontWeight="bold">
+                                                                                {fac.alumno_nombre || 'Estudiante General'} ({fac.alumno_matricula || 'N/A'})
+                                                                            </Typography>
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                                            {fac.receptor_rfc}
+                                                                        </Typography>
+                                                                        <Typography variant="caption" display="block">
+                                                                            {fac.receptor_nombre} {fac.es_generico ? '(RFC Genérico)' : ''}
+                                                                        </Typography>
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ fontWeight: 'bold', color: fac.estatus === 'TIMBRADO' ? 'success.main' : 'warning.main' }}>
+                                                                        ${parseMonto(fac.total || fac.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        {fac.estatus === 'TIMBRADO' ? (
+                                                                            <Chip label="TIMBRADO SAT" color="success" size="small" icon={<CheckIcon />} />
+                                                                        ) : (
+                                                                            <Chip label="PRE-FACTURA PENDIENTE" color="warning" size="small" icon={<WarningIcon />} />
+                                                                        )}
+                                                                    </TableCell>
+                                                                    <TableCell align="center">
+                                                                        {fac.estatus !== 'TIMBRADO' ? (
+                                                                            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                                                                <Tooltip title="Editar Pre-factura (RFC, Nombre, Concepto, Monto)">
+                                                                                    <IconButton color="secondary" size="small" onClick={() => handleAbrirEditar(fac)}>
+                                                                                        <EditIcon />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                                <Tooltip title="Timbrar esta Pre-factura ante el SAT">
+                                                                                    <IconButton color="primary" size="small" disabled={timbrandoFacturaId === fac.id} onClick={() => handleTimbrarPendiente(fac.id)}>
+                                                                                        {timbrandoFacturaId === fac.id ? <CircularProgress size={16} color="inherit" /> : <FlashIcon />}
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                                <Tooltip title="Eliminar Pre-factura Borrador">
+                                                                                    <IconButton color="error" size="small" onClick={() => handleAbrirEliminar(fac)}>
+                                                                                        <DeleteIcon />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                            </Box>
+                                                                        ) : (
+                                                                            <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                                                                <Tooltip title="Ver PDF Oficial SAT">
+                                                                                    <IconButton color="error" size="small" onClick={() => handleDescargarPDF(fac.id)}>
+                                                                                        <PdfIcon />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                                <Tooltip title="Descargar XML CFDI 4.0">
+                                                                                    <IconButton color="primary" size="small" onClick={() => handleDescargarXML(fac.id)}>
+                                                                                        <XmlIcon />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                                <Tooltip title="Reenviar por Correo">
+                                                                                    <IconButton color="info" size="small" onClick={() => handleAbrirCorreoModal(fac)}>
+                                                                                        <EmailIcon />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                            </Box>
+                                                                        )}
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            ))
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                        </Box>
+                                    )}
+
+                                    {/* PESTAÑA 5: REPORTE MENSUAL */}
+                                    {currentTab === 5 && (
+                                        <Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                                                <TextField type="month" label="Seleccionar Mes" size="small" value={mesPeriodo} onChange={(e) => setMesPeriodo(e.target.value)} InputLabelProps={{ shrink: true }} />
+                                                <Button variant="contained" color="success" startIcon={<DownloadIcon />} onClick={handleExportarReporteExcel}>Exportar a Excel (.xlsx)</Button>
+                                            </Box>
+                                            <TableContainer component={Paper} variant="outlined">
+                                                <Table size="small">
+                                                    <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                                                        <TableRow>
+                                                            <TableCell>Fecha</TableCell>
+                                                            <TableCell>Alumno</TableCell>
+                                                            <TableCell>Carrera</TableCell>
+                                                            <TableCell>Referencia Múl. 10</TableCell>
+                                                            <TableCell>Monto</TableCell>
+                                                            <TableCell>Perfil Fiscal</TableCell>
+                                                        </TableRow>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {reporteMensual.pagos.map(pago => (
+                                                            <TableRow key={pago.id} hover>
+                                                                <TableCell>{new Date(pago.fecha_pago).toLocaleDateString('es-MX')}</TableCell>
+                                                                <TableCell><strong>{pago.alumno_nombre}</strong> ({pago.matricula})</TableCell>
+                                                                <TableCell>{pago.carrera}</TableCell>
+                                                                <TableCell sx={{ fontFamily: 'monospace' }}>{pago.referencia_bancaria}</TableCell>
+                                                                <TableCell sx={{ fontWeight: 'bold', color: 'success.main' }}>${parseMonto(pago.monto).toFixed(2)}</TableCell>
+                                                                <TableCell><Chip label={pago.requiere_factura ? `RFC: ${pago.rfc_receptor}` : 'Público en General'} size="small" /></TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                        </Box>
+                                    )}
+                                </>
+                            )}
+                        </Box>
+                    </Grid>
+                </Grid>
+
+                {/* MODAL 1: FICHA DE COBRO IMPRIMIBLE */}
+                <Dialog open={openFichaModal} onClose={() => setOpenFichaModal(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
+                        📄 Ficha de Cobro y Depósito Bancario
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        {cargoSeleccionado && (
+                            <Box id="printable-ficha-cobro">
+                                <Box sx={{ textAlignment: 'center', mb: 2, textAlign: 'center' }}>
+                                    <Typography variant="h6" fontWeight="bold" color="primary">
+                                        {emisores.find(e => e.id.toString() === cargoSeleccionado.alumno?.emisor_id?.toString())?.nombre || 'UNIVERSIDAD HISPANOAMERICANA S.C.'}
+                                    </Typography>
+                                    <Typography variant="caption" color="textSecondary" display="block">
+                                        Ficha Oficial de Pago de Colegiatura | Convenio BBVA CIE: 182743
+                                    </Typography>
+                                </Box>
+                                <Divider sx={{ my: 2 }} />
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12}>
+                                        <Typography variant="subtitle2" color="textSecondary">Estudiante / Matrícula:</Typography>
+                                        <Typography variant="body1" fontWeight="bold">
+                                            {cargoSeleccionado.alumno ? `${cargoSeleccionado.alumno.nombre} ${cargoSeleccionado.alumno.apellido_paterno}` : 'Alumno General'}
+                                        </Typography>
+                                        <Typography variant="body2" color="textSecondary">
+                                            Matrícula: <strong>{cargoSeleccionado.alumno?.matricula || 'N/A'}</strong> | Carrera: <strong>{cargoSeleccionado.alumno?.carrera || 'General'}</strong>
+                                        </Typography>
+                                    </Grid>
+
+                                    <Grid item xs={12}>
+                                        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #ddd', mb: 2 }}>
+                                            <Table size="small">
+                                                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                                                    <TableRow>
+                                                        <TableCell><b>Concepto</b></TableCell>
+                                                        <TableCell align="right"><b>Monto</b></TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {cargoSeleccionado.detalles_items ? (
+                                                        (typeof cargoSeleccionado.detalles_items === 'string'
+                                                            ? JSON.parse(cargoSeleccionado.detalles_items)
+                                                            : cargoSeleccionado.detalles_items
+                                                        ).map((item, idx) => (
+                                                            <TableRow key={idx}>
+                                                                <TableCell>{item.concepto}</TableCell>
+                                                                <TableCell align="right">${parseMonto(item.monto).toFixed(2)}</TableCell>
+                                                            </TableRow>
                                                         ))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell>{cargoSeleccionado.concepto?.nombre || 'Colegiatura Mensual'}</TableCell>
+                                                            <TableCell align="right">${parseMonto(cargoSeleccionado.monto_total).toFixed(2)}</TableCell>
+                                                        </TableRow>
                                                     )}
                                                 </TableBody>
                                             </Table>
                                         </TableContainer>
-                                    </Box>
-                                )}
+                                    </Grid>
 
-                                {/* PESTAÑA 5: REPORTE MENSUAL */}
-                                {currentTab === 5 && (
-                                    <Box>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                                            <TextField type="month" label="Seleccionar Mes" size="small" value={mesPeriodo} onChange={(e) => setMesPeriodo(e.target.value)} InputLabelProps={{ shrink: true }} />
-                                            <Button variant="contained" color="success" startIcon={<DownloadIcon />} onClick={handleExportarReporteExcel}>Exportar a Excel (.xlsx)</Button>
-                                        </Box>
-                                        <TableContainer component={Paper} variant="outlined">
-                                            <Table size="small">
-                                                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                                                    <TableRow>
-                                                        <TableCell>Fecha</TableCell>
-                                                        <TableCell>Alumno</TableCell>
-                                                        <TableCell>Carrera</TableCell>
-                                                        <TableCell>Referencia Múl. 10</TableCell>
-                                                        <TableCell>Monto</TableCell>
-                                                        <TableCell>Perfil Fiscal</TableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {reporteMensual.pagos.map(pago => (
-                                                        <TableRow key={pago.id} hover>
-                                                            <TableCell>{new Date(pago.fecha_pago).toLocaleDateString('es-MX')}</TableCell>
-                                                            <TableCell><strong>{pago.alumno_nombre}</strong> ({pago.matricula})</TableCell>
-                                                            <TableCell>{pago.carrera}</TableCell>
-                                                            <TableCell sx={{ fontFamily: 'monospace' }}>{pago.referencia_bancaria}</TableCell>
-                                                            <TableCell sx={{ fontWeight: 'bold', color: 'success.main' }}>${parseMonto(pago.monto).toFixed(2)}</TableCell>
-                                                            <TableCell><Chip label={pago.requiere_factura ? `RFC: ${pago.rfc_receptor}` : 'Público en General'} size="small" /></TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Box>
-                                )}
-                            </>
-                        )}
-                    </Box>
-                </Grid>
-            </Grid>
+                                    <Grid item xs={12}>
+                                        <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f0f7ff', border: '2px dashed #1976d2', textAlign: 'center' }}>
+                                            <Typography variant="caption" display="block" color="textSecondary" fontWeight="bold">
+                                                REFERENCIA BANCARIA ÚNICA (CLABE / MÓDULO 10)
+                                            </Typography>
+                                            <Typography variant="h4" fontWeight="bold" sx={{ fontFamily: 'monospace', color: '#1976d2', letterSpacing: 2, my: 1 }}>
+                                                {cargoSeleccionado.alumno?.clabe_interbancaria || cargoSeleccionado.referencia_bancaria}
+                                            </Typography>
+                                            <Divider sx={{ my: 1 }} />
+                                            <Typography variant="caption" display="block" color="textSecondary" fontWeight="bold">
+                                                CONCEPTO / DESCRIPCIÓN DE PAGO (DOBLE CONTROL)
+                                            </Typography>
+                                            <Typography variant="h5" fontWeight="bold" color="secondary.main" sx={{ fontFamily: 'monospace', letterSpacing: 1, my: 1 }}>
+                                                {cargoSeleccionado.codigo_ficha || 'N/A'}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                                                Escribe este código exactamente en el campo de Concepto de tu transferencia SPEI
+                                            </Typography>
+                                        </Paper>
+                                    </Grid>
 
-            {/* MODAL 1: FICHA DE COBRO IMPRIMIBLE */}
-            <Dialog open={openFichaModal} onClose={() => setOpenFichaModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    📄 Ficha de Cobro y Depósito Bancario
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    {cargoSeleccionado && (
-                        <Box id="printable-ficha-cobro">
-                            <Box sx={{ textAlignment: 'center', mb: 2, textAlign: 'center' }}>
-                                <Typography variant="h6" fontWeight="bold" color="primary">
-                                    {emisores.find(e => e.id.toString() === cargoSeleccionado.alumno?.emisor_id?.toString())?.nombre || 'UNIVERSIDAD HISPANOAMERICANA S.C.'}
-                                </Typography>
-                                <Typography variant="caption" color="textSecondary" display="block">
-                                    Ficha Oficial de Pago de Colegiatura | Convenio BBVA CIE: 182743
-                                </Typography>
-                            </Box>
-                            <Divider sx={{ my: 2 }} />
-                            <Grid container spacing={2}>
-                                <Grid item xs={12}>
-                                    <Typography variant="subtitle2" color="textSecondary">Estudiante / Matrícula:</Typography>
-                                    <Typography variant="body1" fontWeight="bold">
-                                        {cargoSeleccionado.alumno ? `${cargoSeleccionado.alumno.nombre} ${cargoSeleccionado.alumno.apellido_paterno}` : 'Alumno General'}
-                                    </Typography>
-                                    <Typography variant="body2" color="textSecondary">
-                                        Matrícula: <strong>{cargoSeleccionado.alumno?.matricula || 'N/A'}</strong> | Carrera: <strong>{cargoSeleccionado.alumno?.carrera || 'General'}</strong>
-                                    </Typography>
-                                </Grid>
-
-                                <Grid item xs={12}>
-                                    <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #ddd', mb: 2 }}>
-                                        <Table size="small">
-                                            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                                                <TableRow>
-                                                    <TableCell><b>Concepto</b></TableCell>
-                                                    <TableCell align="right"><b>Monto</b></TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {cargoSeleccionado.detalles_items ? (
-                                                    (typeof cargoSeleccionado.detalles_items === 'string' 
-                                                        ? JSON.parse(cargoSeleccionado.detalles_items) 
-                                                        : cargoSeleccionado.detalles_items
-                                                    ).map((item, idx) => (
-                                                        <TableRow key={idx}>
-                                                            <TableCell>{item.concepto}</TableCell>
-                                                            <TableCell align="right">${parseMonto(item.monto).toFixed(2)}</TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                ) : (
-                                                    <TableRow>
-                                                        <TableCell>{cargoSeleccionado.concepto?.nombre || 'Colegiatura Mensual'}</TableCell>
-                                                        <TableCell align="right">${parseMonto(cargoSeleccionado.monto_total).toFixed(2)}</TableCell>
-                                                    </TableRow>
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                                </Grid>
-
-                                <Grid item xs={12}>
-                                    <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f0f7ff', border: '2px dashed #1976d2', textAlign: 'center' }}>
-                                        <Typography variant="caption" display="block" color="textSecondary" fontWeight="bold">
-                                            REFERENCIA BANCARIA ÚNICA (CLABE / MÓDULO 10)
-                                        </Typography>
-                                        <Typography variant="h4" fontWeight="bold" sx={{ fontFamily: 'monospace', color: '#1976d2', letterSpacing: 2, my: 1 }}>
-                                            {cargoSeleccionado.alumno?.clabe_interbancaria || cargoSeleccionado.referencia_bancaria}
-                                        </Typography>
+                                    <Grid item xs={12}>
                                         <Divider sx={{ my: 1 }} />
-                                        <Typography variant="caption" display="block" color="textSecondary" fontWeight="bold">
-                                            CONCEPTO / DESCRIPCIÓN DE PAGO (DOBLE CONTROL)
+                                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                                            <Typography variant="h6" fontWeight="bold">Monto Total a Pagar:</Typography>
+                                            <Typography variant="h5" fontWeight="bold" color="success.dark">
+                                                ${parseMonto(cargoSeleccionado.monto_total).toFixed(2)} MXN
+                                            </Typography>
+                                        </Box>
+                                        <Typography variant="caption" color="textSecondary" display="block" textAlign="right">
+                                            Fecha Límite de Pago: <span style={{ color: 'red' }}>{new Date(cargoSeleccionado.fecha_vencimiento).toLocaleDateString('es-MX')}</span>
                                         </Typography>
-                                        <Typography variant="h5" fontWeight="bold" color="secondary.main" sx={{ fontFamily: 'monospace', letterSpacing: 1, my: 1 }}>
-                                            {cargoSeleccionado.codigo_ficha || 'N/A'}
-                                        </Typography>
-                                        <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                                            Escribe este código exactamente en el campo de Concepto de tu transferencia SPEI
-                                        </Typography>
-                                    </Paper>
+                                    </Grid>
                                 </Grid>
-                                
-                                <Grid item xs={12}>
-                                    <Divider sx={{ my: 1 }} />
-                                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                                        <Typography variant="h6" fontWeight="bold">Monto Total a Pagar:</Typography>
-                                        <Typography variant="h5" fontWeight="bold" color="success.dark">
-                                            ${parseMonto(cargoSeleccionado.monto_total).toFixed(2)} MXN
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="caption" color="textSecondary" display="block" textAlign="right">
-                                        Fecha Límite de Pago: <span style={{ color: 'red' }}>{new Date(cargoSeleccionado.fecha_vencimiento).toLocaleDateString('es-MX')}</span>
-                                    </Typography>
-                                </Grid>
-                            </Grid>
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2, flexWrap: 'wrap', gap: 1 }}>
-                    <Button 
-                        startIcon={<PdfIcon />} 
-                        variant="outlined" 
-                        color="secondary"
-                        onClick={() => window.open(`/api/cobranza/cargos/${cargoSeleccionado?.id}`, '_blank')}
-                    >
-                        Descargar PDF
-                    </Button>
-                    <Button 
-                        startIcon={<EmailIcon />} 
-                        variant="outlined" 
-                        color="info"
-                        disabled={enviandoCorreoFicha}
-                        onClick={() => handleReenviarCorreoFicha(cargoSeleccionado?.id)}
-                    >
-                        {enviandoCorreoFicha ? 'Enviando PDF...' : 'Enviar por Correo'}
-                    </Button>
-                    <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>
-                        Imprimir Ficha
-                    </Button>
-                    <Button onClick={() => setOpenFichaModal(false)} variant="contained" color="primary">
-                        Cerrar
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL 3: REGISTRAR NUEVO ALUMNO */}
-            <Dialog open={openAlumnoModal} onClose={() => setOpenAlumnoModal(false)} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar Alumno y Configuración de Cobro</DialogTitle>
-                <DialogContent dividers>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Matrícula *" fullWidth value={alumnoForm.matricula} onChange={(e) => setAlumnoForm({ ...alumnoForm, matricula: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Nombre *" fullWidth value={alumnoForm.nombre} onChange={(e) => setAlumnoForm({ ...alumnoForm, nombre: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Apellido Paterno *" fullWidth value={alumnoForm.apellido_paterno} onChange={(e) => setAlumnoForm({ ...alumnoForm, apellido_paterno: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Apellido Materno" fullWidth value={alumnoForm.apellido_materno} onChange={(e) => setAlumnoForm({ ...alumnoForm, apellido_materno: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField select label="Plan de Estudio *" fullWidth value={alumnoForm.programa_academico_id || ''} onChange={(e) => {
-                                const selectedProg = programas.find(p => p.id.toString() === e.target.value);
-                                setAlumnoForm({ 
-                                    ...alumnoForm, 
-                                    programa_academico_id: e.target.value,
-                                    carrera: selectedProg ? selectedProg.nombre : alumnoForm.carrera
-                                });
-                            }}>
-                                <MenuItem value=""><em>-- Seleccionar Plan --</em></MenuItem>
-                                {programas.map((prog) => (
-                                    <MenuItem key={prog.id} value={prog.id.toString()}>
-                                        {prog.nombre}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Semestre" type="number" fullWidth value={alumnoForm.semestre} onChange={(e) => setAlumnoForm({ ...alumnoForm, semestre: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                select
-                                label="Estatus del Alumno"
-                                fullWidth
-                                value={alumnoForm.estatus || 'ACTIVO'}
-                                onChange={(e) => setAlumnoForm({ ...alumnoForm, estatus: e.target.value })}
-                                helperText="Estado académico (Activo / Baja / Graduado)"
-                            >
-                                <MenuItem value="ACTIVO">🟢 ACTIVO (Predeterminado)</MenuItem>
-                                <MenuItem value="BAJA">🔴 BAJA (Desactivado / Detuvo estudios)</MenuItem>
-                                <MenuItem value="GRADUADO">🎓 GRADUADO (Completó cursos)</MenuItem>
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField label="Monto Personalizado / Beca ($)" type="number" fullWidth value={alumnoForm.monto_personalizado} onChange={(e) => setAlumnoForm({ ...alumnoForm, monto_personalizado: e.target.value })} />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField select label="Día de Corte" fullWidth value={alumnoForm.dia_pago} onChange={(e) => setAlumnoForm({ ...alumnoForm, dia_pago: e.target.value })}>
-                                <MenuItem value={5}>Día 5 de cada mes</MenuItem>
-                                <MenuItem value={10}>Día 10 de cada mes</MenuItem>
-                                <MenuItem value={15}>Día 15 de cada mes</MenuItem>
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                label="CLABE Interbancaria Única (18 dígitos)"
-                                fullWidth
-                                value={alumnoForm.clabe_interbancaria || ''}
-                                onChange={(e) => setAlumnoForm({ ...alumnoForm, clabe_interbancaria: e.target.value })}
-                                placeholder="Ej. 012180015012345678"
-                                helperText="CLABE personalizada para conciliación bancaria"
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <TextField
-                                label="Referencia Personal de Pago Alumno"
-                                fullWidth
-                                value={alumnoForm.referencia_pago || ''}
-                                onChange={(e) => setAlumnoForm({ ...alumnoForm, referencia_pago: e.target.value })}
-                                placeholder="Ej. REF-ALU-1002"
-                                helperText="Referencia fija asignada para depósitos SPEI"
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Card variant="outlined" sx={{ p: 2, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                                <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, color: '#166534', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    🎓 ID(s) Alumno / Planes de Estudio Asignados (Múltiples)
-                                </Typography>
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="IDs del Alumno por Plan de Estudio (separados por coma)"
-                                    value={alumnoForm.ids_alumno || ''}
-                                    onChange={(e) => setAlumnoForm({ ...alumnoForm, ids_alumno: e.target.value })}
-                                    placeholder="Ej. ID-SYS-2024-001, PLAN-CYBER-005, ID-MAESTRIA-02"
-                                    helperText="Permite ingresar varios IDs o matrículas asociadas a los planes de estudio que esté cursando para su conciliación automática."
-                                />
-                            </Card>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                multiline
-                                rows={2}
-                                fullWidth
-                                label="Información Adicional / Instrucciones de Pago"
-                                value={alumnoForm.informacion_pago || ''}
-                                onChange={(e) => setAlumnoForm({ ...alumnoForm, informacion_pago: e.target.value })}
-                                placeholder="Notas de pago, instrucciones bancarias o detalles específicos del alumno"
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <FormControlLabel control={<Switch checked={alumnoForm.requiere_factura} onChange={(e) => setAlumnoForm({ ...alumnoForm, requiere_factura: e.target.checked })} />} label="¿El alumno requiere Facturación Fiscal Individual con RFC?" />
-                        </Grid>
-                        {alumnoForm.requiere_factura && (
-                            <>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField label="RFC del Receptor Fiscal *" fullWidth value={alumnoForm.rfc} onChange={(e) => setAlumnoForm({ ...alumnoForm, rfc: e.target.value })} placeholder="Ej. XEXX010101000" helperText="RFC del Padre, Tutor, Empresa o Alumno" />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <TextField label="Nombre o Razón Social Fiscal *" fullWidth value={alumnoForm.razon_social} onChange={(e) => setAlumnoForm({ ...alumnoForm, razon_social: e.target.value })} placeholder="Ej. JUAN PEREZ (PADRE) O EMPRESA SA DE CV" helperText="Nombre a quien se le facturará (puede ser distinto al alumno)" />
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <TextField label="Código Postal Fiscal" fullWidth value={alumnoForm.codigo_postal} onChange={(e) => setAlumnoForm({ ...alumnoForm, codigo_postal: e.target.value })} />
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <TextField select label="Régimen Fiscal" fullWidth value={alumnoForm.regimen_fiscal} onChange={(e) => setAlumnoForm({ ...alumnoForm, regimen_fiscal: e.target.value })}>
-                                        {REGIMENES_FISCALES.map(r => (
-                                            <MenuItem key={r.clave} value={r.clave}>{r.clave} - {r.descripcion}</MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <TextField select label="Uso CFDI" fullWidth value={alumnoForm.uso_cfdi} onChange={(e) => setAlumnoForm({ ...alumnoForm, uso_cfdi: e.target.value })}>
-                                        {USOS_CFDI.map(u => (
-                                            <MenuItem key={u.clave} value={u.clave}>{u.clave} - {u.descripcion}</MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Grid>
-                            </>
+                            </Box>
                         )}
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenAlumnoModal(false)} color="secondary">Cancelar</Button>
-                    <Button onClick={handleSaveAlumno} variant="contained" color="primary" disabled={saving}>
-                        {saving ? 'Guardando...' : 'Guardar Alumno'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2, flexWrap: 'wrap', gap: 1 }}>
+                        <Button
+                            startIcon={<PdfIcon />}
+                            variant="outlined"
+                            color="secondary"
+                            onClick={() => window.open(`/api/cobranza/cargos/${cargoSeleccionado?.id}`, '_blank')}
+                        >
+                            Descargar PDF
+                        </Button>
+                        <Button
+                            startIcon={<EmailIcon />}
+                            variant="outlined"
+                            color="info"
+                            disabled={enviandoCorreoFicha}
+                            onClick={() => handleReenviarCorreoFicha(cargoSeleccionado?.id)}
+                        >
+                            {enviandoCorreoFicha ? 'Enviando PDF...' : 'Enviar por Correo'}
+                        </Button>
+                        <Button variant="outlined" startIcon={<PrintIcon />} onClick={() => window.print()}>
+                            Imprimir Ficha
+                        </Button>
+                        <Button onClick={() => setOpenFichaModal(false)} variant="contained" color="primary">
+                            Cerrar
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-            {/* MODAL 4: EMITIR FICHA DE COBRO MANUAL / COMPLEMENTARIA */}
-            <Dialog open={openCargoManualModal} onClose={() => setOpenCargoManualModal(false)} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: '#1b384a', color: 'white' }}>
-                    📑 Emitir Ficha de Cobro Individual / Complementaria
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                            <TextField
-                                select
-                                label="Seleccionar Alumno Destinatario *"
-                                fullWidth
-                                value={cargoForm.alumnos_ids || 'TODOS'}
-                                onChange={(e) => setCargoForm({ ...cargoForm, alumnos_ids: e.target.value })}
-                                helperText="Selecciona un alumno específico o todos los alumnos activos"
-                            >
-                                <MenuItem value="TODOS">👥 Todos los alumnos activos</MenuItem>
-                                {alumnos.map(alum => (
-                                    <MenuItem key={alum.id} value={alum.id.toString()}>
-                                        🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} ({alum.carrera})
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-
-                        {/* PANEL INFORMATIVO DEL ALUMNO SELECCIONADO */}
-                        {cargoForm.alumnos_ids && cargoForm.alumnos_ids !== 'TODOS' && (() => {
-                            const alumObj = alumnos.find(a => a.id.toString() === cargoForm.alumnos_ids);
-                            if (!alumObj) return null;
-                            return (
-                                <Grid item xs={12}>
-                                    <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
-                                        <Typography variant="subtitle2" fontWeight="bold" color="#166534" sx={{ mb: 1 }}>
-                                            👤 Datos para Pago y Conciliación de {alumObj.nombre} {alumObj.apellido_paterno}:
-                                        </Typography>
-                                        <Grid container spacing={1}>
-                                            <Grid item xs={12} sm={4}>
-                                                <Typography variant="caption" color="textSecondary" display="block">CLABE Única:</Typography>
-                                                <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                    {alumObj.clabe_interbancaria || 'Sin CLABE asignada'}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={4}>
-                                                <Typography variant="caption" color="textSecondary" display="block">Referencia Personal SPEI:</Typography>
-                                                <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                    {alumObj.referencia_pago || 'Sin referencia'}
-                                                </Typography>
-                                            </Grid>
-                                            <Grid item xs={12} sm={4}>
-                                                <Typography variant="caption" color="textSecondary" display="block">IDs / Planes de Estudio:</Typography>
-                                                <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
-                                                    {alumObj.ids_alumno || 'General'}
-                                                </Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </Paper>
-                                </Grid>
-                            );
-                        })()}
-
-                        {/* SECCIÓN MULTI-CONCEPTO DE COBRO PARA LA FICHA */}
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
-                                📑 Conceptos de Cobro y Facturación incluidos en esta Ficha:
-                            </Typography>
-                            {(cargoForm.items || []).map((item, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                {/* MODAL 3: REGISTRAR NUEVO ALUMNO */}
+                <Dialog open={openAlumnoModal} onClose={() => setOpenAlumnoModal(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{ fontWeight: 'bold' }}>Registrar Alumno y Configuración de Cobro</DialogTitle>
+                    <DialogContent dividers>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Matrícula *" fullWidth value={alumnoForm.matricula} onChange={(e) => setAlumnoForm({ ...alumnoForm, matricula: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Nombre *" fullWidth value={alumnoForm.nombre} onChange={(e) => setAlumnoForm({ ...alumnoForm, nombre: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Apellido Paterno *" fullWidth value={alumnoForm.apellido_paterno} onChange={(e) => setAlumnoForm({ ...alumnoForm, apellido_paterno: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Apellido Materno" fullWidth value={alumnoForm.apellido_materno} onChange={(e) => setAlumnoForm({ ...alumnoForm, apellido_materno: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField select label="Plan de Estudio *" fullWidth value={alumnoForm.programa_academico_id || ''} onChange={(e) => {
+                                    const selectedProg = programas.find(p => p.id.toString() === e.target.value);
+                                    setAlumnoForm({
+                                        ...alumnoForm,
+                                        programa_academico_id: e.target.value,
+                                        carrera: selectedProg ? selectedProg.nombre : alumnoForm.carrera
+                                    });
+                                }}>
+                                    <MenuItem value=""><em>-- Seleccionar Plan --</em></MenuItem>
+                                    {programas.map((prog) => (
+                                        <MenuItem key={prog.id} value={prog.id.toString()}>
+                                            {prog.nombre}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Semestre" type="number" fullWidth value={alumnoForm.semestre} onChange={(e) => setAlumnoForm({ ...alumnoForm, semestre: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField
+                                    select
+                                    label="Estatus del Alumno"
+                                    fullWidth
+                                    value={alumnoForm.estatus || 'ACTIVO'}
+                                    onChange={(e) => setAlumnoForm({ ...alumnoForm, estatus: e.target.value })}
+                                    helperText="Estado académico (Activo / Baja / Graduado)"
+                                >
+                                    <MenuItem value="ACTIVO">🟢 ACTIVO (Predeterminado)</MenuItem>
+                                    <MenuItem value="BAJA">🔴 BAJA (Desactivado / Detuvo estudios)</MenuItem>
+                                    <MenuItem value="GRADUADO">🎓 GRADUADO (Completó cursos)</MenuItem>
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField label="Monto Personalizado / Beca ($)" type="number" fullWidth value={alumnoForm.monto_personalizado} onChange={(e) => setAlumnoForm({ ...alumnoForm, monto_personalizado: e.target.value })} />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField select label="Día de Corte" fullWidth value={alumnoForm.dia_pago} onChange={(e) => setAlumnoForm({ ...alumnoForm, dia_pago: e.target.value })}>
+                                    <MenuItem value={5}>Día 5 de cada mes</MenuItem>
+                                    <MenuItem value={10}>Día 10 de cada mes</MenuItem>
+                                    <MenuItem value={15}>Día 15 de cada mes</MenuItem>
+                                </TextField>
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField
+                                    label="CLABE Interbancaria Única (18 dígitos)"
+                                    fullWidth
+                                    value={alumnoForm.clabe_interbancaria || ''}
+                                    onChange={(e) => setAlumnoForm({ ...alumnoForm, clabe_interbancaria: e.target.value })}
+                                    placeholder="Ej. 012180015012345678"
+                                    helperText="CLABE personalizada para conciliación bancaria"
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField
+                                    label="Referencia Personal de Pago Alumno"
+                                    fullWidth
+                                    value={alumnoForm.referencia_pago || ''}
+                                    onChange={(e) => setAlumnoForm({ ...alumnoForm, referencia_pago: e.target.value })}
+                                    placeholder="Ej. REF-ALU-1002"
+                                    helperText="Referencia fija asignada para depósitos SPEI"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Card variant="outlined" sx={{ p: 2, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1, color: '#166534', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        🎓 ID(s) Alumno / Planes de Estudio Asignados (Múltiples)
+                                    </Typography>
                                     <TextField
-                                        select
-                                        label={`Concepto ${idx + 1} *`}
                                         fullWidth
                                         size="small"
-                                        value={item.concepto || 'Mensualidad'}
-                                        onChange={(e) => handleItemChangeCargo(idx, 'concepto', e.target.value)}
-                                    >
-                                        <MenuItem value="Mensualidad">Mensualidad</MenuItem>
-                                        <MenuItem value="Inscripción">Inscripción</MenuItem>
-                                        <MenuItem value="Titulación">Titulación</MenuItem>
-                                        <MenuItem value="Examen Extraordinario">Examen Extraordinario</MenuItem>
-                                        <MenuItem value="Constancia">Constancia</MenuItem>
-                                    </TextField>
-                                    <TextField
-                                        label="Monto ($) *"
-                                        type="number"
-                                        size="small"
-                                        sx={{ width: 180 }}
-                                        value={item.monto}
-                                        onChange={(e) => handleItemChangeCargo(idx, 'monto', e.target.value)}
-                                        placeholder="0.00"
+                                        label="IDs del Alumno por Plan de Estudio (separados por coma)"
+                                        value={alumnoForm.ids_alumno || ''}
+                                        onChange={(e) => setAlumnoForm({ ...alumnoForm, ids_alumno: e.target.value })}
+                                        placeholder="Ej. ID-SYS-2024-001, PLAN-CYBER-005, ID-MAESTRIA-02"
+                                        helperText="Permite ingresar varios IDs o matrículas asociadas a los planes de estudio que esté cursando para su conciliación automática."
                                     />
-                                    {(cargoForm.items || []).length > 1 && (
-                                        <IconButton color="error" size="small" onClick={() => handleRemoveItemCargo(idx)}>
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    )}
-                                </Box>
-                            ))}
-                            <Button
-                                startIcon={<AddIcon />}
-                                size="small"
-                                variant="outlined"
-                                onClick={handleAddItemCargo}
-                                sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
-                            >
-                                + Agregar otro cobro / concepto a esta ficha
-                            </Button>
+                                </Card>
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    multiline
+                                    rows={2}
+                                    fullWidth
+                                    label="Información Adicional / Instrucciones de Pago"
+                                    value={alumnoForm.informacion_pago || ''}
+                                    onChange={(e) => setAlumnoForm({ ...alumnoForm, informacion_pago: e.target.value })}
+                                    placeholder="Notas de pago, instrucciones bancarias o detalles específicos del alumno"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel control={<Switch checked={alumnoForm.requiere_factura} onChange={(e) => setAlumnoForm({ ...alumnoForm, requiere_factura: e.target.checked })} />} label="¿El alumno requiere Facturación Fiscal Individual con RFC?" />
+                            </Grid>
+                            {alumnoForm.requiere_factura && (
+                                <>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField label="RFC del Receptor Fiscal *" fullWidth value={alumnoForm.rfc} onChange={(e) => setAlumnoForm({ ...alumnoForm, rfc: e.target.value })} placeholder="Ej. XEXX010101000" helperText="RFC del Padre, Tutor, Empresa o Alumno" />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                        <TextField label="Nombre o Razón Social Fiscal *" fullWidth value={alumnoForm.razon_social} onChange={(e) => setAlumnoForm({ ...alumnoForm, razon_social: e.target.value })} placeholder="Ej. JUAN PEREZ (PADRE) O EMPRESA SA DE CV" helperText="Nombre a quien se le facturará (puede ser distinto al alumno)" />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField label="Código Postal Fiscal" fullWidth value={alumnoForm.codigo_postal} onChange={(e) => setAlumnoForm({ ...alumnoForm, codigo_postal: e.target.value })} />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField select label="Régimen Fiscal" fullWidth value={alumnoForm.regimen_fiscal} onChange={(e) => setAlumnoForm({ ...alumnoForm, regimen_fiscal: e.target.value })}>
+                                            {REGIMENES_FISCALES.map(r => (
+                                                <MenuItem key={r.clave} value={r.clave}>{r.clave} - {r.descripcion}</MenuItem>
+                                            ))}
+                                        </TextField>
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField select label="Uso CFDI" fullWidth value={alumnoForm.uso_cfdi} onChange={(e) => setAlumnoForm({ ...alumnoForm, uso_cfdi: e.target.value })}>
+                                            {USOS_CFDI.map(u => (
+                                                <MenuItem key={u.clave} value={u.clave}>{u.clave} - {u.descripcion}</MenuItem>
+                                            ))}
+                                        </TextField>
+                                    </Grid>
+                                </>
+                            )}
                         </Grid>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenAlumnoModal(false)} color="secondary">Cancelar</Button>
+                        <Button onClick={handleSaveAlumno} variant="contained" color="primary" disabled={saving}>
+                            {saving ? 'Guardando...' : 'Guardar Alumno'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
-                        <Grid item xs={12} sm={6}>
-                            <Paper variant="outlined" sx={{ p: 1.5, bgcolor: '#f8fafc', textAlign: 'center' }}>
-                                <Typography variant="caption" color="textSecondary" display="block">MONTO TOTAL FICHA:</Typography>
-                                <Typography variant="h5" fontWeight="bold" color="success.main">
-                                    ${(cargoForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0).toFixed(2)} MXN
-                                </Typography>
-                            </Paper>
-                        </Grid>
+                {/* MODAL 4: EMITIR FICHA DE COBRO MANUAL / COMPLEMENTARIA */}
+                <Dialog open={openCargoManualModal} onClose={() => setOpenCargoManualModal(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{ fontWeight: 'bold', backgroundColor: '#1b384a', color: 'white' }}>
+                        📑 Emitir Ficha de Cobro Individual / Complementaria
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12}>
+                                <TextField
+                                    select
+                                    label="Seleccionar Alumno Destinatario *"
+                                    fullWidth
+                                    value={cargoForm.alumnos_ids || 'TODOS'}
+                                    onChange={(e) => setCargoForm({ ...cargoForm, alumnos_ids: e.target.value })}
+                                    helperText="Selecciona un alumno específico o todos los alumnos activos"
+                                >
+                                    <MenuItem value="TODOS">👥 Todos los alumnos activos</MenuItem>
+                                    {alumnos.map(alum => (
+                                        <MenuItem key={alum.id} value={alum.id.toString()}>
+                                            🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} ({alum.carrera})
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
 
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Fecha Límite de Vencimiento *"
-                                type="date"
-                                fullWidth
-                                InputLabelProps={{ shrink: true }}
-                                value={cargoForm.fecha_vencimiento}
-                                onChange={(e) => setCargoForm({ ...cargoForm, fecha_vencimiento: e.target.value })}
-                            />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenCargoManualModal(false)} color="secondary">Cancelar</Button>
-                    <Button onClick={handleGenerarManualCargo} variant="contained" color="primary" disabled={saving}>
-                        {saving ? 'Emitiendo...' : 'Emitir Ficha de Cobro'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL 5: GENERACIÓN AUTOMÁTICA 1-CLICK */}
-            <Dialog open={openAutoModal} onClose={() => setOpenAutoModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#2e7d32', color: 'white', fontWeight: 'bold' }}>
-                    ⚡ Generación Masiva 1-Click de Fichas del Periodo
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                        Este proceso emitirá automáticamente las fichas de cobro para todos los estudiantes activos aplicando sus becas o tarifas vigentes.
-                    </Typography>
-                    <TextField label="Seleccionar Periodo / Mes" type="month" fullWidth value={autoForm.mes_periodo} onChange={(e) => setAutoForm({ ...autoForm, mes_periodo: e.target.value })} InputLabelProps={{ shrink: true }} />
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenAutoModal(false)} color="secondary">Cancelar</Button>
-                    <Button onClick={handleGenerarAutomatica} variant="contained" color="success" disabled={saving}>
-                        {saving ? 'Generando...' : 'Ejecutar Generación Masiva'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL ENVIAR CORREO FACTURA */}
-            <Dialog open={openCorreoModal} onClose={() => setOpenCorreoModal(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    ✉️ Enviar Factura por Correo Electrónico
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    {facturaCorreo && (
-                        <Box>
-                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
-                                Factura {facturaCorreo.serie}-{facturaCorreo.folio}
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                                Ingrese el correo electrónico del estudiante o cliente al que desea enviar los archivos PDF y XML timbrados.
-                            </Typography>
-                            <TextField
-                                label="Correo Electrónico Destino *"
-                                fullWidth
-                                value={emailDestino}
-                                onChange={(e) => setEmailDestino(e.target.value)}
-                                placeholder="estudiante@universidad.edu.mx"
-                            />
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenCorreoModal(false)} color="secondary">Cancelar</Button>
-                    <Button
-                        onClick={handleEnviarCorreoSubmit}
-                        variant="contained"
-                        color="primary"
-                        disabled={enviandoCorreo || !emailDestino}
-                    >
-                        {enviandoCorreo ? 'Enviando...' : 'Enviar Factura por Correo'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* MODAL EDITAR PRE-FACTURA */}
-            <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="md" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
-                    ✏️ Editar Pre-factura Borrador {editForm.folio}
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    <Grid container spacing={2}>
-                        {/* SECCIÓN 1: DATOS FISCALES DEL RECEPTOR */}
-                        <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
-                                👤 Datos Fiscales del Receptor / Estudiante:
-                            </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="RFC del Receptor / Alumno *"
-                                fullWidth
-                                value={editForm.receptor_rfc}
-                                onChange={(e) => setEditForm({ ...editForm, receptor_rfc: e.target.value.toUpperCase() })}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Razón Social / Nombre del Receptor *"
-                                fullWidth
-                                value={editForm.receptor_nombre}
-                                onChange={(e) => setEditForm({ ...editForm, receptor_nombre: e.target.value.toUpperCase() })}
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                label="Clave Producto/Servicio SAT"
-                                fullWidth
-                                value={editForm.clave_prod_serv}
-                                onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                            <TextField
-                                select
-                                label="Uso CFDI"
-                                fullWidth
-                                value={editForm.uso_cfdi}
-                                onChange={(e) => setEditForm({ ...editForm, uso_cfdi: e.target.value })}
-                            >
-                                {USOS_CFDI.map(u => (
-                                    <MenuItem key={u.clave} value={u.clave}>{u.clave} - {u.descripcion}</MenuItem>
-                                ))}
-                            </TextField>
-                        </Grid>
-
-                        {/* SECCIÓN 2: DESGLOSE DE CONCEPTOS DE COBRO Y FACTURACIÓN */}
-                        <Grid item xs={12} sx={{ mt: 1 }}>
-                            <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
-                                📑 Desglose de Conceptos y Partidas de Facturación:
-                            </Typography>
-                            {(editForm.items || []).map((item, idx) => (
-                                <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
-                                    <TextField
-                                        label={`Concepto / Descripción Partida ${idx + 1} *`}
-                                        fullWidth
-                                        size="small"
-                                        value={item.concepto || ''}
-                                        onChange={(e) => handleItemChangeEdit(idx, 'concepto', e.target.value)}
-                                        placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
-                                    />
-                                    <TextField
-                                        label="Monto ($) *"
-                                        type="number"
-                                        size="small"
-                                        sx={{ width: 180 }}
-                                        value={item.monto}
-                                        onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
-                                        placeholder="0.00"
-                                    />
-                                    {(editForm.items || []).length > 1 && (
-                                        <IconButton color="error" size="small" onClick={() => handleRemoveItemEdit(idx)}>
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    )}
-                                </Box>
-                            ))}
-                            <Button
-                                startIcon={<AddIcon />}
-                                size="small"
-                                variant="outlined"
-                                onClick={handleAddItemEdit}
-                                sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
-                            >
-                                + Agregar otro concepto / partida a esta pre-factura
-                            </Button>
-                        </Grid>
-
-                        <Grid item xs={12}>
-                            {(() => {
-                                const totalSum = (editForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+                            {/* PANEL INFORMATIVO DEL ALUMNO SELECCIONADO */}
+                            {cargoForm.alumnos_ids && cargoForm.alumnos_ids !== 'TODOS' && (() => {
+                                const alumObj = alumnos.find(a => a.id.toString() === cargoForm.alumnos_ids);
+                                if (!alumObj) return null;
                                 return (
-                                    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
-                                        <Grid container spacing={2} textAlign="center">
-                                            <Grid item xs={6}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (EXENTO DE IVA):</Typography>
-                                                <Typography variant="h6" fontWeight="bold" color="textPrimary">
-                                                    ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </Typography>
+                                    <Grid item xs={12}>
+                                        <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                                            <Typography variant="subtitle2" fontWeight="bold" color="#166534" sx={{ mb: 1 }}>
+                                                👤 Datos para Pago y Conciliación de {alumObj.nombre} {alumObj.apellido_paterno}:
+                                            </Typography>
+                                            <Grid container spacing={1}>
+                                                <Grid item xs={12} sm={4}>
+                                                    <Typography variant="caption" color="textSecondary" display="block">CLABE Única:</Typography>
+                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                        {alumObj.clabe_interbancaria || 'Sin CLABE asignada'}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={4}>
+                                                    <Typography variant="caption" color="textSecondary" display="block">Referencia Personal SPEI:</Typography>
+                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                        {alumObj.referencia_pago || 'Sin referencia'}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={4}>
+                                                    <Typography variant="caption" color="textSecondary" display="block">IDs / Planes de Estudio:</Typography>
+                                                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                                                        {alumObj.ids_alumno || 'General'}
+                                                    </Typography>
+                                                </Grid>
                                             </Grid>
-                                            <Grid item xs={6}>
-                                                <Typography variant="caption" color="textSecondary" fontWeight="bold">TOTAL PRE-FACTURA (FICHA):</Typography>
-                                                <Typography variant="h6" fontWeight="bold" color="success.main">
-                                                    ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
-                                                </Typography>
-                                            </Grid>
-                                        </Grid>
-                                    </Paper>
+                                        </Paper>
+                                    </Grid>
                                 );
                             })()}
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenEditModal(false)}>Cancelar</Button>
-                    <Button
-                        variant="outlined"
-                        color="warning"
-                        onClick={() => handleGuardarEdicion(false)}
-                        disabled={guardandoEdicion}
-                    >
-                        {guardandoEdicion ? 'Guardando...' : 'Guardar Borrador'}
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleGuardarEdicion(true)}
-                        disabled={guardandoEdicion}
-                        startIcon={<FlashIcon />}
-                    >
-                        Guardar y Timbrar SAT
-                    </Button>
-                </DialogActions>
-            </Dialog>
 
-            {/* MODAL ELIMINAR PRE-FACTURA */}
-            <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ backgroundColor: '#d32f2f', color: 'white', fontWeight: 'bold' }}>
-                    🗑️ Eliminar Pre-factura Borrador
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 3 }}>
-                    <Typography variant="body1">
-                        ¿Estás seguro de que deseas eliminar la Pre-factura <strong>{itemAEliminar?.serie}-{itemAEliminar?.folio}</strong> por <strong>${parseMonto(itemAEliminar?.monto || itemAEliminar?.total).toFixed(2)}</strong>?
-                    </Typography>
-                    <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
-                        Esta acción desvinculará el borrador del pago. El pago volverá a quedar disponible para refacturar.
-                    </Typography>
-                </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setOpenDeleteModal(false)}>Cancelar</Button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={handleConfirmarEliminar}
-                        disabled={eliminando}
-                    >
-                        {eliminando ? 'Eliminando...' : 'Sí, Eliminar Borrador'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </div>
+                            {/* SECCIÓN MULTI-CONCEPTO DE COBRO PARA LA FICHA */}
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
+                                    📑 Conceptos de Cobro y Facturación incluidos en esta Ficha:
+                                </Typography>
+                                {(cargoForm.items || []).map((item, idx) => (
+                                    <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                                        <TextField
+                                            select
+                                            label={`Concepto ${idx + 1} *`}
+                                            fullWidth
+                                            size="small"
+                                            value={item.concepto || 'Mensualidad'}
+                                            onChange={(e) => handleItemChangeCargo(idx, 'concepto', e.target.value)}
+                                        >
+                                            <MenuItem value="Mensualidad">Mensualidad</MenuItem>
+                                            <MenuItem value="Inscripción">Inscripción</MenuItem>
+                                            <MenuItem value="Titulación">Titulación</MenuItem>
+                                            <MenuItem value="Examen Extraordinario">Examen Extraordinario</MenuItem>
+                                            <MenuItem value="Constancia">Constancia</MenuItem>
+                                        </TextField>
+                                        <TextField
+                                            label="Monto ($) *"
+                                            type="number"
+                                            size="small"
+                                            sx={{ width: 180 }}
+                                            value={item.monto}
+                                            onChange={(e) => handleItemChangeCargo(idx, 'monto', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        {(cargoForm.items || []).length > 1 && (
+                                            <IconButton color="error" size="small" onClick={() => handleRemoveItemCargo(idx)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </Box>
+                                ))}
+                                <Button
+                                    startIcon={<AddIcon />}
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={handleAddItemCargo}
+                                    sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
+                                >
+                                    + Agregar otro cobro / concepto a esta ficha
+                                </Button>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <Paper variant="outlined" sx={{ p: 1.5, bgcolor: '#f8fafc', textAlign: 'center' }}>
+                                    <Typography variant="caption" color="textSecondary" display="block">MONTO TOTAL FICHA:</Typography>
+                                    <Typography variant="h5" fontWeight="bold" color="success.main">
+                                        ${(cargoForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0).toFixed(2)} MXN
+                                    </Typography>
+                                </Paper>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Fecha Límite de Vencimiento *"
+                                    type="date"
+                                    fullWidth
+                                    InputLabelProps={{ shrink: true }}
+                                    value={cargoForm.fecha_vencimiento}
+                                    onChange={(e) => setCargoForm({ ...cargoForm, fecha_vencimiento: e.target.value })}
+                                />
+                            </Grid>
+                        </Grid>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenCargoManualModal(false)} color="secondary">Cancelar</Button>
+                        <Button onClick={handleGenerarManualCargo} variant="contained" color="primary" disabled={saving}>
+                            {saving ? 'Emitiendo...' : 'Emitir Ficha de Cobro'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL 5: GENERACIÓN AUTOMÁTICA 1-CLICK */}
+                <Dialog open={openAutoModal} onClose={() => setOpenAutoModal(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#2e7d32', color: 'white', fontWeight: 'bold' }}>
+                        ⚡ Generación Masiva 1-Click de Fichas del Periodo
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                            Este proceso emitirá automáticamente las fichas de cobro para todos los estudiantes activos aplicando sus becas o tarifas vigentes.
+                        </Typography>
+                        <TextField label="Seleccionar Periodo / Mes" type="month" fullWidth value={autoForm.mes_periodo} onChange={(e) => setAutoForm({ ...autoForm, mes_periodo: e.target.value })} InputLabelProps={{ shrink: true }} />
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenAutoModal(false)} color="secondary">Cancelar</Button>
+                        <Button onClick={handleGenerarAutomatica} variant="contained" color="success" disabled={saving}>
+                            {saving ? 'Generando...' : 'Ejecutar Generación Masiva'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL ENVIAR CORREO FACTURA */}
+                <Dialog open={openCorreoModal} onClose={() => setOpenCorreoModal(false)} maxWidth="sm" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
+                        ✉️ Enviar Factura por Correo Electrónico
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        {facturaCorreo && (
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 1 }}>
+                                    Factura {facturaCorreo.serie}-{facturaCorreo.folio}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                    Ingrese el correo electrónico del estudiante o cliente al que desea enviar los archivos PDF y XML timbrados.
+                                </Typography>
+                                <TextField
+                                    label="Correo Electrónico Destino *"
+                                    fullWidth
+                                    value={emailDestino}
+                                    onChange={(e) => setEmailDestino(e.target.value)}
+                                    placeholder="estudiante@universidad.edu.mx"
+                                />
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenCorreoModal(false)} color="secondary">Cancelar</Button>
+                        <Button
+                            onClick={handleEnviarCorreoSubmit}
+                            variant="contained"
+                            color="primary"
+                            disabled={enviandoCorreo || !emailDestino}
+                        >
+                            {enviandoCorreo ? 'Enviando...' : 'Enviar Factura por Correo'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL EDITAR PRE-FACTURA */}
+                <Dialog open={openEditModal} onClose={() => setOpenEditModal(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#1b384a', color: 'white', fontWeight: 'bold' }}>
+                        ✏️ Editar Pre-factura Borrador {editForm.folio}
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Grid container spacing={2}>
+                            {/* SECCIÓN 1: DATOS FISCALES DEL RECEPTOR */}
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
+                                    👤 Datos Fiscales del Receptor / Estudiante:
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="RFC del Receptor / Alumno *"
+                                    fullWidth
+                                    value={editForm.receptor_rfc}
+                                    onChange={(e) => setEditForm({ ...editForm, receptor_rfc: e.target.value.toUpperCase() })}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Razón Social / Nombre del Receptor *"
+                                    fullWidth
+                                    value={editForm.receptor_nombre}
+                                    onChange={(e) => setEditForm({ ...editForm, receptor_nombre: e.target.value.toUpperCase() })}
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Clave Producto/Servicio SAT"
+                                    fullWidth
+                                    value={editForm.clave_prod_serv}
+                                    onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    select
+                                    label="Uso CFDI"
+                                    fullWidth
+                                    value={editForm.uso_cfdi}
+                                    onChange={(e) => setEditForm({ ...editForm, uso_cfdi: e.target.value })}
+                                >
+                                    {USOS_CFDI.map(u => (
+                                        <MenuItem key={u.clave} value={u.clave}>{u.clave} - {u.descripcion}</MenuItem>
+                                    ))}
+                                </TextField>
+                            </Grid>
+
+                            {/* SECCIÓN 2: DESGLOSE DE CONCEPTOS DE COBRO Y FACTURACIÓN */}
+                            <Grid item xs={12} sx={{ mt: 1 }}>
+                                <Typography variant="subtitle2" fontWeight="bold" sx={{ color: '#1b384a', mb: 1 }}>
+                                    📑 Desglose de Conceptos y Partidas de Facturación:
+                                </Typography>
+                                {(editForm.items || []).map((item, idx) => (
+                                    <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                                        <TextField
+                                            label={`Concepto / Descripción Partida ${idx + 1} *`}
+                                            fullWidth
+                                            size="small"
+                                            value={item.concepto || ''}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'concepto', e.target.value)}
+                                            placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
+                                        />
+                                        <TextField
+                                            label="Monto ($) *"
+                                            type="number"
+                                            size="small"
+                                            sx={{ width: 180 }}
+                                            value={item.monto}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
+                                            placeholder="0.00"
+                                        />
+                                        {(editForm.items || []).length > 1 && (
+                                            <IconButton color="error" size="small" onClick={() => handleRemoveItemEdit(idx)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </Box>
+                                ))}
+                                <Button
+                                    startIcon={<AddIcon />}
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={handleAddItemEdit}
+                                    sx={{ textTransform: 'none', mt: 1, fontWeight: 'bold' }}
+                                >
+                                    + Agregar otro concepto / partida a esta pre-factura
+                                </Button>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                {(() => {
+                                    const totalSum = (editForm.items || []).reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+                                    return (
+                                        <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
+                                            <Grid container spacing={2} textAlign="center">
+                                                <Grid item xs={6}>
+                                                    <Typography variant="caption" color="textSecondary" fontWeight="bold">SUBTOTAL (EXENTO DE IVA):</Typography>
+                                                    <Typography variant="h6" fontWeight="bold" color="textPrimary">
+                                                        ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={6}>
+                                                    <Typography variant="caption" color="textSecondary" fontWeight="bold">TOTAL PRE-FACTURA (FICHA):</Typography>
+                                                    <Typography variant="h6" fontWeight="bold" color="success.main">
+                                                        ${totalSum.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+                                                    </Typography>
+                                                </Grid>
+                                            </Grid>
+                                        </Paper>
+                                    );
+                                })()}
+                            </Grid>
+                        </Grid>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenEditModal(false)}>Cancelar</Button>
+                        <Button
+                            variant="outlined"
+                            color="warning"
+                            onClick={() => handleGuardarEdicion(false)}
+                            disabled={guardandoEdicion}
+                        >
+                            {guardandoEdicion ? 'Guardando...' : 'Guardar Borrador'}
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="success"
+                            onClick={() => handleGuardarEdicion(true)}
+                            disabled={guardandoEdicion}
+                            startIcon={<FlashIcon />}
+                        >
+                            Guardar y Timbrar SAT
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* MODAL ELIMINAR PRE-FACTURA */}
+                <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)} maxWidth="xs" fullWidth>
+                    <DialogTitle sx={{ backgroundColor: '#d32f2f', color: 'white', fontWeight: 'bold' }}>
+                        🗑️ Eliminar Pre-factura Borrador
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ p: 3 }}>
+                        <Typography variant="body1">
+                            ¿Estás seguro de que deseas eliminar la Pre-factura <strong>{itemAEliminar?.serie}-{itemAEliminar?.folio}</strong> por <strong>${parseMonto(itemAEliminar?.monto || itemAEliminar?.total).toFixed(2)}</strong>?
+                        </Typography>
+                        <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
+                            Esta acción desvinculará el borrador del pago. El pago volverá a quedar disponible para refacturar.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2 }}>
+                        <Button onClick={() => setOpenDeleteModal(false)}>Cancelar</Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            onClick={handleConfirmarEliminar}
+                            disabled={eliminando}
+                        >
+                            {eliminando ? 'Eliminando...' : 'Sí, Eliminar Borrador'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </div>
         </WithPermission>
     );
 }
