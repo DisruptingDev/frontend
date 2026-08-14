@@ -813,8 +813,23 @@ export async function POST(request) {
             return NextResponse.json({ error: 'El archivo no contiene movimientos bancarios válidos o con formato reconocible.' }, { status: 400 });
         }
 
-                const todosLosAlumnos = await prisma.alumno.findMany({
-            where: { estatus: 'ACTIVO' },
+                const isSuperUser = formData.get('is_superadmin') === 'true' || request.headers.get('x-super-user') === 'true';
+
+        // Filtro multitenant estricto para alumnos y cargos del grupo activo
+        const andFiltersAlumnos = [{ estatus: 'ACTIVO' }];
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            andFiltersAlumnos.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
+        } else if (!isSuperUser) {
+            andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
+        }
+
+        const todosLosAlumnos = await prisma.alumno.findMany({
+            where: { AND: andFiltersAlumnos },
             include: { receptor: true, programa_academico: true }
         });
 
@@ -822,6 +837,7 @@ export async function POST(request) {
         try {
             await prisma.cargoAlumno.updateMany({
                 where: {
+                    ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahoraConc },
                     monto_pendiente: { gt: 0 },
                     estatus: { in: ['PENDIENTE', 'PARCIAL'] }
@@ -832,8 +848,20 @@ export async function POST(request) {
             });
         } catch (e) {}
 
+        const andFiltersCargos = [{ estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } }];
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+            andFiltersCargos.push({
+                OR: [
+                    { grupo_id: BigInt(grupoId) },
+                    { grupo_id: null }
+                ]
+            });
+        } else if (!isSuperUser) {
+            andFiltersCargos.push({ grupo_id: BigInt(-1) });
+        }
+
         const cargosPendientes = await prisma.cargoAlumno.findMany({
-            where: { estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
+            where: { AND: andFiltersCargos },
             include: { producto: true, concepto: true }
         });
 

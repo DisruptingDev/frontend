@@ -179,10 +179,25 @@ export default function ConciliacionPage() {
         setResultado(null);
 
         try {
+            let grupoId = '';
+            if (typeof window !== 'undefined') {
+                const storedUser = localStorage.getItem('usuario');
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        grupoId = parsed.grupo_id || parsed.grupoId || '';
+                    } catch (e) {}
+                }
+                if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
+            }
+            const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+
             const formData = new FormData();
             formData.append('file', file);
             formData.append('banco', banco);
             if (emisorSeleccionado) formData.append('emisor_id', emisorSeleccionado);
+            if (grupoId) formData.append('grupo_id', grupoId);
+            if (isSuper) formData.append('is_superadmin', 'true');
 
             const response = await fetch('/api/cobranza/conciliacion', {
                 method: 'POST',
