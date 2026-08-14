@@ -23,13 +23,10 @@ function serializeBigIntsAndDecimals(obj) {
 }
 
 async function getGrupoIdFromRequest(request) {
-    const { searchParams } = new URL(request.url);
-    let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
-    if (grupoId && grupoId !== 'undefined' && grupoId !== 'null') {
-        return grupoId;
-    }
-
     const authHeader = request.headers.get('authorization');
+    let tokenGrupoId = null;
+    let dbGrupoId = null;
+
     if (authHeader && authHeader.includes('Bearer ')) {
         try {
             const tokenStr = authHeader.replace('Bearer ', '').trim();
@@ -37,7 +34,7 @@ async function getGrupoIdFromRequest(request) {
             const parsed = JSON.parse(payloadStr);
 
             if (parsed.grupo_id || parsed.grupoId || parsed.GrupoID) {
-                return (parsed.grupo_id || parsed.grupoId || parsed.GrupoID).toString();
+                tokenGrupoId = (parsed.grupo_id || parsed.grupoId || parsed.GrupoID).toString();
             }
 
             const email = parsed.email || parsed.correo || parsed.sub || parsed.username;
@@ -58,14 +55,28 @@ async function getGrupoIdFromRequest(request) {
                         select: { grupo_id: true }
                     });
                     if (dbUser && dbUser.grupo_id) {
-                        return dbUser.grupo_id.toString();
+                        dbGrupoId = dbUser.grupo_id.toString();
                     }
                 }
             }
         } catch (e) {
-            console.error('Error resolviendo grupoId:', e.message);
+            console.error('Error resolviendo grupoId en token:', e.message);
         }
     }
+
+    if (tokenGrupoId && tokenGrupoId !== 'undefined' && tokenGrupoId !== 'null') {
+        return tokenGrupoId;
+    }
+    if (dbGrupoId && dbGrupoId !== 'undefined' && dbGrupoId !== 'null') {
+        return dbGrupoId;
+    }
+
+    const { searchParams } = new URL(request.url);
+    let grupoIdParam = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+    if (grupoIdParam && grupoIdParam !== 'undefined' && grupoIdParam !== 'null') {
+        return grupoIdParam;
+    }
+
     return null;
 }
 
