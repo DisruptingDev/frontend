@@ -45,12 +45,7 @@ export async function GET(request) {
 
         const andFiltersAlumnos = [];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            andFiltersAlumnos.push({
-                OR: [
-                    { grupo_id: BigInt(grupoId) },
-                    { grupo_id: null }
-                ]
-            });
+            andFiltersAlumnos.push({ grupo_id: BigInt(grupoId) });
         } else if (!isSuperUser) {
             andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
