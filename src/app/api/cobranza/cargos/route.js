@@ -176,7 +176,19 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const alumnoId = searchParams.get('alumno_id');
         const estatus = searchParams.get('estatus');
-        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        if (!grupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+        
+        if (grupoId === 'undefined' || grupoId === 'null') {
+            grupoId = null;
+        }
+
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 
                             request.headers.get('x-super-user') === 'true' ||
@@ -202,12 +214,7 @@ export async function GET(request) {
         if (estatus && estatus !== 'TODOS') andFiltersCargos.push({ estatus });
 
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            andFiltersCargos.push({
-                OR: [
-                    { grupo_id: BigInt(grupoId) },
-                    { grupo_id: null }
-                ]
-            });
+            andFiltersCargos.push({ grupo_id: BigInt(grupoId) });
         } else if (!isSuperUser) {
             andFiltersCargos.push({ grupo_id: BigInt(-1) });
         }

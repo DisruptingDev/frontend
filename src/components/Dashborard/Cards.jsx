@@ -24,9 +24,36 @@ export default function Cards() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
+        let token = '';
+        let grupoId = '';
+        let isSuper = false;
+        if (typeof window !== 'undefined') {
+            token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+            const storedUser = localStorage.getItem('usuario');
+            if (storedUser) {
+                try {
+                    const parsed = JSON.parse(storedUser);
+                    grupoId = parsed.grupo_id || parsed.grupoId || '';
+                } catch (e) {}
+            }
+            if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
+            isSuper = localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true';
+        }
+
+        const queryParams = [`startDate=${startDate}`, `endDate=${endDate}`];
+        if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
+        if (isSuper) queryParams.push(`is_superadmin=true`);
+        const qStr = `?${queryParams.join('&')}`;
+
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'x-grupo-id': grupoId,
+            'x-super-user': isSuper.toString()
+        };
+
         const [stampedRes, payrollRes] = await Promise.all([
-          fetch(`/api/dashboard/stamped-count?startDate=${startDate}&endDate=${endDate}`),
-          fetch(`/api/dashboard/payroll-stamped-count?startDate=${startDate}&endDate=${endDate}`)
+          fetch(`/api/dashboard/stamped-count${qStr}`, { headers }),
+          fetch(`/api/dashboard/payroll-stamped-count${qStr}`, { headers })
         ]);
 
         if (stampedRes.ok) {

@@ -7,6 +7,20 @@ export async function GET(request) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
 
+        let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        if (!grupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
+                            searchParams.get('super_user') === 'true' || 
+                            request.headers.get('x-super-user') === 'true' ||
+                            grupoId === 'ALL' || grupoId === 'TODOS';
+
         // Build the where clause
         const where = {
             uuid: {
@@ -23,6 +37,14 @@ export async function GET(request) {
                 { fecha_timbrado: "" }
             ]
         };
+
+        if (!isSuperUser && grupoId) {
+            try {
+                where.grupo_id = BigInt(grupoId);
+            } catch (err) {}
+        } else if (!isSuperUser) {
+            where.grupo_id = BigInt(-1); // Force empty if no valid ID for normal user
+        }
 
         if (startDate && endDate) {
             // Append time suffix to include records stamped up to the end of the selected day

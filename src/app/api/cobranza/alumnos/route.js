@@ -119,7 +119,11 @@ export async function GET(request) {
 
     } catch (error) {
         console.error('Error fetching alumnos:', error);
-        return NextResponse.json({ error: 'Error al consultar lista de alumnos: ' + error.message }, { status: 500 });
+        return NextResponse.json({ 
+            error: 'Error al consultar lista de alumnos: ' + error.message,
+            stack: error.stack,
+            name: error.name
+        }, { status: 500 });
     }
 }
 

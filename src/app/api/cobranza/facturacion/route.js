@@ -24,7 +24,19 @@ function getFechaLocalSAT() {
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        if (!grupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+        
+        if (grupoId === 'undefined' || grupoId === 'null') {
+            grupoId = null;
+        }
+
         const emisorId = searchParams.get('emisor_id');
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 
@@ -36,12 +48,9 @@ export async function GET(request) {
         if (emisorId) andFiltersComprobante.push({ emisor_id: BigInt(emisorId) });
 
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
-            andFiltersComprobante.push({
-                OR: [
-                    { grupo_id: BigInt(grupoId) },
-                    { grupo_id: null }
-                ]
-            });
+            try {
+                andFiltersComprobante.push({ grupo_id: BigInt(grupoId) });
+            } catch(e) {}
         } else if (!isSuperUser) {
             andFiltersComprobante.push({ grupo_id: BigInt(-1) });
         }

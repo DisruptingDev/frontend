@@ -86,6 +86,7 @@ export default function AlumnosView() {
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [globalError, setGlobalError] = useState(null);
     const [mensajeExito, setMensajeExito] = useState('');
     const [filtroEstatus, setFiltroEstatus] = useState('TODOS');
 
@@ -474,13 +475,20 @@ export default function AlumnosView() {
             const urlAlum = `/api/cobranza/alumnos${qStr}`;
             const resAlum = await fetch(urlAlum).then(r => r.json()).catch(err => {
                 console.error("Fetch API error en alumnos:", err);
-                return [];
+                return { error: err.message };
             });
             console.log("Respuesta de /api/cobranza/alumnos:", resAlum);
             if (Array.isArray(resAlum)) {
                 setAlumnos(resAlum);
+                setGlobalError(null);
             } else {
                 console.error("resAlum NO es un arreglo:", resAlum);
+                setAlumnos([]);
+                if (resAlum?.error) {
+                    setGlobalError(`Error al cargar alumnos: ${resAlum.error}`);
+                } else {
+                    setGlobalError(`Error desconocido al cargar alumnos.`);
+                }
             }
 
             // 3. Cargar Programas Académicos asociados al grupo del usuario
@@ -802,6 +810,11 @@ export default function AlumnosView() {
                             </TextField>
                         </Box>
 
+                        {globalError && (
+                            <Alert severity="error" sx={{ mb: 3 }}>
+                                {globalError}
+                            </Alert>
+                        )}
                         <TableContainer component={Paper} variant="outlined">
                             <Table size="small">
                                 <TableHead sx={{ backgroundColor: '#1b384a' }}>
