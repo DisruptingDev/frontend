@@ -55,17 +55,18 @@ export async function GET(request) {
         const alumnos = await prisma.alumno.findMany({
             where,
             include: {
-                receptor: true,
-                programa_academico: true
+                receptors: true
             },
             orderBy: {
                 matricula: 'asc'
             }
         });
 
-        // Mapear emisores asignados de manera segura sin depender de relaciones compiladas de Prisma Client
+        // Mapear emisores y programas académicos asignados de manera segura
         const emisorIds = [...new Set(alumnos.map(a => a.emisor_id).filter(Boolean))];
+        const programaIds = [...new Set(alumnos.map(a => a.programa_academico_id).filter(Boolean))];
         let emisoresMap = {};
+        let programasMap = {};
 
         if (emisorIds.length > 0) {
             try {
@@ -80,9 +81,24 @@ export async function GET(request) {
             }
         }
 
+        if (programaIds.length > 0) {
+            try {
+                const listProgramas = await prisma.programaAcademico.findMany({
+                    where: { id: { in: programaIds.map(id => BigInt(id)) } }
+                });
+                for (const pr of listProgramas) {
+                    programasMap[pr.id.toString()] = pr;
+                }
+            } catch (e) {
+                console.log('Error buscando programas académicos:', e.message);
+            }
+        }
+
         const alumnosFormatted = alumnos.map(a => ({
             ...a,
-            carrera: a.programa_academico?.nombre || a.carrera,
+            receptor: a.receptors || null,
+            programa_academico: a.programa_academico_id ? (programasMap[a.programa_academico_id.toString()] || null) : null,
+            carrera: a.programa_academico_id ? (programasMap[a.programa_academico_id.toString()]?.nombre || a.carrera) : a.carrera,
             emisor: a.emisor_id ? (emisoresMap[a.emisor_id.toString()] || null) : null
         }));
 
@@ -183,7 +199,7 @@ export async function POST(request) {
             const alumnoActualizado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: { estatus: estatusNormalizado },
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
             return NextResponse.json(serializeBigIntsAndDecimals(alumnoActualizado), { status: 200 });
@@ -274,7 +290,7 @@ export async function POST(request) {
             alumnoResultado = await prisma.alumno.update({
                 where: { id: BigInt(alumno_id) },
                 data: dataAlumno,
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
             if (original && Number(original.monto_personalizado) !== Number(dataAlumno.monto_personalizado)) {
@@ -290,7 +306,7 @@ export async function POST(request) {
         } else {
             alumnoResultado = await prisma.alumno.create({
                 data: dataAlumno,
-                include: { receptor: true }
+                include: { receptors: true }
             });
 
             await prisma.historialMontoAlumno.create({
