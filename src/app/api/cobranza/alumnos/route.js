@@ -26,7 +26,15 @@ function serializeBigIntsAndDecimals(obj) {
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        const grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+        if (!grupoId && request.headers.get('authorization')) {
+            try {
+                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
+                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
+                grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
+            } catch (e) {}
+        }
+
         const carrera = searchParams.get('carrera');
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
