@@ -41,36 +41,50 @@ export default function ResumenTab({ emisorSeleccionado }) {
                 let grupoId = '';
                 if (token) {
                     try {
-                        const parsed = JSON.parse(atob(token.split('.')[1]));
-                        grupoId = parsed.grupo_id || '';
+                        const parsed = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                        grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || '';
                     } catch (e) { }
                 }
                 if (!grupoId && typeof window !== 'undefined') {
                     try {
-                        const userStr = localStorage.getItem('user');
+                        const userStr = localStorage.getItem('usuario');
                         if (userStr) {
                             const parsed = JSON.parse(userStr);
-                            grupoId = parsed.grupo_id || '';
+                            grupoId = parsed.grupo_id || parsed.grupoId || '';
                         }
                     } catch (e) { }
                 }
                 if (!grupoId && typeof window !== 'undefined') grupoId = localStorage.getItem('grupo_id') || '';
                 
-                const qGrupo = grupoId ? `grupo_id=${grupoId}` : '';
+                const isSuplantando = typeof window !== 'undefined' && Boolean(localStorage.getItem('usuarioSuplantado'));
+                const isSuper = !isSuplantando && typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+
+                const qGrupo = (grupoId && grupoId !== 'undefined' && grupoId !== 'null') ? `grupo_id=${grupoId}` : '';
                 const qEmisor = emisorSeleccionado ? `emisor_id=${emisorSeleccionado}` : '';
-                const qAlum = qGrupo ? `?${qGrupo}` : '';
-                const qCargos = `?estatus=TODOS${qGrupo ? `&${qGrupo}` : ''}`;
-                const qFact = [qGrupo, qEmisor].filter(Boolean).join('&');
+                const qSuper = isSuper ? 'is_superadmin=true' : '';
+                
+                const qAlum = [qGrupo, qSuper].filter(Boolean).join('&');
+                const qAlumStr = qAlum ? `?${qAlum}` : '';
+
+                const qCargosArr = ['estatus=TODOS', qGrupo, qSuper].filter(Boolean);
+                const qCargos = `?${qCargosArr.join('&')}`;
+
+                const qFact = [qGrupo, qEmisor, qSuper].filter(Boolean).join('&');
                 const qFactStr = qFact ? `?${qFact}` : '';
 
-                const urlAlum = `/api/cobranza/alumnos${qAlum}`;
+                const urlAlum = `/api/cobranza/alumnos${qAlumStr}`;
                 const urlCargos = `/api/cobranza/cargos${qCargos}`;
                 const urlFact = `/api/cobranza/facturacion${qFactStr}`;
                 
+                const reqHeaders = {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'x-grupo-id': grupoId || ''
+                };
+
                 const [resAlum, resCargos, resFact] = await Promise.all([
-                    fetch(urlAlum).then(r => r.json()).catch(() => []),
-                    fetch(urlCargos).then(r => r.json()).catch(() => []),
-                    fetch(urlFact).then(r => r.json()).catch(() => ({}))
+                    fetch(urlAlum, { headers: reqHeaders }).then(r => r.json()).catch(() => []),
+                    fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []),
+                    fetch(urlFact, { headers: reqHeaders }).then(r => r.json()).catch(() => ({}))
                 ]);
 
                 const alumnosArr = Array.isArray(resAlum) ? resAlum : [];

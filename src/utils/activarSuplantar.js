@@ -23,15 +23,34 @@ export const onSuplantar = (token, nombre, grupoId, usuarioObj) => {
     }
 
     localStorage.setItem('usuarioSuplantado', nombre);
-    // IMPORTANTE: Mantener superUser en true para conservar el menú lateral completo de navegación
+    // Mantener superUser en true para conservar el menú lateral completo de navegación
     localStorage.setItem('superUser', 'true');
-    
-    if (grupoId) {
-        localStorage.setItem('grupo_id', grupoId.toString());
-        sessionStorage.setItem('grupo_id', grupoId.toString());
+
+    // Intentar extraer el grupo_id del token JWT si no viene en los parámetros
+    let finalGrupoId = grupoId;
+    if ((!finalGrupoId || finalGrupoId === 'undefined' || finalGrupoId === 'null') && token) {
+        try {
+            const payloadStr = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+            const payload = JSON.parse(payloadStr);
+            finalGrupoId = payload.grupo_id || payload.grupoId || payload.GrupoID || '';
+        } catch (e) {
+            console.error('Error decodificando token en suplantación:', e);
+        }
     }
-    if (usuarioObj) {
-        localStorage.setItem('usuario', typeof usuarioObj === 'string' ? usuarioObj : JSON.stringify(usuarioObj));
+
+    if (finalGrupoId && finalGrupoId !== 'undefined' && finalGrupoId !== 'null') {
+        localStorage.setItem('grupo_id', finalGrupoId.toString());
+        sessionStorage.setItem('grupo_id', finalGrupoId.toString());
+    } else {
+        localStorage.removeItem('grupo_id');
+        sessionStorage.removeItem('grupo_id');
     }
+
+    const updatedUser = usuarioObj ? {
+        ...usuarioObj,
+        grupo_id: finalGrupoId || usuarioObj.grupo_id || ''
+    } : { nombre, grupo_id: finalGrupoId };
+
+    localStorage.setItem('usuario', JSON.stringify(updatedUser));
     return true;
 };

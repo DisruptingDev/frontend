@@ -22,27 +22,62 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
+async function getGrupoIdFromRequest(request) {
+    const { searchParams } = new URL(request.url);
+    let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+    if (grupoId && grupoId !== 'undefined' && grupoId !== 'null') {
+        return grupoId;
+    }
+
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.includes('Bearer ')) {
+        try {
+            const tokenStr = authHeader.replace('Bearer ', '').trim();
+            const payloadStr = Buffer.from(tokenStr.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+            const parsed = JSON.parse(payloadStr);
+
+            if (parsed.grupo_id || parsed.grupoId || parsed.GrupoID) {
+                return (parsed.grupo_id || parsed.grupoId || parsed.GrupoID).toString();
+            }
+
+            const email = parsed.email || parsed.correo || parsed.sub || parsed.username;
+            const userId = parsed.id || parsed.user_id || parsed.usuario_id;
+
+            if (email || userId) {
+                const userWhere = [];
+                if (userId) {
+                    try { userWhere.push({ id: BigInt(userId) }); } catch(e){}
+                }
+                if (email && typeof email === 'string' && email.includes('@')) {
+                    userWhere.push({ email: email.trim().toLowerCase() });
+                }
+
+                if (userWhere.length > 0) {
+                    const dbUser = await prisma.usuarios.findFirst({
+                        where: { OR: userWhere },
+                        select: { grupo_id: true }
+                    });
+                    if (dbUser && dbUser.grupo_id) {
+                        return dbUser.grupo_id.toString();
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error resolviendo grupoId:', e.message);
+        }
+    }
+    return null;
+}
+
 // GET: Obtener lista de Alumnos con receptor, emisor asignado y perfil fiscal
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        let grupoId = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
-        if (!grupoId && request.headers.get('authorization')) {
-            try {
-                const tokenStr = request.headers.get('authorization').replace('Bearer ', '');
-                const parsed = JSON.parse(Buffer.from(tokenStr.split('.')[1], 'base64').toString());
-                grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || null;
-            } catch (e) {}
-        }
+        let grupoId = await getGrupoIdFromRequest(request);
 
         const carrera = searchParams.get('carrera');
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
-        
-        // Sanitizar grupoId para evitar strings literales 'undefined' o 'null'
-        if (grupoId === 'undefined' || grupoId === 'null') {
-            grupoId = null;
-        }
 
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 

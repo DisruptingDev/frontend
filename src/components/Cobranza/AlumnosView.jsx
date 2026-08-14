@@ -412,28 +412,50 @@ export default function AlumnosView() {
         try {
             let token = '';
             let grupoId = '';
+            const isSuplantando = typeof window !== 'undefined' && Boolean(localStorage.getItem('usuarioSuplantado'));
+
             if (typeof window !== 'undefined') {
                 token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
-                const storedUser = localStorage.getItem('usuario');
-                if (storedUser) {
+                
+                // Prioridad 1: Token JWT activo
+                if (token) {
                     try {
-                        const parsed = JSON.parse(storedUser);
-                        grupoId = parsed.grupo_id || parsed.grupoId || '';
+                        const payloadStr = atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+                        const payload = JSON.parse(payloadStr);
+                        grupoId = payload.grupo_id || payload.grupoId || payload.GrupoID || '';
                     } catch (e) {}
                 }
+
+                // Prioridad 2: Objeto usuario en localStorage
+                if (!grupoId) {
+                    const storedUser = localStorage.getItem('usuario');
+                    if (storedUser) {
+                        try {
+                            const parsed = JSON.parse(storedUser);
+                            grupoId = parsed.grupo_id || parsed.grupoId || '';
+                        } catch (e) {}
+                    }
+                }
+
+                // Prioridad 3: Llave directa grupo_id
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
             }
 
             // 1. Cargar Emisores de forma rápida e instantánea desde la API local de facturación
             let emisoresList = [];
-            const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
+            const isSuper = !isSuplantando && typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
             const queryParams = [];
-            if (grupoId) queryParams.push(`grupo_id=${grupoId}`);
+            if (grupoId && grupoId !== 'undefined' && grupoId !== 'null') queryParams.push(`grupo_id=${grupoId}`);
             if (isSuper) queryParams.push(`is_superadmin=true`);
             const qStr = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
 
+            const reqHeaders = {
+                'Authorization': token ? `Bearer ${token}` : '',
+                'x-grupo-id': grupoId || ''
+            };
+
             try {
-                const resFact = await fetch(`/api/cobranza/facturacion${qStr}`);
+                const resFact = await fetch(`/api/cobranza/facturacion${qStr}`, { headers: reqHeaders });
                 if (resFact.ok) {
                     const dataFact = await resFact.json();
                     if (dataFact.emisores && Array.isArray(dataFact.emisores)) {
@@ -473,7 +495,7 @@ export default function AlumnosView() {
 
             // 2. Cargar Alumnos asociados al grupo del usuario o vista global SuperAdmin
             const urlAlum = `/api/cobranza/alumnos${qStr}`;
-            const resAlum = await fetch(urlAlum).then(r => r.json()).catch(err => {
+            const resAlum = await fetch(urlAlum, { headers: reqHeaders }).then(r => r.json()).catch(err => {
                 console.error("Fetch API error en alumnos:", err);
                 return { error: err.message };
             });
