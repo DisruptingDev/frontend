@@ -602,6 +602,13 @@ export default function ConciliacionPage() {
                                                                                 size="small"
                                                                                 icon={<CheckIcon />}
                                                                             />
+                                                                        ) : item.alumno_id ? (
+                                                                            <Chip
+                                                                                label={item.metodo_matcheo ? `IDENTIFICADO (${item.metodo_matcheo})` : 'ALUMNO IDENTIFICADO'}
+                                                                                color="info"
+                                                                                size="small"
+                                                                                icon={<CheckIcon />}
+                                                                            />
                                                                         ) : (
                                                                             <Chip label="⚠️ REVISIÓN MANUAL" color="warning" size="small" icon={<WarningIcon />} />
                                                                         )}
@@ -610,7 +617,7 @@ export default function ConciliacionPage() {
                                                                         <FormControl size="small" sx={{ width: '100%', mb: 1 }}>
                                                                             <InputLabel>Asignar Alumno...</InputLabel>
                                                                             <Select
-                                                                                value={alumnoSeleccionadoPorFila[idx] || ''}
+                                                                                value={alumnoIdActual || ''}
                                                                                 label="Asignar Alumno..."
                                                                                 onChange={(e) => {
                                                                                     setAlumnoSeleccionadoPorFila({
