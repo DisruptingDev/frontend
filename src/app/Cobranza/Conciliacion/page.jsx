@@ -247,8 +247,13 @@ export default function ConciliacionPage() {
             if (grupoId) formData.append('grupo_id', grupoId);
             if (isSuper) formData.append('is_superadmin', 'true');
 
+            const token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '') : '';
             const response = await fetch('/api/cobranza/conciliacion', {
                 method: 'POST',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'x-grupo-id': grupoId || ''
+                },
                 body: formData
             });
 

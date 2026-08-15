@@ -830,10 +830,17 @@ export async function POST(request) {
             andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
 
-        const todosLosAlumnos = await prisma.alumno.findMany({
-            where: { AND: andFiltersAlumnos },
-            include: { receptor: true, programa_academico: true }
-        });
+        let todosLosAlumnos = [];
+        try {
+            todosLosAlumnos = await prisma.alumno.findMany({
+                where: { AND: andFiltersAlumnos },
+                include: { receptor: true, programa_academico: true }
+            });
+        } catch (e) {
+            todosLosAlumnos = await prisma.alumno.findMany({
+                where: { AND: andFiltersAlumnos }
+            });
+        }
 
         const ahoraConc = new Date();
         try {
@@ -864,10 +871,24 @@ export async function POST(request) {
             andFiltersCargos.push({ grupo_id: BigInt(-1) });
         }
 
-        const cargosPendientes = await prisma.cargoAlumno.findMany({
-            where: { AND: andFiltersCargos },
-            include: { ConceptoCobro: true, Alumno: true }
-        });
+        let cargosPendientes = [];
+        try {
+            cargosPendientes = await prisma.cargoAlumno.findMany({
+                where: { AND: andFiltersCargos },
+                include: { ConceptoCobro: true, Alumno: true }
+            });
+        } catch (e1) {
+            try {
+                cargosPendientes = await prisma.cargoAlumno.findMany({
+                    where: { AND: andFiltersCargos },
+                    include: { concepto: true, alumno: true }
+                });
+            } catch (e2) {
+                cargosPendientes = await prisma.cargoAlumno.findMany({
+                    where: { AND: andFiltersCargos }
+                });
+            }
+        }
 
         if (cargosPendientes.length > 0) {
             try {
