@@ -106,11 +106,10 @@ export default function ConciliacionPage() {
                 let token = '';
                 if (typeof window !== 'undefined') {
                     token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
-                    const suplantado = localStorage.getItem('usuarioSuplantado');
-                    const usuario = suplantado ? suplantado : localStorage.getItem('usuario');
-                    if (usuario) {
+                    const storedUser = localStorage.getItem('usuario');
+                    if (storedUser) {
                         try {
-                            const parsed = JSON.parse(usuario);
+                            const parsed = JSON.parse(storedUser);
                             grupoId = parsed.grupo_id || parsed.grupoId || '';
                         } catch (e) {}
                     }
@@ -229,11 +228,10 @@ export default function ConciliacionPage() {
         try {
             let grupoId = '';
             if (typeof window !== 'undefined') {
-                const suplantado = localStorage.getItem('usuarioSuplantado');
-                const usuario = suplantado ? suplantado : localStorage.getItem('usuario');
-                if (usuario) {
+                const storedUser = localStorage.getItem('usuario');
+                if (storedUser) {
                     try {
-                        const parsed = JSON.parse(usuario);
+                        const parsed = JSON.parse(storedUser);
                         grupoId = parsed.grupo_id || parsed.grupoId || '';
                     } catch (e) {}
                 }

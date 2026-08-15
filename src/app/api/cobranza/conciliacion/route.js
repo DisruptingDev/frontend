@@ -25,7 +25,15 @@ function serializeBigIntsAndDecimals(obj) {
 }
 
 async function getGrupoIdFromRequest(request, body = null) {
-    let activeGrupoId = body?.grupo_id || body?.grupoId;
+    let activeGrupoId = null;
+    
+    // Si body es FormData, usar .get()
+    if (body && typeof body.get === 'function') {
+        activeGrupoId = body.get('grupo_id') || body.get('grupoId');
+    } else {
+        activeGrupoId = body?.grupo_id || body?.grupoId;
+    }
+
     if (activeGrupoId && activeGrupoId !== 'undefined' && activeGrupoId !== 'null' && activeGrupoId !== '') {
         return activeGrupoId.toString();
     }
