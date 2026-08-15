@@ -788,7 +788,7 @@ export async function POST(request) {
         const file = formData.get('file');
         const banco = formData.get('banco') || 'GENERICO';
         const usuarioId = formData.get('usuario_id');
-        const grupoId = formData.get('grupo_id');
+        const grupoId = await getGrupoIdFromRequest(request, formData);
 
         if (!file) {
             return NextResponse.json({ error: 'No se ha adjuntado ningún archivo para conciliación.' }, { status: 400 });
