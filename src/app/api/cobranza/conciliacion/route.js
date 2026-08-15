@@ -974,16 +974,16 @@ export async function POST(request) {
         let montoTotal = 0;
         const pagosProcesados = [];
 
-        const coincideFicha = (c, refClean, dClean) => {
+        const coincideFicha = (c, refClean, dClean, textoClean = '') => {
             if (!c) return false;
             const refB = (c.referencia_bancaria || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-            if (refB && (refB === refClean || refClean.includes(refB) || dClean.includes(refB))) return true;
+            if (refB && (refB === refClean || refClean.includes(refB) || dClean.includes(refB) || textoClean.includes(refB))) return true;
             const codF = (c.codigo_ficha || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-            if (codF && (codF === refClean || refClean.includes(codF) || dClean.includes(codF))) return true;
+            if (codF && (codF === refClean || refClean.includes(codF) || dClean.includes(codF) || textoClean.includes(codF))) return true;
             if (c.codigo_ficha) {
                 const partes = c.codigo_ficha.split(/\s+/).map(p => p.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()).filter(Boolean);
                 for (const p of partes) {
-                    if (p.length >= 3 && (refClean.includes(p) || dClean.includes(p))) return true;
+                    if (p.length >= 3 && (refClean.includes(p) || dClean.includes(p) || textoClean.includes(p))) return true;
                 }
             }
             return false;
@@ -997,6 +997,7 @@ export async function POST(request) {
             
             const refMovOriginal = (mov.referenciaLimpia || mov.referencia || '').toUpperCase();
             const descOriginal = (mov.descripcion || '').toUpperCase();
+            const textoOriginal = (mov.texto_completo || '').toUpperCase();
             
             const cleanStr = (s) => {
                 if (!s) return '';
@@ -1011,8 +1012,10 @@ export async function POST(request) {
             const stripZeros = (s) => (s || '').replace(/^0+/, '');
             const refMovClean = cleanStr(refMovOriginal);
             const descClean = cleanStr(descOriginal);
+            const textoClean = cleanStr(textoOriginal);
             const refMovCleanNoZeros = stripZeros(refMovClean);
             const descCleanNoZeros = stripZeros(descClean);
+            const textoCleanNoZeros = stripZeros(textoClean);
 
             // 1. Matcheo directo con Alumnos por CLABE o Referencia Personal
             alumnoEncontrado = todosLosAlumnos.find(a => {
@@ -1023,15 +1026,15 @@ export async function POST(request) {
                 const idsAlu = a.ids_alumno ? a.ids_alumno.split(',').map(i => cleanStr(i)).filter(Boolean) : [];
 
                 if (clabeAlu && clabeAlu.length >= 5) {
-                    if (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu)) return true;
-                    if (clabeAluNoZeros.length >= 5 && (refMovCleanNoZeros.includes(clabeAluNoZeros) || descCleanNoZeros.includes(clabeAluNoZeros))) return true;
+                    if (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu) || textoClean.includes(clabeAlu)) return true;
+                    if (clabeAluNoZeros.length >= 5 && (refMovCleanNoZeros.includes(clabeAluNoZeros) || descCleanNoZeros.includes(clabeAluNoZeros) || textoCleanNoZeros.includes(clabeAluNoZeros))) return true;
                 }
                 if (refPagoAlu && refPagoAlu.length >= 4) {
-                    if (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu)) return true;
-                    if (refPagoAluNoZeros.length >= 4 && (refMovCleanNoZeros.includes(refPagoAluNoZeros) || descCleanNoZeros.includes(refPagoAluNoZeros))) return true;
+                    if (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu) || textoClean.includes(refPagoAlu)) return true;
+                    if (refPagoAluNoZeros.length >= 4 && (refMovCleanNoZeros.includes(refPagoAluNoZeros) || descCleanNoZeros.includes(refPagoAluNoZeros) || textoCleanNoZeros.includes(refPagoAluNoZeros))) return true;
                 }
                 for (const idPlan of idsAlu) {
-                    if (idPlan && idPlan.length >= 4 && (refMovClean.includes(idPlan) || descClean.includes(idPlan))) return true;
+                    if (idPlan && idPlan.length >= 4 && (refMovClean.includes(idPlan) || descClean.includes(idPlan) || textoClean.includes(idPlan))) return true;
                 }
                 return false;
             });
@@ -1043,7 +1046,7 @@ export async function POST(request) {
 
             // 2. Matcheo buscando la referencia en CargosPendientes (si pagó una ficha en específico)
             if (!alumnoEncontrado) {
-                const cargoMatcheado = cargosPendientes.find(c => coincideFicha(c, refMovClean, descClean));
+                const cargoMatcheado = cargosPendientes.find(c => coincideFicha(c, refMovClean, descClean, textoClean));
 
                 if (cargoMatcheado) {
                     alumnoEncontrado = todosLosAlumnos.find(a => a.id === cargoMatcheado.alumno_id);

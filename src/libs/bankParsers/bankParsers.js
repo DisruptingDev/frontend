@@ -78,10 +78,10 @@ export function parseGenerico(fileBuffer) {
 
     const headers = (rawData[headerRowIndex] || []).map(normalizar);
     
-    let refCol = headers.findIndex(h => h.includes('referencia') || h.includes('ref'));
+    let refCol = headers.findIndex(h => h.includes('referencia') || h.includes('ref') || h.includes('clave') || h.includes('clabe') || h.includes('autorizacion'));
     let montoCol = headers.findIndex(h => h.includes('abono') || h.includes('monto') || h.includes('importe') || h.includes('deposito'));
     let fechaCol = headers.findIndex(h => h.includes('fecha'));
-    let descCol = headers.findIndex(h => h.includes('concepto') || h.includes('descripcion') || h.includes('detalle') || h.includes('observaciones'));
+    let descCol = headers.findIndex(h => h.includes('concepto') || h.includes('descripcion') || h.includes('detalle') || h.includes('observaciones') || h.includes('beneficiario') || h.includes('nombre'));
 
     for (let i = headerRowIndex + 1; i < rawData.length; i++) {
         const row = rawData[i];
@@ -107,7 +107,8 @@ export function parseGenerico(fileBuffer) {
                 referencia: refClean,
                 referencia_raw: refRaw,
                 monto: montoVal,
-                descripcion: descVal
+                descripcion: descVal,
+                texto_completo: row.join(' ')
             });
         }
     }
