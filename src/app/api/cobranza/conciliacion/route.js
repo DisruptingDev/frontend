@@ -24,6 +24,69 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
+async function getGrupoIdFromRequest(request, body = null) {
+    let activeGrupoId = body?.grupo_id || body?.grupoId;
+    if (activeGrupoId && activeGrupoId !== 'undefined' && activeGrupoId !== 'null' && activeGrupoId !== '') {
+        return activeGrupoId.toString();
+    }
+
+    const { searchParams } = new URL(request.url);
+    let grupoIdParam = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+    if (grupoIdParam && grupoIdParam !== 'undefined' && grupoIdParam !== 'null' && grupoIdParam !== '') {
+        return grupoIdParam;
+    }
+
+    const authHeader = request.headers.get('authorization');
+    let tokenGrupoId = null;
+    let dbGrupoId = null;
+
+    if (authHeader && authHeader.includes('Bearer ')) {
+        try {
+            const tokenStr = authHeader.replace('Bearer ', '').trim();
+            const payloadStr = Buffer.from(tokenStr.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+            const parsed = JSON.parse(payloadStr);
+
+            if (parsed.grupo_id || parsed.grupoId || parsed.GrupoID) {
+                tokenGrupoId = (parsed.grupo_id || parsed.grupoId || parsed.GrupoID).toString();
+            }
+
+            const email = parsed.email || parsed.correo || parsed.sub || parsed.username;
+            const userId = parsed.id || parsed.user_id || parsed.usuario_id;
+
+            if (email || userId) {
+                const userWhere = [];
+                if (userId) {
+                    try { userWhere.push({ id: BigInt(userId) }); } catch(e){}
+                }
+                if (email && typeof email === 'string' && email.includes('@')) {
+                    userWhere.push({ email: email.trim().toLowerCase() });
+                }
+
+                if (userWhere.length > 0) {
+                    const dbUser = await prisma.usuarios.findFirst({
+                        where: { OR: userWhere },
+                        select: { grupo_id: true }
+                    });
+                    if (dbUser && dbUser.grupo_id) {
+                        dbGrupoId = dbUser.grupo_id.toString();
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error resolviendo grupoId en token:', e.message);
+        }
+    }
+
+    if (tokenGrupoId && tokenGrupoId !== 'undefined' && tokenGrupoId !== 'null' && tokenGrupoId !== '') {
+        return tokenGrupoId;
+    }
+    if (dbGrupoId && dbGrupoId !== 'undefined' && dbGrupoId !== 'null' && dbGrupoId !== '') {
+        return dbGrupoId;
+    }
+
+    return null;
+}
+
 function sanitizeNullBytes(val) {
     if (val === null || val === undefined) return val;
     if (typeof val === 'string') {
