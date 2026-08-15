@@ -236,6 +236,7 @@ export default function ConciliacionPage() {
                     } catch (e) {}
                 }
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
+            }
             const isSuplantando = typeof window !== 'undefined' && Boolean(localStorage.getItem('usuarioSuplantado'));
             const isSuper = !isSuplantando && typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
 
