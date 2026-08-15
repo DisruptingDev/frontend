@@ -976,14 +976,27 @@ export async function POST(request) {
 
         const coincideFicha = (c, refClean, dClean, textoClean = '') => {
             if (!c) return false;
+            const stripZ = (s) => (s || '').replace(/^0+/, '');
+            const refC_Z = stripZ(refClean);
+            const dC_Z = stripZ(dClean);
+            const tC_Z = stripZ(textoClean);
+
             const refB = (c.referencia_bancaria || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            const refB_Z = stripZ(refB);
             if (refB && (refB === refClean || refClean.includes(refB) || dClean.includes(refB) || textoClean.includes(refB))) return true;
+            if (refB_Z && refB_Z.length >= 3 && (refC_Z.includes(refB_Z) || dC_Z.includes(refB_Z) || tC_Z.includes(refB_Z))) return true;
+
             const codF = (c.codigo_ficha || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            const codF_Z = stripZ(codF);
             if (codF && (codF === refClean || refClean.includes(codF) || dClean.includes(codF) || textoClean.includes(codF))) return true;
+            if (codF_Z && codF_Z.length >= 3 && (refC_Z.includes(codF_Z) || dC_Z.includes(codF_Z) || tC_Z.includes(codF_Z))) return true;
+
             if (c.codigo_ficha) {
                 const partes = c.codigo_ficha.split(/\s+/).map(p => p.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()).filter(Boolean);
                 for (const p of partes) {
                     if (p.length >= 3 && (refClean.includes(p) || dClean.includes(p) || textoClean.includes(p))) return true;
+                    const p_Z = stripZ(p);
+                    if (p_Z.length >= 3 && (refC_Z.includes(p_Z) || dC_Z.includes(p_Z) || tC_Z.includes(p_Z))) return true;
                 }
             }
             return false;
@@ -1049,7 +1062,7 @@ export async function POST(request) {
                 const cargoMatcheado = cargosPendientes.find(c => coincideFicha(c, refMovClean, descClean, textoClean));
 
                 if (cargoMatcheado) {
-                    alumnoEncontrado = todosLosAlumnos.find(a => a.id === cargoMatcheado.alumno_id);
+                    alumnoEncontrado = todosLosAlumnos.find(a => String(a.id) === String(cargoMatcheado.alumno_id));
                     if (alumnoEncontrado) {
                         metodoMatcheo = `Código/Referencia Ficha (${cargoMatcheado.codigo_ficha || cargoMatcheado.referencia_bancaria})`;
                     }
@@ -1172,7 +1185,10 @@ export async function POST(request) {
                 total_movimientos: movimientos.length,
                 conciliados: conciliadosCount,
                 pendientes_revision: pendientesCount,
-                monto_total: montoTotal
+                monto_total: montoTotal,
+                debug_alumnos_count: todosLosAlumnos.length,
+                debug_cargos_count: cargosPendientes.length,
+                debug_grupo_id: grupoId
             },
             pagos: pagosProcesados
         };
