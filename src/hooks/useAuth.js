@@ -184,8 +184,16 @@ export function useAuth() {
         grupo_id: grupoIdResolved,
         id: result.id || result.usuario_id || result.UsuarioID || ''
       }));
-      localStorage.setItem("superUser", result.sudo);
-      localStorage.setItem("BOD", result.BOD);
+      if (result.sudo === true || result.sudo === 'true') {
+        localStorage.setItem("superUser", "true");
+      } else {
+        localStorage.removeItem("superUser");
+      }
+      if (result.BOD === true || result.BOD === 'true') {
+        localStorage.setItem("BOD", "true");
+      } else {
+        localStorage.removeItem("BOD");
+      }
 
       // Establecer 'newUser' solo si no existe en sessionStorage
       if (localStorage.getItem("newUser") === null) {

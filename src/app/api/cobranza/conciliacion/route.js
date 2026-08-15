@@ -824,7 +824,9 @@ export async function POST(request) {
                     { grupo_id: null }
                 ]
             });
-        } else if (!isSuperUser) {
+        } else if ((grupoId === 'ALL' || grupoId === 'TODOS') && isSuperUser) {
+            // Vista global autorizada para superusuario
+        } else {
             andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
 
@@ -856,7 +858,9 @@ export async function POST(request) {
                     { grupo_id: null }
                 ]
             });
-        } else if (!isSuperUser) {
+        } else if ((grupoId === 'ALL' || grupoId === 'TODOS') && isSuperUser) {
+            // Vista global autorizada para superusuario
+        } else {
             andFiltersCargos.push({ grupo_id: BigInt(-1) });
         }
 

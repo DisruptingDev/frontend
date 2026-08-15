@@ -95,25 +95,30 @@ export async function GET(request) {
         const semestre = searchParams.get('semestre');
         const estatus = searchParams.get('estatus');
 
-        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
-                            searchParams.get('super_user') === 'true' || 
-                            request.headers.get('x-super-user') === 'true';
+        const isSuperUserRequested = searchParams.get('is_superadmin') === 'true' || 
+                                     searchParams.get('super_user') === 'true' || 
+                                     request.headers.get('x-super-user') === 'true';
 
         const andFiltersAlumnos = [];
-        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined') {
             try {
                 andFiltersAlumnos.push({ grupo_id: BigInt(grupoId) });
             } catch (err) {
                 console.error("Error convirtiendo grupoId a BigInt:", grupoId);
             }
-        } else if (!isSuperUser) {
+        } else if ((grupoId === 'ALL' || grupoId === 'TODOS') && isSuperUserRequested) {
+            // Vista global autorizada para superusuario
+        } else {
+            // Seguridad: si no hay grupo_id válido, denegar acceso devolviendo 0 registros
             andFiltersAlumnos.push({ grupo_id: BigInt(-1) });
         }
+
         if (carrera) andFiltersAlumnos.push({ carrera });
         if (semestre) andFiltersAlumnos.push({ semestre: parseInt(semestre) });
         if (estatus && estatus !== 'TODOS') andFiltersAlumnos.push({ estatus: estatus.toUpperCase() });
 
-        const where = andFiltersAlumnos.length > 0 ? { AND: andFiltersAlumnos } : {};
+        const where = { AND: andFiltersAlumnos };
 
         const alumnos = await prisma.alumno.findMany({
             where,

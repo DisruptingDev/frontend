@@ -10,6 +10,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useRouter } from 'next/navigation';
 import { offSuplantar } from '@/utils/desactivarSuplantar';
+import { clearAuthStorage } from '@/utils/storageManager';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import { WithPermission } from '@/components/WithPermission';
 
@@ -81,9 +82,7 @@ export default function UserMenu() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('usuarioSuplantado');
-    sessionStorage.removeItem('authToken');
+    clearAuthStorage();
     router.push('/IniciaSesion');
   };
 
