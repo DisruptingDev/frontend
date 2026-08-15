@@ -97,8 +97,7 @@ export async function GET(request) {
 
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 
-                            request.headers.get('x-super-user') === 'true' ||
-                            grupoId === 'ALL' || grupoId === 'TODOS';
+                            request.headers.get('x-super-user') === 'true';
 
         const andFiltersAlumnos = [];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
