@@ -817,7 +817,7 @@ export async function POST(request) {
 
         // Filtro multitenant estricto para alumnos y cargos del grupo activo
         const andFiltersAlumnos = [{ estatus: 'ACTIVO' }];
-        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined' && grupoId !== '') {
             andFiltersAlumnos.push({
                 OR: [
                     { grupo_id: BigInt(grupoId) },
@@ -837,7 +837,7 @@ export async function POST(request) {
         try {
             await prisma.cargoAlumno.updateMany({
                 where: {
-                    ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' ? { grupo_id: BigInt(grupoId) } : {}),
+                    ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined' && grupoId !== '' ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahoraConc },
                     monto_pendiente: { gt: 0 },
                     estatus: { in: ['PENDIENTE', 'PARCIAL'] }
@@ -849,7 +849,7 @@ export async function POST(request) {
         } catch (e) {}
 
         const andFiltersCargos = [{ estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } }];
-        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS') {
+        if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined' && grupoId !== '') {
             andFiltersCargos.push({
                 OR: [
                     { grupo_id: BigInt(grupoId) },
@@ -920,17 +920,28 @@ export async function POST(request) {
                     .replace(/[^a-zA-Z0-9]/g, '')
                     .toUpperCase();
             };
+            const stripZeros = (s) => (s || '').replace(/^0+/, '');
             const refMovClean = cleanStr(refMovOriginal);
             const descClean = cleanStr(descOriginal);
+            const refMovCleanNoZeros = stripZeros(refMovClean);
+            const descCleanNoZeros = stripZeros(descClean);
 
             // 1. Matcheo directo con Alumnos por CLABE o Referencia Personal
             alumnoEncontrado = todosLosAlumnos.find(a => {
                 const clabeAlu = cleanStr(a.clabe_interbancaria);
+                const clabeAluNoZeros = stripZeros(clabeAlu);
                 const refPagoAlu = cleanStr(a.referencia_pago);
+                const refPagoAluNoZeros = stripZeros(refPagoAlu);
                 const idsAlu = a.ids_alumno ? a.ids_alumno.split(',').map(i => cleanStr(i)).filter(Boolean) : [];
 
-                if (clabeAlu && clabeAlu.length >= 5 && (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu))) return true;
-                if (refPagoAlu && refPagoAlu.length >= 4 && (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu))) return true;
+                if (clabeAlu && clabeAlu.length >= 5) {
+                    if (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu)) return true;
+                    if (clabeAluNoZeros.length >= 5 && (refMovCleanNoZeros.includes(clabeAluNoZeros) || descCleanNoZeros.includes(clabeAluNoZeros))) return true;
+                }
+                if (refPagoAlu && refPagoAlu.length >= 4) {
+                    if (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu)) return true;
+                    if (refPagoAluNoZeros.length >= 4 && (refMovCleanNoZeros.includes(refPagoAluNoZeros) || descCleanNoZeros.includes(refPagoAluNoZeros))) return true;
+                }
                 for (const idPlan of idsAlu) {
                     if (idPlan && idPlan.length >= 4 && (refMovClean.includes(idPlan) || descClean.includes(idPlan))) return true;
                 }
