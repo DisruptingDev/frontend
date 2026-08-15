@@ -866,7 +866,7 @@ export async function POST(request) {
 
         const cargosPendientes = await prisma.cargoAlumno.findMany({
             where: { AND: andFiltersCargos },
-            include: { producto: true, concepto: true }
+            include: { ConceptoCobro: true, Alumno: true }
         });
 
         if (cargosPendientes.length > 0) {
@@ -997,7 +997,7 @@ export async function POST(request) {
             }
 
             if (alumnoEncontrado) {
-                let alumnoCargosPendientes = cargosPendientes.filter(cp => cp.alumno_id === alumnoEncontrado.id);
+                let alumnoCargosPendientes = cargosPendientes.filter(cp => String(cp.alumno_id) === String(alumnoEncontrado.id));
 
                 // Priorización inteligente de los cargos del alumno:
                 // 1º Coincidencia explícita de código de ficha / referencia
@@ -1042,6 +1042,12 @@ export async function POST(request) {
                         montoDisponible -= Number(cargo.monto_pendiente);
                     }
 
+                    const mappedCargos = alumnoCargosPendientes.map(cp => ({
+                        ...cp,
+                        concepto: cp.ConceptoCobro || cp.concepto || null,
+                        producto: cp.ConceptoCobro || cp.producto || null
+                    }));
+
                     pagosProcesados.push({
                         id_tmp: `MOV-${conciliadosCount}`,
                         fecha_pago: mov.fecha,
@@ -1056,7 +1062,7 @@ export async function POST(request) {
                         metodo_matcheo: metodoMatcheo,
                         requiere_factura: alumnoEncontrado.requiere_factura,
                         estado_conciliacion: 'SUGERIDO',
-                        cargos_pendientes: serializeBigIntsAndDecimals(alumnoCargosPendientes)
+                        cargos_pendientes: serializeBigIntsAndDecimals(mappedCargos)
                     });
                 }
             } else {
