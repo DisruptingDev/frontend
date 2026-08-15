@@ -115,7 +115,8 @@ const VistaUsuarios = ({ token }) => {
             const data = await response.json();
             console.log('Suplantar:', data);
             if (data) {
-                const targetGrupoId = menuRow.GrupoID || menuRow.grupo_id || data?.grupo_id || data?.GrupoID || '';
+                // Ensure we get the correct grupo_id from either the row or the backend response
+                const targetGrupoId = menuRow.grupo_id?.toString() || menuRow.GrupoID?.toString() || data?.grupo_id?.toString() || data?.GrupoID?.toString() || '';
                 if(onSuplantar(data.token, Nombre, targetGrupoId, { nombre: Nombre, grupo_id: targetGrupoId, id: ID })){
                     console.log('Suplantado exitosamente', Nombre, 'Grupo:', targetGrupoId);
                     router.push('/Home');

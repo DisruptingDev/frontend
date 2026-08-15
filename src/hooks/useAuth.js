@@ -171,7 +171,29 @@ export function useAuth() {
       }
 
       // Guardar datos adicionales
-      const grupoIdResolved = result.grupo_id || result.grupoId || result.GrupoID || '';
+      let grupoIdResolved = result.grupo_id || result.grupoId || result.GrupoID || '';
+      
+      // Si el API externo no nos devolvió el grupo_id, lo buscamos en nuestra base de datos local
+      if (!grupoIdResolved) {
+        try {
+          // Asumimos que la URL actual del frontend nos sirve para llamar a nuestro propio endpoint
+          const localHostUrl = window.location.origin;
+          const groupRes = await fetch(`${localHostUrl}/api/login/getUserGroup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: credentials.usuario })
+          });
+          if (groupRes.ok) {
+            const groupData = await groupRes.json();
+            if (groupData.grupo_id) {
+              grupoIdResolved = groupData.grupo_id;
+            }
+          }
+        } catch (e) {
+          console.error("Error obteniendo grupo_id de respaldo:", e);
+        }
+      }
+
       if (grupoIdResolved) {
         localStorage.setItem("grupo_id", grupoIdResolved.toString());
         sessionStorage.setItem("grupo_id", grupoIdResolved.toString());

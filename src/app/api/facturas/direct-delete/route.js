@@ -121,7 +121,44 @@ export async function DELETE(request) {
                 }
             }
 
-            // 3. Eliminar el comprobante principal
+            // 3. Revertir saldos de los cargos pagados asociados a este comprobante
+            const pagosAsociados = await tx.pagoAlumno.findMany({
+                where: { comprobante_id: facturaId },
+                include: { cargo: true }
+            });
+
+            if (pagosAsociados.length > 0) {
+                console.log(`[DELETE] Revirtiendo saldos de ${pagosAsociados.length} pagos asociados`);
+                for (const pago of pagosAsociados) {
+                    if (!pago.cargo) continue;
+                    const cargo = pago.cargo;
+                    const montoARevertir = Number(pago.monto);
+                    
+                    const nuevoPagado = Math.max(0, Number(cargo.monto_pagado) - montoARevertir);
+                    const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
+                    
+                    // Solo marcar como PENDIENTE si el pendiente es casi el total, PARCIAL si pagó algo, y PAGADO si cubrió todo (caso raro en borrados pero cubierto por seguridad)
+                    let nuevoEstatus = 'PENDIENTE';
+                    if (nuevoPendiente <= 0) nuevoEstatus = 'PAGADO';
+                    else if (nuevoPendiente < Number(cargo.monto_total)) nuevoEstatus = 'PARCIAL';
+
+                    await tx.cargoAlumno.update({
+                        where: { id: cargo.id },
+                        data: {
+                            monto_pagado: nuevoPagado,
+                            monto_pendiente: nuevoPendiente,
+                            estatus: nuevoEstatus
+                        }
+                    });
+                }
+                
+                // Eliminar los registros de PagoAlumno
+                await tx.pagoAlumno.deleteMany({
+                    where: { comprobante_id: facturaId }
+                });
+            }
+
+            // 4. Eliminar el comprobante principal
             // Prisma se encargará de las cascadas configuradas (Conceptos, Complementos, InformacionGlobal, etc.)
             await tx.comprobantes.delete({
                 where: { id: facturaId }
