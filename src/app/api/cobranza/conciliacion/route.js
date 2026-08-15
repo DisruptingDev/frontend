@@ -910,7 +910,16 @@ export async function POST(request) {
             const refMovOriginal = (mov.referenciaLimpia || mov.referencia || '').toUpperCase();
             const descOriginal = (mov.descripcion || '').toUpperCase();
             
-            const cleanStr = (s) => (s || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            const cleanStr = (s) => {
+                if (!s) return '';
+                return String(s)
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/ñ/g, "n")
+                    .replace(/Ñ/g, "N")
+                    .replace(/[^a-zA-Z0-9]/g, '')
+                    .toUpperCase();
+            };
             const refMovClean = cleanStr(refMovOriginal);
             const descClean = cleanStr(descOriginal);
 
@@ -920,10 +929,10 @@ export async function POST(request) {
                 const refPagoAlu = cleanStr(a.referencia_pago);
                 const idsAlu = a.ids_alumno ? a.ids_alumno.split(',').map(i => cleanStr(i)).filter(Boolean) : [];
 
-                if (clabeAlu && (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu))) return true;
-                if (refPagoAlu && (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu))) return true;
+                if (clabeAlu && clabeAlu.length >= 5 && (refMovClean.includes(clabeAlu) || descClean.includes(clabeAlu))) return true;
+                if (refPagoAlu && refPagoAlu.length >= 4 && (refMovClean.includes(refPagoAlu) || descClean.includes(refPagoAlu))) return true;
                 for (const idPlan of idsAlu) {
-                    if (idPlan && (refMovClean.includes(idPlan) || descClean.includes(idPlan))) return true;
+                    if (idPlan && idPlan.length >= 4 && (refMovClean.includes(idPlan) || descClean.includes(idPlan))) return true;
                 }
                 return false;
             });
@@ -945,11 +954,29 @@ export async function POST(request) {
                 }
             }
 
-            // 3. Matcheo por Nombre de Alumno en Descripción SPEI
+            // 3. Matcheo por Nombre de Alumno en Descripción SPEI (probando permutaciones de orden de nombres mexicanos)
             if (!alumnoEncontrado && mov.descripcion) {
                 alumnoEncontrado = todosLosAlumnos.find(a => {
-                    const nombreCompleto = cleanStr(`${a.nombre} ${a.apellido_paterno}`);
-                    return descClean.includes(nombreCompleto);
+                    const nomStr = cleanStr(a.nombre);
+                    const patStr = cleanStr(a.apellido_paterno);
+                    const matStr = cleanStr(a.apellido_materno);
+                    const primerNombre = cleanStr((a.nombre || '').trim().split(/\s+/)[0]);
+
+                    const p1 = `${nomStr}${patStr}`;                  // JUANPEREZ
+                    const p2 = `${nomStr}${patStr}${matStr}`;         // JUANPEREZLOPEZ
+                    const p3 = `${patStr}${matStr}${nomStr}`;         // PEREZLOPEZJUAN
+                    const p4 = `${patStr}${matStr}${primerNombre}`;   // PEREZLOPEZJUAN
+                    const p5 = `${primerNombre}${patStr}`;            // JUANPEREZ
+                    const p6 = `${patStr}${primerNombre}`;            // PEREZJUAN
+
+                    if (p2.length >= 6 && descClean.includes(p2)) return true;
+                    if (p3.length >= 6 && descClean.includes(p3)) return true;
+                    if (p1.length >= 6 && descClean.includes(p1)) return true;
+                    if (p4.length >= 6 && descClean.includes(p4)) return true;
+                    if (p5.length >= 6 && descClean.includes(p5)) return true;
+                    if (p6.length >= 6 && descClean.includes(p6)) return true;
+
+                    return false;
                 });
                 if (alumnoEncontrado) metodoMatcheo = 'Coincidencia Nombre Alumno SPEI';
             }
@@ -1042,12 +1069,6 @@ export async function POST(request) {
             pagos: pagosProcesados
         };
         
-        try {
-            require('fs').writeFileSync('c:/Users/macal/Wise/frontend/debug_conciliacion.json', JSON.stringify({ movimientos, responseData }, null, 2));
-        } catch (e) {
-            console.error('Error writing debug file', e);
-        }
-
         return NextResponse.json(responseData, { status: 200 });
 
     } catch (error) {
