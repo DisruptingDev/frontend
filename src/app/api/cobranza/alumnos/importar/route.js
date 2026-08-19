@@ -88,7 +88,7 @@ async function getGrupoIdFromRequest(request, body = null) {
 export async function POST(request) {
     try {
         const body = await request.json();
-        const { alumnos } = body;
+        const { alumnos, emisor_id } = body;
 
         if (!Array.isArray(alumnos) || alumnos.length === 0) {
             return NextResponse.json({ error: 'No se enviaron alumnos para importar.' }, { status: 400 });
@@ -110,7 +110,7 @@ export async function POST(request) {
         for (const [index, a] of alumnos.entries()) {
             const rowNumber = index + 2; // Rows are 1-based, plus header row is row 1.
             try {
-                const matricula = String(a.matricula || '').trim();
+                const matricula = a.matricula ? String(a.matricula).trim() : null;
                 const nombre = String(a.nombre || '').trim();
                 const apellido_paterno = String(a.apellido_paterno || '').trim();
                 const apellido_materno = a.apellido_materno ? String(a.apellido_materno).trim() : null;
@@ -135,8 +135,8 @@ export async function POST(request) {
                 const monto_personalizado = a.monto_personalizado ? parseFloat(a.monto_personalizado) : 0;
                 const dia_pago = a.dia_pago ? parseInt(a.dia_pago) : 5;
 
-                if (!matricula || !nombre || !apellido_paterno) {
-                    throw new Error('Matrícula, Nombre y Apellido Paterno son obligatorios.');
+                if (!nombre || !apellido_paterno) {
+                    throw new Error('Nombre y Apellido Paterno son obligatorios.');
                 }
 
                 // Validate Carrera/Plan de estudio
@@ -151,13 +151,18 @@ export async function POST(request) {
                     throw new Error('El plan de estudio/carrera es obligatorio.');
                 }
 
-                // Check if matricula already exists
-                const existeAlumno = await prisma.alumno.findUnique({
-                    where: { matricula }
-                });
+                // Check if already exists
+                let existeAlumno = null;
+                if (matricula) {
+                    existeAlumno = await prisma.alumno.findUnique({
+                        where: { matricula }
+                    });
+                }
 
-                if (existeAlumno) {
-                    throw new Error(`La matrícula "${matricula}" ya está registrada.`);
+                if (!existeAlumno && clabe_interbancaria) {
+                    existeAlumno = await prisma.alumno.findFirst({
+                        where: { clabe_interbancaria }
+                    });
                 }
 
                 let receptorId = null;
@@ -196,31 +201,48 @@ export async function POST(request) {
                     }
                 }
 
-                // Create student
-                await prisma.alumno.create({
-                    data: {
-                        matricula,
-                        nombre,
-                        apellido_paterno,
-                        apellido_materno,
-                        email,
-                        telefono,
-                        curp,
-                        carrera,
-                        semestre,
-                        estatus,
-                        clabe_interbancaria,
-                        referencia_pago,
-                        informacion_pago,
-                        ids_alumno,
-                        requiere_factura,
-                        receptor_id: receptorId,
-                        grupo_id: activeGrupoId ? BigInt(activeGrupoId) : null,
-                        monto_personalizado,
-                        dia_pago,
-                        programa_academico_id: programaAcademicoId
-                    }
-                });
+                const dataAlumno = {
+                    matricula,
+                    nombre,
+                    apellido_paterno,
+                    apellido_materno,
+                    email,
+                    telefono,
+                    curp,
+                    carrera,
+                    semestre,
+                    estatus,
+                    clabe_interbancaria,
+                    referencia_pago,
+                    informacion_pago,
+                    ids_alumno,
+                    requiere_factura,
+                    receptor_id: receptorId,
+                    monto_personalizado,
+                    dia_pago,
+                    programa_academico_id: programaAcademicoId
+                };
+
+                // Si viene emisor_id de la petición general, se asigna
+                if (emisor_id) {
+                    dataAlumno.emisor_id = BigInt(emisor_id);
+                } else if (activeGrupoId) {
+                    // Solo modificar grupo_id si estamos en creación o hay contexto general
+                    dataAlumno.grupo_id = BigInt(activeGrupoId);
+                }
+
+                if (existeAlumno) {
+                    // Update
+                    await prisma.alumno.update({
+                        where: { id: existeAlumno.id },
+                        data: dataAlumno
+                    });
+                } else {
+                    // Create
+                    await prisma.alumno.create({
+                        data: dataAlumno
+                    });
+                }
 
                 creados++;
             } catch (err) {

@@ -750,7 +750,7 @@ model subsidio_al_empleo {
 
 model Alumno {
   id                    BigInt                 @id @default(autoincrement())
-  matricula             String                 @unique(map: "idx_alumno_matricula")
+  matricula             String?                @unique(map: "idx_alumno_matricula")
   nombre                String
   apellido_paterno      String
   apellido_materno      String?

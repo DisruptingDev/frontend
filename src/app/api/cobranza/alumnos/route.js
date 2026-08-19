@@ -286,8 +286,8 @@ export async function POST(request) {
         // =========================================================================
         // CASO 3: REGISTRO / EDICIÓN INDIVIDUAL DE ALUMNO
         // =========================================================================
-        if (!matricula || !nombre || !apellido_paterno || !monto_personalizado) {
-            return NextResponse.json({ error: 'Matrícula, Nombre, Apellido Paterno y Monto Mensual son obligatorios' }, { status: 400 });
+        if (!nombre || !apellido_paterno || !monto_personalizado) {
+            return NextResponse.json({ error: 'Nombre, Apellido Paterno y Monto Mensual son obligatorios' }, { status: 400 });
         }
 
         let activeGrupoId = await getGrupoIdFromRequest(request, body);
@@ -330,7 +330,7 @@ export async function POST(request) {
         }
 
         const dataAlumno = {
-            matricula: matricula.trim(),
+            matricula: matricula ? matricula.trim() : null,
             nombre: nombre.trim(),
             apellido_paterno: apellido_paterno.trim(),
             apellido_materno: apellido_materno ? apellido_materno.trim() : null,
