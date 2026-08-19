@@ -191,7 +191,7 @@ export default function ResumenTab({ emisorSeleccionado }) {
                                 {stats.ultimosPagos.map((cargo) => (
                                     <TableRow key={cargo.id} hover>
                                         <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
-                                        <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} (${cargo.alumno.matricula})` : 'N/A'}</TableCell>
+                                        <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() + ` (${cargo.alumno.matricula})` : 'N/A'}</TableCell>
                                         <TableCell>{cargo.concepto?.nombre || 'Colegiatura'}</TableCell>
                                         <TableCell>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
                                         <TableCell>

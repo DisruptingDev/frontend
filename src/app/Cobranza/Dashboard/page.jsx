@@ -1096,7 +1096,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                         {cargos.map(cargo => (
                                                             <TableRow key={cargo.id} hover>
                                                                 <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#1976d2' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
-                                                                <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno}` : 'N/A'}</TableCell>
+                                                                <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() : 'N/A'}</TableCell>
                                                                 <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
                                                                 <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
                                                                 <TableCell>
@@ -1236,7 +1236,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                                         <Autocomplete
                                                                                             size="small"
                                                                                             options={alumnos}
-                                                                                            getOptionLabel={(al) => `${al.nombre} ${al.apellido_paterno} (${al.matricula})`}
+                                                                                            getOptionLabel={(al) => `${al.nombre} ${al.apellido_paterno} ${al.apellido_materno || ''} (${al.matricula})`.trim()}
                                                                                             value={alumnos.find(a => a.id.toString() === (alumnoIdFila ? alumnoIdFila.toString() : '')) || null}
                                                                                             onChange={(e, newValue) => setAlumnoSeleccionadoFilaDashboard({
                                                                                                 ...alumnoSeleccionadoFilaDashboard,
@@ -1445,7 +1445,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                     <Grid item xs={12}>
                                         <Typography variant="subtitle2" color="textSecondary">Estudiante / Matrícula:</Typography>
                                         <Typography variant="body1" fontWeight="bold">
-                                            {cargoSeleccionado.alumno ? `${cargoSeleccionado.alumno.nombre} ${cargoSeleccionado.alumno.apellido_paterno}` : 'Alumno General'}
+                                            {cargoSeleccionado.alumno ? `${cargoSeleccionado.alumno.nombre} ${cargoSeleccionado.alumno.apellido_paterno} ${cargoSeleccionado.alumno.apellido_materno || ''}`.trim() : 'Alumno General'}
                                         </Typography>
                                         <Typography variant="body2" color="textSecondary">
                                             Matrícula: <strong>{cargoSeleccionado.alumno?.matricula || 'N/A'}</strong> | Carrera: <strong>{cargoSeleccionado.alumno?.carrera || 'General'}</strong>
@@ -1714,7 +1714,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                     <MenuItem value="TODOS">👥 Todos los alumnos activos</MenuItem>
                                     {alumnos.map(alum => (
                                         <MenuItem key={alum.id} value={alum.id.toString()}>
-                                            🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} ({alum.carrera})
+                                            🎓 {alum.matricula} - {alum.nombre} {alum.apellido_paterno} {alum.apellido_materno || ''} ({alum.carrera})
                                         </MenuItem>
                                     ))}
                                 </TextField>
@@ -1728,7 +1728,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                     <Grid item xs={12}>
                                         <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}>
                                             <Typography variant="subtitle2" fontWeight="bold" color="#166534" sx={{ mb: 1 }}>
-                                                👤 Datos para Pago y Conciliación de {alumObj.nombre} {alumObj.apellido_paterno}:
+                                                👤 Datos para Pago y Conciliación de {alumObj.nombre} {alumObj.apellido_paterno} {alumObj.apellido_materno || ''}:
                                             </Typography>
                                             <Grid container spacing={1}>
                                                 <Grid item xs={12} sm={4}>

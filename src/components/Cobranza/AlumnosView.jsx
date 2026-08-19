@@ -391,7 +391,7 @@ export default function AlumnosView() {
             if (!res.ok) throw new Error(data.error || 'Error al emitir ficha complementaria');
 
             const montoTotal = itemsValidos.reduce((acc, curr) => acc + curr.monto, 0);
-            setMensajeExito(`Ficha complementaria por $${montoTotal.toFixed(2)} emitida exitosamente para ${alumnoComplementario.nombre} ${alumnoComplementario.apellido_paterno}.`);
+            setMensajeExito(`Ficha complementaria por $${montoTotal.toFixed(2)} emitida exitosamente para ${alumnoComplementario.nombre} ${alumnoComplementario.apellido_paterno} ${alumnoComplementario.apellido_materno || ''}.`);
             setOpenComplementariaModal(false);
             fetchData();
 
@@ -727,7 +727,7 @@ export default function AlumnosView() {
                 throw new Error(data.error || 'Error al guardar alumno');
             }
 
-            setMensajeExito(`Alumno ${form.nombre} ${form.apellido_paterno} guardado exitosamente.`);
+            setMensajeExito(`Alumno ${form.nombre} ${form.apellido_paterno} ${form.apellido_materno || ''} guardado exitosamente.`);
             setOpenModal(false);
             fetchData();
 
@@ -1251,7 +1251,7 @@ export default function AlumnosView() {
                                                                 <Checkbox checked={isChecked} />
                                                             </TableCell>
                                                             <TableCell sx={{ fontFamily: 'monospace' }}>{alum.matricula}</TableCell>
-                                                            <TableCell>{alum.nombre} {alum.apellido_paterno}</TableCell>
+                                                            <TableCell>{alum.nombre} {alum.apellido_paterno} {alum.apellido_materno || ''}</TableCell>
                                                             <TableCell>{alum.carrera}</TableCell>
                                                             <TableCell>
                                                                 <Chip
