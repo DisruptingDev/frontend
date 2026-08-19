@@ -126,6 +126,7 @@ export default function CargosPage() {
 
     const [saving, setSaving] = useState(false);
     const [enviandoCorreoId, setEnviandoCorreoId] = useState(null);
+    const [enviandoMasivo, setEnviandoMasivo] = useState(false);
     const [error, setError] = useState('');
     const [exito, setExito] = useState('');
 
@@ -145,6 +146,29 @@ export default function CargosPage() {
         } finally {
             setEnviandoCorreoId(null);
         }
+    };
+
+    const handleReenviarPendientesYVencidas = async () => {
+        const fichasAEnviar = cargos.filter(c => c.estatus === 'PENDIENTE' || c.estatus === 'VENCIDO');
+        if (fichasAEnviar.length === 0) {
+            alert('No hay fichas pendientes o vencidas para reenviar.');
+            return;
+        }
+        if (!window.confirm(`¿Estás seguro de que deseas reenviar ${fichasAEnviar.length} fichas de cobro por correo? Esto puede tomar un tiempo.`)) return;
+
+        setEnviandoMasivo(true);
+        let enviados = 0;
+        let errores = 0;
+        for (const cargo of fichasAEnviar) {
+            try {
+                const res = await fetch(`/api/cobranza/cargos/${cargo.id}`, { method: 'POST' });
+                if (res.ok) enviados++; else errores++;
+            } catch {
+                errores++;
+            }
+        }
+        setEnviandoMasivo(false);
+        alert(`Envío masivo finalizado. Correos enviados: ${enviados}, Errores: ${errores}`);
     };
 
     const [busquedaAlumnoModal, setBusquedaAlumnoModal] = useState('');
@@ -470,6 +494,15 @@ export default function CargosPage() {
                                 </Button>
                                 <Button
                                     variant="outlined"
+                                    color="info"
+                                    startIcon={enviandoMasivo ? <CircularProgress size={20} color="inherit" /> : <EmailIcon />}
+                                    onClick={handleReenviarPendientesYVencidas}
+                                    disabled={enviandoMasivo}
+                                >
+                                    Reenviar Pendientes
+                                </Button>
+                                <Button
+                                    variant="outlined"
                                     color="primary"
                                     startIcon={<AddIcon />}
                                     onClick={() => setOpenModal(true)}
@@ -526,7 +559,7 @@ export default function CargosPage() {
                                                             <TableCell>
                                                                 {cargo.alumno ? (
                                                                     <>
-                                                                        {cargo.alumno.nombre} {cargo.alumno.apellido_paterno} ({cargo.alumno.matricula})
+                                                                        {cargo.alumno.nombre} {cargo.alumno.apellido_paterno} {cargo.alumno.apellido_materno || ''} ({cargo.alumno.matricula})
                                                                         <br />
                                                                         <Typography variant="caption" color="textSecondary">{cargo.alumno.carrera || 'General'}</Typography>
                                                                     </>
@@ -621,7 +654,7 @@ export default function CargosPage() {
                                 <Grid item xs={6}>
                                     <Typography variant="caption" color="textSecondary">Alumno / Cliente:</Typography>
                                     <Typography variant="body1" fontWeight="bold">
-                                        {cargoSeleccionado.alumno?.nombre} {cargoSeleccionado.alumno?.apellido_paterno}
+                                        {cargoSeleccionado.alumno?.nombre} {cargoSeleccionado.alumno?.apellido_paterno} {cargoSeleccionado.alumno?.apellido_materno || ''}
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={6}>

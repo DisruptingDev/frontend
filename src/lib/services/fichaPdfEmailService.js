@@ -449,7 +449,7 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, rem
         tls: { rejectUnauthorized: false }
     });
 
-    const alumnoNombre = `${alumno.nombre || ''} ${alumno.apellido_paterno || ''}`.trim() || 'Estudiante';
+    const alumnoNombre = `${alumno.nombre || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.trim() || 'Estudiante';
     const codigoFicha = cargo.codigo_ficha || `F-${cargo.id}`;
     const montoTotalFormatted = formatMoney(cargo.monto_total);
     const fechaVenc = formatDate(cargo.fecha_vencimiento);
