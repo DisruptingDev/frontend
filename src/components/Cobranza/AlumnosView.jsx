@@ -194,7 +194,6 @@ export default function AlumnosView() {
 
                 const errors = [];
                 mappedRows.forEach((r, idx) => {
-                    if (!r.matricula) errors.push(`Fila ${idx + 2}: Matrícula es requerida.`);
                     if (!r.nombre) errors.push(`Fila ${idx + 2}: Nombre es requerido.`);
                     if (!r.apellido_paterno) errors.push(`Fila ${idx + 2}: Apellido Paterno es requerido.`);
                     if (isNaN(r.monto_personalizado) || r.monto_personalizado <= 0) {
@@ -232,7 +231,6 @@ export default function AlumnosView() {
             
             const errors = [];
             newRows.forEach((r, rowIdx) => {
-                if (!r.matricula) errors.push(`Fila ${rowIdx + 2}: Matrícula es requerida.`);
                 if (!r.nombre) errors.push(`Fila ${rowIdx + 2}: Nombre es requerido.`);
                 if (!r.apellido_paterno) errors.push(`Fila ${rowIdx + 2}: Apellido Paterno es requerido.`);
                 if (isNaN(parseFloat(r.monto_personalizado)) || parseFloat(r.monto_personalizado) <= 0) {
@@ -674,8 +672,8 @@ export default function AlumnosView() {
     };
 
     const handleSave = async () => {
-        if (!form.matricula || !form.nombre || !form.apellido_paterno || !form.monto_personalizado) {
-            setError('Matrícula, Nombre, Apellido Paterno y Monto Mensual son campos obligatorios.');
+        if (!form.nombre || !form.apellido_paterno || !form.monto_personalizado) {
+            setError('Nombre, Apellido Paterno y Monto Mensual son campos obligatorios.');
             return;
         }
 
