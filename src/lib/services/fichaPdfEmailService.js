@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import nodemailer from 'nodemailer';
+import { sendEmailViaMailgun } from '@/lib/services/mailgunService';
 
 /**
  * Formatea montos a moneda MXN ($#,##0.00)
@@ -421,33 +421,14 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, rem
         };
     }
 
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = Number(process.env.SMTP_PORT || 587);
-    const smtpSecure = process.env.SMTP_SECURE === 'true';
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-
     // Configuración de Remitente Enmascarado y Dirección de Respuesta (Exclusivo Módulo de Cobranza)
     const fromName = remitenteNombre || process.env.SMTP_COBRANZA_FROM_NAME || process.env.SMTP_FROM_NAME || "Cobranza Institucional";
     const requestedFromAddr = remitenteEmail || process.env.SMTP_COBRANZA_FROM_EMAIL || process.env.SMTP_FROM_EMAIL;
-
-    // La mayoría de los servidores SMTP (Postfix, cPanel, Gmail, Office365) rechazan (error 553 5.7.1)
-    // los correos donde la dirección RFC822 en 'from' no pertenece al usuario autenticado (smtpUser).
-    // Para enmascarar correctamente sin causar rechazo:
-    // 1. Usamos smtpUser como la casilla real de envío en 'from' (o requestedFromAddr si se activa SMTP_ALLOW_CUSTOM_FROM=true).
-    // 2. Usamos 'fromName' (ej: "UNIMCO Pagos") como el nombre remitente visible.
-    // 3. Asignamos requestedFromAddr a 'replyTo' (ej: pagos@unimco.edu.mx) para que las respuestas de los alumnos lleguen ahí.
-    const allowCustomFrom = process.env.SMTP_ALLOW_CUSTOM_FROM === 'true';
-    const fromAddr = (allowCustomFrom && requestedFromAddr) ? requestedFromAddr : (smtpUser || requestedFromAddr || 'no-reply@wisefacturacion.com');
+    
+    // Con Mailgun ya no hay problemas de 553 si el dominio de Mailgun está validado.
+    const domain = process.env.MAILGUN_DOMAIN || 'wisefacturacion.com';
+    const fromAddr = requestedFromAddr || `pagos@${domain}`;
     const replyToAddr = replyTo || process.env.SMTP_COBRANZA_REPLY_TO || process.env.SMTP_REPLY_TO || requestedFromAddr || fromAddr;
-
-    const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpSecure,
-        auth: (smtpUser && smtpPass) ? { user: smtpUser, pass: smtpPass } : undefined,
-        tls: { rejectUnauthorized: false }
-    });
 
     const alumnoNombre = `${alumno.nombre || ''} ${alumno.apellido_paterno || ''} ${alumno.apellido_materno || ''}`.trim() || 'Estudiante';
     const codigoFicha = cargo.codigo_ficha || `F-${cargo.id}`;
@@ -455,12 +436,7 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, rem
     const fechaVenc = formatDate(cargo.fecha_vencimiento);
     const referencia = alumno.clabe_interbancaria || cargo.referencia_bancaria || 'N/A';
 
-    const mailOptions = {
-        from: `"${fromName}" <${fromAddr}>`,
-        replyTo: replyToAddr,
-        to: correoFinal,
-        subject: `📄 Ficha de Cargo Emitida - ${codigoFicha} | ${alumnoNombre}`,
-        html: `
+    const htmlContent = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
                 <div style="background-color: #1b384a; color: #ffffff; padding: 20px; text-align: center;">
                     <h2 style="margin: 0; font-size: 18px;">Ficha Oficial de Pago Emitida</h2>
@@ -485,17 +461,22 @@ export async function enviarFichaPorCorreo({ cargo, pdfBuffer, emailDestino, rem
                     Este es un correo automático enviado por el Sistema de Cobranza.
                 </div>
             </div>
-        `,
+        `;
+
+    await sendEmailViaMailgun({
+        to: correoFinal,
+        subject: `📄 Ficha de Cargo Emitida - ${codigoFicha} | ${alumnoNombre}`,
+        html: htmlContent,
         attachments: [
             {
                 filename: `Ficha_Cargo_${codigoFicha}.pdf`,
                 content: pdfBuffer,
                 contentType: 'application/pdf'
             }
-        ]
-    };
-
-    await transporter.sendMail(mailOptions);
+        ],
+        from: `"${fromName}" <${fromAddr}>`,
+        replyTo: replyToAddr
+    });
 
     return {
         enviado: true,
