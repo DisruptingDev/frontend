@@ -471,6 +471,7 @@ export default function GenerarNominas({ token, selectedEmisor, onMessage, onSuc
     useEffect(() => {
         if (!selectedEmisor) return;
         fetchReceptores();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedEmisor]);
 
     const fetchReceptores = async () => {

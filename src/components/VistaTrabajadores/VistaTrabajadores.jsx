@@ -37,6 +37,7 @@ export default function VistaTrabajadores({ token }) {
             return;
         }
         fetchReceptores();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedEmisor]);
 
     const fetchReceptores = async () => {
