@@ -53,7 +53,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    Autocomplete
+    Autocomplete,
+    Checkbox
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -94,6 +95,7 @@ export default function CargosPage() {
     const [openFichaModal, setOpenFichaModal] = useState(false);
 
     // Selección
+    const [selectedCargos, setSelectedCargos] = useState([]);
     const [cargoSeleccionado, setCargoSeleccionado] = useState(null);
     const [emisorSeleccionado, setEmisorSeleccionado] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -148,27 +150,41 @@ export default function CargosPage() {
         }
     };
 
-    const handleReenviarPendientesYVencidas = async () => {
-        const fichasAEnviar = cargos.filter(c => c.estatus === 'PENDIENTE' || c.estatus === 'VENCIDO');
-        if (fichasAEnviar.length === 0) {
-            alert('No hay fichas pendientes o vencidas para reenviar.');
+    const handleReenviarSeleccionados = async () => {
+        if (selectedCargos.length === 0) {
+            alert('Por favor, selecciona al menos una ficha de cobro marcando las casillas en la tabla.');
             return;
         }
-        if (!window.confirm(`¿Estás seguro de que deseas reenviar ${fichasAEnviar.length} fichas de cobro por correo? Esto puede tomar un tiempo.`)) return;
+        if (!window.confirm(`¿Estás seguro de que deseas reenviar por correo las ${selectedCargos.length} fichas seleccionadas? Esto puede tomar un tiempo.`)) return;
 
         setEnviandoMasivo(true);
         let enviados = 0;
         let errores = 0;
-        for (const cargo of fichasAEnviar) {
+        for (const cargoId of selectedCargos) {
             try {
-                const res = await fetch(`/api/cobranza/cargos/${cargo.id}`, { method: 'POST' });
+                const res = await fetch(`/api/cobranza/cargos/${cargoId}`, { method: 'POST' });
                 if (res.ok) enviados++; else errores++;
             } catch {
                 errores++;
             }
         }
         setEnviandoMasivo(false);
+        setSelectedCargos([]);
         alert(`Envío masivo finalizado. Correos enviados: ${enviados}, Errores: ${errores}`);
+    };
+
+    const handleSelectAll = (event) => {
+        if (event.target.checked) {
+            setSelectedCargos(cargos.map(c => c.id));
+        } else {
+            setSelectedCargos([]);
+        }
+    };
+
+    const handleSelectCargo = (id) => {
+        setSelectedCargos(prev => 
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+        );
     };
 
     const [busquedaAlumnoModal, setBusquedaAlumnoModal] = useState('');
@@ -495,11 +511,11 @@ export default function CargosPage() {
                                 <Button
                                     variant="outlined"
                                     color="info"
-                                    startIcon={enviandoMasivo ? <CircularProgress size={20} color="inherit" /> : <EmailIcon />}
-                                    onClick={handleReenviarPendientesYVencidas}
-                                    disabled={enviandoMasivo}
+                                    startIcon={<EmailIcon />}
+                                    disabled={enviandoMasivo || selectedCargos.length === 0}
+                                    onClick={handleReenviarSeleccionados}
                                 >
-                                    Reenviar Pendientes
+                                    {enviandoMasivo ? 'Enviando...' : `Reenviar Seleccionados (${selectedCargos.length})`}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -525,6 +541,13 @@ export default function CargosPage() {
                                         <Table>
                                             <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                                                 <TableRow>
+                                                    <TableCell padding="checkbox">
+                                                        <Checkbox
+                                                            checked={cargos.length > 0 && selectedCargos.length === cargos.length}
+                                                            indeterminate={selectedCargos.length > 0 && selectedCargos.length < cargos.length}
+                                                            onChange={handleSelectAll}
+                                                        />
+                                                    </TableCell>
                                                     <TableCell>Código Único</TableCell>
                                                     <TableCell>Referencia Bancaria (Múl. 10)</TableCell>
                                                     <TableCell>Alumno / Carrera</TableCell>
@@ -538,13 +561,19 @@ export default function CargosPage() {
                                             <TableBody>
                                                 {cargos.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>
-                                                            No hay fichas de cobro emitidas. Haz clic en &quot;⚡ Generación Automática 1-Click&quot; para crear los cobros del mes.
+                                                        <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>
+                                                            No hay fichas de cobro emitidas. Haz clic en "⚡ Generación Automática 1-Click" para crear los cobros del mes.
                                                         </TableCell>
                                                     </TableRow>
                                                 ) : (
                                                     cargos.map((cargo) => (
-                                                        <TableRow key={cargo.id} hover>
+                                                        <TableRow key={cargo.id} hover selected={selectedCargos.includes(cargo.id)}>
+                                                            <TableCell padding="checkbox">
+                                                                <Checkbox
+                                                                    checked={selectedCargos.includes(cargo.id)}
+                                                                    onChange={() => handleSelectCargo(cargo.id)}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell>
                                                                 <Chip
                                                                     label={cargo.codigo_ficha || `F-${cargo.id}`}
