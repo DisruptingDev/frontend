@@ -1568,7 +1568,8 @@ export default function AlumnosView() {
                                              <Table size="small" stickyHeader>
                                                  <TableHead>
                                                      <TableRow>
-                                                         <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Matrícula *</TableCell>
+                                                         <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Fila</TableCell>
+                                                         <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Matrícula</TableCell>
                                                          <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Nombre *</TableCell>
                                                          <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Apellido Paterno *</TableCell>
                                                          <TableCell sx={{ fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>Plan de Estudios (Carrera) *</TableCell>
@@ -1581,6 +1582,9 @@ export default function AlumnosView() {
                                                          const isCarreraValida = (programas || []).some(p => (p.nombre || '').trim().toLowerCase() === (row.carrera || '').trim().toLowerCase());
                                                          return (
                                                              <TableRow key={idx} hover>
+                                                                 <TableCell sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                                                                     {idx + 2}
+                                                                 </TableCell>
                                                                  <TableCell sx={{ minWidth: 110 }}>
                                                                      <TextField
                                                                          size="small"
@@ -1653,7 +1657,6 @@ export default function AlumnosView() {
                                                                                  const newRows = prev.filter((_, rowIdx) => rowIdx !== idx);
                                                                                  const errors = [];
                                                                                  newRows.forEach((r, rowIdx) => {
-                                                                                     if (!r.matricula) errors.push(`Fila ${rowIdx + 2}: Matrícula es requerida.`);
                                                                                      if (!r.nombre) errors.push(`Fila ${rowIdx + 2}: Nombre es requerido.`);
                                                                                      if (!r.apellido_paterno) errors.push(`Fila ${rowIdx + 2}: Apellido Paterno es requerido.`);
                                                                                      if (isNaN(parseFloat(r.monto_personalizado)) || parseFloat(r.monto_personalizado) <= 0) {
