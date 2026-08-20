@@ -555,7 +555,7 @@ export default function DetalleAlumnoPage({ params }) {
                             <Table>
                                 <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                                     <TableRow>
-                                        <TableCell>Código Único</TableCell>
+                                        <TableCell>Código de Ficha</TableCell>
                                         <TableCell>Concepto</TableCell>
                                         <TableCell>Referencia Bancaria</TableCell>
                                         <TableCell>Vencimiento</TableCell>

@@ -16,21 +16,54 @@ const defaultProductos = [
   { nombre: 'Reinscripción', concepto_utilizado: 'REINSCRIPCIÓN' }
 ];
 
-export async function GET() {
+export async function GET(request) {
   try {
-    try {
-      await prisma.$executeRawUnsafe(`
-        CREATE TABLE IF NOT EXISTS "public"."ProductoFicha" (
-          "id" BIGSERIAL PRIMARY KEY,
-          "nombre" TEXT NOT NULL,
-          "concepto_utilizado" TEXT,
-          "created_at" TIMESTAMPTZ(6) DEFAULT CURRENT_TIMESTAMP,
-          "updated_at" TIMESTAMPTZ(6)
-        );
-      `);
-    } catch (e) {}
+    const authHeader = request.headers.get('authorization');
+    let grupo_id = null;
+
+    if (authHeader && authHeader.includes('Bearer ')) {
+      try {
+        const tokenStr = authHeader.replace('Bearer ', '').trim();
+        const payloadStr = Buffer.from(tokenStr.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+        const parsed = JSON.parse(payloadStr);
+        if (parsed.grupo_id || parsed.grupoId || parsed.GrupoID) {
+          grupo_id = (parsed.grupo_id || parsed.grupoId || parsed.GrupoID).toString();
+        } else {
+          const email = parsed.email || parsed.correo || parsed.sub || parsed.username;
+          const userId = parsed.id || parsed.user_id || parsed.usuario_id;
+          const userWhere = [];
+          if (userId) try { userWhere.push({ id: BigInt(userId) }); } catch(e){}
+          if (email && typeof email === 'string' && email.includes('@')) {
+            userWhere.push({ email: email.trim().toLowerCase() });
+          }
+          if (userWhere.length > 0) {
+            const dbUser = await prisma.usuarios.findFirst({
+              where: { OR: userWhere },
+              select: { grupo_id: true }
+            });
+            if (dbUser && dbUser.grupo_id) grupo_id = dbUser.grupo_id.toString();
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!grupo_id) {
+        const { searchParams } = new URL(request.url);
+        grupo_id = searchParams.get('grupo_id') || request.headers.get('x-grupo-id');
+    }
+
+    let whereClause = {};
+    if (grupo_id && grupo_id !== 'ALL' && grupo_id !== 'TODOS') {
+        whereClause = {
+            OR: [
+                { grupo_id: BigInt(grupo_id) },
+                { grupo_id: null }
+            ]
+        };
+    }
 
     let productos = await prisma.productoFicha.findMany({
+      where: whereClause,
       orderBy: { id: 'asc' }
     });
 
@@ -43,6 +76,7 @@ export async function GET() {
         `, prod.nombre, prod.concepto_utilizado);
       }
       productos = await prisma.productoFicha.findMany({
+        where: whereClause,
         orderBy: { id: 'asc' }
       });
     }
@@ -50,6 +84,7 @@ export async function GET() {
     const serialized = productos.map(p => ({
       ...p,
       id: p.id.toString(),
+      grupo_id: p.grupo_id ? p.grupo_id.toString() : null,
       created_at: p.created_at,
       updated_at: p.updated_at
     }));

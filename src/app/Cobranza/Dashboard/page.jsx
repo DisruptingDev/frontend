@@ -1084,8 +1084,10 @@ export default function MóduloCobranzaUnificadoPage() {
                                                 <Table size="small">
                                                     <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                                                         <TableRow>
+                                                            <TableCell>Código de Ficha</TableCell>
                                                             <TableCell>Referencia Múl. 10</TableCell>
                                                             <TableCell>Alumno / Carrera</TableCell>
+                                                            <TableCell>Concepto / Tarifa</TableCell>
                                                             <TableCell>Vencimiento</TableCell>
                                                             <TableCell>Monto Total</TableCell>
                                                             <TableCell>Estatus</TableCell>
@@ -1093,13 +1095,22 @@ export default function MóduloCobranzaUnificadoPage() {
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
-                                                        {cargos.map(cargo => (
-                                                            <TableRow key={cargo.id} hover>
-                                                                <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#1976d2' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
-                                                                <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() : 'N/A'}</TableCell>
-                                                                <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
-                                                                <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
-                                                                <TableCell>
+                                                        {cargos.length === 0 ? (
+                                                            <TableRow>
+                                                                <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
+                                                            </TableRow>
+                                                        ) : (
+                                                            cargos.map((cargo) => (
+                                                                <TableRow key={cargo.id} hover>
+                                                                    <TableCell>
+                                                                        <Chip label={cargo.codigo_ficha || `F-${cargo.id}`} color="secondary" size="small" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }} />
+                                                                    </TableCell>
+                                                                    <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#1976d2' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
+                                                                    <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() : 'N/A'}</TableCell>
+                                                                    <TableCell>{cargo.concepto?.nombre || 'Colegiatura Mensual'}</TableCell>
+                                                                    <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
+                                                                    <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
+                                                                    <TableCell>
                                                                     {cargo.estatus === 'PAGADO' ? (
                                                                         <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
                                                                     ) : cargo.estatus === 'PARCIAL' ? (

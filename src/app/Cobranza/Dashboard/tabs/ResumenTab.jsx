@@ -180,6 +180,7 @@ export default function ResumenTab({ emisorSeleccionado }) {
                         <Table size="small">
                             <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                                 <TableRow>
+                                    <TableCell>Código de Ficha</TableCell>
                                     <TableCell>Referencia Múlt. 10</TableCell>
                                     <TableCell>Alumno / Matrícula</TableCell>
                                     <TableCell>Concepto</TableCell>
@@ -190,6 +191,9 @@ export default function ResumenTab({ emisorSeleccionado }) {
                             <TableBody>
                                 {stats.ultimosPagos.map((cargo) => (
                                     <TableRow key={cargo.id} hover>
+                                        <TableCell>
+                                            <Chip label={cargo.codigo_ficha || `F-${cargo.id}`} color="secondary" size="small" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }} />
+                                        </TableCell>
                                         <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{cargo.alumno?.clabe_interbancaria || cargo.referencia_bancaria}</TableCell>
                                         <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() + ` (${cargo.alumno.matricula})` : 'N/A'}</TableCell>
                                         <TableCell>{cargo.concepto?.nombre || 'Colegiatura'}</TableCell>

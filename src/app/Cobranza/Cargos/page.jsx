@@ -548,12 +548,14 @@ export default function CargosPage() {
                                                             onChange={handleSelectAll}
                                                         />
                                                     </TableCell>
-                                                    <TableCell>Código Único</TableCell>
+                                                    <TableCell>ID de Ficha</TableCell>
+                                                    <TableCell>Código de Ficha</TableCell>
                                                     <TableCell>Referencia Bancaria (Múl. 10)</TableCell>
                                                     <TableCell>Alumno / Carrera</TableCell>
                                                     <TableCell>Concepto / Tarifa</TableCell>
                                                     <TableCell>Vencimiento</TableCell>
                                                     <TableCell>Monto Total</TableCell>
+                                                    <TableCell>Prefactura Relacionada</TableCell>
                                                     <TableCell>Estatus</TableCell>
                                                     <TableCell align="center">Acciones</TableCell>
                                                 </TableRow>
@@ -561,7 +563,7 @@ export default function CargosPage() {
                                             <TableBody>
                                                 {cargos.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>
+                                                        <TableCell colSpan={11} align="center" sx={{ py: 4, color: '#888' }}>
                                                             No hay fichas de cobro emitidas. Haz clic en "⚡ Generación Automática 1-Click" para crear los cobros del mes.
                                                         </TableCell>
                                                     </TableRow>
@@ -573,6 +575,9 @@ export default function CargosPage() {
                                                                     checked={selectedCargos.includes(cargo.id)}
                                                                     onChange={() => handleSelectCargo(cargo.id)}
                                                                 />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Chip label={cargo.id.toString()} variant="outlined" size="small" />
                                                             </TableCell>
                                                             <TableCell>
                                                                 <Chip
@@ -600,6 +605,15 @@ export default function CargosPage() {
                                                             </TableCell>
                                                             <TableCell sx={{ fontWeight: 'bold' }}>
                                                                 ${parseMonto(cargo.monto_total).toFixed(2)}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {(() => {
+                                                                    const comprobantes = cargo.PagoAlumno?.map(p => p.comprobante).filter(c => c) || [];
+                                                                    const uniqueComprobantes = Array.from(new Set(comprobantes.map(c => `${c.serie || 'F'}-${c.folio}`)));
+                                                                    return uniqueComprobantes.length > 0 ? (
+                                                                        uniqueComprobantes.map(comp => <Chip key={comp} label={comp} size="small" color="primary" sx={{ mr: 0.5, mb: 0.5 }} />)
+                                                                    ) : <Typography variant="body2" color="textSecondary">Ninguna</Typography>;
+                                                                })()}
                                                             </TableCell>
                                                             <TableCell>
                                                                 {cargo.estatus === 'PAGADO' ? (

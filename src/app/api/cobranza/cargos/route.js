@@ -248,7 +248,7 @@ export async function GET(request) {
                     ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahora },
                     monto_pendiente: { gt: 0 },
-                    estatus: { in: ['PENDIENTE', 'PARCIAL'] }
+                    estatus: 'PENDIENTE'
                 },
                 data: {
                     estatus: 'VENCIDO'
@@ -274,7 +274,10 @@ export async function GET(request) {
                 alumno: {
                     include: { receptor: true }
                 },
-                concepto: true
+                concepto: true,
+                PagoAlumno: {
+                    include: { comprobante: true }
+                }
             },
             orderBy: {
                 id: 'desc'
@@ -346,6 +349,20 @@ export async function POST(request) {
 
             const conceptoDefault = await obtenerOGenerarConceptoDefault(grupo_id);
 
+            // Buscar el producto para mensualidad del grupo
+            let productoMensualidad = await prisma.productoFicha.findFirst({
+                where: {
+                    OR: [
+                        { grupo_id: grupo_id ? BigInt(grupo_id) : null },
+                        { grupo_id: null }
+                    ],
+                    OR: [
+                        { nombre: { contains: 'Mensualidad', mode: 'insensitive' } },
+                        { concepto_utilizado: 'MATERIA' }
+                    ]
+                }
+            });
+
             const cargosCreados = [];
             const errores = [];
             const codigosGeneradosLote = [];
@@ -381,6 +398,9 @@ export async function POST(request) {
                 if (!existe) {
                     const codigoFicha = await generarCodigoFichaUnico(conceptoActual.nombre, codigosGeneradosLote);
                     codigosGeneradosLote.push(codigoFicha);
+                    
+                    const pId = producto_id ? BigInt(producto_id) : (productoMensualidad ? productoMensualidad.id : null);
+                    
                     const nuevoCargo = await prisma.cargoAlumno.create({
                         data: {
                             alumno_id: alumno.id,
@@ -394,7 +414,7 @@ export async function POST(request) {
                             fecha_vencimiento: fechaVenc,
                             estatus: 'PENDIENTE',
                             grupo_id: grupo_id ? BigInt(grupo_id) : alumno.grupo_id,
-                            producto_id: producto_id ? BigInt(producto_id) : null
+                            producto_id: pId
                         }
                     });
 

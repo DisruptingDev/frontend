@@ -920,7 +920,7 @@ export async function POST(request) {
                     ...(grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined' && grupoId !== '' ? { grupo_id: BigInt(grupoId) } : {}),
                     fecha_vencimiento: { lt: ahoraConc },
                     monto_pendiente: { gt: 0 },
-                    estatus: { in: ['PENDIENTE', 'PARCIAL'] }
+                    estatus: 'PENDIENTE'
                 },
                 data: {
                     estatus: 'VENCIDO'

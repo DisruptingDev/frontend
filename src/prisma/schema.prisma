@@ -274,6 +274,7 @@ model grupos {
   ConceptoCobro                ConceptoCobro[]
   Conceptos                    Conceptos[]
   PagoAlumno                   PagoAlumno[]
+  ProductoFicha                ProductoFicha[]
   comprobantes                 comprobantes[]
   conceptos                    conceptos[]
   emisors                      emisors[]
@@ -878,8 +879,11 @@ model ProductoFicha {
   id                 BigInt    @id @default(autoincrement())
   nombre             String
   concepto_utilizado String?
+  clave_prod_sat     String?
+  grupo_id           BigInt?
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
   updated_at         DateTime? @db.Timestamptz(6)
+  grupos             grupos?   @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productoficha_grupo")
   CargoAlumno        CargoAlumno[]
 }
 

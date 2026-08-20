@@ -899,10 +899,35 @@ export async function POST(request) {
                 return NextResponse.json({ error: 'No se puede eliminar una factura timbrada ante el SAT.' }, { status: 400 });
             }
 
-            // Desvincular de pagos
-            await prisma.pagoAlumno.updateMany({
-                where: { comprobante_id: BigInt(comprobante_id) },
-                data: { comprobante_id: null }
+            // 1. Obtener pagos vinculados
+            const pagosAsociados = await prisma.pagoAlumno.findMany({
+                where: { comprobante_id: BigInt(comprobante_id) }
+            });
+
+            // 2. Restaurar cada CargoAlumno
+            for (const pago of pagosAsociados) {
+                if (pago.cargo_id) {
+                    const cargo = await prisma.cargoAlumno.findUnique({ where: { id: pago.cargo_id } });
+                    if (cargo) {
+                        const nuevoPagado = Math.max(0, Number(cargo.monto_pagado) - Number(pago.monto));
+                        const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
+                        const nuevoEstatus = nuevoPendiente >= Number(cargo.monto_total) ? 'PENDIENTE' : (nuevoPendiente > 0 ? 'PARCIAL' : 'PAGADO');
+
+                        await prisma.cargoAlumno.update({
+                            where: { id: cargo.id },
+                            data: {
+                                monto_pagado: nuevoPagado,
+                                monto_pendiente: nuevoPendiente,
+                                estatus: nuevoEstatus
+                            }
+                        });
+                    }
+                }
+            }
+
+            // 3. Eliminar los pagos en lugar de solo desvincularlos
+            await prisma.pagoAlumno.deleteMany({
+                where: { comprobante_id: BigInt(comprobante_id) }
             });
 
             // Eliminar conceptos vinculados
