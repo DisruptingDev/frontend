@@ -909,7 +909,11 @@ export async function POST(request) {
                 return NextResponse.json({ error: 'No se puede eliminar pre-facturas que ya han sido timbradas ante el SAT.' }, { status: 400 });
             }
 
-            for (const compId of idsAEliminar) {
+            // Ordenar por folio descendente para asegurar que se recuperen en orden si se eliminan múltiples
+            const comprobantesOrdenados = comprobantes.sort((a, b) => Number(b.folio || 0) - Number(a.folio || 0));
+
+            for (const comp of comprobantesOrdenados) {
+                const compId = comp.id;
                 // 1. Obtener pagos vinculados
                 const pagosAsociados = await prisma.pagoAlumno.findMany({
                     where: { comprobante_id: compId }
@@ -961,6 +965,26 @@ export async function POST(request) {
                 await prisma.comprobantes.delete({
                     where: { id: compId }
                 });
+
+                // 4. Recuperar el folio si es el último utilizado en la serie
+                if (comp.serie && comp.folio) {
+                    const folioNum = Number(comp.folio);
+                    if (!isNaN(folioNum)) {
+                        const serieWhere = { clave: comp.serie };
+                        if (comp.emisor_id) serieWhere.emisor_id = comp.emisor_id;
+                        
+                        const serie = await prisma.series.findFirst({
+                            where: serieWhere
+                        });
+                        
+                        if (serie && Number(serie.ultimo_folio) === folioNum) {
+                            await prisma.series.update({
+                                where: { id: serie.id },
+                                data: { ultimo_folio: folioNum - 1 }
+                            });
+                        }
+                    }
+                }
             }
 
             return NextResponse.json({

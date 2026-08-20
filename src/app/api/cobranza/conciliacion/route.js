@@ -985,8 +985,16 @@ export async function POST(request) {
             } catch (e) {}
         }
 
+        let pagosExistentes = [];
+        try {
+            pagosExistentes = await prisma.pagoAlumno.findMany({
+                select: { monto: true, fecha_pago: true, referencia_bancaria: true }
+            });
+        } catch(e) {}
+
         let conciliadosCount = 0;
         let pendientesCount = 0;
+        let duplicadosCount = 0;
         let montoTotal = 0;
         const pagosProcesados = [];
 
@@ -1019,6 +1027,21 @@ export async function POST(request) {
         };
 
         for (const mov of movimientos) {
+            // Verificar si el movimiento ya fue procesado
+            const esDuplicado = pagosExistentes.some(p => {
+                const isSameMonto = Math.abs(Number(p.monto) - mov.monto) < 0.01;
+                const dateP = new Date(p.fecha_pago).toISOString().split('T')[0];
+                const dateM = new Date(mov.fecha).toISOString().split('T')[0];
+                const isSameDate = dateP === dateM;
+                const isSameRef = (p.referencia_bancaria || '') === (mov.referencia || '');
+                return isSameMonto && isSameDate && isSameRef;
+            });
+
+            if (esDuplicado) {
+                duplicadosCount++;
+                continue;
+            }
+
             montoTotal += mov.monto;
 
             let alumnoEncontrado = null;
@@ -1196,11 +1219,12 @@ export async function POST(request) {
         }
 
         const responseData = {
-            mensaje: `Conciliación bancaria procesada. ${conciliadosCount} movimientos conciliados y ${pendientesCount} sin coincidencia.`,
+            mensaje: `Conciliación bancaria procesada. ${conciliadosCount} movimientos conciliados, ${pendientesCount} sin coincidencia y ${duplicadosCount} ignorados por estar ya registrados.`,
             resumen: {
                 total_movimientos: movimientos.length,
                 conciliados: conciliadosCount,
                 pendientes_revision: pendientesCount,
+                duplicados_ignorados: duplicadosCount,
                 monto_total: montoTotal,
                 debug_alumnos_count: todosLosAlumnos.length,
                 debug_cargos_count: cargosPendientes.length,

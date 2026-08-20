@@ -681,26 +681,24 @@ export default function ConciliacionPage() {
                                                                                 </FormControl>
                                                                                 
                                                                                 {saldoAFavor > 0 && (
-                                                                                    <Box sx={{ mt: 1, p: 1, border: '1px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd' }}>
-                                                                                        <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 }, mb: 1 }}>
+                                                                                    <Box sx={{ mt: 1, p: 2, border: '2px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                                        <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
                                                                                             <Typography variant="caption" fontWeight="bold">
                                                                                                 Se detectó Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                                                             </Typography>
                                                                                         </Alert>
-                                                                                        <FormControlLabel
-                                                                                            control={
-                                                                                                <Checkbox
-                                                                                                    size="small"
-                                                                                                    color="primary"
-                                                                                                    checked={!!aprobarSAFPorFila[idx]}
-                                                                                                    onChange={(e) => setAprobarSAFPorFila({
-                                                                                                        ...aprobarSAFPorFila,
-                                                                                                        [idx]: e.target.checked
-                                                                                                    })}
-                                                                                                />
-                                                                                            }
-                                                                                            label={<Typography variant="caption" fontWeight="bold">Aprobar y Facturar Saldo a Favor al alumno</Typography>}
-                                                                                        />
+                                                                                        <Button
+                                                                                            variant={aprobarSAFPorFila[idx] ? "contained" : "outlined"}
+                                                                                            color="primary"
+                                                                                            size="small"
+                                                                                            onClick={() => setAprobarSAFPorFila({
+                                                                                                ...aprobarSAFPorFila,
+                                                                                                [idx]: !aprobarSAFPorFila[idx]
+                                                                                            })}
+                                                                                            sx={{ fontWeight: 'bold' }}
+                                                                                        >
+                                                                                            {aprobarSAFPorFila[idx] ? "✓ Autorizado: Facturar Saldo a Favor" : "Autorizar y Facturar Saldo a Favor"}
+                                                                                        </Button>
                                                                                     </Box>
                                                                                 )}
                                                                                 {sumaMontoCargos > deposito && seleccionadosIds.length > 0 && (
