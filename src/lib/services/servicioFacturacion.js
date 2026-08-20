@@ -267,7 +267,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
 
         const descSat = (item.descripcion || 'Servicios Educativos').trim();
 
-        await prisma.concepto.create({
+        const conceptoDB = await prisma.concepto.create({
             data: {
                 conceptos_id: conceptosHeader.id,
                 clave_prod_serv: item.clave_prod_serv,
@@ -281,11 +281,33 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
                 importe_string: String(baseSubtotalItem.toFixed(2)),
                 descuento: 0,
                 descuento_string: '0',
-                objeto_imp: '01'
+                objeto_imp: '02'
             }
         });
 
-        xmlConceptosList += `<cfdi:Concepto ClaveProdServ="${item.clave_prod_serv}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${baseSubtotalItem.toFixed(2)}" Importe="${baseSubtotalItem.toFixed(2)}" ObjetoImp="01">
+        // Crear registro del impuesto Exento en BD
+        const impuestoConcepto = await prisma.impuestos.create({
+            data: {
+                concepto_id: conceptoDB.id
+            }
+        });
+
+        await prisma.traslados.create({
+            data: {
+                impuestos_id: impuestoConcepto.id,
+                base: baseSubtotalItem,
+                base_string: String(baseSubtotalItem.toFixed(2)),
+                impuesto_clave: '002',
+                tipo_factor: 'Exento'
+            }
+        });
+
+        xmlConceptosList += `<cfdi:Concepto ClaveProdServ="${item.clave_prod_serv}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${baseSubtotalItem.toFixed(2)}" Importe="${baseSubtotalItem.toFixed(2)}" ObjetoImp="02">
+    <cfdi:Impuestos>
+        <cfdi:Traslados>
+            <cfdi:Traslado Base="${baseSubtotalItem.toFixed(2)}" Impuesto="002" TipoFactor="Exento"/>
+        </cfdi:Traslados>
+    </cfdi:Impuestos>
 </cfdi:Concepto>\n`;
     }
 

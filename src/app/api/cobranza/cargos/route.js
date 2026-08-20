@@ -25,7 +25,9 @@ function serializeBigIntsAndDecimals(obj) {
 }
 
 async function obtenerOGenerarConceptoDefault(grupoId = null) {
-    let concepto = await prisma.conceptoCobro.findFirst();
+    let concepto = await prisma.conceptoCobro.findFirst({
+        where: { grupo_id: grupoId ? BigInt(grupoId) : null }
+    });
     if (!concepto) {
         concepto = await prisma.conceptoCobro.create({
             data: {
@@ -374,10 +376,26 @@ export async function POST(request) {
                     continue;
                 }
 
-                let conceptoActual = conceptoDefault;
+                let conceptoActual = null;
+                
+                // 1. Si el alumno tiene un concepto asignado explícitamente en su perfil
                 if (alumno.concepto_id) {
-                    const conc = await prisma.conceptoCobro.findUnique({ where: { id: alumno.concepto_id } });
-                    if (conc) conceptoActual = conc;
+                    conceptoActual = await prisma.conceptoCobro.findUnique({ where: { id: alumno.concepto_id } });
+                }
+                
+                // 2. Si no tiene, buscar automáticamente el concepto del Plan Académico
+                if (!conceptoActual && alumno.programa_academico_id) {
+                    conceptoActual = await prisma.conceptoCobro.findFirst({
+                        where: {
+                            programa_academico_id: alumno.programa_academico_id,
+                            grupo_id: grupo_id ? BigInt(grupo_id) : alumno.grupo_id
+                        }
+                    });
+                }
+                
+                // 3. Si tampoco encuentra, usar el concepto por defecto
+                if (!conceptoActual) {
+                    conceptoActual = conceptoDefault;
                 }
 
                 const montoFinal = Number(alumno.monto_personalizado);
@@ -451,6 +469,10 @@ export async function POST(request) {
             conceptoActual = await prisma.conceptoCobro.findUnique({
                 where: { id: BigInt(concepto_id) }
             });
+            // Validar que pertenezca al grupo (si aplica)
+            if (conceptoActual && grupo_id && conceptoActual.grupo_id && conceptoActual.grupo_id.toString() !== grupo_id.toString()) {
+                conceptoActual = null; // No pertenece a este grupo
+            }
         }
         
         const { items, nombre_concepto, alumno_id, producto_id: manual_producto_id } = body;
@@ -459,6 +481,7 @@ export async function POST(request) {
         let itemsFinales = [];
         let montoCalculado = 0;
         let nombreConceptoPrimerItem = nombre_concepto || 'Mensualidad';
+        let claveProdSatProducto = '86121500';
 
         if (prodIdTarget) {
             try {
@@ -467,6 +490,9 @@ export async function POST(request) {
                 });
                 if (prodObj && prodObj.nombre) {
                     nombreConceptoPrimerItem = prodObj.nombre;
+                    if (prodObj.clave_prod_sat) {
+                        claveProdSatProducto = prodObj.clave_prod_sat;
+                    }
                 }
             } catch (e) {}
         }
@@ -486,8 +512,15 @@ export async function POST(request) {
         }
 
         if (!conceptoActual && nombreConceptoPrimerItem) {
+            const whereConcepto = { 
+                nombre: nombreConceptoPrimerItem.trim(),
+                grupo_id: grupo_id ? BigInt(grupo_id) : null
+            };
+            if (prodIdTarget) {
+                whereConcepto.producto_id = BigInt(prodIdTarget);
+            }
             conceptoActual = await prisma.conceptoCobro.findFirst({
-                where: { nombre: nombreConceptoPrimerItem.trim() }
+                where: whereConcepto
             });
 
             if (!conceptoActual) {
@@ -495,11 +528,12 @@ export async function POST(request) {
                     data: {
                         nombre: nombreConceptoPrimerItem.trim(),
                         descripcion: `Pago complementario: ${nombreConceptoPrimerItem.trim()}`,
-                        clave_prod_serv: '86121500',
+                        clave_prod_serv: claveProdSatProducto,
                         clave_unidad: 'E48',
                         monto_base: montoCalculado > 0 ? montoCalculado : (monto_custom != null ? parseFloat(monto_custom) : 100),
                         aplica_recargo: false,
-                        grupo_id: grupo_id ? BigInt(grupo_id) : null
+                        grupo_id: grupo_id ? BigInt(grupo_id) : null,
+                        producto_id: prodIdTarget ? BigInt(prodIdTarget) : null
                     }
                 });
             }

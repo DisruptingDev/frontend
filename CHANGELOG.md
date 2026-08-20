@@ -12,6 +12,15 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.07] - 2026-08-20
+### [FEAT]
+* FEAT - Soporte para extraer dinámicamente claves SAT y nombre de conceptos desde el catálogo de ProductoFicha para fichas extras y colegiaturas.
+* FEAT - Búsqueda automática del ConceptoCobro basado en el programa académico del estudiante en la generación de colegiatura mensual.
+* FEAT - Filtro estricto multitenant (`grupo_id`) en las consultas de ConceptoCobro.
+
+### [FIX]
+* FIX - Asignación correcta de la regla fiscal "02" (Sí objeto de impuesto) y Traslado "IVA Exento" (002, Exento) en el XML y Base de Datos al facturar desde un cobro.
+
 ## [0.01.06] - 2026-08-19
 ### [FEAT]
 * FEAT - Soporte para acciones masivas (timbrar y eliminar) de múltiples pre-facturas en el panel de Facturación CFDI.

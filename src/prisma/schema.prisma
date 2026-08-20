@@ -840,9 +840,11 @@ model ConceptoCobro {
   updated_at            DateTime?     @db.Timestamptz(6)
   carrera               String?
   programa_academico_id BigInt?
+  producto_id           BigInt?
   Alumno                Alumno[]
   CargoAlumno           CargoAlumno[]
   grupos                grupos?       @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_conceptocobro_grupo")
+  ProductoFicha         ProductoFicha? @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_conceptocobro_producto")
 }
 
 model HistorialMontoAlumno {
@@ -885,6 +887,7 @@ model ProductoFicha {
   updated_at         DateTime? @db.Timestamptz(6)
   grupos             grupos?   @relation(fields: [grupo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_productoficha_grupo")
   CargoAlumno        CargoAlumno[]
+  ConceptoCobro      ConceptoCobro[]
 }
 
 model ProgramaAcademico {
