@@ -1141,7 +1141,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                     )}
                                                                 </TableCell>
                                                             </TableRow>
-                                                        ))}
+                                                        )))}
                                                     </TableBody>
                                                 </Table>
                                             </TableContainer>
