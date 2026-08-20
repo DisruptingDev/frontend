@@ -642,7 +642,8 @@ export async function POST(request) {
                             
                             // Si sobró monto (Saldo a favor)
                             if (montoRestante > 0) {
-                                if (!asig.aprobar_saf) {
+                                // Si no hay cargos seleccionados (no había fichas), se exige autorización manual
+                                if ((!cargos_ids || cargos_ids.length === 0) && !asig.aprobar_saf) {
                                     throw new Error(`SAF_NO_APROBADO`);
                                 }
                                 const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
