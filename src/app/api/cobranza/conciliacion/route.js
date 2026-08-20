@@ -1105,31 +1105,41 @@ export async function POST(request) {
                 }
             }
 
-            // 3. Matcheo por Nombre de Alumno en Descripción SPEI (probando permutaciones de orden de nombres mexicanos)
+            // 3. Matcheo por Nombre de Alumno en Descripción SPEI (Completa)
             if (!alumnoEncontrado && mov.descripcion) {
+                const cleanStrWithSpaces = (s) => {
+                    if (!s) return '';
+                    return String(s)
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/ñ/g, "n")
+                        .replace(/Ñ/g, "N")
+                        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .toUpperCase();
+                };
+                
+                const descCleanSpaces = cleanStrWithSpaces(mov.descripcion);
+                
                 alumnoEncontrado = todosLosAlumnos.find(a => {
-                    const nomStr = cleanStr(a.nombre);
-                    const patStr = cleanStr(a.apellido_paterno);
-                    const matStr = cleanStr(a.apellido_materno);
-                    const primerNombre = cleanStr((a.nombre || '').trim().split(/\s+/)[0]);
+                    const nom = cleanStrWithSpaces(a.nombre);
+                    const pat = cleanStrWithSpaces(a.apellido_paterno);
+                    const mat = cleanStrWithSpaces(a.apellido_materno);
+                    
+                    if (!nom || !pat) return false;
 
-                    const p1 = `${nomStr}${patStr}`;                  // JUANPEREZ
-                    const p2 = `${nomStr}${patStr}${matStr}`;         // JUANPEREZLOPEZ
-                    const p3 = `${patStr}${matStr}${nomStr}`;         // PEREZLOPEZJUAN
-                    const p4 = `${patStr}${matStr}${primerNombre}`;   // PEREZLOPEZJUAN
-                    const p5 = `${primerNombre}${patStr}`;            // JUANPEREZ
-                    const p6 = `${patStr}${primerNombre}`;            // PEREZJUAN
+                    const p1 = `${nom} ${pat}`.trim();
+                    const p2 = `${nom} ${pat} ${mat}`.trim();
+                    const p3 = `${pat} ${mat} ${nom}`.trim();
 
-                    if (p2.length >= 6 && descClean.includes(p2)) return true;
-                    if (p3.length >= 6 && descClean.includes(p3)) return true;
-                    if (p1.length >= 6 && descClean.includes(p1)) return true;
-                    if (p4.length >= 6 && descClean.includes(p4)) return true;
-                    if (p5.length >= 6 && descClean.includes(p5)) return true;
-                    if (p6.length >= 6 && descClean.includes(p6)) return true;
+                    if (p2.length >= 6 && descCleanSpaces.includes(p2)) return true;
+                    if (p3.length >= 6 && descCleanSpaces.includes(p3)) return true;
+                    if (p1.length >= 6 && descCleanSpaces.includes(p1)) return true;
 
                     return false;
                 });
-                if (alumnoEncontrado) metodoMatcheo = 'Coincidencia Nombre Alumno SPEI';
+                if (alumnoEncontrado) metodoMatcheo = 'Coincidencia Nombre Alumno SPEI (Completa)';
             }
 
             if (alumnoEncontrado) {
