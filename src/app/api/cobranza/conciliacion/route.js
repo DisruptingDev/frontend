@@ -388,7 +388,7 @@ export async function POST(request) {
                 const conceptoDefault = await obtenerOGenerarConceptoDefault(grupo_id);
 
                 let cargoEncontrado = await prisma.cargoAlumno.findFirst({
-                    where: { alumno_id: BigInt(alumno_id), estatus: { in: ['PENDIENTE', 'PARCIAL'] } },
+                    where: { alumno_id: BigInt(alumno_id), estatus: { in: ['PENDIENTE', 'PARCIAL'] }, monto_pendiente: { gt: 0 } },
                     orderBy: { id: 'asc' },
                     include: { producto: true }
                 });
@@ -564,7 +564,7 @@ export async function POST(request) {
                             // Si el usuario seleccionó cargos específicos, los buscamos
                             if (cargos_ids && Array.isArray(cargos_ids) && cargos_ids.length > 0) {
                                 const cargosSeleccionados = await tx.cargoAlumno.findMany({
-                                    where: { id: { in: cargos_ids.map(id => BigInt(id)) } },
+                                    where: { id: { in: cargos_ids.map(id => BigInt(id)) }, monto_pendiente: { gt: 0 } },
                                     include: { producto: true, concepto: true },
                                     orderBy: { id: 'asc' }
                                 });
@@ -611,7 +611,7 @@ export async function POST(request) {
                             } else {
                                 // Si no se seleccionó cargo (quizás no había pendientes), intentar con el más antiguo si existe
                                 let cargoEncontrado = await tx.cargoAlumno.findFirst({
-                                    where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
+                                    where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] }, monto_pendiente: { gt: 0 } },
                                     include: { producto: true, concepto: true },
                                     orderBy: { id: 'asc' }
                                 });
@@ -641,7 +641,7 @@ export async function POST(request) {
                             }
                             
                             // Si sobró monto (Saldo a favor)
-                            if (montoRestante > 0) {
+                            if (montoRestante > 0.01) {
                                 const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
                                 const concId = concDef ? concDef.id : BigInt(1);
                                 
@@ -933,7 +933,7 @@ export async function POST(request) {
             });
         } catch (e) {}
 
-        const andFiltersCargos = [{ estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } }];
+        const andFiltersCargos = [{ estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] }, monto_pendiente: { gt: 0 } }];
         if (grupoId && grupoId !== 'ALL' && grupoId !== 'TODOS' && grupoId !== 'null' && grupoId !== 'undefined' && grupoId !== '') {
             andFiltersCargos.push({
                 OR: [
