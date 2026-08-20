@@ -682,33 +682,13 @@ export default function ConciliacionPage() {
                                                                                 
                                                                                 {saldoAFavor > 0 && (
                                                                                     <Box sx={{ mt: 1, p: 1, border: '1px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd' }}>
-                                                                                        {seleccionadosIds.length === 0 ? (
-                                                                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                                                                <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
-                                                                                                    <Typography variant="caption" fontWeight="bold">
-                                                                                                        No se seleccionaron fichas. ¿Crear ficha nueva por $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}?
-                                                                                                    </Typography>
-                                                                                                </Alert>
-                                                                                                <Button
-                                                                                                    variant={aprobarSAFPorFila[idx] ? "contained" : "outlined"}
-                                                                                                    color="primary"
-                                                                                                    size="small"
-                                                                                                    onClick={() => setAprobarSAFPorFila({
-                                                                                                        ...aprobarSAFPorFila,
-                                                                                                        [idx]: !aprobarSAFPorFila[idx]
-                                                                                                    })}
-                                                                                                    sx={{ fontWeight: 'bold' }}
-                                                                                                >
-                                                                                                    {aprobarSAFPorFila[idx] ? "✓ Autorizado" : "Crear Ficha y Facturar"}
-                                                                                                </Button>
-                                                                                            </Box>
-                                                                                        ) : (
-                                                                                            <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
-                                                                                                <Typography variant="caption" fontWeight="bold">
-                                                                                                    Se detectó un excedente/Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Se creará la ficha y facturará automáticamente.
-                                                                                                </Typography>
-                                                                                            </Alert>
-                                                                                        )}
+                                                                                        <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
+                                                                                            <Typography variant="caption" fontWeight="bold">
+                                                                                                {cargosDisponibles.length === 0 
+                                                                                                    ? `No hay fichas pendientes. Se generará automáticamente una ficha por $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` 
+                                                                                                    : `Se detectó un excedente/Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Se facturará y asignará automáticamente al alumno.`}
+                                                                                            </Typography>
+                                                                                        </Alert>
                                                                                     </Box>
                                                                                 )}
                                                                                 {sumaMontoCargos > deposito && seleccionadosIds.length > 0 && (
