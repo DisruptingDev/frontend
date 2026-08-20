@@ -12,6 +12,11 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.06] - 2026-08-19
+### [FEAT]
+* FEAT - Soporte para acciones masivas (timbrar y eliminar) de múltiples pre-facturas en el panel de Facturación CFDI.
+* FEAT - Aprobación manual explícita para la creación de fichas de "Saldo a Favor" durante la conciliación bancaria para evitar crear saldos no deseados.
+
 ## [0.01.05] - 2026-08-19
 ### [FEAT]
 * FEAT - Se agregaron las columnas `clave_prod_sat` y `grupo_id` al catálogo de `ProductoFicha`.

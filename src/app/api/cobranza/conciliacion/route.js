@@ -550,219 +550,192 @@ export async function POST(request) {
                 for (const asig of asignaciones) {
                     const { alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, cargos_ids } = asig;
                     if (!alumno_id) continue;
-
-                    await prisma.$transaction(async (tx) => {
-                        const alumnoObj = await tx.alumno.findUnique({
-                            where: { id: BigInt(alumno_id) },
-                            include: { receptor: true, programa_academico: true }
-                        });
-                        if (!alumnoObj) return;
-
-                        let montoRestante = Number(monto);
-                        let cargosAplicados = [];
-                        
-                        // Si el usuario seleccionó cargos específicos, los buscamos
-                        if (cargos_ids && Array.isArray(cargos_ids) && cargos_ids.length > 0) {
-                            const cargosSeleccionados = await tx.cargoAlumno.findMany({
-                                where: { id: { in: cargos_ids.map(id => BigInt(id)) } },
-                                include: { producto: true, concepto: true },
-                                orderBy: { id: 'asc' }
+                    try {
+                        await prisma.$transaction(async (tx) => {
+                            const alumnoObj = await tx.alumno.findUnique({
+                                where: { id: BigInt(alumno_id) },
+                                include: { receptor: true, programa_academico: true }
                             });
+                            if (!alumnoObj) return;
 
-                            if (cargosSeleccionados.length > 0) {
-                                try {
-                                    const cIdsStr = cargosSeleccionados.map(c => c.id.toString()).join(',');
-                                    const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cIdsStr})`);
-                                    const rawMap = {};
-                                    for (const r of rawItems) {
-                                        rawMap[r.id.toString()] = r.detalles_items;
-                                    }
-                                    for (const c of cargosSeleccionados) {
-                                        if (rawMap[c.id.toString()]) {
-                                            c.detalles_items = rawMap[c.id.toString()];
+                            let montoRestante = Number(monto);
+                            let cargosAplicados = [];
+                            
+                            // Si el usuario seleccionó cargos específicos, los buscamos
+                            if (cargos_ids && Array.isArray(cargos_ids) && cargos_ids.length > 0) {
+                                const cargosSeleccionados = await tx.cargoAlumno.findMany({
+                                    where: { id: { in: cargos_ids.map(id => BigInt(id)) } },
+                                    include: { producto: true, concepto: true },
+                                    orderBy: { id: 'asc' }
+                                });
+
+                                if (cargosSeleccionados.length > 0) {
+                                    try {
+                                        const cIdsStr = cargosSeleccionados.map(c => c.id.toString()).join(',');
+                                        const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cIdsStr})`);
+                                        const rawMap = {};
+                                        for (const r of rawItems) {
+                                            rawMap[r.id.toString()] = r.detalles_items;
                                         }
-                                    }
-                                } catch (e) {}
-                            }
-                            
-                            for (const cargo of cargosSeleccionados) {
-                                if (montoRestante <= 0) break;
-                                const pendiente = Number(cargo.monto_pendiente);
-                                if (pendiente <= 0) continue;
-                                
-                                const aplicar = Math.min(pendiente, montoRestante);
-                                montoRestante -= aplicar;
-                                
-                                const nuevoPagado = Number(cargo.monto_pagado) + aplicar;
-                                const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
-                                const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
-                                
-                                await tx.cargoAlumno.update({
-                                    where: { id: cargo.id },
-                                    data: {
-                                        monto_pagado: nuevoPagado,
-                                        monto_pendiente: nuevoPendiente,
-                                        estatus: nuevoEstatus
-                                    }
-                                });
-                                
-                                cargosAplicados.push({ cargo, montoAplicado: aplicar });
-                            }
-                        } else {
-                            // Si no se seleccionó cargo (quizás no había pendientes), intentar con el más antiguo si existe
-                            let cargoEncontrado = await tx.cargoAlumno.findFirst({
-                                where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
-                                include: { producto: true, concepto: true },
-                                orderBy: { id: 'asc' }
-                            });
-                            if (cargoEncontrado) {
-                                try {
-                                    const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id = ${cargoEncontrado.id}`);
-                                    if (rawItems && rawItems.length > 0) {
-                                        cargoEncontrado.detalles_items = rawItems[0].detalles_items;
-                                    }
-                                } catch (e) {}
-
-                                const pendiente = Number(cargoEncontrado.monto_pendiente);
-                                const aplicar = Math.min(pendiente, montoRestante);
-                                montoRestante -= aplicar;
-                                
-                                const nuevoPagado = Number(cargoEncontrado.monto_pagado) + aplicar;
-                                const nuevoPendiente = Number(cargoEncontrado.monto_total) - nuevoPagado;
-                                const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
-                                
-                                await tx.cargoAlumno.update({
-                                    where: { id: cargoEncontrado.id },
-                                    data: { monto_pagado: nuevoPagado, monto_pendiente: nuevoPendiente, estatus: nuevoEstatus }
-                                });
-                                
-                                cargosAplicados.push({ cargo: cargoEncontrado, montoAplicado: aplicar });
-                            }
-                        }
-                        
-                        // Si sobró monto (Saldo a favor)
-                        if (montoRestante > 0) {
-                            const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
-                            const concId = concDef ? concDef.id : BigInt(1);
-                            
-                            let refSAF = `SAF-${referencia_bancaria || Date.now()}`;
-                            const refExiste = await tx.cargoAlumno.findFirst({
-                                where: { referencia_bancaria: refSAF }
-                            });
-                            if (refExiste) {
-                                refSAF = `${refSAF}-${Math.floor(Math.random() * 10000)}`;
-                            }
-
-                            const cargoSaldoAFavor = await tx.cargoAlumno.create({
-                                data: {
-                                    alumno_id: alumnoObj.id,
-                                    concepto_id: concId,
-                                    codigo_ficha: `SAF-${String(Math.floor(Math.random()*90000+10000))}`,
-                                    referencia_bancaria: refSAF,
-                                    monto_total: -montoRestante,
-                                    monto_pagado: 0,
-                                    monto_pendiente: -montoRestante,
-                                    fecha_emision: new Date(),
-                                    fecha_vencimiento: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Válido por 1 año
-                                    estatus: 'PENDIENTE',
-                                    grupo_id: grupo_id ? BigInt(grupo_id) : alumnoObj.grupo_id
+                                        for (const c of cargosSeleccionados) {
+                                            if (rawMap[c.id.toString()]) {
+                                                c.detalles_items = rawMap[c.id.toString()];
+                                            }
+                                        }
+                                    } catch (e) {}
                                 }
-                            });
-                            
-                            cargosAplicados.push({ cargo: cargoSaldoAFavor, montoAplicado: montoRestante, esSaldoAFavor: true });
-                        }
-                        
-                        // Receptor 
-                        let receptorId = alumnoObj.receptor_id;
-                        let receptorObj = alumnoObj.receptor;
+                                
+                                for (const cargo of cargosSeleccionados) {
+                                    if (montoRestante <= 0) break;
+                                    const pendiente = Number(cargo.monto_pendiente);
+                                    if (pendiente <= 0) continue;
+                                    
+                                    const aplicar = Math.min(pendiente, montoRestante);
+                                    montoRestante -= aplicar;
+                                    
+                                    const nuevoPagado = Number(cargo.monto_pagado) + aplicar;
+                                    const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
+                                    const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
+                                    
+                                    await tx.cargoAlumno.update({
+                                        where: { id: cargo.id },
+                                        data: {
+                                            monto_pagado: nuevoPagado,
+                                            monto_pendiente: nuevoPendiente,
+                                            estatus: nuevoEstatus
+                                        }
+                                    });
+                                    
+                                    cargosAplicados.push({ cargo, montoAplicado: aplicar });
+                                }
+                            } else {
+                                // Si no se seleccionó cargo (quizás no había pendientes), intentar con el más antiguo si existe
+                                let cargoEncontrado = await tx.cargoAlumno.findFirst({
+                                    where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] } },
+                                    include: { producto: true, concepto: true },
+                                    orderBy: { id: 'asc' }
+                                });
+                                if (cargoEncontrado) {
+                                    try {
+                                        const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id = ${cargoEncontrado.id}`);
+                                        if (rawItems && rawItems.length > 0) {
+                                            cargoEncontrado.detalles_items = rawItems[0].detalles_items;
+                                        }
+                                    } catch (e) {}
 
-                        if (!receptorId || !receptorObj) {
-                            let receptorGenerico = await tx.receptors.findFirst({ where: { rfc: 'XAXX010101000' } });
-                            if (!receptorGenerico) {
-                                receptorGenerico = await tx.receptors.create({
+                                    const pendiente = Number(cargoEncontrado.monto_pendiente);
+                                    const aplicar = Math.min(pendiente, montoRestante);
+                                    montoRestante -= aplicar;
+                                    
+                                    const nuevoPagado = Number(cargoEncontrado.monto_pagado) + aplicar;
+                                    const nuevoPendiente = Number(cargoEncontrado.monto_total) - nuevoPagado;
+                                    const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
+                                    
+                                    await tx.cargoAlumno.update({
+                                        where: { id: cargoEncontrado.id },
+                                        data: { monto_pagado: nuevoPagado, monto_pendiente: nuevoPendiente, estatus: nuevoEstatus }
+                                    });
+                                    
+                                    cargosAplicados.push({ cargo: cargoEncontrado, montoAplicado: aplicar });
+                                }
+                            }
+                            
+                            // Si sobró monto (Saldo a favor)
+                            if (montoRestante > 0) {
+                                if (!asig.aprobar_saf) {
+                                    throw new Error(`SAF_NO_APROBADO`);
+                                }
+                                const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
+                                const concId = concDef ? concDef.id : BigInt(1);
+                                
+                                let refSAF = `SAF-${referencia_bancaria || Date.now()}`;
+                                const refExiste = await tx.cargoAlumno.findFirst({
+                                    where: { referencia_bancaria: refSAF }
+                                });
+                                if (refExiste) {
+                                    refSAF = `${refSAF}-${Math.floor(Math.random() * 10000)}`;
+                                }
+
+                                const cargoSaldoAFavor = await tx.cargoAlumno.create({
                                     data: {
-                                        rfc: 'XAXX010101000',
-                                        nombre: 'PUBLICO EN GENERAL',
-                                        domicilio_fiscal_receptor: emisor.lugar_expedicion || '01000',
-                                        regimen_fiscal_receptor: '616',
-                                        uso_cfdi: 'S01'
+                                        alumno_id: alumnoObj.id,
+                                        concepto_id: concId,
+                                        codigo_ficha: `SAF-${String(Math.floor(Math.random()*90000+10000))}`,
+                                        referencia_bancaria: refSAF,
+                                        monto_total: -montoRestante,
+                                        monto_pagado: 0,
+                                        monto_pendiente: -montoRestante,
+                                        fecha_emision: new Date(),
+                                        fecha_vencimiento: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Válido por 1 año
+                                        estatus: 'PENDIENTE',
+                                        grupo_id: grupo_id ? BigInt(grupo_id) : alumnoObj.grupo_id
                                     }
                                 });
+                                
+                                cargosAplicados.push({ cargo: cargoSaldoAFavor, montoAplicado: montoRestante, esSaldoAFavor: true });
                             }
-                            receptorId = receptorGenerico.id;
-                            receptorObj = receptorGenerico;
-                        }
+                            
+                            // Receptor 
+                            let receptorId = alumnoObj.receptor_id;
+                            let receptorObj = alumnoObj.receptor;
 
-                        const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id, tx);
-
-                        const subTotalStr = String(Number(monto).toFixed(2));
-
-                        const comprobanteAuto = await tx.comprobantes.create({
-                            data: sanitizeNullBytes({
-                                emisors: { connect: { id: BigInt(emisor.id) } },
-                                receptors: { connect: { id: BigInt(receptorId) } },
-                                ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
-                                version: '4.0',
-                                serie: serie,
-                                folio: folio,
-                                fecha: getFechaLocalSAT(),
-                                forma_pago: '03',
-                                metodo_pago: 'PUE',
-                                moneda: 'MXN',
-                                tipo_cambio: '1',
-                                exportacion: '01',
-                                tipo_de_comprobante: 'I',
-                                uso_cfdi: receptorObj.uso_cfdi || 'S01',
-                                lugar_expedicion: emisor.lugar_expedicion || '01000',
-                                sub_total_string: subTotalStr,
-                                total_string: subTotalStr,
-                                descuento_string: '0.00',
-                                estatus: 'PENDIENTE'
-                            })
-                        });
-
-                        await tx.$executeRawUnsafe(`
-                            UPDATE "comprobantes" 
-                            SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
-                            WHERE id = ${comprobanteAuto.id}
-                        `);
-
-                        const itemsList = [];
-                        for (const { cargo, montoAplicado, esSaldoAFavor } of cargosAplicados) {
-                            if (esSaldoAFavor) {
-                                itemsList.push({
-                                    descripcion: construirDescripcionConcepto({
-                                        producto: 'SALDO A FAVOR',
-                                        carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
-                                        fechaPago: fecha_pago,
-                                        nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
-                                        curp: alumnoObj.curp,
-                                        matricula: alumnoObj.matricula,
-                                        rvoe: alumnoObj.programa_academico?.rvoe
-                                    }),
-                                    monto: montoAplicado,
-                                    clave_prod_serv: '86121500'
-                                });
-                                continue;
+                            if (!receptorId || !receptorObj) {
+                                let receptorGenerico = await tx.receptors.findFirst({ where: { rfc: 'XAXX010101000' } });
+                                if (!receptorGenerico) {
+                                    receptorGenerico = await tx.receptors.create({
+                                        data: {
+                                            rfc: 'XAXX010101000',
+                                            nombre: 'PUBLICO EN GENERAL',
+                                            domicilio_fiscal_receptor: emisor.lugar_expedicion || '01000',
+                                            regimen_fiscal_receptor: '616',
+                                            uso_cfdi: 'S01'
+                                        }
+                                    });
+                                }
+                                receptorId = receptorGenerico.id;
+                                receptorObj = receptorGenerico;
                             }
 
-                            let parsedItems = null;
-                            if (cargo.detalles_items) {
-                                try {
-                                    parsedItems = typeof cargo.detalles_items === 'string' ? JSON.parse(cargo.detalles_items) : cargo.detalles_items;
-                                } catch (e) {}
-                            }
+                            const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id, tx);
 
-                            if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-                                const sumaMontoDetalles = parsedItems.reduce((acc, it) => acc + (parseFloat(it.monto) || 0), 0);
-                                for (const itemDet of parsedItems) {
-                                    const itemMontoBase = parseFloat(itemDet.monto) || 0;
-                                    const proporcion = sumaMontoDetalles > 0 ? (itemMontoBase / sumaMontoDetalles) : (1 / parsedItems.length);
-                                    const itemMontoCalc = Math.round(montoAplicado * proporcion * 100) / 100;
+                            const subTotalStr = String(Number(monto).toFixed(2));
 
+                            const comprobanteAuto = await tx.comprobantes.create({
+                                data: sanitizeNullBytes({
+                                    emisors: { connect: { id: BigInt(emisor.id) } },
+                                    receptors: { connect: { id: BigInt(receptorId) } },
+                                    ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
+                                    version: '4.0',
+                                    serie: serie,
+                                    folio: folio,
+                                    fecha: getFechaLocalSAT(),
+                                    forma_pago: '03',
+                                    metodo_pago: 'PUE',
+                                    moneda: 'MXN',
+                                    tipo_cambio: '1',
+                                    exportacion: '01',
+                                    tipo_de_comprobante: 'I',
+                                    uso_cfdi: receptorObj.uso_cfdi || 'S01',
+                                    lugar_expedicion: emisor.lugar_expedicion || '01000',
+                                    sub_total_string: subTotalStr,
+                                    total_string: subTotalStr,
+                                    descuento_string: '0.00',
+                                    estatus: 'PENDIENTE'
+                                })
+                            });
+
+                            await tx.$executeRawUnsafe(`
+                                UPDATE "comprobantes" 
+                                SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
+                                WHERE id = ${comprobanteAuto.id}
+                            `);
+
+                            const itemsList = [];
+                            for (const { cargo, montoAplicado, esSaldoAFavor } of cargosAplicados) {
+                                if (esSaldoAFavor) {
                                     itemsList.push({
                                         descripcion: construirDescripcionConcepto({
-                                            producto: (itemDet.concepto || cargo.concepto?.nombre || 'Colegiatura').toUpperCase(),
+                                            producto: 'SALDO A FAVOR',
                                             carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
                                             fechaPago: fecha_pago,
                                             nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
@@ -770,15 +743,62 @@ export async function POST(request) {
                                             matricula: alumnoObj.matricula,
                                             rvoe: alumnoObj.programa_academico?.rvoe
                                         }),
-                                        monto: itemMontoCalc > 0 ? itemMontoCalc : itemMontoBase,
+                                        monto: montoAplicado,
+                                        clave_prod_serv: '86121500'
+                                    });
+                                    continue;
+                                }
+
+                                let parsedItems = null;
+                                if (cargo.detalles_items) {
+                                    try {
+                                        parsedItems = typeof cargo.detalles_items === 'string' ? JSON.parse(cargo.detalles_items) : cargo.detalles_items;
+                                    } catch (e) {}
+                                }
+
+                                if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+                                    const sumaMontoDetalles = parsedItems.reduce((acc, it) => acc + (parseFloat(it.monto) || 0), 0);
+                                    for (const itemDet of parsedItems) {
+                                        const itemMontoBase = parseFloat(itemDet.monto) || 0;
+                                        const proporcion = sumaMontoDetalles > 0 ? (itemMontoBase / sumaMontoDetalles) : (1 / parsedItems.length);
+                                        const itemMontoCalc = Math.round(montoAplicado * proporcion * 100) / 100;
+
+                                        itemsList.push({
+                                            descripcion: construirDescripcionConcepto({
+                                                producto: (itemDet.concepto || cargo.concepto?.nombre || 'Colegiatura').toUpperCase(),
+                                                carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                                fechaPago: fecha_pago,
+                                                nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                                curp: alumnoObj.curp,
+                                                matricula: alumnoObj.matricula,
+                                                rvoe: alumnoObj.programa_academico?.rvoe
+                                            }),
+                                            monto: itemMontoCalc > 0 ? itemMontoCalc : itemMontoBase,
+                                            clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                        });
+                                    }
+                                } else {
+                                    const prodNombre = cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD';
+                                    itemsList.push({
+                                        descripcion: construirDescripcionConcepto({
+                                            producto: prodNombre,
+                                            carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
+                                            fechaPago: fecha_pago,
+                                            nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
+                                            curp: alumnoObj.curp,
+                                            matricula: alumnoObj.matricula,
+                                            rvoe: alumnoObj.programa_academico?.rvoe
+                                        }),
+                                        monto: montoAplicado,
                                         clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
                                     });
                                 }
-                            } else {
-                                const prodNombre = cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD';
+                            }
+
+                            if (itemsList.length === 0) {
                                 itemsList.push({
                                     descripcion: construirDescripcionConcepto({
-                                        producto: prodNombre,
+                                        producto: 'MENSUALIDAD',
                                         carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
                                         fechaPago: fecha_pago,
                                         nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
@@ -786,60 +806,48 @@ export async function POST(request) {
                                         matricula: alumnoObj.matricula,
                                         rvoe: alumnoObj.programa_academico?.rvoe
                                     }),
-                                    monto: montoAplicado,
-                                    clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                    monto: Number(monto),
+                                    clave_prod_serv: '86121500'
                                 });
                             }
-                        }
 
-                        if (itemsList.length === 0) {
-                            itemsList.push({
-                                descripcion: construirDescripcionConcepto({
-                                    producto: 'MENSUALIDAD',
-                                    carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
-                                    fechaPago: fecha_pago,
-                                    nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
-                                    curp: alumnoObj.curp,
-                                    matricula: alumnoObj.matricula,
-                                    rvoe: alumnoObj.programa_academico?.rvoe
-                                }),
+                            await crearEstructuraCompletaCFDI({
+                                comprobante: comprobanteAuto,
+                                emisor,
+                                receptor: receptorObj,
                                 monto: Number(monto),
-                                clave_prod_serv: '86121500'
+                                grupoId: emisor.grupo_id,
+                                items: itemsList,
+                                dbClient: tx
                             });
-                        }
 
-                        await crearEstructuraCompletaCFDI({
-                            comprobante: comprobanteAuto,
-                            emisor,
-                            receptor: receptorObj,
-                            monto: Number(monto),
-                            grupoId: emisor.grupo_id,
-                            items: itemsList,
-                            dbClient: tx
-                        });
+                            // Registrar cada pago contra los cargos
+                            for (const { cargo, montoAplicado } of cargosAplicados) {
+                                await tx.pagoAlumno.create({
+                                    data: {
+                                        alumno_id: alumnoObj.id,
+                                        cargo_id: cargo.id,
+                                        fecha_pago: parseFechaSegura(fecha_pago),
+                                        monto: montoAplicado,
+                                        referencia_bancaria: referencia_bancaria || `MANUAL-${Date.now()}`,
+                                        metodo_pago: '03',
+                                        estado_conciliacion: 'CONCILIADO',
+                                        comprobante_id: comprobanteAuto.id,
+                                        grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
+                                    }
+                                });
+                            }
 
-                        // Registrar cada pago contra los cargos
-                        for (const { cargo, montoAplicado } of cargosAplicados) {
-                            await tx.pagoAlumno.create({
-                                data: {
-                                    alumno_id: alumnoObj.id,
-                                    cargo_id: cargo.id,
-                                    fecha_pago: parseFechaSegura(fecha_pago),
-                                    monto: montoAplicado,
-                                    referencia_bancaria: referencia_bancaria || `MANUAL-${Date.now()}`,
-                                    metodo_pago: '03',
-                                    estado_conciliacion: 'CONCILIADO',
-                                    comprobante_id: comprobanteAuto.id,
-                                    grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
-                                }
+                            procesados.push({
+                                alumno_nombre: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno}`,
+                                comprobante_folio: `${serie}-${folio}`
                             });
-                        }
-
-                        procesados.push({
-                            alumno_nombre: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno}`,
-                            comprobante_folio: `${serie}-${folio}`
                         });
-                    });
+                    } catch (e) {
+                        if (e.message !== 'SAF_NO_APROBADO') {
+                            console.error('Error procesando fila:', e);
+                        }
+                    }
                 }
 
                 return NextResponse.json({

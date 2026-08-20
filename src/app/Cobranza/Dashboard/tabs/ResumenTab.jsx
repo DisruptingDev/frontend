@@ -185,6 +185,7 @@ export default function ResumenTab({ emisorSeleccionado }) {
                                     <TableCell>Alumno / Matrícula</TableCell>
                                     <TableCell>Concepto</TableCell>
                                     <TableCell>Monto Total</TableCell>
+                                    <TableCell>Prefactura Relacionada</TableCell>
                                     <TableCell>Estatus</TableCell>
                                 </TableRow>
                             </TableHead>
@@ -198,6 +199,15 @@ export default function ResumenTab({ emisorSeleccionado }) {
                                         <TableCell>{cargo.alumno ? `${cargo.alumno.nombre} ${cargo.alumno.apellido_paterno} ${cargo.alumno.apellido_materno || ''}`.trim() + ` (${cargo.alumno.matricula})` : 'N/A'}</TableCell>
                                         <TableCell>{cargo.concepto?.nombre || 'Colegiatura'}</TableCell>
                                         <TableCell>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            {(() => {
+                                                const comprobantes = cargo.PagoAlumno?.map(p => p.comprobante).filter(c => c) || [];
+                                                const uniqueComprobantes = Array.from(new Set(comprobantes.map(c => `${c.serie || 'F'}-${c.folio}`)));
+                                                return uniqueComprobantes.length > 0 ? (
+                                                    uniqueComprobantes.map(comp => <Chip key={comp} label={comp} size="small" color="primary" sx={{ mr: 0.5, mb: 0.5 }} />)
+                                                ) : <Typography variant="body2" color="textSecondary">Ninguna</Typography>;
+                                            })()}
+                                        </TableCell>
                                         <TableCell>
                                             <Chip label={cargo.estatus} color={cargo.estatus === 'PAGADO' ? 'success' : 'error'} size="small" />
                                         </TableCell>

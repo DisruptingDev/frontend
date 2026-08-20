@@ -882,77 +882,89 @@ export async function POST(request) {
         // =========================================================================
         // ACCIÓN 3: ELIMINAR PRE-FACTURA EN BORRADOR
         // =========================================================================
-        if (action === 'ELIMINAR_PREFACTURA') {
-            if (!comprobante_id) {
-                return NextResponse.json({ error: 'Debe especificar el ID de la pre-factura a eliminar.' }, { status: 400 });
+        if (action === 'ELIMINAR_PREFACTURA' || action === 'ELIMINAR_PREFACTURAS_MASIVO') {
+            let idsAEliminar = [];
+
+            if (action === 'ELIMINAR_PREFACTURA') {
+                if (!comprobante_id) {
+                    return NextResponse.json({ error: 'Debe especificar el ID de la pre-factura a eliminar.' }, { status: 400 });
+                }
+                idsAEliminar = [BigInt(comprobante_id)];
+            } else if (comprobante_ids && Array.isArray(comprobante_ids) && comprobante_ids.length > 0) {
+                idsAEliminar = comprobante_ids.map(id => BigInt(id));
+            } else {
+                return NextResponse.json({ error: 'Debe proporcionar una lista de pre-facturas a eliminar.' }, { status: 400 });
             }
 
-            const comprobante = await prisma.comprobantes.findUnique({
-                where: { id: BigInt(comprobante_id) }
+            const comprobantes = await prisma.comprobantes.findMany({
+                where: { id: { in: idsAEliminar } }
             });
 
-            if (!comprobante) {
-                return NextResponse.json({ error: 'La pre-factura no existe.' }, { status: 404 });
+            if (comprobantes.length === 0) {
+                return NextResponse.json({ error: 'Las pre-facturas no existen.' }, { status: 404 });
             }
 
-            if (comprobante.estatus === 'TIMBRADO') {
-                return NextResponse.json({ error: 'No se puede eliminar una factura timbrada ante el SAT.' }, { status: 400 });
+            const comprobantesTimbrados = comprobantes.filter(c => c.estatus === 'TIMBRADO');
+            if (comprobantesTimbrados.length > 0) {
+                return NextResponse.json({ error: 'No se puede eliminar pre-facturas que ya han sido timbradas ante el SAT.' }, { status: 400 });
             }
 
-            // 1. Obtener pagos vinculados
-            const pagosAsociados = await prisma.pagoAlumno.findMany({
-                where: { comprobante_id: BigInt(comprobante_id) }
-            });
+            for (const compId of idsAEliminar) {
+                // 1. Obtener pagos vinculados
+                const pagosAsociados = await prisma.pagoAlumno.findMany({
+                    where: { comprobante_id: compId }
+                });
 
-            // 2. Restaurar cada CargoAlumno
-            for (const pago of pagosAsociados) {
-                if (pago.cargo_id) {
-                    const cargo = await prisma.cargoAlumno.findUnique({ where: { id: pago.cargo_id } });
-                    if (cargo) {
-                        const nuevoPagado = Math.max(0, Number(cargo.monto_pagado) - Number(pago.monto));
-                        const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
-                        const nuevoEstatus = nuevoPendiente >= Number(cargo.monto_total) ? 'PENDIENTE' : (nuevoPendiente > 0 ? 'PARCIAL' : 'PAGADO');
+                // 2. Restaurar cada CargoAlumno
+                for (const pago of pagosAsociados) {
+                    if (pago.cargo_id) {
+                        const cargo = await prisma.cargoAlumno.findUnique({ where: { id: pago.cargo_id } });
+                        if (cargo) {
+                            const nuevoPagado = Math.max(0, Number(cargo.monto_pagado) - Number(pago.monto));
+                            const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
+                            const nuevoEstatus = nuevoPendiente >= Number(cargo.monto_total) ? 'PENDIENTE' : (nuevoPendiente > 0 ? 'PARCIAL' : 'PAGADO');
 
-                        await prisma.cargoAlumno.update({
-                            where: { id: cargo.id },
-                            data: {
-                                monto_pagado: nuevoPagado,
-                                monto_pendiente: nuevoPendiente,
-                                estatus: nuevoEstatus
-                            }
-                        });
+                            await prisma.cargoAlumno.update({
+                                where: { id: cargo.id },
+                                data: {
+                                    monto_pagado: nuevoPagado,
+                                    monto_pendiente: nuevoPendiente,
+                                    estatus: nuevoEstatus
+                                }
+                            });
+                        }
                     }
                 }
-            }
 
-            // 3. Eliminar los pagos en lugar de solo desvincularlos
-            await prisma.pagoAlumno.deleteMany({
-                where: { comprobante_id: BigInt(comprobante_id) }
-            });
-
-            // Eliminar conceptos vinculados
-            const conceptosHeader = await prisma.conceptos.findMany({
-                where: { comprobante_id: BigInt(comprobante_id) },
-                select: { id: true }
-            });
-
-            if (conceptosHeader.length > 0) {
-                const headerIds = conceptosHeader.map(c => c.id);
-                await prisma.concepto.deleteMany({
-                    where: { conceptos_id: { in: headerIds } }
+                // 3. Eliminar los pagos en lugar de solo desvincularlos
+                await prisma.pagoAlumno.deleteMany({
+                    where: { comprobante_id: compId }
                 });
-                await prisma.conceptos.deleteMany({
-                    where: { id: { in: headerIds } }
+
+                // Eliminar conceptos vinculados
+                const conceptosHeader = await prisma.conceptos.findMany({
+                    where: { comprobante_id: compId },
+                    select: { id: true }
+                });
+
+                if (conceptosHeader.length > 0) {
+                    const headerIds = conceptosHeader.map(c => c.id);
+                    await prisma.concepto.deleteMany({
+                        where: { conceptos_id: { in: headerIds } }
+                    });
+                    await prisma.conceptos.deleteMany({
+                        where: { id: { in: headerIds } }
+                    });
+                }
+
+                // Eliminar la pre-factura
+                await prisma.comprobantes.delete({
+                    where: { id: compId }
                 });
             }
-
-            // Eliminar la pre-factura
-            await prisma.comprobantes.delete({
-                where: { id: BigInt(comprobante_id) }
-            });
 
             return NextResponse.json({
-                mensaje: `Pre-factura borrador eliminada exitosamente.`
+                mensaje: action === 'ELIMINAR_PREFACTURAS_MASIVO' ? `${idsAEliminar.length} pre-facturas borrador eliminadas exitosamente.` : `Pre-factura borrador eliminada exitosamente.`
             }, { status: 200 });
         }
 

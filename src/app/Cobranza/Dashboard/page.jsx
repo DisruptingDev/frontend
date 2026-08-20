@@ -63,7 +63,8 @@ import {
     FormControl,
     InputLabel,
     Select,
-    Autocomplete
+    Autocomplete,
+    Checkbox
 } from '@mui/material';
 import {
     Dashboard as DashboardIcon,
@@ -141,6 +142,11 @@ export default function MóduloCobranzaUnificadoPage() {
     const [pendientesGlobal, setPendientesGlobal] = useState([]);
     const [facturasEmitidas, setFacturasEmitidas] = useState([]);
     const [montoGlobalTotal, setMontoGlobalTotal] = useState(0);
+
+    // ESTADOS PARA SELECCIÓN MASIVA (CFDI)
+    const [selectedCFDIs, setSelectedCFDIs] = useState([]);
+    const [timbrandoMasivoCFDI, setTimbrandoMasivoCFDI] = useState(false);
+    const [eliminandoMasivoCFDI, setEliminandoMasivoCFDI] = useState(false);
 
     // MÉTRICAS DASHBOARD
     const [stats, setStats] = useState({
@@ -702,6 +708,80 @@ export default function MóduloCobranzaUnificadoPage() {
         setMensajeExito(`Razón Social Emisora vinculada correctamente para todas las operaciones.`);
     };
 
+    // FUNCIONES MASIVAS
+    const handleTimbrarMasivoCFDI = async () => {
+        if (selectedCFDIs.length === 0) return;
+        setTimbrandoMasivoCFDI(true);
+        setErrorMsg('');
+        setMensajeExito('');
+
+        try {
+            let token = '';
+            if (typeof window !== 'undefined') {
+                token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+            }
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    action: 'TIMBRAR_MASIVO',
+                    comprobante_ids: selectedCFDIs,
+                    emisor_id: emisorSeleccionado,
+                    token
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al timbrar masivamente');
+
+            setMensajeExito(data.mensaje);
+            setSelectedCFDIs([]);
+            loadDataForTab();
+        } catch (err) {
+            setErrorMsg(err.message);
+        } finally {
+            setTimbrandoMasivoCFDI(false);
+        }
+    };
+
+    const handleEliminarMasivoCFDI = async () => {
+        if (selectedCFDIs.length === 0) return;
+        
+        if (!window.confirm(`¿Estás seguro que deseas eliminar ${selectedCFDIs.length} pre-facturas seleccionadas? Las timbradas serán ignoradas.`)) {
+            return;
+        }
+
+        setEliminandoMasivoCFDI(true);
+        setErrorMsg('');
+        setMensajeExito('');
+
+        try {
+            const res = await fetch('/api/cobranza/facturacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'ELIMINAR_PREFACTURAS_MASIVO',
+                    comprobante_ids: selectedCFDIs
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al eliminar pre-facturas masivamente');
+
+            setMensajeExito(data.mensaje);
+            setSelectedCFDIs([]);
+            loadDataForTab();
+        } catch (err) {
+            setErrorMsg(err.message);
+        } finally {
+            setEliminandoMasivoCFDI(false);
+        }
+    };
+
     // ACCIÓN EXPLÍCITA DE TIMBRADO DE UNA FACTURA PENDIENTE
     const handleTimbrarPendiente = async (facturaId) => {
         setTimbrandoFacturaId(facturaId);
@@ -1000,6 +1080,15 @@ export default function MóduloCobranzaUnificadoPage() {
                             borderRadius={2}
                             width={{ xs: "80%", md: "93%" }}
                         >
+                            
+                            {/* FUNCIONES PARA SELECCIÓN MASIVA DE CFDI */}
+                            <Box sx={{ display: 'none' }}>
+                                {(() => {
+                                    if (typeof window !== 'undefined' && !window.handleTimbrarMasivoCFDI_defined) {
+                                        window.handleTimbrarMasivoCFDI_defined = true;
+                                    }
+                                })()}
+                            </Box>
                             {/* CONFIGURACIÓN DE RAZÓN SOCIAL EMISORA INSTITUCIONAL */}
                             <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f0f7ff', borderLeft: '5px solid #1976d2' }}>
                                 <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -1090,6 +1179,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                             <TableCell>Concepto / Tarifa</TableCell>
                                                             <TableCell>Vencimiento</TableCell>
                                                             <TableCell>Monto Total</TableCell>
+                                                            <TableCell>Prefactura Relacionada</TableCell>
                                                             <TableCell>Estatus</TableCell>
                                                             <TableCell align="center">Acciones</TableCell>
                                                         </TableRow>
@@ -1097,7 +1187,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                     <TableBody>
                                                         {cargos.length === 0 ? (
                                                             <TableRow>
-                                                                <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
+                                                                <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
                                                             </TableRow>
                                                         ) : (
                                                             cargos.map((cargo) => (
@@ -1110,6 +1200,15 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                     <TableCell>{cargo.concepto?.nombre || 'Colegiatura Mensual'}</TableCell>
                                                                     <TableCell>{new Date(cargo.fecha_vencimiento).toLocaleDateString('es-MX')}</TableCell>
                                                                     <TableCell sx={{ fontWeight: 'bold' }}>${parseMonto(cargo.monto_total).toFixed(2)}</TableCell>
+                                                                    <TableCell>
+                                                                        {(() => {
+                                                                            const comprobantes = cargo.PagoAlumno?.map(p => p.comprobante).filter(c => c) || [];
+                                                                            const uniqueComprobantes = Array.from(new Set(comprobantes.map(c => `${c.serie || 'F'}-${c.folio}`)));
+                                                                            return uniqueComprobantes.length > 0 ? (
+                                                                                uniqueComprobantes.map(comp => <Chip key={comp} label={comp} size="small" color="primary" sx={{ mr: 0.5, mb: 0.5 }} />)
+                                                                            ) : <Typography variant="body2" color="textSecondary">Ninguna</Typography>;
+                                                                        })()}
+                                                                    </TableCell>
                                                                     <TableCell>
                                                                     {cargo.estatus === 'PAGADO' ? (
                                                                         <Chip label="PAGADO" color="success" size="small" sx={{ fontWeight: 'bold' }} />
@@ -1284,10 +1383,54 @@ export default function MóduloCobranzaUnificadoPage() {
                                     {/* PESTAÑA 4: FACTURACIÓN CFDI UNIFICADA (BORRADORES Y TIMBRADAS SAT) */}
                                     {currentTab === 4 && (
                                         <Box>
+                                            {selectedCFDIs.length > 0 && (
+                                                <Box sx={{ display: 'flex', gap: 2, mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, alignItems: 'center' }}>
+                                                    <Typography variant="body2" fontWeight="bold">
+                                                        {selectedCFDIs.length} Pre-facturas seleccionadas
+                                                    </Typography>
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        startIcon={timbrandoMasivoCFDI ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
+                                                        disabled={timbrandoMasivoCFDI || eliminandoMasivoCFDI}
+                                                        onClick={handleTimbrarMasivoCFDI}
+                                                    >
+                                                        ⚡ Timbrar Seleccionadas
+                                                    </Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="error"
+                                                        startIcon={eliminandoMasivoCFDI ? <CircularProgress size={18} color="inherit" /> : <DeleteIcon />}
+                                                        disabled={timbrandoMasivoCFDI || eliminandoMasivoCFDI}
+                                                        onClick={handleEliminarMasivoCFDI}
+                                                    >
+                                                        🗑️ Eliminar Seleccionadas
+                                                    </Button>
+                                                </Box>
+                                            )}
                                             <TableContainer component={Paper} variant="outlined">
                                                 <Table size="small">
                                                     <TableHead sx={{ backgroundColor: '#1b384a' }}>
                                                         <TableRow>
+                                                            <TableCell padding="checkbox">
+                                                                <Checkbox
+                                                                    sx={{ color: 'white' }}
+                                                                    checked={
+                                                                        ([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length > 0 &&
+                                                                        selectedCFDIs.length === ([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length
+                                                                    }
+                                                                    indeterminate={
+                                                                        selectedCFDIs.length > 0 && selectedCFDIs.length < ([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length
+                                                                    }
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setSelectedCFDIs([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas].map(f => f.id));
+                                                                        } else {
+                                                                            setSelectedCFDIs([]);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Serie - Folio</TableCell>
                                                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tipo CFDI</TableCell>
                                                             <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Fecha</TableCell>
@@ -1301,13 +1444,25 @@ export default function MóduloCobranzaUnificadoPage() {
                                                     <TableBody>
                                                         {([...pendientesRFC, ...pendientesGlobal, ...facturasEmitidas]).length === 0 ? (
                                                             <TableRow>
-                                                                <TableCell colSpan={8} align="center" sx={{ py: 4, color: '#888' }}>
+                                                                <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>
                                                                     No hay pre-facturas pendientes ni facturas timbradas registradas aún.
                                                                 </TableCell>
                                                             </TableRow>
                                                         ) : (
                                                             ([...pendientesRFC.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...pendientesGlobal.map(p => ({ ...p, estatus: 'PENDIENTE' })), ...facturasEmitidas]).map(fac => (
                                                                 <TableRow key={fac.id} hover>
+                                                                    <TableCell padding="checkbox">
+                                                                        <Checkbox
+                                                                            checked={selectedCFDIs.includes(fac.id)}
+                                                                            onChange={(e) => {
+                                                                                if (e.target.checked) {
+                                                                                    setSelectedCFDIs(prev => [...prev, fac.id]);
+                                                                                } else {
+                                                                                    setSelectedCFDIs(prev => prev.filter(id => id !== fac.id));
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </TableCell>
                                                                     <TableCell sx={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.95rem' }}>
                                                                         {fac.serie}-{fac.folio}
                                                                     </TableCell>

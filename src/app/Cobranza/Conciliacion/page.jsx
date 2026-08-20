@@ -45,7 +45,9 @@ import {
     TableRow,
     Paper,
     Chip,
-    Tooltip
+    Tooltip,
+    Checkbox,
+    FormControlLabel
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import {
@@ -96,6 +98,10 @@ export default function ConciliacionPage() {
     // Estado para la selección múltiple de cargos (Fichas) por fila
     // Formato: { [idxFila]: [id_cargo_1, id_cargo_2] }
     const [cargosSeleccionadosPorFila, setCargosSeleccionadosPorFila] = useState({});
+    
+    // Estado para saber si el usuario aprobó manualmente facturar un Saldo a Favor por fila
+    const [aprobarSAFPorFila, setAprobarSAFPorFila] = useState({});
+
     const [asignandoFilaIdx, setAsignandoFilaIdx] = useState(null);
 
     // Cargar Emisores y Alumnos al ingresar
@@ -331,7 +337,8 @@ export default function ConciliacionPage() {
                         fecha_pago: p.item.fecha_pago,
                         referencia_bancaria: p.item.referencia_bancaria,
                         descripcion: p.item.descripcion,
-                        cargos_ids: p.cargos_ids
+                        cargos_ids: p.cargos_ids,
+                        aprobar_saf: !!aprobarSAFPorFila[p.idx]
                     }))
                 })
             });
@@ -673,12 +680,28 @@ export default function ConciliacionPage() {
                                                                                     </Select>
                                                                                 </FormControl>
                                                                                 
-                                                                                {saldoAFavor > 0 && seleccionadosIds.length > 0 && (
-                                                                                    <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
-                                                                                        <Typography variant="caption" fontWeight="bold">
-                                                                                            Se generará Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                                        </Typography>
-                                                                                    </Alert>
+                                                                                {saldoAFavor > 0 && (
+                                                                                    <Box sx={{ mt: 1, p: 1, border: '1px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd' }}>
+                                                                                        <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 }, mb: 1 }}>
+                                                                                            <Typography variant="caption" fontWeight="bold">
+                                                                                                Se detectó Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                                            </Typography>
+                                                                                        </Alert>
+                                                                                        <FormControlLabel
+                                                                                            control={
+                                                                                                <Checkbox
+                                                                                                    size="small"
+                                                                                                    color="primary"
+                                                                                                    checked={!!aprobarSAFPorFila[idx]}
+                                                                                                    onChange={(e) => setAprobarSAFPorFila({
+                                                                                                        ...aprobarSAFPorFila,
+                                                                                                        [idx]: e.target.checked
+                                                                                                    })}
+                                                                                                />
+                                                                                            }
+                                                                                            label={<Typography variant="caption" fontWeight="bold">Aprobar y Facturar Saldo a Favor al alumno</Typography>}
+                                                                                        />
+                                                                                    </Box>
                                                                                 )}
                                                                                 {sumaMontoCargos > deposito && seleccionadosIds.length > 0 && (
                                                                                     <Alert severity="warning" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
