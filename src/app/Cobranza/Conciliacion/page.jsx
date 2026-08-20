@@ -684,7 +684,9 @@ export default function ConciliacionPage() {
                                                                                     <Box sx={{ mt: 1, p: 2, border: '2px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd', display: 'flex', flexDirection: 'column', gap: 1 }}>
                                                                                         <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
                                                                                             <Typography variant="caption" fontWeight="bold">
-                                                                                                Se detectó Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                                                {cargosDisponibles.length === 0 
+                                                                                                    ? `No hay fichas pendientes. Se creará una ficha por $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` 
+                                                                                                    : `Se detectó un excedente/Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
                                                                                             </Typography>
                                                                                         </Alert>
                                                                                         <Button
@@ -697,7 +699,9 @@ export default function ConciliacionPage() {
                                                                                             })}
                                                                                             sx={{ fontWeight: 'bold' }}
                                                                                         >
-                                                                                            {aprobarSAFPorFila[idx] ? "✓ Autorizado: Facturar Saldo a Favor" : "Autorizar y Facturar Saldo a Favor"}
+                                                                                            {aprobarSAFPorFila[idx] 
+                                                                                                ? "✓ Autorizado" 
+                                                                                                : (cargosDisponibles.length === 0 ? "Crear Ficha y Facturar" : "Autorizar y Facturar Saldo a Favor")}
                                                                                         </Button>
                                                                                     </Box>
                                                                                 )}
