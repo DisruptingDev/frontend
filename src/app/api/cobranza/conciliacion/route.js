@@ -659,12 +659,12 @@ export async function POST(request) {
                                         concepto_id: concId,
                                         codigo_ficha: `SAF-${String(Math.floor(Math.random()*90000+10000))}`,
                                         referencia_bancaria: refSAF,
-                                        monto_total: -montoRestante,
-                                        monto_pagado: 0,
-                                        monto_pendiente: -montoRestante,
+                                        monto_total: montoRestante,
+                                        monto_pagado: montoRestante,
+                                        monto_pendiente: 0,
                                         fecha_emision: new Date(),
                                         fecha_vencimiento: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Válido por 1 año
-                                        estatus: 'PENDIENTE',
+                                        estatus: 'PAGADO',
                                         grupo_id: grupo_id ? BigInt(grupo_id) : alumnoObj.grupo_id
                                     }
                                 });
