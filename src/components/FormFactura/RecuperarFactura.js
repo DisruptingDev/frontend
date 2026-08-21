@@ -75,47 +75,47 @@ export default function RecuperarFactura(FacturaRecuperada) {
 
         const getDatosEmisor = (Factura) => ({
             ID: Factura.EmisorID,
-            Rfc: Factura.Emisor.Rfc,
-            Nombre: Factura.Emisor.Nombre,
-            RegimenFiscal: Factura.Emisor.RegimenFiscal,
-            LugarExpedicion: Factura.Emisor.LugarExpedicion,
-            Calle: Factura.Emisor.Calle,
-            NumeroExterior: Factura.Emisor.NumeroExterior,
-            NumeroInterior: Factura.Emisor.NumeroInterior,
-            Colonia: Factura.Emisor.Colonia,
-            Municipio: Factura.Emisor.Municipio,
-            Estado: Factura.Emisor.Estado,
-            LogoPath: Factura.Emisor.LogoPath,
-            Serie: Factura.Serie,
-            Fecha: Factura.Fecha,
-            TipoComprobante: Factura.TipoDeComprobante
+            Rfc: Factura.Emisor?.Rfc || '',
+            Nombre: Factura.Emisor?.Nombre || '',
+            RegimenFiscal: Factura.Emisor?.RegimenFiscal || '',
+            LugarExpedicion: Factura.Emisor?.LugarExpedicion || '',
+            Calle: Factura.Emisor?.Calle || '',
+            NumeroExterior: Factura.Emisor?.NumeroExterior || '',
+            NumeroInterior: Factura.Emisor?.NumeroInterior || '',
+            Colonia: Factura.Emisor?.Colonia || '',
+            Municipio: Factura.Emisor?.Municipio || '',
+            Estado: Factura.Emisor?.Estado || '',
+            LogoPath: Factura.Emisor?.LogoPath || '',
+            Serie: Factura.Serie || '',
+            Fecha: Factura.Fecha || '',
+            TipoComprobante: Factura.TipoDeComprobante || 'I'
         });
 
         const getDatosReceptor = (Factura) => ({
             ID: Factura.ReceptorID,
-            Rfc: Factura.Receptor.Rfc,
-            DomicilioFiscalReceptor: Factura.Receptor.DomicilioFiscalReceptor,
-            Nombre: Factura.Receptor.Nombre,
-            UsoCFDI: Factura.UsoCFDI,
-            UsoCFDIDescripcion: FacturaRecuperada.uso_cfdi.Descripcion,
-            RegimenFiscal: Factura.Receptor.RegimenFiscalReceptor,
-            LugarExpedicion: Factura.Receptor.LugarExpedicion,
-            Calle: Factura.Receptor.Calle,
-            NoExterior: Factura.Receptor.NumeroExterior,
-            NoInterior: Factura.Receptor.NumeroInterior,
-            Colonia: Factura.Receptor.Colonia,
-            Municipio: Factura.Receptor.Municipio,
-            Estado: Factura.Receptor.Estado,
-            MetodoPago: Factura.MetodoPago,
-            MetodoPagoDescripcion: FacturaRecuperada.metodo_pago.Descripcion,
-            FormaPago: Factura.FormaPago,
-            FormaPagoDescripcion: FacturaRecuperada.forma_pago.Descripcion,
+            Rfc: Factura.Receptor?.Rfc || '',
+            DomicilioFiscalReceptor: Factura.Receptor?.DomicilioFiscalReceptor || '',
+            Nombre: Factura.Receptor?.Nombre || '',
+            UsoCFDI: Factura.UsoCFDI || 'S01',
+            UsoCFDIDescripcion: FacturaRecuperada?.uso_cfdi?.Descripcion || 'Sin efectos fiscales',
+            RegimenFiscal: Factura.Receptor?.RegimenFiscalReceptor || '616',
+            LugarExpedicion: Factura.Receptor?.LugarExpedicion || Factura.Emisor?.LugarExpedicion || '',
+            Calle: Factura.Receptor?.Calle || '',
+            NoExterior: Factura.Receptor?.NumeroExterior || '',
+            NoInterior: Factura.Receptor?.NumeroInterior || '',
+            Colonia: Factura.Receptor?.Colonia || '',
+            Municipio: Factura.Receptor?.Municipio || '',
+            Estado: Factura.Receptor?.Estado || '',
+            MetodoPago: Factura.MetodoPago || 'PUE',
+            MetodoPagoDescripcion: FacturaRecuperada?.metodo_pago?.Descripcion || 'Pago en una sola exhibición',
+            FormaPago: Factura.FormaPago || '03',
+            FormaPagoDescripcion: FacturaRecuperada?.forma_pago?.Descripcion || 'Transferencia electrónica de fondos',
     
             //informacion Global
             InformacionGlobal:{
-                Anio: Factura.InformacionGlobal.Anio,
-                Meses: Factura.InformacionGlobal.Meses,
-                Periodicidad: Factura.InformacionGlobal.Periodicidad
+                Anio: Factura.InformacionGlobal?.Anio || '',
+                Meses: Factura.InformacionGlobal?.Meses || '',
+                Periodicidad: Factura.InformacionGlobal?.Periodicidad || ''
     
             }
     
@@ -126,7 +126,28 @@ export default function RecuperarFactura(FacturaRecuperada) {
     return { conceptos, emisor, receptor };
     
     }
-    else{
+    else if (Factura) {
+        // Fallback for when Conceptos are missing but Emisor and Receptor are present
+        const getDatosEmisor = (Factura) => ({
+            ID: Factura.EmisorID,
+            Rfc: Factura.Emisor?.Rfc || '',
+            Nombre: Factura.Emisor?.Nombre || '',
+            RegimenFiscal: Factura.Emisor?.RegimenFiscal || '',
+            LugarExpedicion: Factura.Emisor?.LugarExpedicion || ''
+        });
+
+        const getDatosReceptor = (Factura) => ({
+            ID: Factura.ReceptorID,
+            Rfc: Factura.Receptor?.Rfc || '',
+            DomicilioFiscalReceptor: Factura.Receptor?.DomicilioFiscalReceptor || '',
+            Nombre: Factura.Receptor?.Nombre || '',
+            UsoCFDI: Factura.UsoCFDI || 'S01',
+            RegimenFiscal: Factura.Receptor?.RegimenFiscalReceptor || '616'
+        });
+
+        return { conceptos: [], emisor: getDatosEmisor(Factura), receptor: getDatosReceptor(Factura) };
+    }
+    else {
         return { conceptos: [], emisor: {}, receptor: {} };
     }
     

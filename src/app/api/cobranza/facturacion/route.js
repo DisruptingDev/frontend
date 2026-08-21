@@ -203,7 +203,7 @@ export async function GET(request) {
                         itemsFinal = parsed.map(it => ({
                             concepto: it.concepto,
                             monto: Number(it.monto || 0),
-                            clave_prod_serv: '86121500'
+                            clave_prod_serv: pago?.cargo?.concepto?.clave_prod_serv || '86121500'
                         }));
                     }
                 } catch(e){}
@@ -213,7 +213,7 @@ export async function GET(request) {
                 itemsFinal = [{
                     concepto: primerConcepto?.descripcion || 'Colegiatura y Servicios Educativos Integrales',
                     monto: Number(comp.total || pago?.monto || 0),
-                    clave_prod_serv: primerConcepto?.clave_prod_serv || '86121500'
+                    clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || '86121500'
                 }];
             }
 
@@ -232,7 +232,7 @@ export async function GET(request) {
                 receptor_rfc: comp.receptors?.rfc || 'XAXX010101000',
                 uso_cfdi: comp.uso_cfdi || comp.receptors?.uso_cfdi || 'S01',
                 descripcion_concepto: primerConcepto?.descripcion || (itemsFinal.length > 0 ? itemsFinal.map(it => `${it.concepto} ($${Number(it.monto).toFixed(2)})`).join(', ') : (pago?.cargo?.concepto?.nombre ? `Pago de Colegiatura - ${alumno ? `${alumno.nombre} ${alumno.apellido_paterno}` : ''}` : 'Colegiatura y Servicios Educativos Integrales')),
-                clave_prod_serv: primerConcepto?.clave_prod_serv || '86121500',
+                clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || '86121500',
                 clave_unidad: primerConcepto?.clave_unidad || 'E48',
                 monto: Number(comp.total || pago?.monto || 0),
                 es_generico: esRFCGenerico,

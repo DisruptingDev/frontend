@@ -16,7 +16,16 @@ export async function GET(request, { params }) {
                 receptors: true,
                 Conceptos: {
                     include: {
-                        Concepto: true
+                        Concepto: {
+                            include: {
+                                impuestos: {
+                                    include: {
+                                        Traslados: true,
+                                        Retenciones: true
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 PagoAlumno: {
@@ -52,19 +61,58 @@ export async function GET(request, { params }) {
         const conceptosHeader = comprobante.Conceptos?.[0];
         const conceptosList = conceptosHeader?.Concepto || [];
 
-        let itemsLista = conceptosList.map(c => ({
-            ID: c.id?.toString(),
-            Cantidad: Number(c.cantidad || 1),
-            ClaveProdServ: c.clave_prod_serv || '86121500',
-            ClaveUnidad: c.clave_unidad || 'E48',
-            Unidad: c.unidad || 'Servicio',
-            Descripcion: c.descripcion || 'Colegiatura y Servicios Educativos Integrales',
-            ValorUnitario: Number(c.valor_unitario || c.importe || comprobante.total || 0),
-            Importe: Number(c.importe || comprobante.total || 0),
-            Descuento: 0,
-            ObjetoImpuesto: c.objeto_imp || '01',
-            Impuestos: { Retenciones: [], Traslados: [] }
-        }));
+        let itemsLista = conceptosList.map(c => {
+            const retenciones = [];
+            const traslados = [];
+            
+            if (c.impuestos && c.impuestos.length > 0) {
+                c.impuestos.forEach(imp => {
+                    if (imp.Retenciones) {
+                        imp.Retenciones.forEach(ret => {
+                            retenciones.push({
+                                Base: Number(ret.base || c.importe || 0),
+                                ImpuestoCatalogoID: 1,
+                                ImpuestoClave: ret.impuesto_clave || '001',
+                                TasaCatalogoID: 1,
+                                TasaOCuota: Number(ret.tasa_o_cuota || 0),
+                                Importe: Number(ret.importe || 0),
+                                TipoFactor: ret.tipo_factor || 'Tasa',
+                                ImpuestoCatalogo: { Impuesto: 'ISR', Tipo: 'Federal' }
+                            });
+                        });
+                    }
+                    if (imp.Traslados) {
+                        imp.Traslados.forEach(tras => {
+                            traslados.push({
+                                Base: Number(tras.base || c.importe || 0),
+                                ImpuestoCatalogoID: 2,
+                                ImpuestoClave: tras.impuesto_clave || '002',
+                                TasaCatalogoID: 2,
+                                TasaOCuota: Number(tras.tasa_o_cuota || 0),
+                                Importe: Number(tras.importe || 0),
+                                Tipo: tras.tipo_factor || 'Tasa',
+                                TipoFactor: tras.tipo_factor || 'Tasa',
+                                ImpuestoCatalogo: { Impuesto: 'IVA', Tipo: 'Federal' }
+                            });
+                        });
+                    }
+                });
+            }
+
+            return {
+                ID: c.id?.toString(),
+                Cantidad: Number(c.cantidad || 1),
+                ClaveProdServ: c.clave_prod_serv || '86121500',
+                ClaveUnidad: c.clave_unidad || 'E48',
+                Unidad: c.unidad || 'Servicio',
+                Descripcion: c.descripcion || 'Colegiatura y Servicios Educativos Integrales',
+                ValorUnitario: Number(c.valor_unitario || c.importe || comprobante.total || 0),
+                Importe: Number(c.importe || comprobante.total || 0),
+                Descuento: 0,
+                ObjetoImpuesto: c.objeto_imp || '01',
+                Impuestos: { Retenciones: retenciones, Traslados: traslados }
+            };
+        });
 
         if (itemsLista.length === 0) {
             itemsLista = [{
