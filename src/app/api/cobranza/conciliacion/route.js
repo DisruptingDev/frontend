@@ -520,7 +520,7 @@ export async function POST(request) {
                         tipo_cambio: '1',
                         exportacion: '01',
                         tipo_de_comprobante: 'I',
-                        uso_cfdi: receptorObj.uso_cfdi || 'S01',
+                        uso_cfdi: (receptorObj.uso_cfdi || 'D10').split(' ')[0].trim(),
                         lugar_expedicion: emisor.lugar_expedicion || '01000',
                         sub_total_string: subTotalStr,
                         total_string: subTotalStr,
@@ -545,14 +545,17 @@ export async function POST(request) {
                     rvoe: alumnoObj.programa_academico?.rvoe
                 });
 
-                let claveProdManual = cargoEncontrado.producto?.clave_prod_sat || cargoEncontrado.concepto?.clave_prod_serv || '';
-                if (!claveProdManual && alumnoObj.programa_academico_id) {
+                let claveProdManual = '';
+                if (alumnoObj.programa_academico_id) {
                     const concProg = await prisma.conceptoCobro.findFirst({
-                        where: { programa_academico_id: alumnoObj.programa_academico_id }
+                        where: { programa_academico_id: BigInt(alumnoObj.programa_academico_id) }
                     });
                     if (concProg?.clave_prod_serv) {
                         claveProdManual = concProg.clave_prod_serv;
                     }
+                }
+                if (!claveProdManual) {
+                    claveProdManual = cargoEncontrado.producto?.clave_prod_sat || cargoEncontrado.concepto?.clave_prod_serv || '';
                 }
 
                 await crearEstructuraCompletaCFDI({
@@ -764,7 +767,7 @@ export async function POST(request) {
                                     tipo_cambio: '1',
                                     exportacion: '01',
                                     tipo_de_comprobante: 'I',
-                                    uso_cfdi: receptorObj.uso_cfdi || 'S01',
+                                    uso_cfdi: (receptorObj.uso_cfdi || 'D10').split(' ')[0].trim(),
                                     lugar_expedicion: emisor.lugar_expedicion || '01000',
                                     sub_total_string: subTotalStr,
                                     total_string: subTotalStr,
@@ -774,10 +777,10 @@ export async function POST(request) {
                             });
 
                             await tx.$executeRawUnsafe(`
-                                UPDATE "comprobantes" 
-                                SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
-                                WHERE id = ${comprobanteAuto.id}
-                            `);
+                                 UPDATE "comprobantes" 
+                                 SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
+                                 WHERE id = ${comprobanteAuto.id}
+                             `);
 
                             const itemsList = [];
                             for (const { cargo, montoAplicado, esSaldoAFavor } of cargosAplicados) {
@@ -812,14 +815,17 @@ export async function POST(request) {
                                         const proporcion = sumaMontoDetalles > 0 ? (itemMontoBase / sumaMontoDetalles) : (1 / parsedItems.length);
                                         const itemMontoCalc = Math.round(montoAplicado * proporcion * 100) / 100;
 
-                                        let claveItemDet = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
-                                        if (!claveItemDet && alumnoObj.programa_academico_id) {
+                                        let claveItemDet = '';
+                                        if (alumnoObj.programa_academico_id) {
                                             const concProg = await tx.conceptoCobro.findFirst({
-                                                where: { programa_academico_id: alumnoObj.programa_academico_id }
+                                                where: { programa_academico_id: BigInt(alumnoObj.programa_academico_id) }
                                             });
                                             if (concProg?.clave_prod_serv) {
                                                 claveItemDet = concProg.clave_prod_serv;
                                             }
+                                        }
+                                        if (!claveItemDet) {
+                                            claveItemDet = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
                                         }
 
                                         itemsList.push({
@@ -838,14 +844,17 @@ export async function POST(request) {
                                     }
                                 } else {
                                     const prodNombre = cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD';
-                                    let claveItemAuto = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
-                                    if (!claveItemAuto && alumnoObj.programa_academico_id) {
+                                    let claveItemAuto = '';
+                                    if (alumnoObj.programa_academico_id) {
                                         const concProg = await tx.conceptoCobro.findFirst({
-                                            where: { programa_academico_id: alumnoObj.programa_academico_id }
+                                            where: { programa_academico_id: BigInt(alumnoObj.programa_academico_id) }
                                         });
                                         if (concProg?.clave_prod_serv) {
                                             claveItemAuto = concProg.clave_prod_serv;
                                         }
+                                    }
+                                    if (!claveItemAuto) {
+                                        claveItemAuto = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
                                     }
 
                                     itemsList.push({

@@ -440,7 +440,17 @@ export async function POST(request) {
                 receptor = receptorGenerico;
             }
 
-            // 3. Extraer ítems de la ficha de pago
+            // 3. Extraer ítems de la ficha de pago resolviendo clave SAT por programa académico
+            let claveProdPrograma = '';
+            if (alumno.programa_academico_id) {
+                const concProg = await prisma.conceptoCobro.findFirst({
+                    where: { programa_academico_id: BigInt(alumno.programa_academico_id) }
+                });
+                if (concProg?.clave_prod_serv) {
+                    claveProdPrograma = concProg.clave_prod_serv;
+                }
+            }
+
             let itemsFinales = [];
             if (cargo.detalles_items) {
                 try {
@@ -449,7 +459,7 @@ export async function POST(request) {
                         itemsFinales = parsed.map(it => ({
                             concepto: it.concepto || 'Colegiatura y Servicios Educativos',
                             monto: Number(it.monto || 0),
-                            clave_prod_serv: it.clave_prod_serv || cargo.concepto?.clave_prod_serv || ''
+                            clave_prod_serv: claveProdPrograma || it.clave_prod_serv || cargo.concepto?.clave_prod_serv || ''
                         }));
                     }
                 } catch (e) {}
@@ -459,7 +469,7 @@ export async function POST(request) {
                 itemsFinales = [{
                     concepto: cargo.concepto?.nombre || 'Colegiatura y Servicios Educativos Integrales',
                     monto: Number(cargo.monto_total || 0),
-                    clave_prod_serv: cargo.concepto?.clave_prod_serv || ''
+                    clave_prod_serv: claveProdPrograma || cargo.concepto?.clave_prod_serv || ''
                 }];
             }
 
@@ -488,7 +498,7 @@ export async function POST(request) {
                     total_string: montoTotal.toFixed(2),
                     descuento_string: '0.00',
                     estatus: 'PENDIENTE',
-                    uso_cfdi: uso_cfdi || receptor.uso_cfdi || 'S01',
+                    uso_cfdi: (uso_cfdi || receptor.uso_cfdi || 'D10').split(' ')[0].trim(),
                     version: '4.0',
                     lugar_expedicion: emisor.lugar_expedicion || '01000'
                 }
