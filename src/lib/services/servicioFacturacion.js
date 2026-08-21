@@ -239,7 +239,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
         listaItemsFinal = items.map(it => ({
             descripcion: (it.concepto || it.descripcion || 'Servicios Educativos').trim(),
             monto: parseFloat(it.monto || it.valor_unitario || 0),
-            clave_prod_serv: it.clave_prod_serv || claveProdServ || '86121500'
+            clave_prod_serv: it.clave_prod_serv || claveProdServ || ''
         })).filter(it => it.monto > 0);
     }
 
@@ -247,7 +247,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
         listaItemsFinal = [{
             descripcion: descripcionConcepto || 'Colegiatura y Servicios Educativos Integrales',
             monto: Number(monto || 0),
-            clave_prod_serv: claveProdServ || '86121500'
+            clave_prod_serv: claveProdServ || ''
         }];
     }
 

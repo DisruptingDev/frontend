@@ -33,7 +33,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
                 Descuento: concepto.Descuento,
                 ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp,
                 Impuestos: Impuestos.map(impuesto => ({
-                    NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
+                    NombreImpuesto: impuesto.ImpuestoCatalogo?.Impuesto || 'IVA',
                     Impuesto: impuesto.ImpuestoCatalogoID,
                     ImpuestoClave: impuesto.ImpuestoClave,
                     Tasa: impuesto.TasaCatalogoID,
@@ -41,10 +41,10 @@ export default function RecuperarFactura(FacturaRecuperada) {
                     BaseImpuesto: impuesto.Base || Subtotal,
                     Monto: impuesto.Importe,
                     Tipo: impuesto.TipoFactor,
-                    TipoImpuesto: impuesto.ImpuestoCatalogo.Tipo
+                    TipoImpuesto: impuesto.ImpuestoCatalogo?.Tipo || 'Federal'
                 })),
                 Retenciones: Retenciones.map(retencion => ({
-                    NombreImpuesto: retencion.ImpuestoCatalogo.Impuesto,
+                    NombreImpuesto: retencion.ImpuestoCatalogo?.Impuesto || 'ISR',
                     BaseImpuesto: retencion.Base,
                     Impuesto: retencion.ImpuestoCatalogoID,
                     ImpuestoClave: retencion.ImpuestoClave,
@@ -53,9 +53,8 @@ export default function RecuperarFactura(FacturaRecuperada) {
                     Monto: retencion.Importe,
                     Tipo: retencion.TipoFactor
                 })),
-                // Retenciones: concepto.Impuestos?.Retenciones || [],
                 Traslados: Traslados.map(traslado => ({
-                    NombreImpuesto: traslado.ImpuestoCatalogo.Impuesto,
+                    NombreImpuesto: traslado.ImpuestoCatalogo?.Impuesto || 'IVA',
                     BaseImpuesto: traslado.Base,
                     Impuesto: traslado.ImpuestoCatalogoID,
                     ImpuestoClave: traslado.ImpuestoClave,

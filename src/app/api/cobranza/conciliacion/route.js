@@ -211,7 +211,7 @@ async function obtenerOGenerarConceptoDefault(grupoId = null) {
             data: {
                 nombre: 'Colegiatura Mensual',
                 descripcion: 'Cuota de colegiatura regular universitaria',
-                clave_prod_serv: '86121500',
+                clave_prod_serv: '',
                 clave_unidad: 'E48',
                 monto_base: 2500.00,
                 aplica_recargo: false,
@@ -290,7 +290,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
         listaItemsFinal = items.map(it => ({
             descripcion: (it.descripcion || it.concepto || 'Servicios Educativos').trim(),
             monto: Number(it.monto || it.valor_unitario || 0),
-            clave_prod_serv: it.clave_prod_serv || '86121500'
+            clave_prod_serv: it.clave_prod_serv || ''
         })).filter(it => it.monto > 0);
     }
 
@@ -298,7 +298,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
         listaItemsFinal = [{
             descripcion: descripcionConcepto || 'Colegiatura y Servicios Educativos Integrales',
             monto: Number(monto || 0),
-            clave_prod_serv: '86121500'
+            clave_prod_serv: ''
         }];
     }
 
@@ -316,7 +316,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
         const conceptoDB = await dbClient.concepto.create({
             data: {
                 conceptos_id: conceptosHeader.id,
-                clave_prod_serv: item.clave_prod_serv || '86121500',
+                clave_prod_serv: item.clave_prod_serv || '',
                 clave_unidad: 'E48',
                 unidad: 'Servicio',
                 cantidad: 1n,
@@ -345,7 +345,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
             }
         });
 
-        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || '86121500'}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="02">
+        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || ''}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="02">
       <cfdi:Impuestos>
         <cfdi:Traslados>
           <cfdi:Traslado Base="${montoNeto.toFixed(2)}" Impuesto="002" TipoFactor="Exento"/>
@@ -532,7 +532,7 @@ export async function POST(request) {
                     items: [{
                         descripcion: descConcepto,
                         monto: montoNum,
-                        clave_prod_serv: cargoEncontrado.producto?.clave_prod_serv || '86121500'
+                        clave_prod_serv: cargoEncontrado.producto?.clave_prod_serv || ''
                     }]
                 });
 
@@ -761,7 +761,7 @@ export async function POST(request) {
                                             rvoe: alumnoObj.programa_academico?.rvoe
                                         }),
                                         monto: montoAplicado,
-                                        clave_prod_serv: '86121500'
+                                        clave_prod_serv: ''
                                     });
                                     continue;
                                 }
@@ -791,7 +791,7 @@ export async function POST(request) {
                                                 rvoe: alumnoObj.programa_academico?.rvoe
                                             }),
                                             monto: itemMontoCalc > 0 ? itemMontoCalc : itemMontoBase,
-                                            clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                            clave_prod_serv: cargo.producto?.clave_prod_serv || ''
                                         });
                                     }
                                 } else {
@@ -807,7 +807,7 @@ export async function POST(request) {
                                             rvoe: alumnoObj.programa_academico?.rvoe
                                         }),
                                         monto: montoAplicado,
-                                        clave_prod_serv: cargo.producto?.clave_prod_serv || '86121500'
+                                        clave_prod_serv: cargo.producto?.clave_prod_serv || ''
                                     });
                                 }
                             }
@@ -824,7 +824,7 @@ export async function POST(request) {
                                         rvoe: alumnoObj.programa_academico?.rvoe
                                     }),
                                     monto: Number(monto),
-                                    clave_prod_serv: '86121500'
+                                    clave_prod_serv: ''
                                 });
                             }
 

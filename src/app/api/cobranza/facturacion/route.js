@@ -192,7 +192,7 @@ export async function GET(request) {
             const todosConceptos = comp.Conceptos?.[0]?.Concepto ? comp.Conceptos[0].Concepto.map(c => ({
                 concepto: c.descripcion,
                 monto: Number(c.valor_unitario || c.importe || 0),
-                clave_prod_serv: c.clave_prod_serv || '86121500'
+                clave_prod_serv: c.clave_prod_serv || ''
             })) : [];
 
             let itemsFinal = todosConceptos;
@@ -203,7 +203,7 @@ export async function GET(request) {
                         itemsFinal = parsed.map(it => ({
                             concepto: it.concepto,
                             monto: Number(it.monto || 0),
-                            clave_prod_serv: pago?.cargo?.concepto?.clave_prod_serv || '86121500'
+                            clave_prod_serv: pago?.cargo?.concepto?.clave_prod_serv || ''
                         }));
                     }
                 } catch(e){}
@@ -213,7 +213,7 @@ export async function GET(request) {
                 itemsFinal = [{
                     concepto: primerConcepto?.descripcion || 'Colegiatura y Servicios Educativos Integrales',
                     monto: Number(comp.total || pago?.monto || 0),
-                    clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || '86121500'
+                    clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || ''
                 }];
             }
 
@@ -232,7 +232,7 @@ export async function GET(request) {
                 receptor_rfc: comp.receptors?.rfc || 'XAXX010101000',
                 uso_cfdi: comp.uso_cfdi || comp.receptors?.uso_cfdi || 'S01',
                 descripcion_concepto: primerConcepto?.descripcion || (itemsFinal.length > 0 ? itemsFinal.map(it => `${it.concepto} ($${Number(it.monto).toFixed(2)})`).join(', ') : (pago?.cargo?.concepto?.nombre ? `Pago de Colegiatura - ${alumno ? `${alumno.nombre} ${alumno.apellido_paterno}` : ''}` : 'Colegiatura y Servicios Educativos Integrales')),
-                clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || '86121500',
+                clave_prod_serv: primerConcepto?.clave_prod_serv || pago?.cargo?.concepto?.clave_prod_serv || '',
                 clave_unidad: primerConcepto?.clave_unidad || 'E48',
                 monto: Number(comp.total || pago?.monto || 0),
                 es_generico: esRFCGenerico,
@@ -449,7 +449,7 @@ export async function POST(request) {
                         itemsFinales = parsed.map(it => ({
                             concepto: it.concepto || 'Colegiatura y Servicios Educativos',
                             monto: Number(it.monto || 0),
-                            clave_prod_serv: it.clave_prod_serv || cargo.concepto?.clave_prod_serv || '86121500'
+                            clave_prod_serv: it.clave_prod_serv || cargo.concepto?.clave_prod_serv || ''
                         }));
                     }
                 } catch (e) {}
@@ -459,7 +459,7 @@ export async function POST(request) {
                 itemsFinales = [{
                     concepto: cargo.concepto?.nombre || 'Colegiatura y Servicios Educativos Integrales',
                     monto: Number(cargo.monto_total || 0),
-                    clave_prod_serv: cargo.concepto?.clave_prod_serv || '86121500'
+                    clave_prod_serv: cargo.concepto?.clave_prod_serv || ''
                 }];
             }
 
@@ -512,7 +512,7 @@ export async function POST(request) {
                 descripcionConcepto: itemsFinales.map(i => i.concepto).join(', '),
                 monto: montoTotal,
                 grupoId: emisor.grupo_id,
-                claveProdServ: '86121500',
+                claveProdServ: '',
                 items: itemsFinales
             });
 
@@ -627,7 +627,7 @@ export async function POST(request) {
                 descripcionConcepto: descripcion_concepto || 'Colegiatura y Servicios Educativos Integrales',
                 monto: montoFinal,
                 grupoId: emisor.grupo_id,
-                claveProdServ: clave_prod_serv || '86121500',
+                claveProdServ: clave_prod_serv || '',
                 items: items
             });
 
