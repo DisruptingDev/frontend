@@ -175,7 +175,7 @@ export default function MóduloCobranzaUnificadoPage() {
         receptor_nombre: '',
         descripcion_concepto: '',
         monto: 0,
-        clave_prod_serv: '86121500',
+        clave_prod_serv: '',
         uso_cfdi: 'D10',
         items: [{ concepto: 'Mensualidad', monto: '' }]
     });
@@ -215,7 +215,7 @@ export default function MóduloCobranzaUnificadoPage() {
             folio: `${fac.serie || 'F'}-${fac.folio || fac.id}`,
             descripcion_concepto: fac.descripcion_concepto || 'Mensualidad',
             monto: fac.monto || 0,
-            clave_prod_serv: fac.clave_prod_serv || '86121500',
+            clave_prod_serv: fac.clave_prod_serv || '',
             uso_cfdi: fac.uso_cfdi || 'S01',
             receptor_rfc: fac.receptor_rfc || 'XAXX010101000',
             receptor_nombre: fac.receptor_nombre || 'PUBLICO EN GENERAL',

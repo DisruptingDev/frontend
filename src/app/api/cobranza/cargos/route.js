@@ -33,7 +33,7 @@ async function obtenerOGenerarConceptoDefault(grupoId = null) {
             data: {
                 nombre: 'Colegiatura Mensual',
                 descripcion: 'Cuota de colegiatura regular universitaria',
-                clave_prod_serv: '86121500',
+                clave_prod_serv: '',
                 clave_unidad: 'E48',
                 monto_base: 2500.00,
                 aplica_recargo: false,
@@ -483,7 +483,7 @@ export async function POST(request) {
         let itemsFinales = [];
         let montoCalculado = 0;
         let nombreConceptoPrimerItem = nombre_concepto || 'Mensualidad';
-        let claveProdSatProducto = '86121500';
+        let claveProdSatProducto = '';
 
         if (prodIdTarget) {
             try {

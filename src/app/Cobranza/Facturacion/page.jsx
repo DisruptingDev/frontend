@@ -114,7 +114,7 @@ export default function FacturacionCobranzaPage() {
         folio: '',
         descripcion_concepto: '',
         monto: 0,
-        clave_prod_serv: '86121500',
+        clave_prod_serv: '',
         uso_cfdi: 'S01',
         receptor_rfc: '',
         receptor_nombre: '',
@@ -322,7 +322,7 @@ export default function FacturacionCobranzaPage() {
             folio: `${preFactura.serie}-${preFactura.folio}`,
             descripcion_concepto: preFactura.descripcion_concepto || 'Mensualidad',
             monto: preFactura.monto || 0,
-            clave_prod_serv: preFactura.clave_prod_serv || '86121500',
+            clave_prod_serv: preFactura.clave_prod_serv || '',
             uso_cfdi: preFactura.uso_cfdi || 'S01',
             receptor_rfc: preFactura.receptor_rfc || 'XAXX010101000',
             receptor_nombre: preFactura.receptor_nombre || 'PUBLICO EN GENERAL',
@@ -1015,7 +1015,7 @@ export default function FacturacionCobranzaPage() {
                                     fullWidth
                                     value={editForm.clave_prod_serv}
                                     onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
-                                    helperText="Default 86121500 (Servicios Educativos)"
+                                    helperText="Tomada del catálogo de conceptos / productos"
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6}>

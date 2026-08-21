@@ -27,12 +27,6 @@ export async function GET(request, { params }) {
                             }
                         }
                     }
-                },
-                PagoAlumno: {
-                    include: {
-                        alumno: true,
-                        cargo: true
-                    }
                 }
             }
         });
@@ -102,14 +96,14 @@ export async function GET(request, { params }) {
             return {
                 ID: c.id?.toString(),
                 Cantidad: Number(c.cantidad || 1),
-                ClaveProdServ: c.clave_prod_serv || '86121500',
+                ClaveProdServ: c.clave_prod_serv || '',
                 ClaveUnidad: c.clave_unidad || 'E48',
                 Unidad: c.unidad || 'Servicio',
                 Descripcion: c.descripcion || 'Colegiatura y Servicios Educativos Integrales',
                 ValorUnitario: Number(c.valor_unitario || c.importe || comprobante.total || 0),
                 Importe: Number(c.importe || comprobante.total || 0),
                 Descuento: 0,
-                ObjetoImpuesto: c.objeto_imp || '01',
+                ObjetoImpuesto: c.objeto_imp || '02',
                 Impuestos: { Retenciones: retenciones, Traslados: traslados }
             };
         });
@@ -118,14 +112,14 @@ export async function GET(request, { params }) {
             itemsLista = [{
                 ID: '1',
                 Cantidad: 1,
-                ClaveProdServ: '86121500',
+                ClaveProdServ: '',
                 ClaveUnidad: 'E48',
                 Unidad: 'Servicio',
                 Descripcion: 'Colegiatura y Servicios Educativos Integrales',
                 ValorUnitario: Number(comprobante.total || 0),
                 Importe: Number(comprobante.total || 0),
                 Descuento: 0,
-                ObjetoImpuesto: '01',
+                ObjetoImpuesto: '02',
                 Impuestos: { Retenciones: [], Traslados: [] }
             }];
         }

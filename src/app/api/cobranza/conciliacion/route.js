@@ -410,7 +410,7 @@ export async function POST(request) {
                 let cargoEncontrado = await prisma.cargoAlumno.findFirst({
                     where: { alumno_id: BigInt(alumno_id), estatus: { in: ['PENDIENTE', 'PARCIAL'] }, monto_pendiente: { gt: 0 } },
                     orderBy: { id: 'asc' },
-                    include: { producto: true }
+                    include: { producto: true, concepto: true }
                 });
 
                 const montoNum = Number(monto || 0);
@@ -442,7 +442,8 @@ export async function POST(request) {
                             referencia_bancaria: refBancariaSegura,
                             estatus: 'PENDIENTE',
                             grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
-                        }
+                        },
+                        include: { producto: true, concepto: true }
                     });
                 }
 
@@ -514,7 +515,7 @@ export async function POST(request) {
                 `);
 
                 const descConcepto = construirDescripcionConcepto({
-                    producto: cargoEncontrado.producto?.nombre || 'MENSUALIDAD',
+                    producto: cargoEncontrado.producto?.nombre || cargoEncontrado.concepto?.nombre || 'MENSUALIDAD',
                     carrera: alumnoObj.programa_academico?.nombre || alumnoObj.carrera || 'GENERAL',
                     fechaPago: fecha_pago,
                     nombreAlumno: `${alumnoObj.nombre} ${alumnoObj.apellido_paterno} ${alumnoObj.apellido_materno || ''}`.trim(),
@@ -522,6 +523,16 @@ export async function POST(request) {
                     matricula: alumnoObj.matricula,
                     rvoe: alumnoObj.programa_academico?.rvoe
                 });
+
+                let claveProdManual = cargoEncontrado.producto?.clave_prod_sat || cargoEncontrado.concepto?.clave_prod_serv || '';
+                if (!claveProdManual && alumnoObj.programa_academico_id) {
+                    const concProg = await prisma.conceptoCobro.findFirst({
+                        where: { programa_academico_id: alumnoObj.programa_academico_id }
+                    });
+                    if (concProg?.clave_prod_serv) {
+                        claveProdManual = concProg.clave_prod_serv;
+                    }
+                }
 
                 await crearEstructuraCompletaCFDI({
                     comprobante: comprobanteAuto,
@@ -532,7 +543,7 @@ export async function POST(request) {
                     items: [{
                         descripcion: descConcepto,
                         monto: montoNum,
-                        clave_prod_serv: cargoEncontrado.producto?.clave_prod_serv || ''
+                        clave_prod_serv: claveProdManual || ''
                     }]
                 });
 
@@ -780,6 +791,16 @@ export async function POST(request) {
                                         const proporcion = sumaMontoDetalles > 0 ? (itemMontoBase / sumaMontoDetalles) : (1 / parsedItems.length);
                                         const itemMontoCalc = Math.round(montoAplicado * proporcion * 100) / 100;
 
+                                        let claveItemDet = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
+                                        if (!claveItemDet && alumnoObj.programa_academico_id) {
+                                            const concProg = await tx.conceptoCobro.findFirst({
+                                                where: { programa_academico_id: alumnoObj.programa_academico_id }
+                                            });
+                                            if (concProg?.clave_prod_serv) {
+                                                claveItemDet = concProg.clave_prod_serv;
+                                            }
+                                        }
+
                                         itemsList.push({
                                             descripcion: construirDescripcionConcepto({
                                                 producto: (itemDet.concepto || cargo.concepto?.nombre || 'Colegiatura').toUpperCase(),
@@ -791,11 +812,21 @@ export async function POST(request) {
                                                 rvoe: alumnoObj.programa_academico?.rvoe
                                             }),
                                             monto: itemMontoCalc > 0 ? itemMontoCalc : itemMontoBase,
-                                            clave_prod_serv: cargo.producto?.clave_prod_serv || ''
+                                            clave_prod_serv: claveItemDet || ''
                                         });
                                     }
                                 } else {
                                     const prodNombre = cargo.producto?.nombre || cargo.concepto?.nombre || 'MENSUALIDAD';
+                                    let claveItemAuto = cargo.producto?.clave_prod_sat || cargo.concepto?.clave_prod_serv || '';
+                                    if (!claveItemAuto && alumnoObj.programa_academico_id) {
+                                        const concProg = await tx.conceptoCobro.findFirst({
+                                            where: { programa_academico_id: alumnoObj.programa_academico_id }
+                                        });
+                                        if (concProg?.clave_prod_serv) {
+                                            claveItemAuto = concProg.clave_prod_serv;
+                                        }
+                                    }
+
                                     itemsList.push({
                                         descripcion: construirDescripcionConcepto({
                                             producto: prodNombre,
@@ -807,7 +838,7 @@ export async function POST(request) {
                                             rvoe: alumnoObj.programa_academico?.rvoe
                                         }),
                                         monto: montoAplicado,
-                                        clave_prod_serv: cargo.producto?.clave_prod_serv || ''
+                                        clave_prod_serv: claveItemAuto || ''
                                     });
                                 }
                             }

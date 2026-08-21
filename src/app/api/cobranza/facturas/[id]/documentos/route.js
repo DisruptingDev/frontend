@@ -191,14 +191,14 @@ export async function GET(request, { params }) {
                             rvoe: eInfo.rvoe
                         });
                         partidas.push({
-                            clave_prod_serv: item.clave_prod_serv || '86121500',
+                            clave_prod_serv: item.clave_prod_serv || '',
                             clave_unidad: item.clave_unidad || 'E48',
                             unidad: item.unidad || 'Servicio',
                             cantidad: Number(item.cantidad || 1),
                             descripcion: item.descripcion && item.descripcion.length > 5 ? item.descripcion : descFallback,
                             valor_unitario: Number(item.valor_unitario || totalNum),
                             importe: Number(item.importe || totalNum),
-                            objeto_imp: item.objeto_imp || '01'
+                            objeto_imp: item.objeto_imp || '02'
                         });
                     });
                 }
@@ -226,14 +226,14 @@ export async function GET(request, { params }) {
                         rvoe: eInfo.rvoe
                     });
                     partidas.push({
-                        clave_prod_serv: p.cargo?.producto?.clave_prod_serv || '86121500',
+                        clave_prod_serv: p.cargo?.producto?.clave_prod_sat || p.cargo?.concepto?.clave_prod_serv || '',
                         clave_unidad: 'E48',
                         unidad: 'Servicio',
                         cantidad: 1,
                         descripcion: desc,
                         valor_unitario: Number(p.monto),
                         importe: Number(p.monto),
-                        objeto_imp: '01'
+                        objeto_imp: '02'
                     });
                 });
             } else {
@@ -248,14 +248,14 @@ export async function GET(request, { params }) {
                     rvoe: eInfo.rvoe
                 });
                 partidas.push({
-                    clave_prod_serv: '86121500',
+                    clave_prod_serv: '',
                     clave_unidad: 'E48',
                     unidad: 'Servicio',
                     cantidad: 1,
                     descripcion: desc,
                     valor_unitario: totalNum,
                     importe: totalNum,
-                    objeto_imp: '01'
+                    objeto_imp: '02'
                 });
             }
         }
