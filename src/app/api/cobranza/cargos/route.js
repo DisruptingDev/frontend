@@ -158,7 +158,7 @@ async function generarCodigoFichaUnico(conceptosInput, codigosGeneradosEnLote = 
         if (nombreStr) {
             const prefijo = obtenerPrefijoConcepto(nombreStr);
             const codigoIndiv = await obtenerSiguienteCodigoPorPrefijo(
-                prefijo, 
+                prefijo,
                 [...codigosGeneradosEnLote, ...codigosFicha]
             );
             codigosFicha.push(codigoIndiv);
@@ -193,7 +193,7 @@ async function getGrupoIdFromRequest(request) {
             if (email || userId) {
                 const userWhere = [];
                 if (userId) {
-                    try { userWhere.push({ id: BigInt(userId) }); } catch(e){}
+                    try { userWhere.push({ id: BigInt(userId) }); } catch (e) { }
                 }
                 if (email && typeof email === 'string' && email.includes('@')) {
                     userWhere.push({ email: email.trim().toLowerCase() });
@@ -238,10 +238,10 @@ export async function GET(request) {
         const estatus = searchParams.get('estatus');
         let grupoId = await getGrupoIdFromRequest(request);
 
-        const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
-                            searchParams.get('super_user') === 'true' || 
-                            request.headers.get('x-super-user') === 'true' ||
-                            grupoId === 'ALL' || grupoId === 'TODOS';
+        const isSuperUser = searchParams.get('is_superadmin') === 'true' ||
+            searchParams.get('super_user') === 'true' ||
+            request.headers.get('x-super-user') === 'true' ||
+            grupoId === 'ALL' || grupoId === 'TODOS';
 
         const ahora = new Date();
         try {
@@ -256,7 +256,7 @@ export async function GET(request) {
                     estatus: 'VENCIDO'
                 }
             });
-        } catch (e) {}
+        } catch (e) { }
 
         const andFiltersCargos = [];
         if (alumnoId) andFiltersCargos.push({ alumno_id: BigInt(alumnoId) });
@@ -290,7 +290,7 @@ export async function GET(request) {
         if (cargos.length > 0) {
             const ids = cargos.map(c => c.id.toString());
             const rawItems = await prisma.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${ids.join(',')})`);
-            
+
             const rawItemsMap = {};
             for (const r of rawItems) {
                 rawItemsMap[r.id.toString()] = r.detalles_items;
@@ -334,7 +334,7 @@ export async function POST(request) {
 
         if (generacion_automatica) {
             const [year, month] = (mes_periodo || new Date().toISOString().slice(0, 7)).split('-').map(Number);
-            
+
             const whereAlumno = { estatus: 'ACTIVO' };
             if (carrera_filtro && carrera_filtro !== 'TODAS') {
                 whereAlumno.carrera = carrera_filtro;
@@ -372,17 +372,17 @@ export async function POST(request) {
 
             for (const alumno of alumnos) {
                 if (alumno.monto_personalizado == null) {
-                    errores.push(`Alumno ${alumno.matricula} ignorado: no tiene monto mensual asignado.`);
+                    errores.push(`Alumno ${alumno.id} ignorado: no tiene monto mensual asignado.`);
                     continue;
                 }
 
                 let conceptoActual = null;
-                
+
                 // 1. Si el alumno tiene un concepto asignado explícitamente en su perfil
                 if (alumno.concepto_id) {
                     conceptoActual = await prisma.conceptoCobro.findUnique({ where: { id: alumno.concepto_id } });
                 }
-                
+
                 // 2. Si no tiene, buscar automáticamente el concepto del Plan Académico
                 if (!conceptoActual && alumno.programa_academico_id) {
                     conceptoActual = await prisma.conceptoCobro.findFirst({
@@ -392,7 +392,7 @@ export async function POST(request) {
                         }
                     });
                 }
-                
+
                 // 3. Si tampoco encuentra, usar el concepto por defecto
                 if (!conceptoActual) {
                     conceptoActual = conceptoDefault;
@@ -403,8 +403,10 @@ export async function POST(request) {
                 const diaVenc = alumno.dia_pago || 5;
                 const fechaVenc = new Date(year, month - 1, diaVenc);
 
+                const identificadorParaReferencia = alumno.matricula || alumno.clabe_interbancaria || alumno.id.toString();
+
                 const referencia = generarReferenciaBancaria({
-                    matricula: alumno.matricula,
+                    matricula: identificadorParaReferencia,
                     fechaVencimiento: fechaVenc,
                     conceptoId: conceptoActual.id
                 });
@@ -416,9 +418,9 @@ export async function POST(request) {
                 if (!existe) {
                     const codigoFicha = await generarCodigoFichaUnico(conceptoActual.nombre, codigosGeneradosLote);
                     codigosGeneradosLote.push(codigoFicha);
-                    
+
                     const pId = producto_id ? BigInt(producto_id) : (productoMensualidad ? productoMensualidad.id : null);
-                    
+
                     const nuevoCargo = await prisma.cargoAlumno.create({
                         data: {
                             alumno_id: alumno.id,
@@ -457,7 +459,7 @@ export async function POST(request) {
             }
 
             return NextResponse.json(serializeBigIntsAndDecimals({
-                mensaje: `Generación automática completada. Se emitieron ${cargosCreados.length} fichas. ${errores.length > 0 ? `Hubo ${errores.length} alumnos omitidos por no tener monto asignado.` : ''}`,
+                mensaje: `Generación automática completada. Se emitieron ${cargosCreados.length} fichas. ${errores.length > 0 ? `Se omitieron ${errores.length} alumnos por no tener monto asignado.` : ''}`,
                 total_generados: cargosCreados.length,
                 cargos: cargosCreados,
                 errores: errores
@@ -474,7 +476,7 @@ export async function POST(request) {
                 conceptoActual = null; // No pertenece a este grupo
             }
         }
-        
+
         const { items, nombre_concepto, alumno_id, producto_id: manual_producto_id } = body;
         const prodIdTarget = manual_producto_id || producto_id;
 
@@ -494,7 +496,7 @@ export async function POST(request) {
                         claveProdSatProducto = prodObj.clave_prod_sat;
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         if (Array.isArray(items) && items.length > 0) {
@@ -512,7 +514,7 @@ export async function POST(request) {
         }
 
         if (!conceptoActual && nombreConceptoPrimerItem) {
-            const whereConcepto = { 
+            const whereConcepto = {
                 nombre: nombreConceptoPrimerItem.trim(),
                 grupo_id: grupo_id ? BigInt(grupo_id) : null
             };
@@ -563,8 +565,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No se encontraron alumnos para generar la ficha.' }, { status: 400 });
         }
 
-        const monto = montoCalculado > 0 
-            ? montoCalculado 
+        const monto = montoCalculado > 0
+            ? montoCalculado
             : (monto_custom != null ? parseFloat(monto_custom) : Number(conceptoActual.monto_base));
 
         const fechaEmision = new Date();
@@ -572,8 +574,10 @@ export async function POST(request) {
         const cargosCreados = [];
 
         for (const alumno of alumnos) {
+            const identificadorParaReferencia = alumno.matricula || alumno.clabe_interbancaria || alumno.id.toString();
+
             let referencia = generarReferenciaBancaria({
-                matricula: alumno.matricula,
+                matricula: identificadorParaReferencia,
                 fechaVencimiento: fechaVenc,
                 conceptoId: conceptoActual.id
             });
