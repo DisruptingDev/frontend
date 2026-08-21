@@ -9,14 +9,17 @@ import {
 } from '@/lib/services/servicioFacturacion';
 
 function getFechaLocalSAT() {
-    const d = new Date();
+    const now = new Date();
+    const mxDateStr = now.toLocaleString('en-US', { timeZone: 'America/Mexico_City' });
+    const mxDate = new Date(mxDateStr);
+    
     const pad = (n) => String(n).padStart(2, '0');
-    const year = d.getFullYear();
-    const month = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    const hours = pad(d.getHours());
-    const minutes = pad(d.getMinutes());
-    const seconds = pad(d.getSeconds());
+    const year = mxDate.getFullYear();
+    const month = pad(mxDate.getMonth() + 1);
+    const day = pad(mxDate.getDate());
+    const hours = pad(mxDate.getHours());
+    const minutes = pad(mxDate.getMinutes());
+    const seconds = pad(mxDate.getSeconds());
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
@@ -723,7 +726,7 @@ export async function POST(request) {
                 try {
                     const compToSanitize = await prisma.comprobantes.findUnique({
                         where: { id: BigInt(idToSanitize) },
-                        include: { Conceptos: { include: { Concepto: true } } }
+                        include: { Conceptos: { include: { Concepto: { include: { impuestos: { include: { traslados: true } } } } } } }
                     });
                     if (compToSanitize) {
                         const subTotalNum = Number(compToSanitize.sub_total || 0);
@@ -785,6 +788,24 @@ export async function POST(request) {
                                                 where: { id: cItem.id },
                                                 data: itemUpdate
                                             });
+                                        }
+                                        
+                                        // Sanitizar Traslados Exentos
+                                        if (cItem.impuestos && Array.isArray(cItem.impuestos)) {
+                                            for (const imp of cItem.impuestos) {
+                                                if (imp.traslados && Array.isArray(imp.traslados)) {
+                                                    for (const tras of imp.traslados) {
+                                                        if (tras.tipo_factor === 'Exento') {
+                                                            if (tras.importe_string !== '0' || Number(tras.importe) !== 0) {
+                                                                await prisma.traslados.update({
+                                                                    where: { id: tras.id },
+                                                                    data: { importe_string: '0', importe: 0 }
+                                                                });
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }

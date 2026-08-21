@@ -147,14 +147,17 @@ function parseFechaSegura(val) {
 }
 
 function getFechaLocalSAT() {
-    const d = new Date();
+    const now = new Date();
+    const mxDateStr = now.toLocaleString('en-US', { timeZone: 'America/Mexico_City' });
+    const mxDate = new Date(mxDateStr);
+    
     const pad = (n) => String(n).padStart(2, '0');
-    const year = d.getFullYear();
-    const month = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    const hours = pad(d.getHours());
-    const minutes = pad(d.getMinutes());
-    const seconds = pad(d.getSeconds());
+    const year = mxDate.getFullYear();
+    const month = pad(mxDate.getMonth() + 1);
+    const day = pad(mxDate.getDate());
+    const hours = pad(mxDate.getHours());
+    const minutes = pad(mxDate.getMinutes());
+    const seconds = pad(mxDate.getSeconds());
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
 
