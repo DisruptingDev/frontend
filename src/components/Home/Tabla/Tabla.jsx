@@ -123,12 +123,20 @@ export default function DataTable({ token, filtro }) {
   const obtenerFactura = async (id) => {
     try {
       // const token = localStorage.getItem('authToken'); // Asumiendo que necesitas un token
-      const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+      let response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
+      if (!response.ok && apiUrl) {
+        response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
       if (response.ok) {
         const data = await response.json();
         console.log('Data received from API:', data);

@@ -91,12 +91,22 @@ export default function CrearFactura() {
 
         const fetchFactura = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                let response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
+
+                if (!response.ok && apiUrl) {
+                    response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                }
+
                 const data = await response.json();
 
                 // Convertir automáticamente todos los campos

@@ -32,9 +32,14 @@ export default function EditarComplementoPago() {
 
         const cargarDatos = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                let response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                if (!response.ok && apiUrl) {
+                    response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
                 const data = await response.json();
 
                 if (!data?.factura?.Complemento?.Pagos) {
