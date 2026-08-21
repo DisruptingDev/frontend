@@ -298,7 +298,9 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
                 base: baseSubtotalItem,
                 base_string: String(baseSubtotalItem.toFixed(2)),
                 impuesto_clave: '002',
-                tipo_factor: 'Exento'
+                tipo_factor: 'Exento',
+                tasa_catalogo_id: 4,
+                impuesto_catalogo_id: 2
             }
         });
 

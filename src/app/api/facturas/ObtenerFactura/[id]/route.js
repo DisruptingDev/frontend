@@ -71,9 +71,9 @@ export async function GET(request, { params }) {
                         imp.retencions.forEach(ret => {
                             retenciones.push({
                                 Base: Number(ret.base || c.importe || 0),
-                                ImpuestoCatalogoID: 1,
+                                ImpuestoCatalogoID: ret.impuesto_catalogo_id || 1,
                                 ImpuestoClave: ret.impuesto_clave || '001',
-                                TasaCatalogoID: 1,
+                                TasaCatalogoID: ret.tasa_catalogo_id || 1,
                                 TasaOCuota: Number(ret.tasa_o_cuota || 0),
                                 Importe: Number(ret.importe || 0),
                                 TipoFactor: ret.tipo_factor || 'Tasa',
@@ -85,9 +85,9 @@ export async function GET(request, { params }) {
                         imp.traslados.forEach(tras => {
                             traslados.push({
                                 Base: Number(tras.base || c.importe || 0),
-                                ImpuestoCatalogoID: 2,
+                                ImpuestoCatalogoID: tras.impuesto_catalogo_id || 2,
                                 ImpuestoClave: tras.impuesto_clave || '002',
-                                TasaCatalogoID: 2,
+                                TasaCatalogoID: tras.tasa_catalogo_id || (tras.tipo_factor === 'Exento' ? 4 : 21),
                                 TasaOCuota: Number(tras.tasa_o_cuota || 0),
                                 Importe: Number(tras.importe || 0),
                                 Tipo: tras.tipo_factor || 'Tasa',
