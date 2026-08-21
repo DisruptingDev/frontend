@@ -124,6 +124,12 @@ export async function GET(request, { params }) {
             }];
         }
 
+        const extraerClaveSAT = (str, def = '') => {
+            if (!str) return def;
+            const clean = String(str).trim();
+            return clean.split(' ')[0] || clean.substring(0, 4) || def;
+        };
+
         const responseData = {
             factura: {
                 ID: comprobante.id.toString(),
@@ -131,7 +137,7 @@ export async function GET(request, { params }) {
                 Emisor: {
                     Rfc: emisorObj.rfc || '',
                     Nombre: emisorObj.nombre || 'Razón Social Emisora',
-                    RegimenFiscal: emisorObj.regimen_fiscal || '601',
+                    RegimenFiscal: extraerClaveSAT(emisorObj.regimen_fiscal, '601'),
                     LugarExpedicion: emisorObj.lugar_expedicion || '01000',
                     Calle: emisorObj.calle || '',
                     NumeroExterior: emisorObj.numero_exterior || '',
@@ -144,17 +150,17 @@ export async function GET(request, { params }) {
                 Receptor: {
                     Rfc: receptorObj.rfc || 'XAXX010101000',
                     Nombre: receptorObj.nombre || 'PUBLICO EN GENERAL',
-                    DomicilioFiscalReceptor: receptorObj.domicilio_fiscal_receptor || '01000',
-                    RegimenFiscalReceptor: receptorObj.regimen_fiscal_receptor || '616',
+                    DomicilioFiscalReceptor: receptorObj.domicilio_fiscal_receptor || emisorObj.lugar_expedicion || '01000',
+                    RegimenFiscalReceptor: extraerClaveSAT(receptorObj.regimen_fiscal_receptor, '616'),
                     LugarExpedicion: emisorObj.lugar_expedicion || '01000'
                 },
                 Serie: comprobante.serie || 'F',
                 Folio: comprobante.folio || comprobante.id.toString(),
                 Fecha: comprobante.fecha ? new Date(comprobante.fecha).toISOString() : new Date().toISOString(),
                 TipoDeComprobante: comprobante.tipo_comprobante || 'I',
-                MetodoPago: comprobante.metodo_pago || 'PUE',
-                FormaPago: comprobante.forma_pago || '03',
-                UsoCFDI: comprobante.uso_cfdi || receptorObj.uso_cfdi || 'S01',
+                MetodoPago: extraerClaveSAT(comprobante.metodo_pago, 'PUE'),
+                FormaPago: extraerClaveSAT(comprobante.forma_pago, '03'),
+                UsoCFDI: extraerClaveSAT(comprobante.uso_cfdi || receptorObj.uso_cfdi, 'S01'),
                 Conceptos: {
                     ListaConceptos: itemsLista
                 },

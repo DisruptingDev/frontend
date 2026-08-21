@@ -65,19 +65,19 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
                 setReceptorID(receptorData.ID);
             }
 
-            if (rfc === "XAXX010101000") {
-                console.log("Data:",receptorData.InformacionGlobal)
-                setValue("Año", receptorData.InformacionGlobal.Anio);
-                setValue("Meses", receptorData.InformacionGlobal.Meses);
-                setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad);
+            if (rfc === "XAXX010101000" || receptorData.Rfc === "XAXX010101000") {
+                if (receptorData.InformacionGlobal) {
+                    setValue("Año", receptorData.InformacionGlobal.Anio || '');
+                    setValue("Meses", receptorData.InformacionGlobal.Meses || '');
+                    setValue("Periodicidad", receptorData.InformacionGlobal.Periodicidad || '');
+                }
 
                 setHiddeInfoGlobal(true);
-                setDomicilioFiscal(lugarExpedicion);
-                setValue("DomicilioFiscalReceptor", lugarExpedicion);
+                const domFiscal = lugarExpedicion || receptorData.DomicilioFiscalReceptor || '01000';
+                setDomicilioFiscal(domFiscal);
+                setValue("DomicilioFiscalReceptor", domFiscal);
                 setRegimenFiscal("616");
                 setValue("RegimenFiscal", "616");
-                setHiddeInfoGlobal(true);
-
             } else {
                 setHiddeInfoGlobal(false);
             }

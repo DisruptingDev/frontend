@@ -92,12 +92,19 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                     formattedDate = format(today, 'yyyy-MM-dd');
                 } else {
                     // Comportamiento original (factura)
-                    formattedDate = emisorData.Fecha
-                        ? format(parseISO(emisorData.Fecha), 'yyyy-MM-dd')
-                        : '';
+                    try {
+                        if (emisorData.Fecha) {
+                            const d = typeof emisorData.Fecha === 'string' ? parseISO(emisorData.Fecha) : new Date(emisorData.Fecha);
+                            if (!isNaN(d.getTime())) {
+                                formattedDate = format(d, 'yyyy-MM-dd');
+                            }
+                        }
+                    } catch(e) {
+                        formattedDate = '';
+                    }
                 }
 
-                setValue("Fecha", formattedDate);
+                setValue("Fecha", formattedDate || format(new Date(), 'yyyy-MM-dd'));
             }
 
             setSerieUrl(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorData.ID}`);

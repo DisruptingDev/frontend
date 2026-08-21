@@ -215,12 +215,31 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
 
     if (prevHeaders.length > 0) {
         const prevHeaderIds = prevHeaders.map(h => h.id);
-        await prisma.concepto.deleteMany({
-            where: { conceptos_id: { in: prevHeaderIds } }
-        });
-        await prisma.conceptos.deleteMany({
-            where: { id: { in: prevHeaderIds } }
-        });
+        try {
+            const prevConceptos = await prisma.concepto.findMany({
+                where: { conceptos_id: { in: prevHeaderIds } },
+                select: { id: true }
+            });
+            if (prevConceptos.length > 0) {
+                const prevConceptoIds = prevConceptos.map(c => c.id);
+                const prevImpuestos = await prisma.impuestos.findMany({
+                    where: { concepto_id: { in: prevConceptoIds } },
+                    select: { id: true }
+                });
+                if (prevImpuestos.length > 0) {
+                    const prevImpuestoIds = prevImpuestos.map(i => i.id);
+                    await prisma.traslados.deleteMany({ where: { impuestos_id: { in: prevImpuestoIds } } });
+                    await prisma.retencions.deleteMany({ where: { impuestos_id: { in: prevImpuestoIds } } });
+                    await prisma.impuestos.deleteMany({ where: { id: { in: prevImpuestoIds } } });
+                }
+                await prisma.concepto.deleteMany({
+                    where: { id: { in: prevConceptoIds } }
+                });
+            }
+            await prisma.conceptos.deleteMany({
+                where: { id: { in: prevHeaderIds } }
+            });
+        } catch(e) {}
     }
 
     const conceptosHeader = await prisma.conceptos.create({

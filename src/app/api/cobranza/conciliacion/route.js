@@ -266,12 +266,31 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
 
     if (prevHeaders.length > 0) {
         const prevHeaderIds = prevHeaders.map(h => h.id);
-        await dbClient.concepto.deleteMany({
-            where: { conceptos_id: { in: prevHeaderIds } }
-        });
-        await dbClient.conceptos.deleteMany({
-            where: { id: { in: prevHeaderIds } }
-        });
+        try {
+            const prevConceptos = await dbClient.concepto.findMany({
+                where: { conceptos_id: { in: prevHeaderIds } },
+                select: { id: true }
+            });
+            if (prevConceptos.length > 0) {
+                const prevConceptoIds = prevConceptos.map(c => c.id);
+                const prevImpuestos = await dbClient.impuestos.findMany({
+                    where: { concepto_id: { in: prevConceptoIds } },
+                    select: { id: true }
+                });
+                if (prevImpuestos.length > 0) {
+                    const prevImpuestoIds = prevImpuestos.map(i => i.id);
+                    await dbClient.traslados.deleteMany({ where: { impuestos_id: { in: prevImpuestoIds } } });
+                    await dbClient.retencions.deleteMany({ where: { impuestos_id: { in: prevImpuestoIds } } });
+                    await dbClient.impuestos.deleteMany({ where: { id: { in: prevImpuestoIds } } });
+                }
+                await dbClient.concepto.deleteMany({
+                    where: { id: { in: prevConceptoIds } }
+                });
+            }
+            await dbClient.conceptos.deleteMany({
+                where: { id: { in: prevHeaderIds } }
+            });
+        } catch(e) {}
     }
 
     const conceptosHeader = await dbClient.conceptos.create({
@@ -341,7 +360,9 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
                 base: montoNeto,
                 base_string: montoNeto.toFixed(2),
                 impuesto_clave: '002',
-                tipo_factor: 'Exento'
+                tipo_factor: 'Exento',
+                tasa_catalogo_id: 4,
+                impuesto_catalogo_id: 2
             }
         });
 
