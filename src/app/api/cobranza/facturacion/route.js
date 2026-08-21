@@ -449,7 +449,7 @@ export async function POST(request) {
                         itemsFinales = parsed.map(it => ({
                             concepto: it.concepto || 'Colegiatura y Servicios Educativos',
                             monto: Number(it.monto || 0),
-                            clave_prod_serv: '86121500'
+                            clave_prod_serv: it.clave_prod_serv || cargo.concepto?.clave_prod_serv || '86121500'
                         }));
                     }
                 } catch (e) {}
@@ -459,7 +459,7 @@ export async function POST(request) {
                 itemsFinales = [{
                     concepto: cargo.concepto?.nombre || 'Colegiatura y Servicios Educativos Integrales',
                     monto: Number(cargo.monto_total || 0),
-                    clave_prod_serv: '86121500'
+                    clave_prod_serv: cargo.concepto?.clave_prod_serv || '86121500'
                 }];
             }
 
@@ -488,7 +488,7 @@ export async function POST(request) {
                     total_string: montoTotal.toFixed(2),
                     descuento_string: '0.00',
                     estatus: 'PENDIENTE',
-                    uso_cfdi: receptor.uso_cfdi || 'S01',
+                    uso_cfdi: uso_cfdi || receptor.uso_cfdi || 'S01',
                     version: '4.0',
                     lugar_expedicion: emisor.lugar_expedicion || '01000'
                 }

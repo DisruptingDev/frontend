@@ -313,7 +313,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
 
         const descSat = (item.descripcion || 'Servicios Educativos').trim();
 
-        await dbClient.concepto.create({
+        const conceptoDB = await dbClient.concepto.create({
             data: {
                 conceptos_id: conceptosHeader.id,
                 clave_prod_serv: item.clave_prod_serv || '86121500',
@@ -327,11 +327,31 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
                 importe_string: montoNeto.toFixed(2),
                 descuento: 0,
                 descuento_string: '0',
-                objeto_imp: '01'
+                objeto_imp: '02'
             }
         });
 
-        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || '86121500'}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="01"/>\n`;
+        const impuestoConcepto = await dbClient.impuestos.create({
+            data: { concepto_id: conceptoDB.id }
+        });
+
+        await dbClient.traslados.create({
+            data: {
+                impuestos_id: impuestoConcepto.id,
+                base: montoNeto,
+                base_string: montoNeto.toFixed(2),
+                impuesto_clave: '002',
+                tipo_factor: 'Exento'
+            }
+        });
+
+        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || '86121500'}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="${montoNeto.toFixed(2)}" Impuesto="002" TipoFactor="Exento"/>
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>\n`;
     }
 
     subtotalAcumulado = Number(subtotalAcumulado.toFixed(2));
