@@ -20,8 +20,8 @@ export async function GET(request, { params }) {
                             include: {
                                 impuestos: {
                                     include: {
-                                        Traslados: true,
-                                        Retenciones: true
+                                        traslados: true,
+                                        retencions: true
                                     }
                                 }
                             }
@@ -67,8 +67,8 @@ export async function GET(request, { params }) {
             
             if (c.impuestos && c.impuestos.length > 0) {
                 c.impuestos.forEach(imp => {
-                    if (imp.Retenciones) {
-                        imp.Retenciones.forEach(ret => {
+                    if (imp.retencions) {
+                        imp.retencions.forEach(ret => {
                             retenciones.push({
                                 Base: Number(ret.base || c.importe || 0),
                                 ImpuestoCatalogoID: 1,
@@ -81,8 +81,8 @@ export async function GET(request, { params }) {
                             });
                         });
                     }
-                    if (imp.Traslados) {
-                        imp.Traslados.forEach(tras => {
+                    if (imp.traslados) {
+                        imp.traslados.forEach(tras => {
                             traslados.push({
                                 Base: Number(tras.base || c.importe || 0),
                                 ImpuestoCatalogoID: 2,
