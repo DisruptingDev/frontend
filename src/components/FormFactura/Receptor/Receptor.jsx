@@ -81,7 +81,8 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
             } else {
                 setHiddeInfoGlobal(false);
             }
-            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            const currentRegimen = (rfc === "XAXX010101000" || receptorData.Rfc === "XAXX010101000") ? "616" : receptorData.RegimenFiscal;
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${currentRegimen}`);
 
             trigger(["RFCReceptor", "DomicilioFiscalReceptor", "RegimenFiscalReceptor"]);
         }
@@ -130,10 +131,11 @@ export default function Receptor({ register, watch, lugarExpedicion, getValues, 
 
                 setHiddeInfoGlobal(true);
             }
+            const regFisUrl = data["Rfc"] !== "XAXX010101000" ? data["RegimenFiscalReceptor"] : "616";
             // setUsoCFDI("");
             setValue("UsoCFDI", "");
             setValue("UsoCFDIDescripcion", "");
-            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regimenFiscal}`);
+            setUsoCFDIURL(`${apiUrl}/api/catalogos/Catalogos/UsoCFDI?regimenFiscalClave=${regFisUrl}`);
 
             setRFC(data["Rfc"]);
             setValue("RFCReceptor", data["Rfc"]);

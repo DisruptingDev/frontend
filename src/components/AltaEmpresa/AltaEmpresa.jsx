@@ -67,6 +67,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
             setValue('Sucursal', empresa.Sucursal);
             setValue('ClabeBancaria', empresa.ClabeBancaria);
             setImagePreview(empresa.LogoPath);
+            setImagePath(empresa.LogoPath || '');
 
             if (empresa.PlantillaID) {
                 setPlantillaSeleccionada(empresa.PlantillaID);
@@ -176,7 +177,10 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 }
 
                 const result = await response.json();
-                setImagePath(result.filePath);
+                const cacheBustedPath = result.filePath.includes('?') ? 
+                    `${result.filePath}&t=${new Date().getTime()}` : 
+                    `${result.filePath}?t=${new Date().getTime()}`;
+                setImagePath(cacheBustedPath);
                 setSnackbarMessage('Imagen subida correctamente.');
                 setSnackbarSeverity('success');
                 setOpenSnackbar(true);
