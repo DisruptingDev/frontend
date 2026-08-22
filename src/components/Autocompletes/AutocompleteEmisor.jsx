@@ -52,7 +52,7 @@ export default function AutocompleteEmisor({
 
     useEffect(() => {
         if (value && opciones.length > 0) {
-            const selected = opciones.find((opt) => opt[id] === value);
+            const selected = opciones.find((opt) => String(opt[id]) === String(value));
             if (selected) {
                 setSelectedOption(selected);
                 setInputValue(clave ? `${selected[clave]} - ${selected[descripcion]}` : selected[descripcion]);
@@ -103,7 +103,7 @@ export default function AutocompleteEmisor({
                     />
                 </>
             )}
-            isOptionEqualToValue={(option, value) => option[id] === value[id]}
+            isOptionEqualToValue={(option, value) => String(option[id]) === String(value?.[id] || value)}
         />
     );
 }
