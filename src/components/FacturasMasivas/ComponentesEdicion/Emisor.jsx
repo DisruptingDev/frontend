@@ -41,16 +41,16 @@ export default function Emisor({
         // 2. Determinar el emisor inicial (prioridad: datosEmisor > emisorId)
         let emisorInicial = null;
         if (datosEmisor) {
-          emisorInicial = dataEmisores.find(e => e.ID === datosEmisor.ID);
+          emisorInicial = dataEmisores.find(e => String(e.ID) === String(datosEmisor.ID));
         } else if (emisorId) {
-          emisorInicial = dataEmisores.find(e => e.ID === emisorId);
+          emisorInicial = dataEmisores.find(e => String(e.ID) === String(emisorId));
         }
 
         if (emisorInicial) {
           // 3. Establecer el emisor inicial
           setEmisor(emisorInicial);
-          setValue("Emisor", emisorInicial.ID);
-          setValue("EmisorID", emisorInicial.ID);
+          setValue("Emisor", String(emisorInicial.ID));
+          setValue("EmisorID", String(emisorInicial.ID));
           setValue("EmisorNombre", emisorInicial.Nombre);
           setValue("EmisorRFC", emisorInicial.Rfc);
           setValue("EmisorLugarExpedicion", emisorInicial.LugarExpedicion);
@@ -103,8 +103,8 @@ export default function Emisor({
     
     if (selectedEmisor) {
       setEmisor(selectedEmisor);
-      setValue("Emisor", selectedEmisor.ID);
-      setValue("EmisorID", selectedEmisor.ID);
+      setValue("Emisor", String(selectedEmisor.ID));
+      setValue("EmisorID", String(selectedEmisor.ID));
       setValue("EmisorNombre", selectedEmisor.Nombre);
       setValue("EmisorRFC", selectedEmisor.Rfc);
       setValue("EmisorLugarExpedicion", selectedEmisor.LugarExpedicion);
@@ -161,7 +161,7 @@ export default function Emisor({
               {loading.emisores ? "Cargando..." : "Seleccione un emisor"}
             </MenuItem>
             {emisores.map((item) => (
-              <MenuItem key={item.ID} value={item.ID}>
+              <MenuItem key={item.ID} value={String(item.ID)}>
                 {item.Nombre}
               </MenuItem>
             ))}

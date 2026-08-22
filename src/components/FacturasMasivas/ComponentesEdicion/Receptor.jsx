@@ -41,11 +41,11 @@ export default function Receptor({
         if (datosReceptor) {
             const regimen = datosReceptor.RegimenFiscal || datosReceptor.RegimenFiscalReceptor || 601;
             setValue("MetodoPago", datosReceptor.MetodoPago);
-            setValue("ReceptorID", datosReceptor.ID);
+            setValue("ReceptorID", String(datosReceptor.ID));
             setValue("ReceptorNombre", datosReceptor.Nombre);
-            setValue("ReceptorRFC", datosReceptor.RFC);
+            setValue("ReceptorRFC", datosReceptor.RFC || datosReceptor.Rfc);
             setValue("RegimenFiscal", regimen);
-            setValue("UsoCFDIID", datosReceptor.UsoCFDIID);
+            setValue("UsoCFDIID", String(datosReceptor.UsoCFDIID || ""));
             setValue("FormaPago", datosReceptor.FormaPago);
             setRegimenFiscal(regimen);
         }
@@ -74,7 +74,15 @@ export default function Receptor({
                 }
             });
             const data = await response.json();
-            setReceptores(Array.isArray(data) ? data : []);
+            const arr = Array.isArray(data) ? data : [];
+            setReceptores(arr);
+
+            if (datosReceptor) {
+                const recInicial = arr.find(r => String(r.ID) === String(datosReceptor.ID));
+                if (recInicial) {
+                    setReceptor(recInicial);
+                }
+            }
         } catch (error) {
             console.error("Error cargando receptores:", error);
         } finally {
@@ -135,7 +143,7 @@ export default function Receptor({
 
             // Validar si el UsoCFDI actual es válido
             const usoCFDIActual = getValues("UsoCFDIID");
-            if (usoCFDIActual && !data.some(item => item.ID === usoCFDIActual)) {
+            if (usoCFDIActual && !data.some(item => String(item.ID) === String(usoCFDIActual))) {
                 setValue("UsoCFDIID", "");
                 trigger("UsoCFDIID");
             }
@@ -153,7 +161,7 @@ export default function Receptor({
         if (selectedReceptor) {
             setReceptor(selectedReceptor);
             const regimen = selectedReceptor.RegimenFiscalReceptor || 601;
-            setValue("ReceptorID", selectedId);
+            setValue("ReceptorID", String(selectedId));
             setValue("ReceptorNombre", selectedReceptor.Nombre);
             setValue("ReceptorRFC", selectedReceptor.Rfc || "XAXX010101000");
             setValue("RegimenFiscal", regimen);
@@ -167,7 +175,7 @@ export default function Receptor({
         const selectedUsoCFDI = usosCFDI.find(u => u.ID === selectedId);
 
         if (selectedUsoCFDI) {
-            setValue("UsoCFDIID", selectedId);
+            setValue("UsoCFDIID", String(selectedId));
             setValue("UsoCFDI", selectedUsoCFDI.Clave); // Guardamos la clave
             setValue("UsoCFDIDescripcion", selectedUsoCFDI.Descripcion); // Opcional: guardar descripción
         } else {
@@ -216,7 +224,7 @@ export default function Receptor({
                             {loading.receptores ? "Cargando..." : "Seleccione un receptor"}
                         </MenuItem>
                         {receptores.map((item) => (
-                            <MenuItem key={item.ID} value={item.ID}>
+                            <MenuItem key={item.ID} value={String(item.ID)}>
                                 {item.Nombre}
                             </MenuItem>
                         ))}
@@ -319,7 +327,7 @@ export default function Receptor({
                             {loading.usosCFDI ? "Cargando..." : receptor ? "Seleccione un uso" : "Seleccione un receptor primero"}
                         </MenuItem>
                         {usosCFDI.map((item) => (
-                            <MenuItem key={item.ID} value={item.ID}>
+                            <MenuItem key={item.ID} value={String(item.ID)}>
                                 {item.Clave} - {item.Descripcion}
                             </MenuItem>
                         ))}
