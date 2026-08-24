@@ -1111,9 +1111,11 @@ export async function POST(request) {
             // Verificar si el movimiento ya fue procesado
             const esDuplicado = pagosExistentes.some(p => {
                 const isSameMonto = Math.abs(Number(p.monto) - mov.monto) < 0.01;
-                const dateP = new Date(p.fecha_pago).toISOString().split('T')[0];
-                const dateM = new Date(mov.fecha).toISOString().split('T')[0];
-                const isSameDate = dateP === dateM;
+                let dateP = '';
+                try { dateP = new Date(p.fecha_pago).toISOString().split('T')[0]; } catch(e) {}
+                let dateM = '';
+                try { dateM = new Date(mov.fecha).toISOString().split('T')[0]; } catch(e) {}
+                const isSameDate = dateP !== '' && dateM !== '' && dateP === dateM;
                 const isSameRef = (p.referencia_bancaria || '') === (mov.referencia || '');
                 return isSameMonto && isSameDate && isSameRef;
             });
