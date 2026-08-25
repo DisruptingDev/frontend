@@ -703,7 +703,10 @@ export async function POST(request) {
             }
 
             const serieConfig = await prisma.series.findFirst({
-                where: { emisor_id: emisorObj.id, tipo_comprobante: 'I' }
+                where: { 
+                    emisor_id: emisorObj.id, 
+                    ...(primerComp.serie ? { clave: primerComp.serie } : { tipo_comprobante: 'I' }) 
+                }
             });
 
             if (!serieConfig) {
