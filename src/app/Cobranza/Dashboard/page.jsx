@@ -45,6 +45,7 @@ import {
     TableBody,
     TableCell,
     TableContainer,
+    TablePagination,
     TableHead,
     TableRow,
     CircularProgress,
@@ -132,6 +133,17 @@ export default function MóduloCobranzaUnificadoPage() {
         }
     }, []);
     const [loading, setLoading] = useState(true);
+
+    // PAGINATION STATES
+    const [pageFichas, setPageFichas] = useState(0);
+    const [rowsFichas, setRowsFichas] = useState(10);
+    
+    const [pageConcil, setPageConcil] = useState(0);
+    const [rowsConcil, setRowsConcil] = useState(10);
+
+    const [pageFact, setPageFact] = useState(0);
+    const [rowsFact, setRowsFact] = useState(10);
+
 
     // DATOS DE LAS DIFERENTES PESTAÑAS
     const [alumnos, setAlumnos] = useState([]);
@@ -564,7 +576,8 @@ export default function MóduloCobranzaUnificadoPage() {
 
             // 1. Cargar SIEMPRE la lista de Emisores para la Razón Social Emisora Vincular
             try {
-                const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qStr}`;
+                const qStrEm = queryParams.length > 0 ? `?${queryParams.join('&')}&only_emisores=true` : '?only_emisores=true';
+                const urlFactEmisores = `${baseUrl}/api/cobranza/facturacion${qStrEm}`;
                 const resFact = await fetch(urlFactEmisores, { headers: reqHeaders }).then(r => r.json()).catch(() => ({}));
                 let listEm = resFact.emisores || [];
 
@@ -639,11 +652,14 @@ export default function MóduloCobranzaUnificadoPage() {
             else if (currentTab === 3) {
                 const qCargos = queryParams.length > 0 ? `&${queryParams.join('&')}` : '';
                 const urlCargos = `${baseUrl}/api/cobranza/cargos?estatus=TODOS${qCargos}`;
-                const res = await fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []);
-                setCargos(Array.isArray(res) ? res : []);
-
                 const urlAlumnos = `${baseUrl}/api/cobranza/alumnos${qStr}`;
-                const resAlumnos = await fetch(urlAlumnos, { headers: reqHeaders }).then(r => r.json()).catch(() => []);
+                
+                const [resCargos, resAlumnos] = await Promise.all([
+                    fetch(urlCargos, { headers: reqHeaders }).then(r => r.json()).catch(() => []),
+                    fetch(urlAlumnos, { headers: reqHeaders }).then(r => r.json()).catch(() => [])
+                ]);
+                
+                setCargos(Array.isArray(resCargos) ? resCargos : []);
                 setAlumnos(Array.isArray(resAlumnos) ? resAlumnos : []);
             }
             // Tab 4: Facturación CFDI
@@ -1194,7 +1210,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                 <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
                                                             </TableRow>
                                                         ) : (
-                                                            cargos.map((cargo) => (
+                                                            cargos.slice(pageFichas * rowsFichas, pageFichas * rowsFichas + rowsFichas).map((cargo) => (
                                                                 <TableRow key={cargo.id} hover>
                                                                     <TableCell>
                                                                         <Chip label={cargo.codigo_ficha || `F-${cargo.id}`} color="secondary" size="small" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }} />
@@ -1248,6 +1264,15 @@ export default function MóduloCobranzaUnificadoPage() {
                                                     </TableBody>
                                                 </Table>
                                             </TableContainer>
+                                    <TablePagination
+                                        rowsPerPageOptions={[10, 25, 50, 100]}
+                                        component="div"
+                                        count={cargos.length}
+                                        rowsPerPage={rowsFichas}
+                                        page={pageFichas}
+                                        onPageChange={(e, newP) => setPageFichas(newP)}
+                                        onRowsPerPageChange={(e) => { setRowsFichas(parseInt(e.target.value, 10)); setPageFichas(0); }}
+                                    />
                                         </Box>
                                     )}
 
@@ -1321,7 +1346,7 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                     </TableRow>
                                                                 </TableHead>
                                                                 <TableBody>
-                                                                    {resultadoConciliacion.pagos.map((item, idx) => {
+                                                                    {resultadoConciliacion.pagos.slice(pageConcil * rowsConcil, pageConcil * rowsConcil + rowsConcil).map((item, idx) => {
                                                                         const isSugerido = item.estado_conciliacion === 'SUGERIDO' || item.estado_conciliacion === 'CONCILIADO';
                                                                         const alumnoIdFila = alumnoSeleccionadoFilaDashboard[idx] || (isSugerido ? item.alumno_id : null);
 
@@ -1378,6 +1403,15 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                 </TableBody>
                                                             </Table>
                                                         </TableContainer>
+                                    <TablePagination
+                                        rowsPerPageOptions={[10, 25, 50, 100]}
+                                        component="div"
+                                        count={resultadoConciliacion.pagos.length}
+                                        rowsPerPage={rowsConcil}
+                                        page={pageConcil}
+                                        onPageChange={(e, newP) => setPageConcil(newP)}
+                                        onRowsPerPageChange={(e) => { setRowsConcil(parseInt(e.target.value, 10)); setPageConcil(0); }}
+                                    />
                                                     </CardContent>
                                                 </Card>
                                             )}

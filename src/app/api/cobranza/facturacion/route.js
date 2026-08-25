@@ -87,6 +87,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         let grupoId = await getGrupoIdFromRequest(request);
         const emisorId = searchParams.get('emisor_id');
+        const onlyEmisores = searchParams.get('only_emisores') === 'true';
         const isSuperUser = searchParams.get('is_superadmin') === 'true' || 
                             searchParams.get('super_user') === 'true' || 
                             request.headers.get('x-super-user') === 'true' ||
@@ -125,7 +126,7 @@ export async function GET(request) {
         }
 
         // 1. Obtener Pre-Facturas en Borrador (PENDIENTES DE TIMBRADO) asociadas al grupo/emisor
-        const preFacturas = await prisma.comprobantes.findMany({
+        const preFacturas = !onlyEmisores ? await prisma.comprobantes.findMany({
             where: {
                 AND: [
                     ...andFiltersComprobante,
@@ -155,11 +156,12 @@ export async function GET(request) {
                     }
                 }
             },
-            orderBy: { id: 'desc' }
-        });
+            orderBy: { id: 'desc' },
+            take: 500
+        }) : [];
 
         // 2. Obtener Facturas Oficiales TIMBRADAS por Go / PAC (con UUID real) asociadas al grupo/emisor
-        const facturasTimbradas = await prisma.comprobantes.findMany({
+        const facturasTimbradas = !onlyEmisores ? await prisma.comprobantes.findMany({
             where: {
                 AND: [
                     ...andFiltersComprobante,
@@ -182,8 +184,9 @@ export async function GET(request) {
                     }
                 }
             },
-            orderBy: { fecha: 'desc' }
-        });
+            orderBy: { fecha: 'desc' },
+            take: 500
+        }) : [];
 
         // Formatear Pre-facturas Pendientes (Estudiantes con RFC y RFC Genérico)
         const preFacturasFormatted = preFacturas.map(comp => {

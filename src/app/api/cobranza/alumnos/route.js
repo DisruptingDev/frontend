@@ -127,7 +127,8 @@ export async function GET(request) {
             },
             orderBy: {
                 matricula: 'asc'
-            }
+            },
+            take: 1000
         });
 
         // Mapear emisores y programas académicos asignados de manera segura

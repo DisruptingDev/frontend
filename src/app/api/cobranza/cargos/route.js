@@ -283,7 +283,8 @@ export async function GET(request) {
             },
             orderBy: {
                 id: 'desc'
-            }
+            },
+            take: 1000
         });
 
         // Workaround: Obtener detalles_items crudo si Prisma Client no está actualizado
