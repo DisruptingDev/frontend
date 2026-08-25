@@ -371,37 +371,57 @@ export default function DetalleAlumnoPage({ params }) {
                     {tabIndex === 1 && (
                     <Box>
                         {/* RESUMEN DE ESTADO DE CUENTA */}
-                        <Box sx={{ mb: 4, p: 3, bgcolor: '#e0f2fe', borderRadius: 2, border: '1px solid #bae6fd' }}>
-                            <Typography variant="h6" color="primary.main" fontWeight="bold" gutterBottom>
-                                📊 Resumen de Estado de Cuenta
-                            </Typography>
-                            <Grid container spacing={3}>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
-                                        <Typography variant="body2" color="textSecondary">Total Cargos (Fichas)</Typography>
-                                        <Typography variant="h5" fontWeight="bold" color="error.main">
-                                            ${(historialData.cargos.reduce((sum, cargo) => sum + parseMonto(cargo.monto_total), 0)).toFixed(2)}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
-                                        <Typography variant="body2" color="textSecondary">Total Pagado</Typography>
-                                        <Typography variant="h5" fontWeight="bold" color="success.main">
-                                            ${(historialData.pagos.reduce((sum, pago) => sum + parseMonto(pago.monto), 0)).toFixed(2)}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
-                                        <Typography variant="body2" color="textSecondary">Saldo Pendiente</Typography>
-                                        <Typography variant="h5" fontWeight="bold" color="warning.main">
-                                            ${Math.max(0, (historialData.cargos.reduce((sum, cargo) => sum + parseMonto(cargo.monto_total), 0) - historialData.pagos.reduce((sum, pago) => sum + parseMonto(pago.monto), 0))).toFixed(2)}
-                                        </Typography>
-                                    </Paper>
-                                </Grid>
-                            </Grid>
-                        </Box>
+                        {(() => {
+                            const cargosReales = (historialData.cargos || []).filter(c => !(c.codigo_ficha && c.codigo_ficha.startsWith('SAF-')));
+                            const cargosSAF = (historialData.cargos || []).filter(c => (c.codigo_ficha && c.codigo_ficha.startsWith('SAF-')));
+                            
+                            const totalCargos = cargosReales.reduce((sum, cargo) => sum + parseMonto(cargo.monto_total), 0);
+                            const totalPagado = (historialData.pagos || []).reduce((sum, pago) => sum + parseMonto(pago.monto), 0);
+                            const saldoPendiente = Math.max(0, totalCargos - totalPagado);
+                            const saldoAFavor = Math.max(0, totalPagado - totalCargos);
+
+                            return (
+                                <Box sx={{ mb: 4, p: 3, bgcolor: '#e0f2fe', borderRadius: 2, border: '1px solid #bae6fd' }}>
+                                    <Typography variant="h6" color="primary.main" fontWeight="bold" gutterBottom>
+                                        📊 Resumen de Estado de Cuenta
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        <Grid item xs={12} sm={3}>
+                                            <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
+                                                <Typography variant="body2" color="textSecondary">Total Cargos (Fichas)</Typography>
+                                                <Typography variant="h5" fontWeight="bold" color="error.main">
+                                                    ${totalCargos.toFixed(2)}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={12} sm={3}>
+                                            <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
+                                                <Typography variant="body2" color="textSecondary">Total Pagado</Typography>
+                                                <Typography variant="h5" fontWeight="bold" color="success.main">
+                                                    ${totalPagado.toFixed(2)}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={12} sm={3}>
+                                            <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
+                                                <Typography variant="body2" color="textSecondary">Saldo Pendiente</Typography>
+                                                <Typography variant="h5" fontWeight="bold" color="warning.main">
+                                                    ${saldoPendiente.toFixed(2)}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                        <Grid item xs={12} sm={3}>
+                                            <Paper elevation={0} sx={{ p: 2, textAlign: 'center', bgcolor: 'white', borderRadius: 2 }}>
+                                                <Typography variant="body2" color="textSecondary">Saldo a Favor</Typography>
+                                                <Typography variant="h5" fontWeight="bold" color="info.main">
+                                                    ${saldoAFavor.toFixed(2)}
+                                                </Typography>
+                                            </Paper>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            );
+                        })()}
 
                         {/* DESGLOSE DETALLADO DE PRODUCTOS / CONCEPTOS POR FICHA DE PAGO */}
                         {(() => {
@@ -424,16 +444,17 @@ export default function DetalleAlumnoPage({ params }) {
                                 }
 
                                 itemsList.forEach((it, idx) => {
+                                    const isSAF = cargo.codigo_ficha && cargo.codigo_ficha.startsWith('SAF-');
                                     productosDesglosados.push({
                                         id: `${cargo.id}-${idx}`,
                                         cargoId: cargo.id,
                                         codigoFicha: cargo.codigo_ficha || `F-${cargo.id}`,
                                         referencia: alumnoSeleccionado.clabe_interbancaria || cargo.referencia_bancaria,
-                                        nombreProducto: (it.concepto || 'Colegiatura Mensual').trim(),
+                                        nombreProducto: isSAF ? 'SALDO A FAVOR' : (it.concepto || 'Colegiatura Mensual').trim(),
                                         monto: parseMonto(it.monto),
                                         fechaVencimiento: cargo.fecha_vencimiento,
                                         fechaEmision: cargo.fecha_emision,
-                                        estatus: cargo.estatus || 'PENDIENTE'
+                                        estatus: isSAF ? 'SALDO A FAVOR' : (cargo.estatus || 'PENDIENTE')
                                     });
                                 });
                             });

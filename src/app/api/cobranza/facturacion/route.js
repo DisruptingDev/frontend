@@ -617,7 +617,7 @@ export async function POST(request) {
                 receptorObj = receptorExiste;
             }
 
-            const { items } = body;
+            const { items, serie } = body;
             const montoFinal = monto !== undefined ? Number(monto) : Number(comprobante.total);
 
             const comprobanteActualizado = await prisma.comprobantes.update({
@@ -629,7 +629,8 @@ export async function POST(request) {
                     sub_total: String(montoFinal),
                     sub_total_string: Number(montoFinal).toFixed(2),
                     total: String(montoFinal),
-                    total_string: Number(montoFinal).toFixed(2)
+                    total_string: Number(montoFinal).toFixed(2),
+                    ...(serie ? { serie: serie } : {})
                 }
             });
 

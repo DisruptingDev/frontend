@@ -118,13 +118,14 @@ export default function FacturacionCobranzaPage() {
         uso_cfdi: 'S01',
         receptor_rfc: '',
         receptor_nombre: '',
-        items: [{ concepto: 'Mensualidad', monto: '' }]
+        items: [{ concepto: 'Mensualidad', monto: '', clave_prod_serv: '' }]
     });
+    const [seriesDisponibles, setSeriesDisponibles] = useState([]);
 
     const handleAddItemEdit = () => {
         setEditForm(prev => ({
             ...prev,
-            items: [...(prev.items || []), { concepto: 'Mensualidad', monto: '' }]
+            items: [...(prev.items || []), { concepto: 'Mensualidad', monto: '', clave_prod_serv: '' }]
         }));
     };
 
@@ -312,14 +313,19 @@ export default function FacturacionCobranzaPage() {
     const handleAbrirEditar = (preFactura) => {
         if (!preFactura || !preFactura.id) return;
 
-        let initialItems = [{ concepto: preFactura.descripcion_concepto || 'Mensualidad', monto: preFactura.monto || 0 }];
+        let initialItems = [{ concepto: preFactura.descripcion_concepto || 'Mensualidad', monto: preFactura.monto || 0, clave_prod_serv: preFactura.clave_prod_serv || '' }];
         if (preFactura.items && Array.isArray(preFactura.items) && preFactura.items.length > 0) {
-            initialItems = preFactura.items.map(it => ({ concepto: it.concepto || it.descripcion, monto: it.monto || it.valor_unitario }));
+            initialItems = preFactura.items.map(it => ({ 
+                concepto: it.concepto || it.descripcion, 
+                monto: it.monto || it.valor_unitario,
+                clave_prod_serv: it.clave_prod_serv || preFactura.clave_prod_serv || ''
+            }));
         }
 
         setEditForm({
             comprobante_id: preFactura.id,
             folio: `${preFactura.serie}-${preFactura.folio}`,
+            serie: preFactura.serie || '',
             descripcion_concepto: preFactura.descripcion_concepto || 'Mensualidad',
             monto: preFactura.monto || 0,
             clave_prod_serv: preFactura.clave_prod_serv || '',
@@ -328,13 +334,31 @@ export default function FacturacionCobranzaPage() {
             receptor_nombre: preFactura.receptor_nombre || 'PUBLICO EN GENERAL',
             items: initialItems
         });
+        
+        const eid = preFactura.emisor_id || emisorSeleccionado;
+        if (eid) {
+            try {
+                const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+                fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${eid}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => setSeriesDisponibles(Array.isArray(data) ? data : []))
+                .catch(() => setSeriesDisponibles([]));
+            } catch (err) {
+                setSeriesDisponibles([]);
+            }
+        }
+        
         setOpenEditModal(true);
     };
 
     const handleGuardarEdicion = async () => {
         const itemsValidos = (editForm.items || []).map(it => ({
             concepto: (it.concepto || 'Mensualidad').trim(),
-            monto: parseFloat(it.monto || 0)
+            monto: parseFloat(it.monto || 0),
+            clave_prod_serv: it.clave_prod_serv || editForm.clave_prod_serv || ''
         })).filter(it => it.monto > 0);
 
         const montoTotalCalculado = itemsValidos.length > 0
@@ -353,6 +377,7 @@ export default function FacturacionCobranzaPage() {
                     action: 'EDITAR_PREFACTURA',
                     comprobante_id: editForm.comprobante_id,
                     emisor_id: emisorSeleccionado,
+                    serie: editForm.serie,
                     descripcion_concepto: itemsValidos.length > 0 ? itemsValidos[0].concepto : editForm.descripcion_concepto,
                     monto: montoTotalCalculado,
                     clave_prod_serv: editForm.clave_prod_serv,
@@ -1009,14 +1034,21 @@ export default function FacturacionCobranzaPage() {
                                 />
                             </Grid>
 
+                            {/* Global Clave Prod Serv - Removed, now inside items */}
+                            
                             <Grid item xs={12} sm={6}>
-                                <TextField
-                                    label="Clave Producto/Servicio SAT *"
-                                    fullWidth
-                                    value={editForm.clave_prod_serv}
-                                    onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
-                                    helperText="Tomada del catálogo de conceptos / productos"
-                                />
+                                <FormControl fullWidth>
+                                    <InputLabel>Serie *</InputLabel>
+                                    <Select
+                                        value={editForm.serie || ''}
+                                        label="Serie *"
+                                        onChange={(e) => setEditForm({ ...editForm, serie: e.target.value })}
+                                    >
+                                        {seriesDisponibles.map(s => (
+                                            <MenuItem key={s.Clave} value={s.Clave}>{s.Clave}</MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <FormControl fullWidth>
@@ -1041,18 +1073,26 @@ export default function FacturacionCobranzaPage() {
                                 {(editForm.items || []).map((item, idx) => (
                                     <Box key={idx} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
                                         <TextField
-                                            label={`Concepto / Descripción Partida ${idx + 1} *`}
+                                            label={`Concepto ${idx + 1} *`}
                                             fullWidth
                                             size="small"
                                             value={item.concepto || ''}
                                             onChange={(e) => handleItemChangeEdit(idx, 'concepto', e.target.value)}
-                                            placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
+                                            placeholder="Ej. Mensualidad"
+                                        />
+                                        <TextField
+                                            label="Clave SAT *"
+                                            size="small"
+                                            sx={{ width: 150 }}
+                                            value={item.clave_prod_serv || ''}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'clave_prod_serv', e.target.value)}
+                                            placeholder="Ej. 86121500"
                                         />
                                         <TextField
                                             label="Monto ($) *"
                                             type="number"
                                             size="small"
-                                            sx={{ width: 180 }}
+                                            sx={{ width: 140 }}
                                             value={item.monto}
                                             onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
                                             placeholder="0.00"

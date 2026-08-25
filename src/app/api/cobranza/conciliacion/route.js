@@ -226,12 +226,17 @@ async function obtenerOGenerarConceptoDefault(grupoId = null) {
 }
 
 // Obtener y validar la Serie y Folio real desde el catálogo de Series
-async function obtenerSiguienteFolioSerie(emisorId, dbClient = prisma) {
+async function obtenerSiguienteFolioSerie(emisorId, dbClient = prisma, serieId = null) {
+    let whereClause = {
+        emisor_id: BigInt(emisorId),
+        tipo_comprobante: 'I'
+    };
+    if (serieId) {
+        whereClause.id = BigInt(serieId);
+    }
+
     let serie = await dbClient.series.findFirst({
-        where: {
-            emisor_id: BigInt(emisorId),
-            tipo_comprobante: 'I'
-        }
+        where: whereClause
     });
 
     if (!serie) {
@@ -412,7 +417,7 @@ export async function POST(request) {
         // =========================================================================
         if (contentType.includes('application/json')) {
             const body = sanitizeNullBytes(await request.json());
-            const { action, alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, emisor_id, grupo_id } = body;
+            const { action, alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, emisor_id, grupo_id, serie_id } = body;
 
             if (action === 'ASIGNAR_MANUAL') {
                 if (!alumno_id) {
@@ -504,7 +509,7 @@ export async function POST(request) {
                     receptorObj = receptorGenerico;
                 }
 
-                const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id);
+                const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id, prisma, serie_id);
 
                 const subTotalStr = String(Number(montoNum).toFixed(2));
 
@@ -606,7 +611,7 @@ export async function POST(request) {
                 const procesados = [];
 
                 for (const asig of asignaciones) {
-                    const { alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, cargos_ids } = asig;
+                    const { alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, cargos_ids, serie_id } = asig;
                     if (!alumno_id) continue;
                     try {
                         await prisma.$transaction(async (tx) => {
@@ -703,19 +708,32 @@ export async function POST(request) {
                                 const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
                                 const concId = concDef ? concDef.id : BigInt(1);
                                 
-                                let refSAF = `SAF-${referencia_bancaria || Date.now()}`;
-                                const refExiste = await tx.cargoAlumno.findFirst({
-                                    where: { referencia_bancaria: refSAF }
+                                // Generar código SAF consecutivo
+                                const ultimosSAF = await tx.cargoAlumno.findMany({
+                                    where: { codigo_ficha: { startsWith: 'SAF-' } },
+                                    select: { codigo_ficha: true },
+                                    orderBy: { id: 'desc' },
+                                    take: 50
                                 });
-                                if (refExiste) {
-                                    refSAF = `${refSAF}-${Math.floor(Math.random() * 10000)}`;
+                                let maxSafNum = 0;
+                                for (const c of ultimosSAF) {
+                                    if (c.codigo_ficha) {
+                                        const match = c.codigo_ficha.match(/^SAF-(\d+)$/i);
+                                        if (match) {
+                                            const num = parseInt(match[1], 10);
+                                            if (!isNaN(num) && num > maxSafNum) maxSafNum = num;
+                                        }
+                                    }
                                 }
+                                const proximoSafNum = maxSafNum + 1;
+                                const nuevoCodigoSAF = `SAF-${String(proximoSafNum).padStart(5, '0')}`;
+                                let refSAF = `REF-${nuevoCodigoSAF}`;
 
                                 const cargoSaldoAFavor = await tx.cargoAlumno.create({
                                     data: {
                                         alumno_id: alumnoObj.id,
                                         concepto_id: concId,
-                                        codigo_ficha: `SAF-${String(Math.floor(Math.random()*90000+10000))}`,
+                                        codigo_ficha: nuevoCodigoSAF,
                                         referencia_bancaria: refSAF,
                                         monto_total: montoRestante,
                                         monto_pagado: montoRestante,
@@ -751,7 +769,7 @@ export async function POST(request) {
                                 receptorObj = receptorGenerico;
                             }
 
-                            const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id, tx);
+                            const { serie, folio } = await obtenerSiguienteFolioSerie(emisor.id, tx, serie_id);
 
                             const subTotalStr = String(Number(monto).toFixed(2));
 

@@ -86,6 +86,8 @@ export default function ConciliacionPage() {
     const [alumnos, setAlumnos] = useState([]);
     const [emisores, setEmisores] = useState([]);
     const [emisorSeleccionado, setEmisorSeleccionado] = useState('');
+    const [seriesDisponibles, setSeriesDisponibles] = useState([]);
+    const [serieSeleccionada, setSerieSeleccionada] = useState('');
     const [resultado, setResultado] = useState(null);
     const [error, setError] = useState('');
     const [mensajeExito, setMensajeExito] = useState('');
@@ -185,11 +187,18 @@ export default function ConciliacionPage() {
                 if (idPref) {
                     const finalIdStr = idPref.toString();
                     setEmisorSeleccionado(finalIdStr);
+                    const emisorValido = emisoresList.find(e => e.id.toString() === finalIdStr);
+                    if (emisorValido && emisorValido.series) {
+                        setSeriesDisponibles(emisorValido.series);
+                        if (emisorValido.series.length > 0) setSerieSeleccionada(emisorValido.series[0].id.toString());
+                    }
                     if (typeof window !== 'undefined') {
                         localStorage.setItem('emisor_id_predeterminado', finalIdStr);
                     }
                 } else {
                     setEmisorSeleccionado('');
+                    setSeriesDisponibles([]);
+                    setSerieSeleccionada('');
                 }
 
                 // 2. Cargar Alumnos
@@ -338,6 +347,7 @@ export default function ConciliacionPage() {
                         referencia_bancaria: p.item.referencia_bancaria,
                         descripcion: p.item.descripcion,
                         cargos_ids: p.cargos_ids,
+                        serie_id: serieSeleccionada,
                         aprobar_saf: !!aprobarSAFPorFila[p.idx]
                     }))
                 })
@@ -359,6 +369,18 @@ export default function ConciliacionPage() {
 
     const handleCambiarEmisor = async (nuevoId) => {
         setEmisorSeleccionado(nuevoId);
+        const emisor = emisores.find(e => e.id.toString() === nuevoId);
+        if (emisor && emisor.series) {
+            setSeriesDisponibles(emisor.series);
+            if (emisor.series.length > 0) {
+                setSerieSeleccionada(emisor.series[0].id.toString());
+            } else {
+                setSerieSeleccionada('');
+            }
+        } else {
+            setSeriesDisponibles([]);
+            setSerieSeleccionada('');
+        }
         if (typeof window !== 'undefined') {
             localStorage.setItem('emisor_id_predeterminado', nuevoId);
         }
@@ -424,6 +446,31 @@ export default function ConciliacionPage() {
                                 </Box>
                             </CardContent>
                         </Card>
+
+                            {seriesDisponibles.length > 0 && (
+                                <Card elevation={2} sx={{ mb: 3, backgroundColor: '#f8fafc' }}>
+                                    <CardContent sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                        <ReceiptIcon color="secondary" sx={{ fontSize: 36 }} />
+                                        <Box sx={{ flexGrow: 1 }}>
+                                            <FormControl fullWidth size="small">
+                                                <InputLabel id="serie-concil-label">Serie de Facturación</InputLabel>
+                                                <Select
+                                                    labelId="serie-concil-label"
+                                                    value={serieSeleccionada}
+                                                    label="Serie de Facturación"
+                                                    onChange={(e) => setSerieSeleccionada(e.target.value)}
+                                                >
+                                                    {seriesDisponibles.map(s => (
+                                                        <MenuItem key={s.id} value={s.id.toString()}>
+                                                            {s.clave} - {s.descripcion || 'Serie'}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                         {mensajeExito && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensajeExito('')}>{mensajeExito}</Alert>}
                         {error && <Alert severity="error" sx={{ mb: 2, fontWeight: 'bold' }} onClose={() => setError('')}>{error}</Alert>}

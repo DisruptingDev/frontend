@@ -44,6 +44,9 @@ export default function Select({ register = () => (1), nombre, label = nombre, u
     const [selectedValue, setSelectedValue] = useState(value || '');
 
     useEffect(() => {
+        setSelectedValue(value || '');
+    }, [value]);
+    useEffect(() => {
         if (url) {
             obtener_opciones(url).then((data) => {
                 setOpciones(data);

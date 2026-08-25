@@ -202,12 +202,15 @@ export default function MóduloCobranzaUnificadoPage() {
         });
     };
 
-    // EDITAR PRE-FACTURA Y CONCEPTOS (MODAL INLINE)
     const handleAbrirEditar = (fac) => {
         if (!fac || !fac.id) return;
-        let initialItems = [{ concepto: fac.descripcion_concepto || 'Mensualidad', monto: fac.monto || 0 }];
+        let initialItems = [{ concepto: fac.descripcion_concepto || 'Mensualidad', monto: fac.monto || 0, clave_prod_serv: fac.clave_prod_serv || '' }];
         if (fac.items && Array.isArray(fac.items) && fac.items.length > 0) {
-            initialItems = fac.items.map(it => ({ concepto: it.concepto || it.descripcion, monto: it.monto || it.valor_unitario }));
+            initialItems = fac.items.map(it => ({ 
+                concepto: it.concepto || it.descripcion, 
+                monto: it.monto || it.valor_unitario,
+                clave_prod_serv: it.clave_prod_serv || fac.clave_prod_serv || ''
+            }));
         }
 
         setEditForm({
@@ -227,7 +230,8 @@ export default function MóduloCobranzaUnificadoPage() {
     const handleGuardarEdicion = async (timbrarAlGuardar = false) => {
         const itemsValidos = (editForm.items || []).map(it => ({
             concepto: (it.concepto || 'Mensualidad').trim(),
-            monto: parseFloat(it.monto || 0)
+            monto: parseFloat(it.monto || 0),
+            clave_prod_serv: it.clave_prod_serv || editForm.clave_prod_serv || ''
         })).filter(it => it.monto > 0);
 
         const montoTotalCalculado = itemsValidos.length > 0
@@ -2086,14 +2090,6 @@ export default function MóduloCobranzaUnificadoPage() {
 
                             <Grid item xs={12} sm={6}>
                                 <TextField
-                                    label="Clave Producto/Servicio SAT"
-                                    fullWidth
-                                    value={editForm.clave_prod_serv}
-                                    onChange={(e) => setEditForm({ ...editForm, clave_prod_serv: e.target.value })}
-                                />
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <TextField
                                     select
                                     label="Uso CFDI"
                                     fullWidth
@@ -2122,10 +2118,18 @@ export default function MóduloCobranzaUnificadoPage() {
                                             placeholder="Ej. Mensualidad Julio 2026 - Licenciatura en Derecho"
                                         />
                                         <TextField
+                                            label="Clave SAT *"
+                                            size="small"
+                                            sx={{ width: 150 }}
+                                            value={item.clave_prod_serv || ''}
+                                            onChange={(e) => handleItemChangeEdit(idx, 'clave_prod_serv', e.target.value)}
+                                            placeholder="Ej. 86121500"
+                                        />
+                                        <TextField
                                             label="Monto ($) *"
                                             type="number"
                                             size="small"
-                                            sx={{ width: 180 }}
+                                            sx={{ width: 140 }}
                                             value={item.monto}
                                             onChange={(e) => handleItemChangeEdit(idx, 'monto', e.target.value)}
                                             placeholder="0.00"
