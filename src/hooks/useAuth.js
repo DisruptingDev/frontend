@@ -47,10 +47,11 @@ export function useAuth() {
       }
 
       return rolData.Permisos.map((p) => ({
-        ID: p.ID,
-        Clave: p.Clave,
-        Descripcion: p.Descripcion,
-        SeccionID: p.SeccionID,
+        ID: p.ID || p.id,
+        Clave: p.Clave || p.clave,
+        Descripcion: p.Descripcion || p.descripcion,
+        SeccionID: p.SeccionID || p.seccion_id,
+        clave: p.clave || p.Clave, // also store lowercase just in case
       }));
     } catch (error) {
       console.error("Error fetching permissions:", error);
