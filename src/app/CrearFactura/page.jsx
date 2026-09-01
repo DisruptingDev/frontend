@@ -225,6 +225,7 @@ export default function CrearFactura() {
                             subTotal={watch("Subtotal")}
                             handleEditConcepto={handleEditConcepto}
                             handleDeleteConcepto={handleDeleteConcepto}
+                            register={register}
                         >
                             <div className="flex justify-end w-full space-x-2 mt-10">
                                 <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>

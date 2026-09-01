@@ -1,13 +1,13 @@
 "use client"
 
 import { CalculosFinales } from "./Calculos/Calculo.js";
-import { Box, Typography, Table, TableHead, TableBody, TableRow, TableCell, Grid, Button } from '@mui/material';
+import { Box, Typography, Table, TableHead, TableBody, TableRow, TableCell, Grid, Button, TextField } from '@mui/material';
 import {
     Edit, Delete
 } from '@mui/icons-material';
 
 
-export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto }) {
+export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto, register }) {
     let finales = CalculosFinales(conceptos);
 
 
@@ -18,6 +18,19 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
     return (
         <Box bgcolor="white" mx={4} p={4} boxShadow={3} borderRadius={2}
             sx={{ padding: '1rem', margin: 'auto', marginTop: '1rem', marginBottom: '1rem', }}>
+            
+            {/* Campo de observaciones / descripcion */}
+            <Box mb={4}>
+                <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Observaciones / Información Adicional"
+                    variant="outlined"
+                    {...(register ? register("Descripcion") : {})}
+                />
+            </Box>
+
             <Typography variant="h6" mb={4}>Resumen</Typography>
 
             <Grid container spacing={1} sx={{ width: '100%', margin: 'auto' }}>
