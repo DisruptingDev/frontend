@@ -445,22 +445,25 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     const handleAcuseCancelacion = useCallback(async (id) => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+            const response = await fetch(`/api/facturas/acuse/${id}`, {
                 method: 'GET',
-                headers: { Authorization: `Bearer ${token}` },
             });
             if (response.ok) {
                 const blob = await response.blob();
                 const pdfUrl = URL.createObjectURL(blob);
                 window.open(pdfUrl, '_blank');
+            } else {
+                const errData = await response.json();
+                setConfirmationMessage(errData.error || 'Error al descargar el acuse de cancelación.');
+                setOpenModalError(true);
             }
         } catch (error) {
-            setConfirmationMessage('Error al visualizar el acuse de cancelación: ' + error.message);
+            setConfirmationMessage('Error al descargar el acuse de cancelación: ' + error.message);
             setOpenModalError(true);
         } finally {
             setIsLoading(false);
         }
-    }, [token]);
+    }, []);
 
     const handleDeleteFactura = useCallback(async () => {
         const idsToDelete = [...idsFacturasToDelete];

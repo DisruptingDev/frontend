@@ -224,8 +224,16 @@ const fillTemplate = async (template, data) => {
     
 
 
+    const observacionesHTML = factura.Descripcion
+      ? `<div class="seccion">
+           <h2>Observaciones / Información Adicional</h2>
+           <p style="font-size: 11px;">${factura.Descripcion}</p>
+         </div>`
+      : "";
+
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
+        .replace("{{observaciones}}", observacionesHTML)
         .replace("{{qrCode}}",
         qrImageBase64
           ? `<img src="${qrImageBase64}" alt="Código QR">`
