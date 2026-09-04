@@ -125,7 +125,7 @@ export default function CrearFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
+            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor, Descripcion, descripcion, Observaciones, observaciones } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
                 setConceptos(Conceptos);
@@ -136,9 +136,15 @@ export default function CrearFactura() {
             if (Receptor) {
                 setReceptorData(Receptor);
             }
+
+            const desc = Descripcion || descripcion || Observaciones || observaciones || Emisor?.Descripcion || facturaEdit?.factura?.Descripcion || facturaEdit?.Descripcion || '';
+            if (desc) {
+                setValue('Descripcion', desc);
+                setValue('Observaciones', desc);
+            }
         }
 
-    }, [facturaEdit]);
+    }, [facturaEdit, setValue]);
 
 
     const onSubmit = (data) => {
@@ -254,6 +260,7 @@ export default function CrearFactura() {
                                 subTotal={watch("Subtotal")}
                                 handleEditConcepto={handleEditConcepto}
                                 handleDeleteConcepto={handleDeleteConcepto}
+                                register={register}
                             >
                                 <div className="flex justify-end w-full space-x-2 mt-10">
                                     <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>

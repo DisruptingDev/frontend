@@ -92,23 +92,23 @@ export default function EditarFactura() {
 
         const fetchFactura = async () => {
             try {
-                let response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
+                const targetUrl = `${apiUrl || ''}/api/facturas/ObtenerFactura/${id}`;
+                console.log("Obteniendo factura desde Go API:", targetUrl);
+                const response = await fetch(targetUrl, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
 
-                if (!response.ok && apiUrl) {
-                    response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                        },
-                    });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error al obtener factura desde Go API:', response.status, errorText);
+                    return;
                 }
 
                 const data = await response.json();
+                console.log("Factura obtenida desde Go API:", data);
                 const facturaConvertida = convertirCamposANumericos(data);
                 setFacturaEdit(facturaConvertida);
             } catch (error) {
@@ -123,7 +123,7 @@ export default function EditarFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor } = RecuperarFactura(facturaEdit);
+            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor, Descripcion, descripcion, Observaciones, observaciones } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
                 setConceptos(Conceptos);
@@ -134,9 +134,15 @@ export default function EditarFactura() {
             if (Receptor) {
                 setReceptorData(Receptor);
             }
+
+            const desc = Descripcion || descripcion || Observaciones || observaciones || Emisor?.Descripcion || facturaEdit?.factura?.Descripcion || facturaEdit?.Descripcion || '';
+            if (desc) {
+                setValue('Descripcion', desc);
+                setValue('Observaciones', desc);
+            }
         }
 
-    }, [facturaEdit]);
+    }, [facturaEdit, setValue]);
 
     // Memoize emisorData para evitar renders innecesarios
 
@@ -149,7 +155,13 @@ export default function EditarFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, id, "Factura");
+        const datosCompletos = {
+            ...emisorData,
+            ...receptorData,
+            ...getValues(),
+            ...data
+        };
+        const factura = FormatearFactura(datosCompletos, datosCompletos, conceptos, id, "Factura");
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito
@@ -159,7 +171,7 @@ export default function EditarFactura() {
                 // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
                 setTimeout(() => {
                     router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-                }, 1000); // Espera 3 segundos antes de redirigir
+                }, 1000); // Espera 1 segundo antes de redirigir
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
@@ -178,7 +190,13 @@ export default function EditarFactura() {
             return;
         }
 
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const datosCompletos = {
+            ...emisorData,
+            ...receptorData,
+            ...getValues(),
+            ...data
+        };
+        const factura = FormatearFactura(datosCompletos, datosCompletos, conceptos, "", "VistaPrevia");
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
@@ -255,6 +273,7 @@ export default function EditarFactura() {
                                 subTotal={watch("Subtotal")}
                                 handleEditConcepto={handleEditConcepto}
                                 handleDeleteConcepto={handleDeleteConcepto}
+                                register={register}
                             >
                                 <div className="flex justify-end w-full space-x-2 mt-10">
                                     <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>

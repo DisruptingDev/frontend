@@ -6,20 +6,21 @@ export default function FormatearFactura(
   modo,
   facturasRelacionadas = null,
 ) {
-  const subtotal = conceptos.reduce((acc, c) => acc + c.Subtotal, 0);
+  const subtotal = conceptos.reduce((acc, c) => acc + (Number(c.Subtotal) || (Number(c.Cantidad || 1) * Number(c.ValorUnitario || 0)) || 0), 0);
   const TotalTraslados = conceptos.reduce(
-    (acc, c) => acc + c.TotalTraslados,
+    (acc, c) => acc + (Number(c.TotalTraslados) || 0),
     0,
   );
   const TotalRetenciones = conceptos.reduce(
-    (acc, c) => acc + c.TotalRetenciones,
+    (acc, c) => acc + (Number(c.TotalRetenciones) || 0),
     0,
   );
-  const TotalDescuento = conceptos.reduce((acc, c) => acc + c.Descuento, 0);
+  const TotalDescuento = conceptos.reduce((acc, c) => acc + (Number(c.Descuento) || 0), 0);
   const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento;
   const now = new Date();
   const horaActual = now.toTimeString().split(" ")[0]; // Obtiene solo "HH:MM:SS"
-  const fechaFormateada = `${emisor.Fecha}T${horaActual}`;
+  const rawFecha = emisor.Fecha ? String(emisor.Fecha).split("T")[0] : now.toISOString().split("T")[0];
+  const fechaFormateada = `${rawFecha}T${horaActual}`;
 
   const formatter = new Intl.NumberFormat("es-MX", {
     style: "decimal",
@@ -29,26 +30,32 @@ export default function FormatearFactura(
 
   let factura;
   if (modo == "Factura") {
+    const toDec2 = (n) => {
+      const num = Number(n);
+      return isNaN(num) ? "0.00" : num.toFixed(2);
+    };
+
     factura = {
-      ...(id && { ID: Number(Number(id).toFixed(2)) }),
+      ...(id && { ID: Number(id) }),
       Version: "4.0",
       Fecha: fechaFormateada,
-      FormaPago: receptor.FormaPago,
-      Descuento: Number(Number(TotalDescuento).toFixed(2)) || 0,
-      DescuentoString: String(Number(TotalDescuento).toFixed(2)) || "0.00",
-      Serie: emisor.Serie,
-      SubTotal: Number(Number(subtotal).toFixed(2)),
-      SubTotalString: String(Number(subtotal).toFixed(2)),
+      FormaPago: receptor.FormaPago || "03",
+      Descuento: Number(toDec2(TotalDescuento)),
+      DescuentoString: toDec2(TotalDescuento),
+      Serie: emisor.Serie || "F",
+      ...(emisor.Folio ? { Folio: String(emisor.Folio) } : {}),
+      SubTotal: Number(toDec2(subtotal)),
+      SubTotalString: toDec2(subtotal),
       CondicionesDePago: receptor.CondicionesDePago || null,
-      TipoDeComprobante: emisor.TipoComprobante,
-      Descripcion: emisor.Descripcion || "",
+      TipoDeComprobante: emisor.TipoComprobante || "I",
+      Descripcion: emisor.Descripcion || receptor.Descripcion || emisor.Observaciones || receptor.Observaciones || "",
       Moneda: emisor.Divisa || "MXN",
       TipoCambio: "1",
-      Total: Number(Number(total).toFixed(2)),
-      TotalString: String(Number(total).toFixed(2)),
+      Total: Number(toDec2(total)),
+      TotalString: toDec2(total),
       Exportacion: "01",
-      MetodoPago: receptor.MetodoPago,
-      LugarExpedicion: emisor.LugarExpedicion,
+      MetodoPago: receptor.MetodoPago || "PUE",
+      LugarExpedicion: emisor.LugarExpedicion || "01000",
       Confirmacion: "",
       ...(receptor.Año || receptor.Meses || receptor.Periodicidad
         ? {
@@ -59,9 +66,9 @@ export default function FormatearFactura(
           },
         }
         : {}),
-      EmisorID: emisor.Emisor,
-      ReceptorID: receptor.Receptor,
-      UsoCFDI: receptor.UsoCFDI,
+      EmisorID: Number(emisor.Emisor || emisor.EmisorID || emisor.ID || emisor.Emisor?.ID || 1),
+      ReceptorID: Number(receptor.Receptor || receptor.ReceptorID || receptor.ID || receptor.Receptor?.ID || 1),
+      UsoCFDI: receptor.UsoCFDI || "S01",
       ...(facturasRelacionadas &&
         facturasRelacionadas.TipoRelacion &&
         facturasRelacionadas.ListaCFDIRelacionados &&
@@ -77,61 +84,81 @@ export default function FormatearFactura(
         }
         : {}),
       Conceptos: {
-        ListaConceptos: conceptos.map((concepto) => ({
-          ClaveProdServ: String(concepto.ClaveProdServ),
-          NoIdentificacion: concepto.NoIdentificacion || "",
-          Cantidad: Number(Number(concepto.Cantidad).toFixed(2)),
-          ClaveUnidad: String(concepto.ClaveUnidad),
-          Unidad: concepto.Unidad || "",
-          Descripcion: concepto.Descripcion,
-          ValorUnitario: Number(Number(concepto.ValorUnitario).toFixed(2)),
-          ValorUnitarioString: String(
-            Number(concepto.ValorUnitario).toFixed(2),
-          ),
-          Importe: Number(Number(concepto.Subtotal).toFixed(2)),
-          ImporteString: String(Number(concepto.Subtotal).toFixed(2)),
-          Descuento: Number(Number(concepto.Descuento).toFixed(2)) || 0,
-          DescuentoString: String(Number(concepto.Descuento).toFixed(2)) || "0.00",
-          ObjetoImp: concepto.ObjetoImpuesto,
-          Impuestos: {
-            Retenciones: concepto.Retenciones
-              ? concepto.Retenciones.map((retencion) => ({
-                Base: Number(Number(retencion.BaseImpuesto).toFixed(2)),
-                BaseString: String(Number(retencion.BaseImpuesto).toFixed(2)),
-                ImpuestoCatalogoID: retencion.Impuesto,
-                ImpuestoClave: String(retencion.ImpuestoClave),
-                TipoFactor: "Tasa",
-                TasaOCuota: Number(Number(retencion.TasaOCuota)),
-                TasaOCuotaString: String(Number(retencion.TasaOCuota)),
-                TasaCatalogoID: Number(Number(retencion.Tasa)),
-                Importe: Number(Number(retencion.Monto).toFixed(2)),
-                ImporteString: String(Number(retencion.Monto).toFixed(2)),
-              }))
-              : [],
-            Traslados: concepto.Traslados
-              ? concepto.Traslados.map((traslado) => ({
-                Base: Number(Number(traslado.BaseImpuesto).toFixed(2)),
-                BaseString: String(Number(traslado.BaseImpuesto).toFixed(2)),
-                ImpuestoCatalogoID: traslado.Impuesto,
-                ImpuestoClave: String(traslado.ImpuestoClave),
-                TipoFactor: "Tasa",
-                TasaOCuota: Number(Number(traslado.TasaOCuota)),
-                TasaOCuotaString: String(Number(traslado.TasaOCuota)),
-                TasaCatalogoID: Number(Number(traslado.Tasa)),
-                Importe: Number(Number(traslado.Monto).toFixed(2)),
-                ImporteString: String(Number(traslado.Monto).toFixed(2)),
-              }))
-              : [],
-          },
-        })),
-        TotalImpuestosTrasladados: Number(Number(TotalTraslados).toFixed(2)),
-        TotalImpuestosTrasladadosString: String(
-          Number(TotalTraslados).toFixed(2),
-        ),
-        TotalImpuestosRetenidos: Number(Number(TotalRetenciones).toFixed(2)),
-        TotalImpuestosRetenidosString: String(
-          Number(TotalRetenciones).toFixed(2),
-        ),
+        ListaConceptos: conceptos.map((concepto) => {
+          const itemCant = parseInt(concepto.Cantidad, 10) || 1;
+          const itemValUnit = Number(concepto.ValorUnitario || 0);
+          const itemSubtotal = concepto.Subtotal != null && !isNaN(Number(concepto.Subtotal))
+            ? Number(concepto.Subtotal)
+            : itemCant * itemValUnit;
+          const itemDesc = Number(concepto.Descuento || 0);
+
+          return {
+            ...(concepto.ID ? { ID: Number(concepto.ID) } : {}),
+            ClaveProdServ: String(concepto.ClaveProdServ || "86121500"),
+            NoIdentificacion: concepto.NoIdentificacion || "",
+            Cantidad: itemCant,
+            ClaveUnidad: String(concepto.ClaveUnidad || "E48"),
+            Unidad: concepto.Unidad || "Servicio",
+            Descripcion: concepto.Descripcion || "",
+            ValorUnitario: Number(toDec2(itemValUnit)),
+            ValorUnitarioString: toDec2(itemValUnit),
+            Importe: Number(toDec2(itemSubtotal)),
+            ImporteString: toDec2(itemSubtotal),
+            Descuento: Number(toDec2(itemDesc)) || 0,
+            DescuentoString: toDec2(itemDesc),
+            ObjetoImp: concepto.ObjetoImpuesto || concepto.ObjetoImp || "02",
+            Impuestos: {
+              Retenciones: concepto.Retenciones && concepto.Retenciones.length > 0
+                ? concepto.Retenciones.map((retencion) => {
+                  const rBase = Number(retencion.BaseImpuesto != null ? retencion.BaseImpuesto : (retencion.Base != null ? retencion.Base : itemSubtotal));
+                  const rTasaCuota = Number(retencion.TasaOCuota != null ? retencion.TasaOCuota : (retencion.Tasa != null ? retencion.Tasa : 0));
+                  const rMonto = Number(retencion.Monto != null ? retencion.Monto : (retencion.Importe != null ? retencion.Importe : 0));
+                  const tasaStr = retencion.TasaOCuotaString || (rTasaCuota > 0 ? String(rTasaCuota) : "0.000000");
+
+                  return {
+                    ...(retencion.ID ? { ID: Number(retencion.ID) } : {}),
+                    Base: Number(toDec2(rBase)),
+                    BaseString: toDec2(rBase),
+                    ImpuestoCatalogoID: Number(retencion.ImpuestoCatalogoID || retencion.Impuesto || 1),
+                    ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
+                    TipoFactor: retencion.TipoFactor || retencion.Tipo || "Tasa",
+                    TasaOCuota: rTasaCuota,
+                    TasaOCuotaString: String(tasaStr),
+                    TasaCatalogoID: Number(retencion.TasaCatalogoID || retencion.Tasa || 1),
+                    Importe: Number(toDec2(rMonto)),
+                    ImporteString: toDec2(rMonto),
+                  };
+                })
+                : [],
+              Traslados: concepto.Traslados && concepto.Traslados.length > 0
+                ? concepto.Traslados.map((traslado) => {
+                  const tBase = Number(traslado.BaseImpuesto != null ? traslado.BaseImpuesto : (traslado.Base != null ? traslado.Base : itemSubtotal));
+                  const tTasaCuota = Number(traslado.TasaOCuota != null ? traslado.TasaOCuota : (traslado.Tasa != null ? traslado.Tasa : 0.16));
+                  const tMonto = Number(traslado.Monto != null ? traslado.Monto : (traslado.Importe != null ? traslado.Importe : (tBase * tTasaCuota)));
+                  const tasaStr = traslado.TasaOCuotaString || (tTasaCuota > 0 ? String(tTasaCuota) : "0.160000");
+
+                  return {
+                    ...(traslado.ID ? { ID: Number(traslado.ID) } : {}),
+                    Base: Number(toDec2(tBase)),
+                    BaseString: toDec2(tBase),
+                    ImpuestoCatalogoID: Number(traslado.ImpuestoCatalogoID || traslado.Impuesto || 2),
+                    ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
+                    TipoFactor: traslado.TipoFactor || traslado.Tipo || "Tasa",
+                    TasaOCuota: tTasaCuota,
+                    TasaOCuotaString: String(tasaStr),
+                    TasaCatalogoID: Number(traslado.TasaCatalogoID || traslado.Tasa || 21),
+                    Importe: Number(toDec2(tMonto)),
+                    ImporteString: toDec2(tMonto),
+                  };
+                })
+                : [],
+            },
+          };
+        }),
+        TotalImpuestosTrasladados: Number(toDec2(TotalTraslados)),
+        TotalImpuestosTrasladadosString: toDec2(TotalTraslados),
+        TotalImpuestosRetenidos: Number(toDec2(TotalRetenciones)),
+        TotalImpuestosRetenidosString: toDec2(TotalRetenciones),
       },
     };
     console.log("Factura formateada para modo 'Factura':", factura);
@@ -148,7 +175,7 @@ export default function FormatearFactura(
       NoCertificado: "",
       Certificado: "",
       CondicionesDePago: receptor.CondicionesDePago || null,
-      Descripcion: emisor.Descripcion || "",
+      Descripcion: emisor.Descripcion || receptor.Descripcion || emisor.Observaciones || receptor.Observaciones || "",
       SubTotal: subtotal,
       Moneda: emisor.Divisa || "MXN",
       TipoCambio: "1",
@@ -192,40 +219,47 @@ export default function FormatearFactura(
         Estado: receptor.Estado,
       },
       Conceptos: {
-        ListaConceptos: conceptos.map((concepto) => ({
-          ClaveProdServ: String(concepto.ClaveProdServ),
-          NoIdentificacion: concepto.NoIdentificacion || "",
-          Cantidad: parseInt(concepto.Cantidad, 10),
-          ClaveUnidad: String(concepto.ClaveUnidad),
-          Unidad: concepto.Unidad || "",
-          Descripcion: concepto.Descripcion,
-          ValorUnitario: concepto.ValorUnitario,
-          Importe: concepto.Subtotal,
-          Descuento: concepto.Descuento,
-          ObjetoImp: concepto.ObjetoImp || "",
-          Impuestos: {
-            Retenciones: concepto.Retenciones
-              ? concepto.Retenciones.map((retencion) => ({
-                NombreImpuesto: retencion.NombreImpuesto,
-                Base: retencion.BaseImpuesto,
-                ImpuestoClave: String(retencion.Impuesto),
-                TipoFactor: retencion.Tipo,
-                TasaOCuota: retencion.Tasa,
-                Importe: retencion.Monto,
-              }))
-              : [],
-            Traslados: concepto.Traslados
-              ? concepto.Traslados.map((traslado) => ({
-                NombreImpuesto: traslado.NombreImpuesto,
-                Base: parseFloat(traslado.BaseImpuesto),
-                ImpuestoClave: String(traslado.Impuesto),
-                TipoFactor: traslado.Tipo,
-                TasaOCuota: traslado.Tasa,
-                Importe: traslado.Monto,
-              }))
-              : [],
-          },
-        })),
+        ListaConceptos: conceptos.map((concepto) => {
+          const itemCant = Number(concepto.Cantidad || 1);
+          const itemValUnit = Number(concepto.ValorUnitario || 0);
+          const itemSubtotal = Number(concepto.Subtotal != null ? concepto.Subtotal : (itemCant * itemValUnit));
+          const itemDesc = Number(concepto.Descuento || 0);
+
+          return {
+            ClaveProdServ: String(concepto.ClaveProdServ || "86121500"),
+            NoIdentificacion: concepto.NoIdentificacion || "",
+            Cantidad: itemCant,
+            ClaveUnidad: String(concepto.ClaveUnidad || "E48"),
+            Unidad: concepto.Unidad || "Servicio",
+            Descripcion: concepto.Descripcion || "",
+            ValorUnitario: itemValUnit,
+            Importe: itemSubtotal,
+            Descuento: itemDesc,
+            ObjetoImp: concepto.ObjetoImpuesto || concepto.ObjetoImp || "02",
+            Impuestos: {
+              Retenciones: concepto.Retenciones
+                ? concepto.Retenciones.map((retencion) => ({
+                  NombreImpuesto: retencion.NombreImpuesto || "ISR",
+                  Base: Number(retencion.BaseImpuesto != null ? retencion.BaseImpuesto : (retencion.Base != null ? retencion.Base : itemSubtotal)),
+                  ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
+                  TipoFactor: retencion.TipoFactor || retencion.Tipo || "Tasa",
+                  TasaOCuota: Number(retencion.TasaOCuota != null ? retencion.TasaOCuota : (retencion.Tasa != null ? retencion.Tasa : 0)),
+                  Importe: Number(retencion.Monto != null ? retencion.Monto : (retencion.Importe != null ? retencion.Importe : 0)),
+                }))
+                : [],
+              Traslados: concepto.Traslados
+                ? concepto.Traslados.map((traslado) => ({
+                  NombreImpuesto: traslado.NombreImpuesto || "IVA",
+                  Base: Number(traslado.BaseImpuesto != null ? traslado.BaseImpuesto : (traslado.Base != null ? traslado.Base : itemSubtotal)),
+                  ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
+                  TipoFactor: traslado.TipoFactor || traslado.Tipo || "Tasa",
+                  TasaOCuota: Number(traslado.TasaOCuota != null ? traslado.TasaOCuota : (traslado.Tasa != null ? traslado.Tasa : 0)),
+                  Importe: Number(traslado.Monto != null ? traslado.Monto : (traslado.Importe != null ? traslado.Importe : 0)),
+                }))
+                : [],
+            },
+          };
+        }),
         TotalImpuestosTrasladados: TotalTraslados,
         TotalImpuestosRetenidos: TotalRetenciones,
         TotalDescuento: TotalDescuento,
@@ -438,7 +472,7 @@ export default function FormatearFactura(
               ? concepto.Retenciones.map((retencion) => ({
                 NombreImpuesto: retencion.NombreImpuesto,
                 Base: retencion.BaseImpuesto,
-                ImpuestoClave: String(retencion.Impuesto),
+                ImpuestoClave: String(retencion.ImpuestoClave),
                 TipoFactor: retencion.Tipo,
                 TasaOCuota: retencion.Tasa,
                 Importe: retencion.Monto,
@@ -448,7 +482,7 @@ export default function FormatearFactura(
               ? concepto.Traslados.map((traslado) => ({
                 NombreImpuesto: traslado.NombreImpuesto,
                 Base: traslado.BaseImpuesto,
-                ImpuestoClave: String(traslado.Impuesto),
+                ImpuestoClave: String(traslado.ImpuestoClave),
                 TipoFactor: traslado.Tipo,
                 TasaOCuota: traslado.Tasa,
                 Importe: traslado.Monto,
