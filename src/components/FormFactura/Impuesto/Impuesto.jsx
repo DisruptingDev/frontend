@@ -106,9 +106,12 @@ export default function Impuesto({
         if (impuesto) {
             try {
                 const data = JSON.parse(impuesto);
-                setValue(`impuestos[${index}].NombreImpuesto`, data.Impuesto || '');
-                setValue(`impuestos[${index}].Tipo`, data.Tipo || '');
-                setValue(`impuestos[${index}].ImpuestoClave`, data.Clave || '');
+                const nombreImp = data.Impuesto || data.impuesto || '';
+                const idImp = Number(data.ID || data.id);
+                const claveSAT = data.Clave || data.clave || (nombreImp.toUpperCase().includes('ISR') || idImp === 1 || idImp === 4 ? '001' : nombreImp.toUpperCase().includes('IVA') || idImp === 2 || idImp === 5 ? '002' : '003');
+                setValue(`impuestos[${index}].NombreImpuesto`, nombreImp);
+                setValue(`impuestos[${index}].Tipo`, data.Tipo || data.tipo || '');
+                setValue(`impuestos[${index}].ImpuestoClave`, claveSAT);
 
                 const nombreImpuesto = data.Impuesto || getValues(`impuestos[${index}].NombreImpuesto`);
                 const tipo = data.Tipo || getValues(`impuestos[${index}].Tipo`);

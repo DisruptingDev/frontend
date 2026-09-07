@@ -35,6 +35,20 @@ export default function FormatearFactura(
     return "Tasa";
   };
 
+  const resolverImpuestoClave = (item, defaultClave) => {
+    const rawClave = String(item.ImpuestoClave || item.ImpuestoCatalogo?.Clave || item.ImpuestoCatalogo?.clave || "").trim();
+    if (rawClave === "001" || rawClave === "002" || rawClave === "003") return rawClave;
+    const nombre = (item.NombreImpuesto || item.ImpuestoCatalogo?.Impuesto || "").toUpperCase();
+    if (nombre.includes("ISR")) return "001";
+    if (nombre.includes("IVA")) return "002";
+    if (nombre.includes("IEPS")) return "003";
+    const id = Number(item.ImpuestoCatalogoID || item.Impuesto);
+    if (id === 1 || id === 4) return "001";
+    if (id === 2 || id === 5) return "002";
+    if (id === 3 || id === 6) return "003";
+    return defaultClave;
+  };
+
   let factura;
   if (modo == "Factura") {
     const toDec2 = (n) => {
@@ -126,8 +140,8 @@ export default function FormatearFactura(
                     ...(retencion.ID ? { ID: Number(retencion.ID) } : {}),
                     Base: Number(toDec2(rBase)),
                     BaseString: toDec2(rBase),
-                    ImpuestoCatalogoID: Number(retencion.ImpuestoCatalogoID || retencion.Impuesto || 1),
-                    ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
+                    ImpuestoCatalogoID: Number(retencion.ImpuestoCatalogoID || retencion.Impuesto || 4),
+                    ImpuestoClave: resolverImpuestoClave(retencion, "001"),
                     TipoFactor: resolverTipoFactor(retencion),
                     TasaOCuota: rTasaCuota,
                     TasaOCuotaString: String(tasaStr),
@@ -149,7 +163,7 @@ export default function FormatearFactura(
                     Base: Number(toDec2(tBase)),
                     BaseString: toDec2(tBase),
                     ImpuestoCatalogoID: Number(traslado.ImpuestoCatalogoID || traslado.Impuesto || 2),
-                    ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
+                    ImpuestoClave: resolverImpuestoClave(traslado, "002"),
                     TipoFactor: resolverTipoFactor(traslado),
                     TasaOCuota: tTasaCuota,
                     TasaOCuotaString: String(tasaStr),
@@ -248,7 +262,7 @@ export default function FormatearFactura(
                 ? concepto.Retenciones.map((retencion) => ({
                   NombreImpuesto: retencion.NombreImpuesto || "ISR",
                   Base: Number(retencion.BaseImpuesto != null ? retencion.BaseImpuesto : (retencion.Base != null ? retencion.Base : itemSubtotal)),
-                  ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
+                  ImpuestoClave: resolverImpuestoClave(retencion, "001"),
                   TipoFactor: resolverTipoFactor(retencion),
                   TasaOCuota: Number(retencion.TasaOCuota != null ? retencion.TasaOCuota : (retencion.Tasa != null ? retencion.Tasa : 0)),
                   Importe: Number(retencion.Monto != null ? retencion.Monto : (retencion.Importe != null ? retencion.Importe : 0)),
@@ -258,7 +272,7 @@ export default function FormatearFactura(
                 ? concepto.Traslados.map((traslado) => ({
                   NombreImpuesto: traslado.NombreImpuesto || "IVA",
                   Base: Number(traslado.BaseImpuesto != null ? traslado.BaseImpuesto : (traslado.Base != null ? traslado.Base : itemSubtotal)),
-                  ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
+                  ImpuestoClave: resolverImpuestoClave(traslado, "002"),
                   TipoFactor: resolverTipoFactor(traslado),
                   TasaOCuota: Number(traslado.TasaOCuota != null ? traslado.TasaOCuota : (traslado.Tasa != null ? traslado.Tasa : 0)),
                   Importe: Number(traslado.Monto != null ? traslado.Monto : (traslado.Importe != null ? traslado.Importe : 0)),
@@ -479,7 +493,7 @@ export default function FormatearFactura(
               ? concepto.Retenciones.map((retencion) => ({
                 NombreImpuesto: retencion.NombreImpuesto,
                 Base: retencion.BaseImpuesto,
-                ImpuestoClave: String(retencion.ImpuestoClave),
+                ImpuestoClave: resolverImpuestoClave(retencion, "001"),
                 TipoFactor: resolverTipoFactor(retencion),
                 TasaOCuota: retencion.Tasa,
                 Importe: retencion.Monto,
@@ -489,7 +503,7 @@ export default function FormatearFactura(
               ? concepto.Traslados.map((traslado) => ({
                 NombreImpuesto: traslado.NombreImpuesto,
                 Base: traslado.BaseImpuesto,
-                ImpuestoClave: String(traslado.ImpuestoClave),
+                ImpuestoClave: resolverImpuestoClave(traslado, "002"),
                 TipoFactor: resolverTipoFactor(traslado),
                 TasaOCuota: traslado.Tasa,
                 Importe: traslado.Monto,

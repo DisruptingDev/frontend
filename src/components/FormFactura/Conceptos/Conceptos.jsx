@@ -242,7 +242,7 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
 
                         return {
                             Impuesto: impuesto.Impuesto || '',
-                            ImpuestoClave: impuesto.ImpuestoClave || '',
+                            ImpuestoClave: opcionSeleccionada?.Clave || opcionSeleccionada?.clave || impuesto.ImpuestoClave || '',
                             Tasa: impuesto.Tasa || 0,
                             TasaOCuota: impuesto.TasaOCuota || 0,
                             BaseImpuesto: impuesto.BaseImpuesto || '',
@@ -473,10 +473,10 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
                     Subtotal: value.Subtotal,
                     ObjetoImpuesto: value.ObjetoImp || "02",
                     Impuestos: impuestos.map(impuesto => ({
-                        NombreImpuesto: impuesto.ImpuestoCatalogo.Impuesto,
-                        Impuesto: impuesto.ImpuestoCatalogoID,
-                        ImpuestoClave: formatImpuestoClave(impuesto.ImpuestoClave),
-                        Tasa: impuesto.TasaCatalogoID,
+                        NombreImpuesto: impuesto.ImpuestoCatalogo?.Impuesto || (impuesto.Impuesto == 4 || impuesto.Impuesto == 1 ? 'ISR' : 'IVA'),
+                        Impuesto: impuesto.ImpuestoCatalogoID || impuesto.Impuesto,
+                        ImpuestoClave: impuesto.ImpuestoCatalogo?.Clave || impuesto.ImpuestoCatalogo?.clave || formatImpuestoClave(impuesto.ImpuestoClave, impuesto.ImpuestoCatalogo?.Impuesto),
+                        Tasa: impuesto.TasaCatalogoID || impuesto.Tasa,
                         TasaOCuota: impuesto.TasaOCuota,
                         BaseImpuesto: impuesto.Base || value.Subtotal,
                         Monto: impuesto.Importe,
@@ -492,13 +492,22 @@ export default function Conceptos({ setConceptos, conceptos, editIndex, setEditI
             setSelectedConcepto(null);
         }
     }
-    const formatImpuestoClave = (value) => {
-        // Verifica si el valor es un número o se puede convertir a número
-        if (!isNaN(value)) {
-            // Convierte a string y rellena con ceros al inicio hasta que tenga al menos 3 caracteres
-            return value.toString().padStart(3, '0');
+    const formatImpuestoClave = (value, nombreImpuesto = '') => {
+        if (!value && !nombreImpuesto) return '001';
+        const str = String(value || '').trim();
+        if (str === '001' || str === '002' || str === '003') return str;
+        const nom = (nombreImpuesto || '').toUpperCase();
+        if (nom.includes('ISR')) return '001';
+        if (nom.includes('IVA')) return '002';
+        if (nom.includes('IEPS')) return '003';
+        const num = parseInt(str, 10);
+        if (num === 1 || num === 4) return '001';
+        if (num === 2 || num === 5) return '002';
+        if (num === 3 || num === 6) return '003';
+        if (!isNaN(num)) {
+            return num.toString().padStart(3, '0');
         }
-        return value; // Si no es un número, devuelve el valor tal cual
+        return value;
     };
 
     const formatCurrency = (value) => {
