@@ -104,7 +104,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         TasaOCuota: parseFloat(imp.TasaOCuota) || 0,
         BaseProporcional: (parseFloat(imp.BaseImpuesto) || 0) * proporcion,
         MontoProporcional: (parseFloat(imp.Monto) || 0) * proporcion,
-        TipoFactor: imp.Tipo,
+        TipoFactor: ["Tasa", "Cuota", "Exento"].includes(imp.TipoFactor) ? imp.TipoFactor : (["Tasa", "Cuota", "Exento"].includes(imp.Tipo) ? imp.Tipo : "Tasa"),
       }));
 
       const retenciones = (concepto.Retenciones || []).map((imp) => ({
@@ -115,7 +115,7 @@ export default function Pagos({ emisorID, children, register, conceptos, pagos, 
         TasaOCuota: parseFloat(imp.TasaOCuota) || 0,
         BaseProporcional: (parseFloat(imp.BaseImpuesto) || 0) * proporcion,
         MontoProporcional: (parseFloat(imp.Monto) || 0) * proporcion,
-        TipoFactor: imp.Tipo,
+        TipoFactor: ["Tasa", "Cuota", "Exento"].includes(imp.TipoFactor) ? imp.TipoFactor : (["Tasa", "Cuota", "Exento"].includes(imp.Tipo) ? imp.Tipo : "Tasa"),
       }));
 
       return {

@@ -28,6 +28,13 @@ export default function FormatearFactura(
     maximumFractionDigits: 2,
   });
 
+  const resolverTipoFactor = (item) => {
+    const permitidos = ["Tasa", "Cuota", "Exento"];
+    if (item && permitidos.includes(item.TipoFactor)) return item.TipoFactor;
+    if (item && permitidos.includes(item.Tipo)) return item.Tipo;
+    return "Tasa";
+  };
+
   let factura;
   if (modo == "Factura") {
     const toDec2 = (n) => {
@@ -121,7 +128,7 @@ export default function FormatearFactura(
                     BaseString: toDec2(rBase),
                     ImpuestoCatalogoID: Number(retencion.ImpuestoCatalogoID || retencion.Impuesto || 1),
                     ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
-                    TipoFactor: retencion.TipoFactor || retencion.Tipo || "Tasa",
+                    TipoFactor: resolverTipoFactor(retencion),
                     TasaOCuota: rTasaCuota,
                     TasaOCuotaString: String(tasaStr),
                     TasaCatalogoID: Number(retencion.TasaCatalogoID || retencion.Tasa || 1),
@@ -143,7 +150,7 @@ export default function FormatearFactura(
                     BaseString: toDec2(tBase),
                     ImpuestoCatalogoID: Number(traslado.ImpuestoCatalogoID || traslado.Impuesto || 2),
                     ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
-                    TipoFactor: traslado.TipoFactor || traslado.Tipo || "Tasa",
+                    TipoFactor: resolverTipoFactor(traslado),
                     TasaOCuota: tTasaCuota,
                     TasaOCuotaString: String(tasaStr),
                     TasaCatalogoID: Number(traslado.TasaCatalogoID || traslado.Tasa || 21),
@@ -242,7 +249,7 @@ export default function FormatearFactura(
                   NombreImpuesto: retencion.NombreImpuesto || "ISR",
                   Base: Number(retencion.BaseImpuesto != null ? retencion.BaseImpuesto : (retencion.Base != null ? retencion.Base : itemSubtotal)),
                   ImpuestoClave: String(retencion.ImpuestoClave || retencion.Impuesto || "001"),
-                  TipoFactor: retencion.TipoFactor || retencion.Tipo || "Tasa",
+                  TipoFactor: resolverTipoFactor(retencion),
                   TasaOCuota: Number(retencion.TasaOCuota != null ? retencion.TasaOCuota : (retencion.Tasa != null ? retencion.Tasa : 0)),
                   Importe: Number(retencion.Monto != null ? retencion.Monto : (retencion.Importe != null ? retencion.Importe : 0)),
                 }))
@@ -252,7 +259,7 @@ export default function FormatearFactura(
                   NombreImpuesto: traslado.NombreImpuesto || "IVA",
                   Base: Number(traslado.BaseImpuesto != null ? traslado.BaseImpuesto : (traslado.Base != null ? traslado.Base : itemSubtotal)),
                   ImpuestoClave: String(traslado.ImpuestoClave || traslado.Impuesto || "002"),
-                  TipoFactor: traslado.TipoFactor || traslado.Tipo || "Tasa",
+                  TipoFactor: resolverTipoFactor(traslado),
                   TasaOCuota: Number(traslado.TasaOCuota != null ? traslado.TasaOCuota : (traslado.Tasa != null ? traslado.Tasa : 0)),
                   Importe: Number(traslado.Monto != null ? traslado.Monto : (traslado.Importe != null ? traslado.Importe : 0)),
                 }))
@@ -473,7 +480,7 @@ export default function FormatearFactura(
                 NombreImpuesto: retencion.NombreImpuesto,
                 Base: retencion.BaseImpuesto,
                 ImpuestoClave: String(retencion.ImpuestoClave),
-                TipoFactor: retencion.Tipo,
+                TipoFactor: resolverTipoFactor(retencion),
                 TasaOCuota: retencion.Tasa,
                 Importe: retencion.Monto,
               }))
@@ -483,7 +490,7 @@ export default function FormatearFactura(
                 NombreImpuesto: traslado.NombreImpuesto,
                 Base: traslado.BaseImpuesto,
                 ImpuestoClave: String(traslado.ImpuestoClave),
-                TipoFactor: traslado.Tipo,
+                TipoFactor: resolverTipoFactor(traslado),
                 TasaOCuota: traslado.Tasa,
                 Importe: traslado.Monto,
               }))
@@ -571,7 +578,7 @@ export default function FormatearFactura(
                     Base: retencion.Base,
                     ImpuestoCatalogoID: retencion.ImpuestoCatalogoID,
                     ImpuestoClave: retencion.ImpuestoClave,
-                    TipoFactor: retencion.TipoFactor || "Tasa",
+                    TipoFactor: resolverTipoFactor(retencion),
                     TasaOCuota: retencion.TasaOCuota,
                     Importe: retencion.Importe,
                   })),
@@ -582,7 +589,7 @@ export default function FormatearFactura(
                     Base: traslado.Base,
                     ImpuestoCatalogoID: traslado.ImpuestoCatalogoID,
                     ImpuestoClave: traslado.ImpuestoClave,
-                    TipoFactor: traslado.TipoFactor || "Tasa",
+                    TipoFactor: resolverTipoFactor(traslado),
                     TasaOCuota: traslado.TasaOCuota,
                     Importe: traslado.Importe,
                   })),
