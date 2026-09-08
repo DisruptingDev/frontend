@@ -8,6 +8,7 @@ import Header from "@/components/Header/Header";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
 import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
+import ImpuestosLocales from "@/components/FormFactura/ImpuestosLocales/ImpuestosLocales.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
@@ -37,6 +38,7 @@ export default function CrearFactura() {
     const [motivoNotaCredito, setMotivoNotaCredito] = useState("");
     const [emisorID, setEmisorID] = useState("");
     const [receptorID, setReceptorID] = useState(null);
+    const [impuestosLocales, setImpuestosLocales] = useState([]);
 
     useEffect(() => {
         const token = isAuthenticated();
@@ -58,7 +60,7 @@ export default function CrearFactura() {
         }
         //console.log("Conceptos antes de crear", conceptos);
         console.log("Facturas relacionadas antes de crear", facturasRelacionadas);
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura", facturasRelacionadas);
+        const factura = FormatearFactura(data, data, conceptos, "", "Factura", facturasRelacionadas, impuestosLocales);
         console.log('Factura creada:', factura);
         GuardarFactura(
             factura,
@@ -107,7 +109,7 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia",);
+        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia", null, impuestosLocales);
         const vistaPrevia = await generarVistaPrevia(factura);
         console.log('Vista previa generada:', vistaPrevia);
         const html = '<h1>Mi contenido dinámico</h1>'
@@ -220,8 +222,13 @@ export default function CrearFactura() {
                             facturasRelacionadas={facturasRelacionadas} // Nuevo prop
                             setFacturasRelacionadas={setFacturasRelacionadas} // Pasa también el setter si es necesario
                         />
+                        <ImpuestosLocales
+                            impuestosLocales={impuestosLocales}
+                            setImpuestosLocales={setImpuestosLocales}
+                        />
                         <Resumen
                             conceptos={conceptos}
+                            impuestosLocales={impuestosLocales}
                             subTotal={watch("Subtotal")}
                             handleEditConcepto={handleEditConcepto}
                             handleDeleteConcepto={handleDeleteConcepto}
@@ -240,7 +247,41 @@ export default function CrearFactura() {
                         aria-labelledby="modal-vista-previa"
                         aria-describedby="vista-previa-factura"
                     >
-                        <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                        <Box
+                            sx={{
+                                maxHeight: '100vh',
+                                overflowY: 'auto',
+                                p: 4,
+                                bgcolor: 'background.paper',
+                                margin: 'auto',
+                                width: '100%',
+                                maxWidth: '850px',
+                                position: 'relative'
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                                    onClick={() => generatePDF(previewContent)}
+                                >
+                                    Descargar PDF
+                                </Button>
+                                <button
+                                    onClick={() => setOpenModal(false)}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#000',
+                                        fontSize: '18px',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    ✖
+                                </button>
+                            </Box>
                             <div dangerouslySetInnerHTML={{ __html: previewContent }} />
                         </Box>
                     </Modal>

@@ -9,6 +9,7 @@ import Header from "@/components/Header/Header.jsx";
 import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
 import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import Conceptos from "@/components/FormFactura/Conceptos/Conceptos.jsx";
+import ImpuestosLocales from "@/components/FormFactura/ImpuestosLocales/ImpuestosLocales.jsx";
 import Resumen from "@/components/FormFactura/Resumen/Resumen.jsx";
 import generarVistaPrevia from "@/components/Home/Factura/GenerarVistaPrevia";
 import FormatearFactura from "@/components/FormFactura/FormatearFactura";
@@ -25,6 +26,7 @@ export default function CrearFactura() {
     const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [lugarExpedicion, setLugarExpedicion] = useState("");
     const [conceptos, setConceptos] = useState([]);
+    const [impuestosLocales, setImpuestosLocales] = useState([]);
     const [emisorData, setemisorData] = useState([])
     const [receptorData, setReceptorData] = useState([])
     const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -91,26 +93,72 @@ export default function CrearFactura() {
 
         const fetchFactura = async () => {
             try {
-                let response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
+                let data = null;
 
-                if (!response.ok && apiUrl) {
-                    response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                // 1. Intentar primero con la ruta local /api/facturas/ObtenerFactura/${id}
+                try {
+                    const localRes = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',
                         },
                     });
+                    if (localRes.ok) {
+                        data = await localRes.json();
+                    }
+                } catch (localErr) {
+                    console.warn('Fallo ruta local ObtenerFactura:', localErr);
                 }
 
-                const data = await response.json();
+                // 2. Si no obtuvo datos, consultar Go API
+                if (!data && apiUrl) {
+                    const response = await fetch(`${apiUrl}/api/facturas/ObtenerFactura/${id}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        const errorText = await response.text();
+                        console.error('Error al obtener factura desde Go API:', response.status, errorText);
+                        return;
+                    }
+                }
+
+                if (!data) return;
 
                 // Convertir automáticamente todos los campos
                 const facturaConvertida = convertirCamposANumericos(data);
+
+                // 3. Garantizar la recuperación de Impuestos Locales desde la base de datos
+                const targetComp = facturaConvertida.factura || facturaConvertida;
+                const implocExistente = targetComp?.Complemento?.ImpuestosLocales || targetComp?.Complemento?.impuestos_locales;
+                const hasLocalTaxes = implocExistente && (
+                    (Array.isArray(implocExistente.TrasladosLocales) && implocExistente.TrasladosLocales.length > 0) ||
+                    (Array.isArray(implocExistente.RetencionesLocales) && implocExistente.RetencionesLocales.length > 0)
+                );
+
+                if (!hasLocalTaxes) {
+                    try {
+                        const resLoc = await fetch(`/api/facturas/ImpuestosLocales/${id}`);
+                        if (resLoc.ok) {
+                            const locData = await resLoc.json();
+                            if (locData?.ImpuestosLocales) {
+                                if (!targetComp.Complemento) targetComp.Complemento = {};
+                                targetComp.Complemento.ImpuestosLocales = locData.ImpuestosLocales;
+                                if (Array.isArray(locData.impuestosLocales) && locData.impuestosLocales.length > 0) {
+                                    setImpuestosLocales(locData.impuestosLocales);
+                                }
+                            }
+                        }
+                    } catch (errLoc) {
+                        console.warn("No se pudieron cargar impuestos locales:", errLoc);
+                    }
+                }
+
                 setFacturaEdit(facturaConvertida);
 
             } catch (error) {
@@ -125,7 +173,7 @@ export default function CrearFactura() {
 
     useEffect(() => {
         if (facturaEdit) {
-            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor, Descripcion, descripcion, Observaciones, observaciones } = RecuperarFactura(facturaEdit);
+            const { conceptos: Conceptos, emisor: Emisor, receptor: Receptor, impuestosLocales: Imploc, Descripcion, descripcion, Observaciones, observaciones } = RecuperarFactura(facturaEdit);
 
             if (Conceptos) {
                 setConceptos(Conceptos);
@@ -135,6 +183,9 @@ export default function CrearFactura() {
             }
             if (Receptor) {
                 setReceptorData(Receptor);
+            }
+            if (Imploc && Array.isArray(Imploc)) {
+                setImpuestosLocales(Imploc);
             }
 
             const desc = Descripcion || descripcion || Observaciones || observaciones || Emisor?.Descripcion || facturaEdit?.factura?.Descripcion || facturaEdit?.Descripcion || '';
@@ -146,6 +197,34 @@ export default function CrearFactura() {
 
     }, [facturaEdit, setValue]);
 
+    const generatePDF = async (htmlContent) => {
+        try {
+            const response = await fetch('/api/generate-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ htmlContent, fileName: 'factura_clonada' }),
+            });
+
+            if (!response.ok) throw new Error('Error al generar PDF');
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'factura.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error al generar PDF:', error);
+            setSnackbarMessage('Error al generar el archivo PDF.');
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
+        }
+    };
 
     const onSubmit = (data) => {
         if (conceptos.length === 0) {
@@ -154,7 +233,13 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "Factura");
+        const datosCompletos = {
+            ...emisorData,
+            ...receptorData,
+            ...getValues(),
+            ...data
+        };
+        const factura = FormatearFactura(datosCompletos, datosCompletos, conceptos, "", "Factura", null, impuestosLocales);
         GuardarFactura(
             factura,
             (message) => { // Callback de éxito
@@ -164,7 +249,7 @@ export default function CrearFactura() {
                 // Redirige después de un pequeño retraso para permitir que el Snackbar se muestre
                 setTimeout(() => {
                     router.push("/Home"); // Cambia "/pagina-destino" por la ruta deseada
-                }, 1000); // Espera 3 segundos antes de redirigir
+                }, 1000); // Espera 1 segundo antes de redirigir
             },
             (errorMessage) => { // Callback de error
                 setSnackbarMessage(errorMessage);
@@ -183,7 +268,13 @@ export default function CrearFactura() {
             setOpenSnackbar(true);
             return;
         }
-        const factura = FormatearFactura(data, data, conceptos, "", "VistaPrevia");
+        const datosCompletos = {
+            ...emisorData,
+            ...receptorData,
+            ...getValues(),
+            ...data
+        };
+        const factura = FormatearFactura(datosCompletos, datosCompletos, conceptos, "", "VistaPrevia", null, impuestosLocales);
         const vistaPrevia = await generarVistaPrevia(factura);
         setPreviewContent(vistaPrevia);
         setOpenModal(true);
@@ -255,8 +346,13 @@ export default function CrearFactura() {
                                 setEditIndex={setEditIndex}
                                 token={token}
                             />
+                            <ImpuestosLocales
+                                impuestosLocales={impuestosLocales}
+                                setImpuestosLocales={setImpuestosLocales}
+                            />
                             <Resumen
                                 conceptos={conceptos}
+                                impuestosLocales={impuestosLocales}
                                 subTotal={watch("Subtotal")}
                                 handleEditConcepto={handleEditConcepto}
                                 handleDeleteConcepto={handleDeleteConcepto}
@@ -264,11 +360,8 @@ export default function CrearFactura() {
                             >
                                 <div className="flex justify-end w-full space-x-2 mt-10">
                                     <Button variant="contained" type="button" sx={{ backgroundColor: '#da0404', '&:hover': { backgroundColor: '#a00303' } }} onClick={() => router.push("/Home")}>Cancelar</Button>
-                                    {/* <button className="btn btn-secondary bg-red-700" type="button"  onClick={() => router.push("/Home")}>Cancelar</button> */}
                                     <Button variant="contained" type="button" sx={{ backgroundColor: '#04b2ca', '&:hover': { backgroundColor: '#038a9e' } }} onClick={handlePreview}>Vista previa</Button>
-                                    {/* <button className="btn btn-accent" type="button" onClick={handlePreview}>Vista previa</button> */}
                                     <Button variant="contained" type="submit" sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}>Crear Factura</Button>
-                                    {/* <button type="submit" className="btn" style={{backgroundColor: '#1b384a', '&:hover': {   backgroundColor: '#10232f'}}}>Crear Factura</button> */}
                                 </div>
                             </Resumen>
                         </form>
@@ -278,7 +371,41 @@ export default function CrearFactura() {
                             aria-labelledby="modal-vista-previa"
                             aria-describedby="vista-previa-factura"
                         >
-                            <Box sx={{ maxHeight: '100vh', overflowY: 'auto', p: 4, bgcolor: 'background.paper', margin: 'auto', width: '100%', maxWidth: '850px' }}>
+                            <Box
+                                sx={{
+                                    maxHeight: '100vh',
+                                    overflowY: 'auto',
+                                    p: 4,
+                                    bgcolor: 'background.paper',
+                                    margin: 'auto',
+                                    width: '100%',
+                                    maxWidth: '850px',
+                                    position: 'relative'
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        sx={{ backgroundColor: '#1b384a', '&:hover': { backgroundColor: '#10232f' } }}
+                                        onClick={() => generatePDF(previewContent)}
+                                    >
+                                        Descargar PDF
+                                    </Button>
+                                    <button
+                                        onClick={() => setOpenModal(false)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#000',
+                                            fontSize: '18px',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold'
+                                        }}
+                                    >
+                                        ✖
+                                    </button>
+                                </Box>
                                 <div dangerouslySetInnerHTML={{ __html: previewContent }} />
                             </Box>
                         </Modal>

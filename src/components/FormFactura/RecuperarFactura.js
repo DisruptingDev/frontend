@@ -1,6 +1,115 @@
+const parseImpuestosLocales = (f, fParent) => {
+    const target = f || fParent;
+    if (!target) return [];
+
+    const complemento = target.Complemento || target.complemento || 
+                        fParent?.Complemento || fParent?.complemento ||
+                        (Array.isArray(target.Complementos) ? target.Complementos[0] : null) || 
+                        (Array.isArray(target.complementos) ? target.complementos[0] : null) ||
+                        (Array.isArray(fParent?.complementos) ? fParent.complementos[0] : null);
+
+    const imploc = complemento?.ImpuestosLocales || complemento?.impuestos_locales || 
+                  target.ImpuestosLocales || target.impuestos_locales ||
+                  fParent?.ImpuestosLocales || fParent?.impuestos_locales;
+
+    const result = [];
+
+    if (imploc) {
+        const traslados = imploc.TrasladosLocales || imploc.traslado_locals || imploc.TrasladoLocals || imploc.traslados_locales;
+        if (Array.isArray(traslados)) {
+            traslados.forEach((tras, idx) => {
+                const nombre = tras.ImpLocTrasladado || tras.imp_loc_trasladado || tras.Nombre || 'ISH';
+                const tasa = Number(tras.TasadeTraslado ?? tras.tasade_traslado ?? tras.Tasa ?? 0);
+                const importe = Number(tras.Importe ?? tras.importe ?? tras.Monto ?? 0);
+                result.push({
+                    id: `rec_tras_${idx}_${Date.now()}`,
+                    Tipo: 'Traslado',
+                    Nombre: nombre,
+                    Tasa: tasa,
+                    TasaString: String(tasa),
+                    Importe: importe,
+                    ImporteString: String(importe.toFixed(2))
+                });
+            });
+        }
+
+        const retenciones = imploc.RetencionesLocales || imploc.retencion_locals || imploc.RetencionLocals || imploc.retenciones_locales;
+        if (Array.isArray(retenciones)) {
+            retenciones.forEach((ret, idx) => {
+                const nombre = ret.ImpLocRetenido || ret.imp_loc_retenido || ret.Nombre || 'Impuesto Cedular';
+                const tasa = Number(ret.TasadeRetencion ?? ret.tasade_retencion ?? ret.Tasa ?? 0);
+                const importe = Number(ret.Importe ?? ret.importe ?? ret.Monto ?? 0);
+                result.push({
+                    id: `rec_ret_${idx}_${Date.now()}`,
+                    Tipo: 'Retencion',
+                    Nombre: nombre,
+                    Tasa: tasa,
+                    TasaString: String(tasa),
+                    Importe: importe,
+                    ImporteString: String(importe.toFixed(2))
+                });
+            });
+        }
+    }
+
+    // Fallback: Si no viene en el JSON, parsear desde XML timbrado si existe
+    if (result.length === 0) {
+        const xmlStr = target.xml_timbrado || target.XML || target.xml || fParent?.xml_timbrado;
+        if (typeof xmlStr === 'string' && xmlStr.includes('ImpuestosLocales')) {
+            const trasRegex = /<[^:]*:?TrasladosLocales\s+([^>]+)\/?>/gi;
+            let match;
+            let idx = 0;
+            while ((match = trasRegex.exec(xmlStr)) !== null) {
+                const attrs = match[1];
+                const nombreMatch = attrs.match(/ImpLocTrasladado=["']([^"']+)["']/i);
+                const tasaMatch = attrs.match(/TasadeTraslado=["']([^"']+)["']/i);
+                const importeMatch = attrs.match(/Importe=["']([^"']+)["']/i);
+                if (importeMatch) {
+                    const nombre = nombreMatch ? nombreMatch[1] : 'ISH';
+                    const tasa = tasaMatch ? Number(tasaMatch[1]) : 0;
+                    const importe = Number(importeMatch[1]);
+                    result.push({
+                        id: `rec_xml_tras_${idx++}_${Date.now()}`,
+                        Tipo: 'Traslado',
+                        Nombre: nombre,
+                        Tasa: tasa,
+                        TasaString: String(tasa),
+                        Importe: importe,
+                        ImporteString: String(importe.toFixed(2))
+                    });
+                }
+            }
+
+            const retRegex = /<[^:]*:?RetencionesLocales\s+([^>]+)\/?>/gi;
+            while ((match = retRegex.exec(xmlStr)) !== null) {
+                const attrs = match[1];
+                const nombreMatch = attrs.match(/ImpLocRetenido=["']([^"']+)["']/i);
+                const tasaMatch = attrs.match(/TasadeRetencion=["']([^"']+)["']/i);
+                const importeMatch = attrs.match(/Importe=["']([^"']+)["']/i);
+                if (importeMatch) {
+                    const nombre = nombreMatch ? nombreMatch[1] : 'Impuesto Cedular';
+                    const tasa = tasaMatch ? Number(tasaMatch[1]) : 0;
+                    const importe = Number(importeMatch[1]);
+                    result.push({
+                        id: `rec_xml_ret_${idx++}_${Date.now()}`,
+                        Tipo: 'Retencion',
+                        Nombre: nombre,
+                        Tasa: tasa,
+                        TasaString: String(tasa),
+                        Importe: importe,
+                        ImporteString: String(importe.toFixed(2))
+                    });
+                }
+            }
+        }
+    }
+
+    return result;
+};
+
 export default function RecuperarFactura(FacturaRecuperada) {
     if (!FacturaRecuperada) {
-        return { conceptos: [], emisor: {}, receptor: {} };
+        return { conceptos: [], emisor: {}, receptor: {}, impuestosLocales: [] };
     }
     const Factura = FacturaRecuperada.factura || FacturaRecuperada;
     if (Factura && Factura.Conceptos && Factura.Conceptos.ListaConceptos) {
@@ -163,14 +272,15 @@ export default function RecuperarFactura(FacturaRecuperada) {
                 Periodicidad: Factura.InformacionGlobal?.Periodicidad || ''
             }
         });
-
         const conceptos = ListaConceptos;
         const emisor = getDatosEmisor(Factura);
         const receptor = getDatosReceptor(Factura);
+        const impuestosLocales = parseImpuestosLocales(Factura, FacturaRecuperada);
         return {
             conceptos,
             emisor,
             receptor,
+            impuestosLocales,
             descripcion: Descripcion,
             Descripcion: Descripcion,
             observaciones: Descripcion,
@@ -243,6 +353,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
             conceptos: [],
             emisor: getDatosEmisor(Factura),
             receptor: getDatosReceptor(Factura),
+            impuestosLocales: parseImpuestosLocales ? parseImpuestosLocales(Factura, FacturaRecuperada) : [],
             descripcion: Descripcion,
             Descripcion: Descripcion,
             observaciones: Descripcion,
@@ -254,6 +365,7 @@ export default function RecuperarFactura(FacturaRecuperada) {
             conceptos: [],
             emisor: {},
             receptor: {},
+            impuestosLocales: [],
             descripcion: '',
             Descripcion: '',
             observaciones: '',

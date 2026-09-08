@@ -12,6 +12,17 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.08] - 2026-09-08
+### [FEAT]
+* FEAT - Soporte para Impuestos Locales (Traslados y Retenciones) en creación, edición y clonación de facturas (CFDI 4.0 con complemento de Impuestos Locales).
+* FEAT - Componente de catálogo y captura de Impuestos Locales (`ImpuestosLocales.jsx`) con selección de impuestos comunes (ISH, Impuesto Cedular, 5 al millar, 2 al millar, ISN, etc.) y montos configurables manualmente.
+* FEAT - Integración dinámica de Impuestos Locales en el cálculo del Total, desglose en Resumen de factura, Vista Previa HTML y generación de PDF.
+* FEAT - Carga y recuperación automática de complementos de Impuestos Locales desde la base de datos al editar y clonar facturas existentes.
+
+### [FIX]
+* FIX - Normalización de retenciones locales: los importes se muestran en positivo en la interfaz, resumen y PDF sin signo negativo antepuesto, deduciéndose correctamente del total del comprobante.
+* FIX - Compatibilidad con backend en base de datos de pruebas: creación de tabla `carta_portes` para prevenir el error SQL 42P01 al guardar o editar facturas que contienen el nodo de complementos.
+
 ## [0.01.07] - 2026-08-20
 ### [FEAT]
 * FEAT - Soporte para extraer dinámicamente claves SAT y nombre de conceptos desde el catálogo de ProductoFicha para fichas extras y colegiaturas.

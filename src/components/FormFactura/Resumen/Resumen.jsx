@@ -7,8 +7,8 @@ import {
 } from '@mui/icons-material';
 
 
-export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto, register }) {
-    let finales = CalculosFinales(conceptos);
+export default function Resumen({ children, conceptos, subTotal, Descuento, handleEditConcepto, handleDeleteConcepto, register, impuestosLocales = [] }) {
+    let finales = CalculosFinales(conceptos, impuestosLocales);
 
 
     const formatoMoneda = (valor) => {
@@ -170,12 +170,25 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Traslados:</TableCell>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.TrasladosFinal)}</TableCell>
                             </TableRow>
+                            {finales.TrasladosLocalesFinal > 0 && (
+                                <TableRow>
+                                    <TableCell sx={{ backgroundColor: '#1b384a', color: '#99f6e4' }}>Traslados Locales (+):</TableCell>
+                                    <TableCell sx={{ backgroundColor: '#1b384a', color: '#99f6e4', textAlign: 'right' }}>{formatoMoneda(finales.TrasladosLocalesFinal)}</TableCell>
+                                </TableRow>
+                            )}
+                            {finales.RetencionesLocalesFinal > 0 && (
+                                <TableRow>
+                                    <TableCell sx={{ backgroundColor: '#1b384a', color: '#fecaca' }}>Retenciones Locales (-):</TableCell>
+                                    <TableCell sx={{ backgroundColor: '#1b384a', color: '#fecaca', textAlign: 'right' }}>{formatoMoneda(finales.RetencionesLocalesFinal)}</TableCell>
+                                </TableRow>
+                            )}
                             <TableRow>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white' }}>Total:</TableCell>
                                 <TableCell sx={{ backgroundColor: '#1b384a', color: 'white', textAlign: 'right' }}>{formatoMoneda(finales.TotalFinal)}</TableCell>
                             </TableRow>
                         </TableBody>
                     </Table>
+
                 </Grid>
             </Grid>
             {children}

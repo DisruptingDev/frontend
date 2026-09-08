@@ -52,6 +52,34 @@ const fillTemplate = (template, factura) => {
         </div>
     `).join('');
 
+    // Generar HTML para Impuestos Locales
+    const imploc = factura.Complemento?.ImpuestosLocales || (Array.isArray(factura.ImpuestosLocales) ? {
+        TrasladosLocales: factura.ImpuestosLocales.filter((i) => i.Tipo === "Traslado").map((i) => ({
+            ImpLocTrasladado: i.Nombre,
+            Importe: i.Importe,
+            TasadeTraslado: i.Tasa
+        })),
+        RetencionesLocales: factura.ImpuestosLocales.filter((i) => i.Tipo === "Retencion").map((i) => ({
+            ImpLocRetenido: i.Nombre,
+            Importe: i.Importe,
+            TasadeRetencion: i.Tasa
+        }))
+    } : null);
+
+    let impuestosLocalesHTML = "";
+    if (imploc?.TrasladosLocales && Array.isArray(imploc.TrasladosLocales)) {
+        imploc.TrasladosLocales.forEach((t) => {
+            const tasaStr = t.TasadeTraslado != null && t.TasadeTraslado !== "" ? ` ${Number(t.TasadeTraslado).toFixed(2)}%` : "";
+            impuestosLocalesHTML += `<p><span>${t.ImpLocTrasladado || "Impuesto Local"}${tasaStr} (Traslado Local):</span> <span>$${Math.abs(Number(t.Importe || 0)).toFixed(2)}</span></p>`;
+        });
+    }
+    if (imploc?.RetencionesLocales && Array.isArray(imploc.RetencionesLocales)) {
+        imploc.RetencionesLocales.forEach((r) => {
+            const tasaStr = r.TasadeRetencion != null && r.TasadeRetencion !== "" ? ` ${Number(r.TasadeRetencion).toFixed(2)}%` : "";
+            impuestosLocalesHTML += `<p><span>${r.ImpLocRetenido || "Retención Local"}${tasaStr} (Retención Local):</span> <span>$${Math.abs(Number(r.Importe || 0)).toFixed(2)}</span></p>`;
+        });
+    }
+
     // Reemplazar los placeholders en la plantilla con los valores correspondientes
     return template
         .replace('{{version}}', factura.Version)
@@ -66,7 +94,8 @@ const fillTemplate = (template, factura) => {
         .replace('{{lugarExpedicion}}', factura.LugarExpedicion)
         .replace('{{conceptos}}', conceptosHTML)
         .replace('{{retenciones}}', retencionesHTML)
-        .replace('{{traslados}}', trasladosHTML);
+        .replace('{{traslados}}', trasladosHTML)
+        .replace('{{impuestosLocales}}', impuestosLocalesHTML);
 };
 
 // Función para generar el PDF usando html2pdf

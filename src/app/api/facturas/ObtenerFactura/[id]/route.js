@@ -11,7 +11,19 @@ export async function GET(request, { params }) {
 
         const comprobante = await prisma.comprobantes.findUnique({
             where: { id: BigInt(id) },
-            include: {
+            select: {
+                id: true,
+                serie: true,
+                folio: true,
+                fecha: true,
+                tipo_de_comprobante: true,
+                metodo_pago: true,
+                forma_pago: true,
+                uso_cfdi: true,
+                sub_total_string: true,
+                total_string: true,
+                descuento_string: true,
+                xml_timbrado: true,
                 emisors: true,
                 receptors: true,
                 Conceptos: {
@@ -58,7 +70,7 @@ export async function GET(request, { params }) {
         let itemsLista = conceptosList.map(c => {
             const retenciones = [];
             const traslados = [];
-            
+
             if (c.impuestos && c.impuestos.length > 0) {
                 c.impuestos.forEach(imp => {
                     if (imp.retencions) {
@@ -100,8 +112,8 @@ export async function GET(request, { params }) {
                 ClaveUnidad: c.clave_unidad || 'E48',
                 Unidad: c.unidad || 'Servicio',
                 Descripcion: c.descripcion || 'Colegiatura y Servicios Educativos Integrales',
-                ValorUnitario: Number(c.valor_unitario || c.importe || comprobante.total || 0),
-                Importe: Number(c.importe || comprobante.total || 0),
+                ValorUnitario: Number(c.valor_unitario || c.importe || comprobante.total_string || 0),
+                Importe: Number(c.importe || comprobante.total_string || 0),
                 Descuento: 0,
                 ObjetoImpuesto: c.objeto_imp || '02',
                 Impuestos: { Retenciones: retenciones, Traslados: traslados }
@@ -116,8 +128,8 @@ export async function GET(request, { params }) {
                 ClaveUnidad: 'E48',
                 Unidad: 'Servicio',
                 Descripcion: 'Colegiatura y Servicios Educativos Integrales',
-                ValorUnitario: Number(comprobante.total || 0),
-                Importe: Number(comprobante.total || 0),
+                ValorUnitario: Number(comprobante.total_string || 0),
+                Importe: Number(comprobante.total_string || 0),
                 Descuento: 0,
                 ObjetoImpuesto: '02',
                 Impuestos: { Retenciones: [], Traslados: [] }
@@ -129,6 +141,47 @@ export async function GET(request, { params }) {
             const clean = String(str).trim();
             return clean.split(' ')[0] || clean.substring(0, 4) || def;
         };
+
+        let complementosImpuestosLocales = null;
+        try {
+            const impLocRows = await prisma.$queryRaw`
+                SELECT il.id, il.version, il.totalde_retenciones, il.totalde_traslados
+                FROM complementos c
+                JOIN impuestos_locales il ON il.complemento_id = c.id
+                WHERE c.comprobante_id = ${BigInt(id)}
+                LIMIT 1
+            `;
+            if (impLocRows && impLocRows.length > 0) {
+                const ilId = impLocRows[0].id;
+                const trasladosRows = await prisma.$queryRaw`
+                    SELECT imp_loc_trasladado, tasade_traslado, importe
+                    FROM traslado_locals
+                    WHERE impuestos_locales_id = ${ilId}
+                `;
+                const retencionesRows = await prisma.$queryRaw`
+                    SELECT imp_loc_retenido, tasade_retencion, importe
+                    FROM retencion_locals
+                    WHERE impuestos_locales_id = ${ilId}
+                `;
+                complementosImpuestosLocales = {
+                    Version: impLocRows[0].version || "1.0",
+                    TotaldeRetenciones: Number(impLocRows[0].totalde_retenciones || 0),
+                    TotaldeTraslados: Number(impLocRows[0].totalde_traslados || 0),
+                    TrasladosLocales: trasladosRows.map(t => ({
+                        ImpLocTrasladado: t.imp_loc_trasladado,
+                        TasadeTraslado: Number(t.tasade_traslado || 0),
+                        Importe: Number(t.importe || 0)
+                    })),
+                    RetencionesLocales: retencionesRows.map(r => ({
+                        ImpLocRetenido: r.imp_loc_retenido,
+                        TasadeRetencion: Number(r.tasade_retencion || 0),
+                        Importe: Number(r.importe || 0)
+                    }))
+                };
+            }
+        } catch (dbErr) {
+            console.warn("No se pudieron cargar impuestos locales de DB:", dbErr.message);
+        }
 
         const responseData = {
             factura: {
@@ -164,6 +217,10 @@ export async function GET(request, { params }) {
                 Conceptos: {
                     ListaConceptos: itemsLista
                 },
+                Complemento: complementosImpuestosLocales ? {
+                    ImpuestosLocales: complementosImpuestosLocales
+                } : undefined,
+                xml_timbrado: comprobante.xml_timbrado || undefined,
                 InformacionGlobal: {
                     Anio: '',
                     Meses: '',

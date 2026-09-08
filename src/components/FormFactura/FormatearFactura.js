@@ -5,6 +5,7 @@ export default function FormatearFactura(
   id,
   modo,
   facturasRelacionadas = null,
+  impuestosLocales = [],
 ) {
   const subtotal = conceptos.reduce((acc, c) => acc + (Number(c.Subtotal) || (Number(c.Cantidad || 1) * Number(c.ValorUnitario || 0)) || 0), 0);
   const TotalTraslados = conceptos.reduce(
@@ -16,7 +17,15 @@ export default function FormatearFactura(
     0,
   );
   const TotalDescuento = conceptos.reduce((acc, c) => acc + (Number(c.Descuento) || 0), 0);
-  const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento;
+
+  const totalTrasladosLocales = Array.isArray(impuestosLocales)
+    ? impuestosLocales.filter((i) => i.Tipo === "Traslado").reduce((acc, c) => acc + (Math.abs(Number(c.Importe)) || 0), 0)
+    : 0;
+  const totalRetencionesLocales = Array.isArray(impuestosLocales)
+    ? impuestosLocales.filter((i) => i.Tipo === "Retencion").reduce((acc, c) => acc + (Math.abs(Number(c.Importe)) || 0), 0)
+    : 0;
+
+  const total = subtotal + TotalTraslados - TotalRetenciones - TotalDescuento + totalTrasladosLocales - totalRetencionesLocales;
   const now = new Date();
   const horaActual = now.toTimeString().split(" ")[0]; // Obtiene solo "HH:MM:SS"
   const rawFecha = emisor.Fecha ? String(emisor.Fecha).split("T")[0] : now.toISOString().split("T")[0];
@@ -181,6 +190,37 @@ export default function FormatearFactura(
         TotalImpuestosRetenidos: Number(toDec2(TotalRetenciones)),
         TotalImpuestosRetenidosString: toDec2(TotalRetenciones),
       },
+      ...(Array.isArray(impuestosLocales) && impuestosLocales.length > 0
+        ? {
+          Complemento: {
+            ImpuestosLocales: {
+              Version: "1.0",
+              TotaldeRetenciones: Number(toDec2(totalRetencionesLocales)),
+              TotaldeRetencionesString: toDec2(totalRetencionesLocales),
+              TotaldeTraslados: Number(toDec2(totalTrasladosLocales)),
+              TotaldeTrasladosString: toDec2(totalTrasladosLocales),
+              RetencionesLocales: impuestosLocales
+                .filter((imp) => imp.Tipo === "Retencion")
+                .map((ret) => ({
+                  ImpLocRetenido: ret.Nombre,
+                  TasadeRetencion: Number(ret.Tasa || 0),
+                  TasadeRetencionString: Number(ret.Tasa || 0).toFixed(2),
+                  Importe: Math.abs(Number(toDec2(ret.Importe))),
+                  ImporteString: toDec2(Math.abs(Number(ret.Importe))),
+                })),
+              TrasladosLocales: impuestosLocales
+                .filter((imp) => imp.Tipo === "Traslado")
+                .map((tras) => ({
+                  ImpLocTrasladado: tras.Nombre,
+                  TasadeTraslado: Number(tras.Tasa || 0),
+                  TasadeTrasladoString: Number(tras.Tasa || 0).toFixed(2),
+                  Importe: Number(toDec2(tras.Importe)),
+                  ImporteString: toDec2(tras.Importe),
+                })),
+            },
+          },
+        }
+        : {}),
     };
     console.log("Factura formateada para modo 'Factura':", factura);
   } else if (modo == "VistaPrevia") {
@@ -286,6 +326,32 @@ export default function FormatearFactura(
         TotalDescuento: TotalDescuento,
         GrupoID: 1,
       },
+      ImpuestosLocales: impuestosLocales || [],
+      ...(Array.isArray(impuestosLocales) && impuestosLocales.length > 0
+        ? {
+          Complemento: {
+            ImpuestosLocales: {
+              Version: "1.0",
+              TotaldeRetenciones: Number(toDec2(totalRetencionesLocales)),
+              TotaldeTraslados: Number(toDec2(totalTrasladosLocales)),
+              RetencionesLocales: impuestosLocales
+                .filter((imp) => imp.Tipo === "Retencion")
+                .map((ret) => ({
+                  ImpLocRetenido: ret.Nombre,
+                  TasadeRetencion: Number(ret.Tasa || 0),
+                  Importe: Math.abs(Number(toDec2(ret.Importe))),
+                })),
+              TrasladosLocales: impuestosLocales
+                .filter((imp) => imp.Tipo === "Traslado")
+                .map((tras) => ({
+                  ImpLocTrasladado: tras.Nombre,
+                  TasadeTraslado: Number(tras.Tasa || 0),
+                  Importe: Number(toDec2(tras.Importe)),
+                })),
+            },
+          },
+        }
+        : {}),
     };
   } else if (modo === "Pago") {
     factura = {
