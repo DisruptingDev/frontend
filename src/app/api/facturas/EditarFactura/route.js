@@ -9,7 +9,8 @@ import {
 export async function PUT(request) {
     try {
         const body = await request.json();
-        const { Factura, comprobante_id, items } = body;
+        const Factura = body.Factura || body;
+        const { comprobante_id, items } = body;
 
         // Extraer id de comprobante
         const idFactura = comprobante_id || body.id || Factura?.ID || body.ID;
@@ -92,7 +93,32 @@ export async function PUT(request) {
             }
         });
 
-        const impuestosLocales = Factura?.Complemento?.ImpuestosLocales || Factura?.impuestosLocales || [];
+        let flatImpuestosLocales = [];
+        const rawImpuestosLocales = Factura?.Complemento?.ImpuestosLocales;
+        if (rawImpuestosLocales) {
+            if (rawImpuestosLocales.TrasladosLocales && Array.isArray(rawImpuestosLocales.TrasladosLocales)) {
+                rawImpuestosLocales.TrasladosLocales.forEach(t => {
+                    flatImpuestosLocales.push({
+                        Tipo: 'Traslado',
+                        Nombre: t.ImpLocTrasladado || t.Nombre,
+                        Tasa: t.TasadeTraslado || t.Tasa,
+                        Importe: t.Importe
+                    });
+                });
+            }
+            if (rawImpuestosLocales.RetencionesLocales && Array.isArray(rawImpuestosLocales.RetencionesLocales)) {
+                rawImpuestosLocales.RetencionesLocales.forEach(r => {
+                    flatImpuestosLocales.push({
+                        Tipo: 'Retencion',
+                        Nombre: r.ImpLocRetenido || r.Nombre,
+                        Tasa: r.TasadeRetencion || r.Tasa,
+                        Importe: r.Importe
+                    });
+                });
+            }
+        } else if (Factura?.impuestosLocales && Array.isArray(Factura.impuestosLocales)) {
+            flatImpuestosLocales = Factura.impuestosLocales;
+        }
 
         await crearEstructuraCompletaCFDI({
             comprobante: comprobanteActualizado,
@@ -103,7 +129,7 @@ export async function PUT(request) {
             grupoId: emisor.grupo_id,
             claveProdServ: itemsList[0]?.clave_prod_serv || body.clave_prod_serv || '86121500',
             items: itemsList,
-            impuestosLocales: impuestosLocales
+            impuestosLocales: flatImpuestosLocales
         });
 
         return NextResponse.json({
