@@ -203,8 +203,53 @@ export default function DataTable({ token, filtro }) {
     }
   };
 
+  const handleDownloadPrefactura = async (id, folio = null) => {
+    setLoading(true);
+    setOpenModal(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        const fileName = `Prefactura_${folio || id}.pdf`;
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+
+        setConfirmationMessage(`Su prefactura se ha descargado exitosamente como archivo PDF.`);
+      } else {
+        await handleDownloadSelecteds([id]);
+      }
+    } catch (error) {
+      console.error('Error al descargar prefactura:', error);
+      try {
+        await handleDownloadSelecteds([id]);
+      } catch {
+        setConfirmationMessage(error.message || 'Error al descargar la prefactura.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleViewSingleFile = async (id) => {
     console.log("Visualizando factura:", id);
+    let newWindow = null;
+    try {
+      newWindow = window.open('about:blank', '_blank');
+    } catch (e) {
+      console.warn('No se pudo abrir ventana emergente:', e);
+    }
+
     setLoadingPdf(true);
     setPdfError(null);
 
@@ -220,27 +265,24 @@ export default function DataTable({ token, filtro }) {
         throw new Error('Error al obtener el PDF desde el servidor.');
       }
 
-      // Verificar el tipo de contenido
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/pdf')) {
-        // Opcional: Ver los primeros bytes para diagnóstico
-        const blob = await response.blob();
-        const firstBytes = await getFirstBytes(blob);
-        console.log("Primeros bytes del archivo:", firstBytes);
-        throw new Error('El archivo recibido no es un PDF válido.');
-      }
-
-      const pdfBlob = await response.blob();
+      const blob = await response.blob();
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
       const pdfUrl = URL.createObjectURL(pdfBlob);
 
-      // Opción 1: Mostrar en modal
-      // setPdfUrl(pdfUrl);
-      // setPdfModalOpen(true);
-
-      // Opción 2: Abrir en nueva pestaña
-      window.open(pdfUrl, '_blank');
+      if (newWindow && !newWindow.closed) {
+        newWindow.location.href = pdfUrl;
+      } else {
+        const a = document.createElement('a');
+        a.href = pdfUrl;
+        a.download = `Prefactura_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
 
     } catch (error) {
+      if (newWindow && !newWindow.closed) newWindow.close();
       console.error("Error:", error);
       setPdfError("Error al visualizar la factura: " + error.message);
     } finally {
@@ -809,17 +851,17 @@ export default function DataTable({ token, filtro }) {
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante !== 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                           <MenuItem key="timbraryenviar" onClick={() => handleTimbrarYEnviar([menuRow.ID])}>Timbrar y Enviar</MenuItem>,
-                          <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="prefactura" onClick={() => handleDownloadPrefactura(menuRow.ID, menuRow.Folio)}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="ver-prefactura" onClick={() => handleViewSingleFile(menuRow.ID)}>Ver Prefactura</MenuItem>,
                           <MenuItem key="edit" onClick={handleEdit}>Editar</MenuItem>,
                           <MenuItem key="clone" onClick={handleClone}>Clonar</MenuItem>,
                           <MenuItem key="delete" onClick={() => handleDelete([menuRow.ID])}>Eliminar</MenuItem>
-                          // <MenuItem key="delete" onClick={() => console.log('Eliminar', menuRow.ID)}>Eliminar</MenuItem>
-
                         ]}
                         {menuRow && menuRow.uuid === '' && menuRow.TipoDeComprobante === 'P' && [
                           <MenuItem key="timbrar" onClick={() => handleTimbrar([menuRow.ID])}>Timbrar</MenuItem>,
                           <MenuItem key="editar" onClick={handleEditPay}>Editar</MenuItem>,
-                          <MenuItem key="prefactura" onClick={() => handleDownloadSelecteds([menuRow.ID])}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="prefactura" onClick={() => handleDownloadPrefactura(menuRow.ID, menuRow.Folio)}>Descargar Prefactura</MenuItem>,
+                          <MenuItem key="ver-prefactura" onClick={() => handleViewSingleFile(menuRow.ID)}>Ver Prefactura</MenuItem>,
                           <MenuItem key="delete" onClick={() => handleDelete([menuRow.ID])}>Eliminar</MenuItem>,
                         ]}
                         {

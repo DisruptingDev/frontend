@@ -338,7 +338,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                window.URL.revokeObjectURL(url);
+                setTimeout(() => window.URL.revokeObjectURL(url), 60000);
 
                 setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
                 setOpenModalSuccess(true);
@@ -360,7 +360,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                             document.body.appendChild(a);
                             a.click();
                             a.remove();
-                            window.URL.revokeObjectURL(pdfUrl);
+                            setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 60000);
 
                             setConfirmationMessage(`Su prefactura se ha descargado exitosamente como archivo PDF.`);
                             setOpenModalSuccess(true);
@@ -456,7 +456,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
         }
     }, [token, fetchData]);
 
-    const handleViewPdf = useCallback(async (id) => {
+    const handleDownloadPrefactura = useCallback(async (id, folio = null) => {
         setIsLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
@@ -466,10 +466,82 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
             if (response.ok) {
                 const blob = await response.blob();
-                const pdfUrl = URL.createObjectURL(blob);
-                window.open(pdfUrl, '_blank');
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                const fileName = `Prefactura_${folio || id}.pdf`;
+                const a = document.createElement('a');
+                a.href = pdfUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+
+                setConfirmationMessage(`Su prefactura se ha descargado exitosamente como archivo PDF.`);
+                setOpenModalSuccess(true);
+            } else {
+                await handleDownloadSelecteds([id]);
             }
         } catch (error) {
+            console.error('Error al descargar prefactura:', error);
+            try {
+                await handleDownloadSelecteds([id]);
+            } catch {
+                setConfirmationMessage(error.message || 'Error al descargar la prefactura.');
+                setOpenModalError(true);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token, handleDownloadSelecteds]);
+
+    const handleViewPdf = useCallback(async (id) => {
+        let newWindow = null;
+        try {
+            newWindow = window.open('about:blank', '_blank');
+        } catch (e) {
+            console.warn('No se pudo abrir ventana emergente directa:', e);
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+                if (newWindow && !newWindow.closed) {
+                    newWindow.location.href = pdfUrl;
+                } else {
+                    const a = document.createElement('a');
+                    a.href = pdfUrl;
+                    a.download = `Prefactura_${id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }
+                setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
+            } else {
+                if (newWindow && !newWindow.closed) newWindow.close();
+                let errorMsg = 'No se pudo visualizar el PDF de la factura/prefactura.';
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData?.error || errData?.message || errorMsg;
+                } catch {
+                    try {
+                        const errTxt = await response.text();
+                        if (errTxt && errTxt.length < 200) errorMsg = errTxt;
+                    } catch {}
+                }
+                setConfirmationMessage(errorMsg);
+                setOpenModalError(true);
+            }
+        } catch (error) {
+            if (newWindow && !newWindow.closed) newWindow.close();
             setConfirmationMessage('Error al visualizar la factura: ' + error.message);
             setOpenModalError(true);
         } finally {
@@ -1353,7 +1425,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([rowId]); handleCloseMenu(); }}>
                         <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
                     </MenuItem>,
-                    <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
+                    <MenuItem key="prefactura" onClick={() => { handleDownloadPrefactura(rowId, menuRow?.Folio); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
                     </MenuItem>,
                     <MenuItem key="ver-prefactura" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>
@@ -1379,7 +1451,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     <MenuItem key="edit-pago" onClick={handleEdit}>
                         <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
                     </MenuItem>,
-                    <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
+                    <MenuItem key="prefactura-pago" onClick={() => { handleDownloadPrefactura(rowId, menuRow?.Folio); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
                     </MenuItem>,
                     <MenuItem key="ver-prefactura-pago" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>

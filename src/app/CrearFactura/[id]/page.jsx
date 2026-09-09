@@ -136,10 +136,14 @@ export default function CrearFactura() {
                 // 3. Garantizar la recuperación de Impuestos Locales desde la base de datos
                 const targetComp = facturaConvertida.factura || facturaConvertida;
                 const implocExistente = targetComp?.Complemento?.ImpuestosLocales || targetComp?.Complemento?.impuestos_locales;
-                const hasLocalTaxes = implocExistente && (
+                const hasLocalTaxes = (Array.isArray(targetComp?.impuestosLocales) && targetComp.impuestosLocales.length > 0) || (implocExistente && (
                     (Array.isArray(implocExistente.TrasladosLocales) && implocExistente.TrasladosLocales.length > 0) ||
                     (Array.isArray(implocExistente.RetencionesLocales) && implocExistente.RetencionesLocales.length > 0)
-                );
+                ));
+
+                if (Array.isArray(targetComp?.impuestosLocales) && targetComp.impuestosLocales.length > 0) {
+                    setImpuestosLocales(targetComp.impuestosLocales);
+                }
 
                 if (!hasLocalTaxes) {
                     try {
@@ -185,13 +189,17 @@ export default function CrearFactura() {
             if (Receptor) {
                 setReceptorData(Receptor);
             }
-            if (Imploc && Array.isArray(Imploc) && Imploc.length > 0) {
-                setImpuestosLocales(Imploc);
+
+            const listaFinalImpuestos = (Imploc && Array.isArray(Imploc) && Imploc.length > 0) ? Imploc :
+                                       (facturaEdit?.factura?.impuestosLocales && Array.isArray(facturaEdit?.factura?.impuestosLocales) && facturaEdit?.factura?.impuestosLocales.length > 0) ? facturaEdit?.factura?.impuestosLocales : null;
+
+            if (listaFinalImpuestos && listaFinalImpuestos.length > 0) {
+                setImpuestosLocales(listaFinalImpuestos);
             }
 
-            const desc = Descripcion || descripcion || Observaciones || observaciones || Emisor?.Descripcion || facturaEdit?.factura?.Descripcion || facturaEdit?.Descripcion || '';
+            // Asignar descripcion del comprobante a Observaciones sin tocar la descripcion de conceptos
+            const desc = facturaEdit?.factura?.Observaciones || facturaEdit?.factura?.Descripcion || facturaEdit?.factura?.descripcion || Observaciones || observaciones || Descripcion || descripcion || Emisor?.Descripcion || '';
             if (desc) {
-                setValue('Descripcion', desc);
                 setValue('Observaciones', desc);
             }
         }

@@ -23,6 +23,7 @@ export async function GET(request, { params }) {
                 sub_total_string: true,
                 total_string: true,
                 descuento_string: true,
+                descripcion: true,
                 xml_timbrado: true,
                 emisors: true,
                 receptors: true,
@@ -163,25 +164,47 @@ export async function GET(request, { params }) {
                     FROM retencion_locals
                     WHERE impuestos_locales_id = ${ilId}
                 `;
+                const trasladosLocales = trasladosRows.map((t, idx) => ({
+                    id: `tras_${ilId}_${t.id || idx}_${Date.now()}`,
+                    Tipo: 'Traslado',
+                    Nombre: t.imp_loc_trasladado || 'ISH',
+                    ImpLocTrasladado: t.imp_loc_trasladado || 'ISH',
+                    Tasa: Number(t.tasade_traslado || 0),
+                    TasaString: String(t.tasade_traslado || '0.00'),
+                    TasadeTraslado: Number(t.tasade_traslado || 0),
+                    Importe: Number(t.importe || 0),
+                    ImporteString: String(Number(t.importe || 0).toFixed(2))
+                }));
+
+                const retencionesLocales = retencionesRows.map((r, idx) => ({
+                    id: `ret_${ilId}_${r.id || idx}_${Date.now()}`,
+                    Tipo: 'Retencion',
+                    Nombre: r.imp_loc_retenido || 'Impuesto Cedular',
+                    ImpLocRetenido: r.imp_loc_retenido || 'Impuesto Cedular',
+                    Tasa: Number(r.tasade_retencion || 0),
+                    TasaString: String(r.tasade_retencion || '0.00'),
+                    TasadeRetencion: Number(r.tasade_retencion || 0),
+                    Importe: Math.abs(Number(r.importe || 0)),
+                    ImporteString: String(Math.abs(Number(r.importe || 0)).toFixed(2))
+                }));
+
                 complementosImpuestosLocales = {
                     Version: impLocRows[0].version || "1.0",
                     TotaldeRetenciones: Number(impLocRows[0].totalde_retenciones || 0),
                     TotaldeTraslados: Number(impLocRows[0].totalde_traslados || 0),
-                    TrasladosLocales: trasladosRows.map(t => ({
-                        ImpLocTrasladado: t.imp_loc_trasladado,
-                        TasadeTraslado: Number(t.tasade_traslado || 0),
-                        Importe: Number(t.importe || 0)
-                    })),
-                    RetencionesLocales: retencionesRows.map(r => ({
-                        ImpLocRetenido: r.imp_loc_retenido,
-                        TasadeRetencion: Number(r.tasade_retencion || 0),
-                        Importe: Number(r.importe || 0)
-                    }))
+                    TrasladosLocales: trasladosLocales,
+                    RetencionesLocales: retencionesLocales
                 };
             }
         } catch (dbErr) {
             console.warn("No se pudieron cargar impuestos locales de DB:", dbErr.message);
         }
+
+        const flatImpuestosLocales = complementosImpuestosLocales
+            ? [...(complementosImpuestosLocales.TrasladosLocales || []), ...(complementosImpuestosLocales.RetencionesLocales || [])]
+            : [];
+
+        const descComprobante = comprobante.descripcion || '';
 
         const responseData = {
             factura: {
@@ -214,12 +237,16 @@ export async function GET(request, { params }) {
                 MetodoPago: extraerClaveSAT(comprobante.metodo_pago, 'PUE'),
                 FormaPago: extraerClaveSAT(comprobante.forma_pago, '03'),
                 UsoCFDI: extraerClaveSAT(comprobante.uso_cfdi || receptorObj.uso_cfdi, 'S01'),
+                Descripcion: descComprobante,
+                Observaciones: descComprobante,
                 Conceptos: {
                     ListaConceptos: itemsLista
                 },
                 Complemento: complementosImpuestosLocales ? {
                     ImpuestosLocales: complementosImpuestosLocales
                 } : undefined,
+                impuestosLocales: flatImpuestosLocales,
+                ImpuestosLocales: flatImpuestosLocales,
                 xml_timbrado: comprobante.xml_timbrado || undefined,
                 InformacionGlobal: {
                     Anio: '',

@@ -27,7 +27,7 @@ export default function Resumen({ children, conceptos, subTotal, Descuento, hand
                     rows={3}
                     label="Observaciones / Información Adicional"
                     variant="outlined"
-                    {...(register ? register("Descripcion") : {})}
+                    {...(register ? register("Observaciones") : {})}
                 />
             </Box>
 

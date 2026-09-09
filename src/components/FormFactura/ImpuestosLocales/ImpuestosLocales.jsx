@@ -118,6 +118,7 @@ export default function ImpuestosLocales({ impuestosLocales = [], setImpuestosLo
     };
 
     const handleEditar = (imp) => {
+        if (!imp) return;
         setEditingId(imp.id);
         setError('');
 
@@ -139,6 +140,13 @@ export default function ImpuestosLocales({ impuestosLocales = [], setImpuestosLo
         setTasa(imp.Tasa != null ? String(imp.Tasa) : '');
         setImporte(imp.Importe != null ? String(Math.abs(imp.Importe)) : '');
     };
+
+    // Auto-cargar en formulario al abrir factura existente si hay impuestos y los campos están vacíos
+    useEffect(() => {
+        if (impuestosLocales && impuestosLocales.length > 0 && !editingId && !nombre && !importe) {
+            handleEditar(impuestosLocales[0]);
+        }
+    }, [impuestosLocales]);
 
     const handleCancelarEdicion = () => {
         setEditingId(null);
