@@ -407,7 +407,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
 
             const ilResult = await prisma.$queryRaw`
                 INSERT INTO impuestos_locales (version, totalde_retenciones, totalde_traslados, complemento_id)
-                VALUES ('1.0', ${totalRetenciones.toFixed(2)}, ${totalTraslados.toFixed(2)}, ${compDB.id})
+                VALUES ('1.0', CAST(${totalRetenciones.toFixed(2)} AS numeric), CAST(${totalTraslados.toFixed(2)} AS numeric), ${compDB.id})
                 RETURNING id
             `;
             
@@ -417,12 +417,12 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
                     if (i.Tipo === 'Traslado') {
                         await prisma.$executeRaw`
                             INSERT INTO traslado_locals (imp_loc_trasladado, tasade_traslado, importe, impuestos_locales_id)
-                            VALUES (${i.Nombre}, ${Number(i.Tasa).toFixed(2)}, ${Number(i.Importe).toFixed(2)}, ${ilId})
+                            VALUES (${i.Nombre}, CAST(${Number(i.Tasa).toFixed(2)} AS numeric), CAST(${Number(i.Importe).toFixed(2)} AS numeric), ${ilId})
                         `;
                     } else if (i.Tipo === 'Retencion') {
                         await prisma.$executeRaw`
                             INSERT INTO retencion_locals (imp_loc_retenido, tasade_retencion, importe, impuestos_locales_id)
-                            VALUES (${i.Nombre}, ${Number(i.Tasa).toFixed(2)}, ${Number(i.Importe).toFixed(2)}, ${ilId})
+                            VALUES (${i.Nombre}, CAST(${Number(i.Tasa).toFixed(2)} AS numeric), CAST(${Number(i.Importe).toFixed(2)} AS numeric), ${ilId})
                         `;
                     }
                 }
