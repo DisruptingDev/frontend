@@ -87,8 +87,8 @@ export async function PUT(request) {
                 emisor_id: emisor.id,
                 receptor_id: receptorId,
                 uso_cfdi: usoCfdi,
-                sub_total: totalCalculado,
-                total: totalCalculado
+                sub_total: String(totalCalculado.toFixed(2)),
+                total: String(totalCalculado.toFixed(2))
             }
         });
 
