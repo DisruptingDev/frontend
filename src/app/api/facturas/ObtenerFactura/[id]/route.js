@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { serializeBigIntsAndDecimals } from '@/lib/services/servicioFacturacion';
+function serializeBigIntsAndDecimals(obj) {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === 'bigint') return obj.toString();
+    if (obj && typeof obj.toNumber === 'function') return obj.toNumber();
+    if (obj instanceof Date) return isNaN(obj.getTime()) ? null : obj.toISOString();
+    if (Array.isArray(obj)) return obj.map(serializeBigIntsAndDecimals);
+    if (typeof obj === 'object') {
+        const res = {};
+        for (const [key, val] of Object.entries(obj)) {
+            res[key] = serializeBigIntsAndDecimals(val);
+        }
+        return res;
+    }
+    return obj;
+}
 
 export async function GET(request, { params }) {
     try {
