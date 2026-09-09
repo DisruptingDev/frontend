@@ -141,12 +141,14 @@ export default function ImpuestosLocales({ impuestosLocales = [], setImpuestosLo
         setImporte(imp.Importe != null ? String(Math.abs(imp.Importe)) : '');
     };
 
-    // Auto-cargar en formulario al abrir factura existente si hay impuestos y los campos están vacíos
+    // Auto-cargar desactivado por petición del usuario para que se muestren en tabla primero
+    /*
     useEffect(() => {
         if (impuestosLocales && impuestosLocales.length > 0 && !editingId && !nombre && !importe) {
             handleEditar(impuestosLocales[0]);
         }
     }, [impuestosLocales]);
+    */
 
     const handleCancelarEdicion = () => {
         setEditingId(null);

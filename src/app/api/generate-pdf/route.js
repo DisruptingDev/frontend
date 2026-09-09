@@ -6,7 +6,9 @@ export async function POST(req) {
     const { htmlContent, fileName } = await req.json();
 
     // Iniciar Puppeteer
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
 
     // Establecer el contenido HTML de la página
