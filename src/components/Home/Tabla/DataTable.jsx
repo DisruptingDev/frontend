@@ -463,6 +463,16 @@ export default function DataTable({ token }) {
 
 
     const handleDownloadSelecteds = useCallback(async (ids) => {
+        const cleanIds = (Array.isArray(ids) ? ids : [ids])
+            .map(id => (typeof id === 'object' && id !== null) ? (id.ID ?? id.id ?? id.Id) : id)
+            .filter(id => id !== undefined && id !== null && id !== '');
+
+        if (cleanIds.length === 0) {
+            setConfirmationMessage('No se seleccionó ninguna factura válida para descargar.');
+            setOpenModalError(true);
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
@@ -471,7 +481,7 @@ export default function DataTable({ token }) {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ids),
+                body: JSON.stringify(cleanIds),
             });
 
             if (response.ok) {
@@ -499,7 +509,7 @@ export default function DataTable({ token }) {
 
                 // Obtener nombre del archivo o usar uno por defecto
                 const fileName = getFileNameFromHeaders(response.headers) ||
-                    (ids.length === 1 ? 'Factura.zip' : 'Facturas.zip');
+                    (cleanIds.length === 1 ? 'Factura.zip' : 'Facturas.zip');
 
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -515,8 +525,46 @@ export default function DataTable({ token }) {
                 setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
                 setOpenModalSuccess(true);
             } else {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.message || 'Error en la respuesta del servidor');
+                // Fallback para prefacturas individuales vía VerPDF
+                if (cleanIds.length === 1) {
+                    try {
+                        const pdfRes = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${cleanIds[0]}`, {
+                            method: 'GET',
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (pdfRes.ok) {
+                            const pdfBlob = await pdfRes.blob();
+                            const pdfUrl = window.URL.createObjectURL(pdfBlob);
+                            const a = document.createElement('a');
+                            a.href = pdfUrl;
+                            a.download = `Prefactura_${cleanIds[0]}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(pdfUrl);
+
+                            setConfirmationMessage(`Su prefactura se ha descargado exitosamente como archivo PDF.`);
+                            setOpenModalSuccess(true);
+                            return;
+                        }
+                    } catch (fallbackErr) {
+                        console.warn('Fallback VerPDF falló:', fallbackErr);
+                    }
+                }
+
+                let errorMsg = 'Error en la respuesta del servidor';
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData?.error || errorData?.message || (typeof errorData === 'string' ? errorData : errorMsg);
+                } catch {
+                    try {
+                        const errorText = await response.text();
+                        if (errorText && errorText.length < 300) {
+                            errorMsg = errorText;
+                        }
+                    } catch {}
+                }
+                throw new Error(errorMsg);
             }
         } catch (error) {
             console.error('Error al descargar:', error);

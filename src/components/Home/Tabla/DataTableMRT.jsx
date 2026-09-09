@@ -290,6 +290,17 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
 
     const handleDownloadSelecteds = useCallback(async (ids) => {
+        // Normalizar los IDs asegurando que no haya undefined, null u objetos
+        const cleanIds = (Array.isArray(ids) ? ids : [ids])
+            .map(id => (typeof id === 'object' && id !== null) ? (id.ID ?? id.id ?? id.Id) : id)
+            .filter(id => id !== undefined && id !== null && id !== '');
+
+        if (cleanIds.length === 0) {
+            setConfirmationMessage('No se seleccionó ninguna factura válida para descargar.');
+            setOpenModalError(true);
+            return;
+        }
+
         setIsLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/descargararchivos/DescargarArchivos`, {
@@ -298,7 +309,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ids),
+                body: JSON.stringify(cleanIds),
             });
 
             if (response.ok) {
@@ -318,7 +329,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     return null;
                 };
                 const fileName = getFileNameFromHeaders(response.headers) ||
-                    (ids.length === 1 ? 'Factura.zip' : 'Facturas.zip');
+                    (cleanIds.length === 1 ? 'Factura.zip' : 'Facturas.zip');
 
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -332,8 +343,48 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                 setConfirmationMessage(`Su archivo "${fileName}" se ha descargado. Revise su carpeta de descargas.`);
                 setOpenModalSuccess(true);
             } else {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.message || 'Error en la respuesta del servidor');
+                // Si falla DescargarArchivos (por ejemplo si en prod el backend espera XML timbrado para el ZIP en prefacturas),
+                // intentar descarga directa de la prefactura en PDF mediante VerPDF
+                if (cleanIds.length === 1) {
+                    try {
+                        const pdfRes = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${cleanIds[0]}`, {
+                            method: 'GET',
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (pdfRes.ok) {
+                            const pdfBlob = await pdfRes.blob();
+                            const pdfUrl = window.URL.createObjectURL(pdfBlob);
+                            const a = document.createElement('a');
+                            a.href = pdfUrl;
+                            a.download = `Prefactura_${cleanIds[0]}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(pdfUrl);
+
+                            setConfirmationMessage(`Su prefactura se ha descargado exitosamente como archivo PDF.`);
+                            setOpenModalSuccess(true);
+                            return;
+                        }
+                    } catch (fallbackErr) {
+                        console.warn('Fallback VerPDF falló:', fallbackErr);
+                    }
+                }
+
+                // Extraer el mensaje real del error devuelto por el servidor
+                let errorMsg = 'Error en la respuesta del servidor';
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData?.error || errorData?.message || (typeof errorData === 'string' ? errorData : errorMsg);
+                } catch {
+                    try {
+                        const errorText = await response.text();
+                        if (errorText && errorText.length < 300) {
+                            errorMsg = errorText;
+                        }
+                    } catch {}
+                }
+                throw new Error(errorMsg);
             }
         } catch (error) {
             console.error('Error al descargar:', error);
@@ -915,16 +966,18 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     };
 
     const handleEdit = () => {
+        const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
         if (menuRow?.TipoDeComprobante === 'P') {
-            router.push(`/EditarComplementoPago/${menuRow.ID}`);
+            router.push(`/EditarComplementoPago/${rowId}`);
         } else {
-            router.push(`/EditarFactura/${menuRow.ID}`);
+            router.push(`/EditarFactura/${rowId}`);
         }
         handleCloseMenu();
     };
 
     const handleClone = () => {
-        router.push(`/CrearFactura/${menuRow.ID}`);
+        const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
+        router.push(`/CrearFactura/${rowId}`);
         handleCloseMenu();
     };
 
@@ -1281,11 +1334,12 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     // -- Render Menu Items --
     const renderMenuItems = () => {
         if (!menuRow) return null;
+        const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
         const menuItems = [];
 
         if (menuRow.Estatus === 'Cancelada') {
             menuItems.push(
-                <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(menuRow.ID); handleCloseMenu(); }}>
+                <MenuItem key="descargar-acuse" onClick={() => { handleAcuseCancelacion(rowId); handleCloseMenu(); }}>
                     <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Acuse de Cancelación
                 </MenuItem>
             );
@@ -1293,14 +1347,17 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
             // Logic derived from original RowActionMenu
             if (!menuRow.uuid && menuRow.TipoDeComprobante !== 'P') {
                 menuItems.push(
-                    <MenuItem key="timbrar" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="timbrar" onClick={() => { handleTimbrar([rowId]); handleCloseMenu(); }}>
                         <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Enviar a Timbrar
                     </MenuItem>,
-                    <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="timbraryenviar" onClick={() => { handleTimbrarYEnviar([rowId]); handleCloseMenu(); }}>
                         <TimbrarEnviarIcon fontSize="small" sx={{ mr: 1 }} /> Timbrar y Enviar
                     </MenuItem>,
-                    <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="prefactura" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                    </MenuItem>,
+                    <MenuItem key="ver-prefactura" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>
+                        <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver Prefactura
                     </MenuItem>,
                     <MenuItem key="edit" onClick={handleEdit}>
                         <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
@@ -1316,14 +1373,17 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
             if (!menuRow.uuid && menuRow.TipoDeComprobante === 'P') {
                 menuItems.push(
-                    <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="timbrar-pago" onClick={() => { handleTimbrar([rowId]); handleCloseMenu(); }}>
                         <TimbrarIcon fontSize="small" sx={{ mr: 1 }} /> Enviar a Timbrar
                     </MenuItem>,
                     <MenuItem key="edit-pago" onClick={handleEdit}>
                         <EditIcon fontSize="small" sx={{ mr: 1 }} /> Editar
                     </MenuItem>,
-                    <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="prefactura-pago" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar Prefactura
+                    </MenuItem>,
+                    <MenuItem key="ver-prefactura-pago" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>
+                        <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver Prefactura
                     </MenuItem>,
                     <MenuItem key="delete-pago" onClick={handleDelete}>
                         <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Eliminar
@@ -1333,10 +1393,10 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
             if (menuRow.uuid && menuRow.TipoDeComprobante !== "P") {
                 menuItems.push(
-                    <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="descargar" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
                     </MenuItem>,
-                    <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleCloseMenu(); }}>
+                    <MenuItem key="ver" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>
                         <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                     </MenuItem>,
                     <MenuItem key="clone-timbrada" onClick={handleClone}>
@@ -1353,10 +1413,10 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                     <MenuItem key="cancelar-pago" onClick={() => { handleCancelarFactura(menuRow); handleCloseMenu(); }}>
                         <CancelIcon fontSize="small" sx={{ mr: 1 }} /> Cancelar
                     </MenuItem>,
-                    <MenuItem key="ver" onClick={() => { handleViewPdf(menuRow.ID); handleCloseMenu(); }}>
+                    <MenuItem key="ver" onClick={() => { handleViewPdf(rowId); handleCloseMenu(); }}>
                         <PdfIcon fontSize="small" sx={{ mr: 1 }} /> Ver PDF
                     </MenuItem>,
-                    <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([menuRow.ID]); handleCloseMenu(); }}>
+                    <MenuItem key="descargar-pago" onClick={() => { handleDownloadSelecteds([rowId]); handleCloseMenu(); }}>
                         <DescargarIcon fontSize="small" sx={{ mr: 1 }} /> Descargar
                     </MenuItem>
                 );

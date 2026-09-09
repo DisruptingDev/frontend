@@ -150,6 +150,7 @@ export default function CrearFactura() {
                                 if (!targetComp.Complemento) targetComp.Complemento = {};
                                 targetComp.Complemento.ImpuestosLocales = locData.ImpuestosLocales;
                                 if (Array.isArray(locData.impuestosLocales) && locData.impuestosLocales.length > 0) {
+                                    targetComp.impuestosLocales = locData.impuestosLocales;
                                     setImpuestosLocales(locData.impuestosLocales);
                                 }
                             }
@@ -184,7 +185,7 @@ export default function CrearFactura() {
             if (Receptor) {
                 setReceptorData(Receptor);
             }
-            if (Imploc && Array.isArray(Imploc)) {
+            if (Imploc && Array.isArray(Imploc) && Imploc.length > 0) {
                 setImpuestosLocales(Imploc);
             }
 

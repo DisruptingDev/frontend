@@ -8,13 +8,33 @@ const parseImpuestosLocales = (f, fParent) => {
                         (Array.isArray(target.complementos) ? target.complementos[0] : null) ||
                         (Array.isArray(fParent?.complementos) ? fParent.complementos[0] : null);
 
-    const imploc = complemento?.ImpuestosLocales || complemento?.impuestos_locales || 
+    const directArray = (Array.isArray(target.impuestosLocales) && target.impuestosLocales.length > 0) ? target.impuestosLocales :
+                        (Array.isArray(fParent?.impuestosLocales) && fParent?.impuestosLocales.length > 0) ? fParent.impuestosLocales : null;
+
+    const imploc = directArray ||
+                  complemento?.ImpuestosLocales || complemento?.impuestos_locales || 
                   target.ImpuestosLocales || target.impuestos_locales ||
                   fParent?.ImpuestosLocales || fParent?.impuestos_locales;
 
     const result = [];
 
-    if (imploc) {
+    if (Array.isArray(imploc)) {
+        imploc.forEach((item, idx) => {
+            const tipo = item.Tipo || (item.ImpLocRetenido || item.TasadeRetencion || item.imp_loc_retenido ? 'Retencion' : 'Traslado');
+            const nombre = item.Nombre || item.ImpLocTrasladado || item.ImpLocRetenido || item.imp_loc_trasladado || item.imp_loc_retenido || (tipo === 'Traslado' ? 'ISH' : 'Impuesto Cedular');
+            const tasa = Number(item.Tasa ?? item.TasadeTraslado ?? item.TasadeRetencion ?? item.tasade_traslado ?? item.tasade_retencion ?? 0);
+            const importe = Number(item.Importe ?? item.importe ?? item.Monto ?? 0);
+            result.push({
+                id: item.id || `rec_arr_${idx}_${Date.now()}`,
+                Tipo: tipo,
+                Nombre: nombre,
+                Tasa: tasa,
+                TasaString: String(tasa),
+                Importe: Math.abs(importe),
+                ImporteString: Math.abs(importe).toFixed(2)
+            });
+        });
+    } else if (imploc) {
         const traslados = imploc.TrasladosLocales || imploc.traslado_locals || imploc.TrasladoLocals || imploc.traslados_locales;
         if (Array.isArray(traslados)) {
             traslados.forEach((tras, idx) => {
