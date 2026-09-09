@@ -80,25 +80,31 @@ export default function GenerarEgreso() {
         );
     };
 
-    const generatePDF = async (htmlContent) => {
-        const response = await fetch('/api/generate-pdf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ htmlContent }),
-        });
+        const generatePDF = async (htmlContent) => {
+        try {
+            const html2pdf = (await import('html2pdf.js')).default;
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+            
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5],
+                filename:     'factura.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
 
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'generated.pdf';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+            await html2pdf().set(opt).from(element).save();
+        } catch (error) {
+            console.error('Error al generar PDF:', error);
+            if (typeof setSnackbarMessage === 'function') {
+                setSnackbarMessage('Error al generar el archivo PDF.');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+            }
+        }
     };
+
 
     const handlePreview = handleSubmit(async (data) => {
         if (conceptos.length === 0) {

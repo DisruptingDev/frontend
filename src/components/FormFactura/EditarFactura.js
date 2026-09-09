@@ -81,7 +81,7 @@ export default async function GuardarFactura(factura, onSuccess, onError, { toke
         const payloadSanitizado = sanitizarFactura(factura);
         console.log("GuardarFactura (edición Go) payload:", payloadSanitizado);
 
-        const targetUrl = `${apiUrl || ''}/api/facturas/EditarFactura`;
+        const targetUrl = `/api/facturas/EditarFactura`;
         console.log("Enviando PUT EditarFactura a:", targetUrl);
 
         const response = await fetch(targetUrl, {

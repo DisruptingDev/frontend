@@ -92,6 +92,8 @@ export async function PUT(request) {
             }
         });
 
+        const impuestosLocales = Factura?.Complemento?.ImpuestosLocales || Factura?.impuestosLocales || [];
+
         await crearEstructuraCompletaCFDI({
             comprobante: comprobanteActualizado,
             emisor,
@@ -100,7 +102,8 @@ export async function PUT(request) {
             monto: totalCalculado,
             grupoId: emisor.grupo_id,
             claveProdServ: itemsList[0]?.clave_prod_serv || body.clave_prod_serv || '86121500',
-            items: itemsList
+            items: itemsList,
+            impuestosLocales: impuestosLocales
         });
 
         return NextResponse.json({

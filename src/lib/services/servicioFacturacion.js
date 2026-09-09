@@ -206,7 +206,7 @@ export function construirDescripcionConcepto({ producto, carrera, fechaPago, nom
 }
 
 // Helper para poblar estructura completa de Conceptos y XML Base CFDI 4.0
-export async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, descripcionConcepto, monto, grupoId, claveProdServ, items }) {
+export async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, descripcionConcepto, monto, grupoId, claveProdServ, items, impuestosLocales = [] }) {
     // 1. Limpiar conceptos anteriores si existen (para permitir ediciones)
     const prevHeaders = await prisma.conceptos.findMany({
         where: { comprobante_id: comprobante.id },
@@ -240,6 +240,26 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
                 where: { id: { in: prevHeaderIds } }
             });
         } catch(e) {}
+    }
+
+    // 1.5 Limpiar impuestos locales anteriores
+    try {
+        const prevComplemento = await prisma.complementos.findFirst({
+            where: { comprobante_id: comprobante.id }
+        });
+        
+        if (prevComplemento) {
+            const prevImpuestosLocales = await prisma.$queryRaw`SELECT id FROM impuestos_locales WHERE complemento_id = ${prevComplemento.id}`;
+            if (prevImpuestosLocales && prevImpuestosLocales.length > 0) {
+                for (const il of prevImpuestosLocales) {
+                    await prisma.$executeRaw`DELETE FROM traslado_locals WHERE impuestos_locales_id = ${il.id}`;
+                    await prisma.$executeRaw`DELETE FROM retencion_locals WHERE impuestos_locales_id = ${il.id}`;
+                    await prisma.$executeRaw`DELETE FROM impuestos_locales WHERE id = ${il.id}`;
+                }
+            }
+        }
+    } catch(e) {
+        console.error("Error limpiando impuestos locales previos:", e);
     }
 
     const conceptosHeader = await prisma.conceptos.create({
@@ -363,4 +383,52 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
             xml_timbrado: xmlBase
         }
     });
+
+    // 3. Insertar impuestos locales si existen
+    if (impuestosLocales && impuestosLocales.length > 0) {
+        try {
+            let compDB = await prisma.complementos.findFirst({
+                where: { comprobante_id: comprobante.id }
+            });
+            if (!compDB) {
+                compDB = await prisma.complementos.create({
+                    data: { comprobante_id: comprobante.id }
+                });
+            }
+
+            let totalTraslados = 0;
+            let totalRetenciones = 0;
+
+            impuestosLocales.forEach(i => {
+                const importe = Number(i.Importe || 0);
+                if (i.Tipo === 'Traslado') totalTraslados += importe;
+                if (i.Tipo === 'Retencion') totalRetenciones += importe;
+            });
+
+            const ilResult = await prisma.$queryRaw`
+                INSERT INTO impuestos_locales (version, totalde_retenciones, totalde_traslados, complemento_id)
+                VALUES ('1.0', ${totalRetenciones.toFixed(2)}, ${totalTraslados.toFixed(2)}, ${compDB.id})
+                RETURNING id
+            `;
+            
+            if (ilResult && ilResult.length > 0) {
+                const ilId = ilResult[0].id;
+                for (const i of impuestosLocales) {
+                    if (i.Tipo === 'Traslado') {
+                        await prisma.$executeRaw`
+                            INSERT INTO traslado_locals (imp_loc_trasladado, tasade_traslado, importe, impuestos_locales_id)
+                            VALUES (${i.Nombre}, ${Number(i.Tasa).toFixed(2)}, ${Number(i.Importe).toFixed(2)}, ${ilId})
+                        `;
+                    } else if (i.Tipo === 'Retencion') {
+                        await prisma.$executeRaw`
+                            INSERT INTO retencion_locals (imp_loc_retenido, tasade_retencion, importe, impuestos_locales_id)
+                            VALUES (${i.Nombre}, ${Number(i.Tasa).toFixed(2)}, ${Number(i.Importe).toFixed(2)}, ${ilId})
+                        `;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error insertando impuestos locales:", e);
+        }
+    }
 }
