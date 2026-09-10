@@ -140,20 +140,16 @@ export default function RecuperarFactura(FacturaRecuperada) {
             const Subtotal = Number(concepto.ValorUnitario || 0) * Number(concepto.Cantidad || 1);
 
             // Mapea los impuestos para la estructura deseada
-            const Impuestos = [
-                ...(concepto.Impuestos?.Retenciones || []), // Incluye las retenciones si existen
-                ...(concepto.Impuestos?.Traslados || [])   // Incluye los traslados si existen
-            ];
-            const Retenciones = [
-                ...(concepto.Impuestos?.Retenciones || [])
-            ];
-            const Traslados = [
-                ...(concepto.Impuestos?.Traslados || [])
-            ];
+            const RetencionesRaw = concepto.Impuestos?.Retenciones || [];
+            const TrasladosRaw = concepto.Impuestos?.Traslados || [];
+
+            const Retenciones = RetencionesRaw.map(ret => ({ ...ret, _esRetencion: true }));
+            const Traslados = TrasladosRaw.map(tras => ({ ...tras, _esTraslado: true }));
+            const Impuestos = [...Retenciones, ...Traslados];
 
             // Calcula los totales de retenciones y traslados
-            const TotalRetenciones = concepto.Impuestos?.Retenciones?.reduce((acc, ret) => acc + (Number(ret.Importe) || 0), 0) || 0;
-            const TotalTraslados = concepto.Impuestos?.Traslados?.reduce((acc, tras) => acc + (Number(tras.Importe) || 0), 0) || 0;
+            const TotalRetenciones = Retenciones.reduce((acc, ret) => acc + (Number(ret.Importe != null ? ret.Importe : ret.Monto) || 0), 0);
+            const TotalTraslados = Traslados.reduce((acc, tras) => acc + (Number(tras.Importe != null ? tras.Importe : tras.Monto) || 0), 0);
 
             return {
                 ID: concepto.ID,
@@ -165,46 +161,63 @@ export default function RecuperarFactura(FacturaRecuperada) {
                 Descuento: Number(concepto.Descuento || 0),
                 DescuentoString: concepto.DescuentoString || String(Number(concepto.Descuento || 0).toFixed(2)),
                 ObjetoImpuesto: concepto.ObjetoImpuesto || concepto.ObjetoImp || '02',
-                Impuestos: Impuestos.map(impuesto => ({
-                    NombreImpuesto: impuesto.ImpuestoCatalogo?.Impuesto || 'IVA',
-                    Impuesto: impuesto.ImpuestoCatalogoID,
-                    ImpuestoClave: impuesto.ImpuestoClave,
-                    Tasa: impuesto.TasaCatalogoID,
-                    TasaOCuota: impuesto.TasaOCuota,
-                    TasaOCuotaString: impuesto.TasaOCuotaString || String(impuesto.TasaOCuota || 0),
-                    BaseImpuesto: impuesto.Base || Subtotal,
-                    BaseString: impuesto.BaseString || String(Number(impuesto.Base || Subtotal).toFixed(2)),
-                    Monto: impuesto.Importe,
-                    ImporteString: impuesto.ImporteString || String(Number(impuesto.Importe || 0).toFixed(2)),
-                    Tipo: impuesto.TipoFactor || impuesto.Tipo || 'Exento',
-                    TipoImpuesto: impuesto.ImpuestoCatalogo?.Tipo || 'Federal'
-                })),
-                Retenciones: Retenciones.map(retencion => ({
-                    NombreImpuesto: retencion.ImpuestoCatalogo?.Impuesto || 'ISR',
-                    BaseImpuesto: retencion.Base,
-                    BaseString: retencion.BaseString || String(Number(retencion.Base || Subtotal).toFixed(2)),
-                    Impuesto: retencion.ImpuestoCatalogoID,
-                    ImpuestoClave: retencion.ImpuestoClave,
-                    Tasa: retencion.TasaCatalogoID,
-                    TasaOCuota: retencion.TasaOCuota,
-                    TasaOCuotaString: retencion.TasaOCuotaString || String(retencion.TasaOCuota || 0),
-                    Monto: retencion.Importe,
-                    ImporteString: retencion.ImporteString || String(Number(retencion.Importe || 0).toFixed(2)),
-                    Tipo: retencion.TipoFactor || 'Tasa'
-                })),
-                Traslados: Traslados.map(traslado => ({
-                    NombreImpuesto: traslado.ImpuestoCatalogo?.Impuesto || 'IVA',
-                    BaseImpuesto: traslado.Base,
-                    BaseString: traslado.BaseString || String(Number(traslado.Base || Subtotal).toFixed(2)),
-                    Impuesto: traslado.ImpuestoCatalogoID,
-                    ImpuestoClave: traslado.ImpuestoClave,
-                    Tasa: traslado.TasaCatalogoID,
-                    TasaOCuota: traslado.TasaOCuota,
-                    TasaOCuotaString: traslado.TasaOCuotaString || String(traslado.TasaOCuota || 0),
-                    Monto: traslado.Importe,
-                    ImporteString: traslado.ImporteString || String(Number(traslado.Importe || 0).toFixed(2)),
-                    Tipo: traslado.Tipo || traslado.TipoFactor || 'Exento'
-                })),
+                Impuestos: Impuestos.map(impuesto => {
+                    const esRet = impuesto._esRetencion || String(impuesto.Tipo).toLowerCase() === 'retencion' || String(impuesto.ImpuestoClave) === '001';
+                    const defNombre = esRet ? 'ISR' : 'IVA';
+                    const rawMonto = Number(impuesto.Importe != null ? impuesto.Importe : (impuesto.Monto != null ? impuesto.Monto : 0));
+                    const rawBase = Number(impuesto.Base != null ? impuesto.Base : (impuesto.BaseImpuesto != null ? impuesto.BaseImpuesto : Subtotal));
+                    return {
+                        NombreImpuesto: impuesto.NombreImpuesto || impuesto.ImpuestoCatalogo?.Impuesto || defNombre,
+                        Impuesto: impuesto.ImpuestoCatalogoID || impuesto.Impuesto,
+                        ImpuestoClave: impuesto.ImpuestoClave || (esRet ? '001' : '002'),
+                        Tasa: impuesto.TasaCatalogoID || impuesto.Tasa,
+                        TasaOCuota: impuesto.TasaOCuota,
+                        TasaOCuotaString: impuesto.TasaOCuotaString || String(impuesto.TasaOCuota || 0),
+                        BaseImpuesto: rawBase,
+                        BaseString: impuesto.BaseString || String(rawBase.toFixed(2)),
+                        Monto: rawMonto,
+                        ImporteString: impuesto.ImporteString || String(rawMonto.toFixed(2)),
+                        Tipo: esRet ? 'Retencion' : 'Traslado',
+                        TipoFactor: impuesto.TipoFactor || 'Tasa',
+                        TipoImpuesto: impuesto.ImpuestoCatalogo?.Tipo || 'Federal'
+                    };
+                }),
+                Retenciones: Retenciones.map(retencion => {
+                    const rawMonto = Number(retencion.Importe != null ? retencion.Importe : (retencion.Monto != null ? retencion.Monto : 0));
+                    const rawBase = Number(retencion.Base != null ? retencion.Base : (retencion.BaseImpuesto != null ? retencion.BaseImpuesto : Subtotal));
+                    return {
+                        NombreImpuesto: retencion.NombreImpuesto || retencion.ImpuestoCatalogo?.Impuesto || 'ISR',
+                        BaseImpuesto: rawBase,
+                        BaseString: retencion.BaseString || String(rawBase.toFixed(2)),
+                        Impuesto: retencion.ImpuestoCatalogoID || retencion.Impuesto || 4,
+                        ImpuestoClave: retencion.ImpuestoClave || '001',
+                        Tasa: retencion.TasaCatalogoID || retencion.Tasa || 1,
+                        TasaOCuota: retencion.TasaOCuota,
+                        TasaOCuotaString: retencion.TasaOCuotaString || String(retencion.TasaOCuota || 0),
+                        Monto: rawMonto,
+                        ImporteString: retencion.ImporteString || String(rawMonto.toFixed(2)),
+                        Tipo: 'Retencion',
+                        TipoFactor: retencion.TipoFactor || 'Tasa'
+                    };
+                }),
+                Traslados: Traslados.map(traslado => {
+                    const rawMonto = Number(traslado.Importe != null ? traslado.Importe : (traslado.Monto != null ? traslado.Monto : 0));
+                    const rawBase = Number(traslado.Base != null ? traslado.Base : (traslado.BaseImpuesto != null ? traslado.BaseImpuesto : Subtotal));
+                    return {
+                        NombreImpuesto: traslado.NombreImpuesto || traslado.ImpuestoCatalogo?.Impuesto || 'IVA',
+                        BaseImpuesto: rawBase,
+                        BaseString: traslado.BaseString || String(rawBase.toFixed(2)),
+                        Impuesto: traslado.ImpuestoCatalogoID || traslado.Impuesto || 2,
+                        ImpuestoClave: traslado.ImpuestoClave || '002',
+                        Tasa: traslado.TasaCatalogoID || traslado.Tasa || 21,
+                        TasaOCuota: traslado.TasaOCuota,
+                        TasaOCuotaString: traslado.TasaOCuotaString || String(traslado.TasaOCuota || 0),
+                        Monto: rawMonto,
+                        ImporteString: traslado.ImporteString || String(rawMonto.toFixed(2)),
+                        Tipo: 'Traslado',
+                        TipoFactor: traslado.TipoFactor || traslado.Tipo || 'Tasa'
+                    };
+                }),
                 Subtotal: Subtotal,
                 SubTotalString: concepto.ImporteString || String(Subtotal.toFixed(2)),
                 TotalRetenciones: TotalRetenciones,

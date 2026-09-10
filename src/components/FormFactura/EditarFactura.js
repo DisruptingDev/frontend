@@ -81,8 +81,8 @@ export default async function GuardarFactura(factura, onSuccess, onError, { toke
         const payloadSanitizado = sanitizarFactura(factura);
         console.log("GuardarFactura (edición Go) payload:", payloadSanitizado);
 
-        const targetUrl = `/api/facturas/EditarFactura`;
-        console.log("Enviando PUT EditarFactura a:", targetUrl);
+        const targetUrl = `${apiUrl || ''}/api/facturas/EditarFactura`;
+        console.log("Enviando PUT EditarFactura a Go API:", targetUrl);
 
         const response = await fetch(targetUrl, {
             method: 'PUT',
@@ -107,7 +107,26 @@ export default async function GuardarFactura(factura, onSuccess, onError, { toke
         }
 
         const result = await response.json();
-        console.log("Respuesta exitosa de EditarFactura:", result);
+        console.log("Respuesta exitosa de EditarFactura (Go):", result);
+
+        // Sincronizar impuestos locales de forma limpia en la BD sin tocar conceptos ni impuestos federales
+        const idComprobante = factura.ID || payloadSanitizado.ID || result.ID || result.id;
+        const imploc = factura.Complemento?.ImpuestosLocales || factura.ImpuestosLocales || factura.impuestosLocales || [];
+        if (idComprobante) {
+            try {
+                await fetch(`/api/facturas/ImpuestosLocales/${idComprobante}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ impuestosLocales: imploc })
+                });
+            } catch (errLoc) {
+                console.warn("Advertencia al sincronizar impuestos locales tras edición Go:", errLoc);
+            }
+        }
+
         const mensajeExito = result.mensaje || result.Mensaje || result.message || 'Factura actualizada con éxito';
         onSuccess(mensajeExito);
 

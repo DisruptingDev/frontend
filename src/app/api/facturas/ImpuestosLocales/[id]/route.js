@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { sincronizarImpuestosLocales } from '@/lib/services/servicioImpuestosLocales';
+
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'bigint') return obj.toString();
@@ -98,3 +100,25 @@ export async function GET(request, { params }) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PUT(request, { params }) {
+    try {
+        const { id } = params;
+        if (!id) {
+            return NextResponse.json({ error: 'ID no proporcionado' }, { status: 400 });
+        }
+        const body = await request.json();
+        const listaImpuestos = body.impuestosLocales || body.ImpuestosLocales || body;
+        
+        await sincronizarImpuestosLocales(id, listaImpuestos);
+        return NextResponse.json({ success: true, message: 'Impuestos locales actualizados correctamente' });
+    } catch (error) {
+        console.error('Error en PUT /api/facturas/ImpuestosLocales/[id]:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+export async function POST(request, { params }) {
+    return PUT(request, { params });
+}
+

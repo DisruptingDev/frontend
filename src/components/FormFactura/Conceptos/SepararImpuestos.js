@@ -1,21 +1,32 @@
 
 export default function SepararImpuestos(concepto) {
-    let impuestos = concepto.Impuestos;
+    let impuestos = concepto.Impuestos || [];
     let retenciones = [];
     let traslados = [];
     let totalRetenciones = 0;
     let totalTraslados = 0;
-    console.log("Impuestos: ", impuestos);
 
     for (let impuesto of impuestos) {
-        // Asumiendo que "Tipo" es parte del objeto `impuesto`, no es necesario parsear "Impuesto"
-        // Por ejemplo, "impuesto.Tipo" debería estar disponible directamente
-        if (impuesto.Tipo === "Traslado") {
-            traslados.push(impuesto);
-            totalTraslados += parseFloat(impuesto.Monto);
+        const monto = parseFloat(impuesto.Monto || impuesto.Importe || 0) || 0;
+        const tipoNorm = String(impuesto.Tipo || impuesto.tipo || '').toLowerCase();
+        const nombreNorm = String(impuesto.NombreImpuesto || impuesto.Impuesto || '').toUpperCase();
+        const claveNorm = String(impuesto.ImpuestoClave || '').trim();
+
+        // Es retención si explícitamente se marca como tal, o si es ISR (001) o retención de IVA
+        const esRetencion = tipoNorm === 'retencion' || (tipoNorm !== 'traslado' && (nombreNorm.includes('ISR') || claveNorm === '001'));
+
+        if (!esRetencion) {
+            traslados.push({
+                ...impuesto,
+                Tipo: 'Traslado'
+            });
+            totalTraslados += monto;
         } else {
-            retenciones.push(impuesto);
-            totalRetenciones += parseFloat(impuesto.Monto);
+            retenciones.push({
+                ...impuesto,
+                Tipo: 'Retencion'
+            });
+            totalRetenciones += monto;
         }
     }
 

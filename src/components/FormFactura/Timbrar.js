@@ -85,8 +85,37 @@ export default async function GuardarFactura(factura, onSuccess, onError ,{token
             }
 
             const result = await response.json();
-            console.log('Factura creada con éxito:', result);
-            onSuccess('Factura creada con éxito'); // Llama al callback de éxito
+            console.log('Factura creada con éxito en Go API:', result);
+
+            // Sincronizar impuestos locales si están presentes
+            const imploc = factura.Complemento?.ImpuestosLocales || factura.ImpuestosLocales || factura.impuestosLocales || [];
+            const hasLocalTaxes = Array.isArray(imploc) 
+                ? imploc.length > 0 
+                : ((imploc?.TrasladosLocales && imploc.TrasladosLocales.length > 0) || (imploc?.RetencionesLocales && imploc.RetencionesLocales.length > 0));
+
+            if (hasLocalTaxes) {
+                try {
+                    await fetch('/api/facturas/ImpuestosLocales/guardar', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            comprobante_id: result?.ID || result?.id || result?.Comprobante?.ID || result?.comprobante_id,
+                            serie: payloadSanitizado.Serie,
+                            folio: payloadSanitizado.Folio,
+                            emisor_id: payloadSanitizado.EmisorID,
+                            impuestosLocales: imploc
+                        })
+                    });
+                } catch (errLoc) {
+                    console.warn("Advertencia al guardar impuestos locales de nueva factura:", errLoc);
+                }
+            }
+
+            const mensajeExito = result?.mensaje || result?.Mensaje || result?.message || 'Factura creada con éxito';
+            onSuccess(mensajeExito); // Llama al callback de éxito
 
     } catch (error) {
         console.error('Error al enviar la factura:', error);
