@@ -191,6 +191,8 @@ export default function FormatearFactura(
         TotalImpuestosRetenidos: Number(toDec2(TotalRetenciones)),
         TotalImpuestosRetenidosString: toDec2(TotalRetenciones),
       },
+      impuestosLocales: impuestosLocales || [],
+      ImpuestosLocales: impuestosLocales || [],
       ...(Array.isArray(impuestosLocales) && impuestosLocales.length > 0
         ? {
           Complemento: {

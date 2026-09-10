@@ -138,32 +138,54 @@ export default function EditarFactura() {
 
                 // 3. Garantizar la recuperación de Impuestos Locales desde la base de datos
                 const targetComp = facturaConvertida.factura || facturaConvertida;
-                const implocExistente = targetComp?.Complemento?.ImpuestosLocales || targetComp?.Complemento?.impuestos_locales;
-                const hasLocalTaxes = (Array.isArray(targetComp?.impuestosLocales) && targetComp.impuestosLocales.length > 0) || (implocExistente && (
-                    (Array.isArray(implocExistente.TrasladosLocales) && implocExistente.TrasladosLocales.length > 0) ||
-                    (Array.isArray(implocExistente.RetencionesLocales) && implocExistente.RetencionesLocales.length > 0)
-                ));
 
-                if (Array.isArray(targetComp?.impuestosLocales) && targetComp.impuestosLocales.length > 0) {
-                    setImpuestosLocales(targetComp.impuestosLocales);
+                try {
+                    const resLoc = await fetch(`/api/facturas/ImpuestosLocales/${id}`);
+                    if (resLoc.ok) {
+                        const locData = await resLoc.json();
+                        if (Array.isArray(locData?.impuestosLocales) && locData.impuestosLocales.length > 0) {
+                            targetComp.impuestosLocales = locData.impuestosLocales;
+                            targetComp.ImpuestosLocales = locData.impuestosLocales;
+                            setImpuestosLocales(locData.impuestosLocales);
+                        }
+                    }
+                } catch (errLoc) {
+                    console.warn("No se pudieron cargar impuestos locales desde endpoint dedicado:", errLoc);
                 }
 
-                if (!hasLocalTaxes) {
-                    try {
-                        const resLoc = await fetch(`/api/facturas/ImpuestosLocales/${id}`);
-                        if (resLoc.ok) {
-                            const locData = await resLoc.json();
-                            if (locData?.ImpuestosLocales) {
-                                if (!targetComp.Complemento) targetComp.Complemento = {};
-                                targetComp.Complemento.ImpuestosLocales = locData.ImpuestosLocales;
-                                if (Array.isArray(locData.impuestosLocales) && locData.impuestosLocales.length > 0) {
-                                    targetComp.impuestosLocales = locData.impuestosLocales;
-                                    setImpuestosLocales(locData.impuestosLocales);
-                                }
-                            }
+                if (!Array.isArray(targetComp?.impuestosLocales) || targetComp.impuestosLocales.length === 0) {
+                    const implocExistente = targetComp?.Complemento?.ImpuestosLocales || targetComp?.Complemento?.impuestos_locales;
+                    if (implocExistente) {
+                        const tras = implocExistente.TrasladosLocales || implocExistente.traslado_locals || [];
+                        const ret = implocExistente.RetencionesLocales || implocExistente.retencion_locals || [];
+                        const flat = [];
+                        if (Array.isArray(tras)) {
+                            tras.forEach((t, idx) => flat.push({
+                                id: `tras_${idx}_${Date.now()}`,
+                                Tipo: 'Traslado',
+                                Nombre: t.ImpLocTrasladado || t.imp_loc_trasladado || t.Nombre || 'ISH',
+                                Tasa: Number(t.TasadeTraslado ?? t.tasade_traslado ?? t.Tasa ?? 0),
+                                TasaString: String(t.TasadeTraslado ?? t.tasade_traslado ?? t.Tasa ?? 0),
+                                Importe: Math.abs(Number(t.Importe ?? t.importe ?? 0)),
+                                ImporteString: String(Math.abs(Number(t.Importe ?? t.importe ?? 0)).toFixed(2))
+                            }));
                         }
-                    } catch (errLoc) {
-                        console.warn("No se pudieron cargar impuestos locales:", errLoc);
+                        if (Array.isArray(ret)) {
+                            ret.forEach((r, idx) => flat.push({
+                                id: `ret_${idx}_${Date.now()}`,
+                                Tipo: 'Retencion',
+                                Nombre: r.ImpLocRetenido || r.imp_loc_retenido || r.Nombre || '5 AL MILLAR',
+                                Tasa: Number(r.TasadeRetencion ?? r.tasade_retencion ?? r.Tasa ?? 0),
+                                TasaString: String(r.TasadeRetencion ?? r.tasade_retencion ?? r.Tasa ?? 0),
+                                Importe: Math.abs(Number(r.Importe ?? r.importe ?? 0)),
+                                ImporteString: String(Math.abs(Number(r.Importe ?? r.importe ?? 0)).toFixed(2))
+                            }));
+                        }
+                        if (flat.length > 0) {
+                            targetComp.impuestosLocales = flat;
+                            targetComp.ImpuestosLocales = flat;
+                            setImpuestosLocales(flat);
+                        }
                     }
                 }
 

@@ -111,10 +111,15 @@ export default async function GuardarFactura(factura, onSuccess, onError, { toke
 
         // Sincronizar impuestos locales de forma limpia en la BD sin tocar conceptos ni impuestos federales
         const idComprobante = factura.ID || payloadSanitizado.ID || result.ID || result.id;
-        const imploc = factura.Complemento?.ImpuestosLocales || factura.ImpuestosLocales || factura.impuestosLocales || [];
+        const imploc = (Array.isArray(factura.impuestosLocales) && factura.impuestosLocales.length > 0)
+            ? factura.impuestosLocales
+            : (Array.isArray(factura.ImpuestosLocales) && factura.ImpuestosLocales.length > 0)
+                ? factura.ImpuestosLocales
+                : factura.Complemento?.ImpuestosLocales || factura.impuestosLocales || factura.ImpuestosLocales || [];
+
         if (idComprobante) {
             try {
-                await fetch(`/api/facturas/ImpuestosLocales/${idComprobante}`, {
+                const resLoc = await fetch(`/api/facturas/ImpuestosLocales/${idComprobante}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -122,6 +127,12 @@ export default async function GuardarFactura(factura, onSuccess, onError, { toke
                     },
                     body: JSON.stringify({ impuestosLocales: imploc })
                 });
+                if (!resLoc.ok) {
+                    const errText = await resLoc.text();
+                    console.error("Error al sincronizar impuestos locales:", resLoc.status, errText);
+                } else {
+                    console.log("Impuestos locales sincronizados con éxito para comprobante", idComprobante);
+                }
             } catch (errLoc) {
                 console.warn("Advertencia al sincronizar impuestos locales tras edición Go:", errLoc);
             }

@@ -66,7 +66,7 @@ export async function sincronizarImpuestosLocales(comprobanteId, impuestosLocale
 
             const ilResult = await prisma.$queryRaw`
                 INSERT INTO impuestos_locales (version, totalde_retenciones, totalde_traslados, complemento_id)
-                VALUES ('1.0', ${totalRetenciones.toFixed(2)}, ${totalTraslados.toFixed(2)}, ${compDB.id})
+                VALUES ('1.0', ${Number(totalRetenciones.toFixed(2))}::numeric, ${Number(totalTraslados.toFixed(2))}::numeric, ${compDB.id})
                 RETURNING id
             `;
 
@@ -80,12 +80,12 @@ export async function sincronizarImpuestosLocales(comprobanteId, impuestosLocale
                     if (i.Tipo === 'Traslado') {
                         await prisma.$executeRaw`
                             INSERT INTO traslado_locals (imp_loc_trasladado, tasade_traslado, importe, impuestos_locales_id)
-                            VALUES (${nombre}, ${tasa.toFixed(2)}, ${importe.toFixed(2)}, ${ilId})
+                            VALUES (${nombre}, ${Number(tasa.toFixed(2))}::numeric, ${Number(importe.toFixed(2))}::numeric, ${ilId})
                         `;
                     } else if (i.Tipo === 'Retencion') {
                         await prisma.$executeRaw`
                             INSERT INTO retencion_locals (imp_loc_retenido, tasade_retencion, importe, impuestos_locales_id)
-                            VALUES (${nombre}, ${tasa.toFixed(2)}, ${importe.toFixed(2)}, ${ilId})
+                            VALUES (${nombre}, ${Number(tasa.toFixed(2))}::numeric, ${Number(importe.toFixed(2))}::numeric, ${ilId})
                         `;
                     }
                 }
