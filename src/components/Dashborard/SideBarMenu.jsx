@@ -31,7 +31,8 @@ import {
   Email as BuzonIcon,
   School as SchoolIcon,
   AccountBalance as ConciliacionIcon,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  CloudDownload as DescargaMasivaIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { WithPermission } from '@/components/WithPermission';
@@ -119,6 +120,13 @@ const baseMenuItems = [
     title: "Buzón Tributario",
     icon: <BuzonIcon />,
     path: "/BuzonTributario",
+    permission: "ver_emisores",
+    subItems: null
+  },
+  {
+    title: "Descarga Masiva SAT",
+    icon: <DescargaMasivaIcon />,
+    path: "/DescargaMasiva",
     permission: "ver_emisores",
     subItems: null
   }

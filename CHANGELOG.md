@@ -12,6 +12,16 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.09] - 2026-09-17
+### [FEAT]
+* FEAT - Nuevo módulo de Descarga Masiva de Facturas SAT conectado a través de Prodigia PAC (`/DescargaMasiva`).
+* FEAT - Solicitud de descarga masiva de comprobantes XML y metadata por rango de fechas, dirección de facturas (emitidas/recibidas) y filtros avanzados (RFC contraparte, tipo de comprobante, estatus).
+* FEAT - Bandeja de monitoreo y sincronización de peticiones ante el SAT con verificación de estatus y descarga de paquetes comprimidos (.zip).
+* FEAT - Integración para guardar e importar facturas descargadas directamente a la base de datos de Wise para alimentar reportes y cálculos contables (`ModalImportarContabilidad.jsx`).
+* FEAT - Gestión de empresas para descarga SAT con restricción y filtro estricto a las razones sociales registradas en la cuenta del usuario logueado.
+* FEAT - Proxy API en Next.js (`/api/descarga-masiva/[...path]`) para reenvío seguro de peticiones hacia el microservicio oficial en `/api/descargamasiva` eliminando bloqueos de CORS.
+* FEAT - Nuevo acceso directo "Descarga Masiva SAT" con icono alusivo en la barra de navegación lateral (`SideBarMenu.jsx`).
+
 ## [0.01.08] - 2026-09-08
 ### [FEAT]
 * FEAT - Soporte para Impuestos Locales (Traslados y Retenciones) en creación, edición y clonación de facturas (CFDI 4.0 con complemento de Impuestos Locales).
