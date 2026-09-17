@@ -35,6 +35,10 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
     requestUrl = `${baseUrl}${cleanEndpoint}`;
   }
 
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
   let authToken = token;
   if (!authToken && typeof window !== 'undefined') {
     authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
