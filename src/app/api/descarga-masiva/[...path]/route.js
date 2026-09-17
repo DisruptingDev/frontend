@@ -1,28 +1,37 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(request, { params }) {
-  const pathArray = params.path || [];
-  const endpointPath = '/' + pathArray.join('/');
+export async function POST(request, context) {
+  // En Next.js 15, context.params es una Promesa
+  const resolvedParams = context?.params ? await context.params : {};
+  const pathParam = resolvedParams.path;
+  const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
+
+  // Extracción robusta de ruta con fallback a nextUrl.pathname
+  let endpointPath = pathArray.length > 0 ? '/' + pathArray.join('/') : '';
+  if (!endpointPath || endpointPath === '/') {
+    const pathname = request.nextUrl?.pathname || new URL(request.url).pathname;
+    endpointPath = pathname.replace(/^\/api\/descarga-masiva/, '');
+  }
+  if (!endpointPath.startsWith('/')) {
+    endpointPath = '/' + endpointPath;
+  }
 
   // URL base del backend desde variables de entorno
-  const backendBase = (
-    process.env.DESCARGA_MASIVA_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_DESCARGA_MASIVA_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    'https://api.sandbox.wisefacturacion.com'
-  ).replace(/\/+$/, '');
+  const candidateBases = [
+    process.env.DESCARGA_MASIVA_BACKEND_URL,
+    process.env.NEXT_PUBLIC_DESCARGA_MASIVA_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.API_URL ? `https://${process.env.API_URL.replace(/^https?:\/\//, '')}` : null,
+    'https://api.wisefacturacion.com',
+    'https://api.sandbox.wisefacturacion.com',
+  ]
+    .filter(Boolean)
+    .map((b) => b.replace(/\/+$/, ''));
 
-  // Determinar prefijos candidatos según el entorno (producción vs sandbox)
-  // En producción (api.wisefacturacion.com) está en /api/buzontributario
-  // En sandbox (api.sandbox.wisefacturacion.com) está en /api/descargamasiva
-  let prefixes = [];
-  if (process.env.DESCARGA_MASIVA_PREFIX) {
-    prefixes = [process.env.DESCARGA_MASIVA_PREFIX];
-  } else if (backendBase.includes('sandbox')) {
-    prefixes = ['/api/descargamasiva', '/api/buzontributario', ''];
-  } else {
-    prefixes = ['/api/buzontributario', '/api/descargamasiva', ''];
-  }
+  // Prefijos a probar
+  const candidatePrefixes = process.env.DESCARGA_MASIVA_PREFIX
+    ? [process.env.DESCARGA_MASIVA_PREFIX]
+    : ['/api/buzontributario', '/api/descargamasiva', ''];
 
   try {
     let body = {};
@@ -42,26 +51,40 @@ export async function POST(request, { params }) {
 
     let lastResponse = null;
     let successfulUrl = '';
+    let found = false;
 
-    for (const prefix of prefixes) {
-      const cleanPrefix = prefix ? (prefix.startsWith('/') ? prefix : `/${prefix}`) : '';
-      const targetUrl = `${backendBase}${cleanPrefix}${endpointPath}`;
+    // Intentar candidatos hasta encontrar el microservicio que no devuelva 404 ni 502
+    for (const base of candidateBases) {
+      for (const prefix of candidatePrefixes) {
+        const cleanPrefix = prefix ? (prefix.startsWith('/') ? prefix : `/${prefix}`) : '';
+        const targetUrl = `${base}${cleanPrefix}${endpointPath}`;
 
-      console.log(`[Proxy Descarga Masiva] Intentando POST: ${targetUrl}`);
+        try {
+          const response = await fetch(targetUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+          });
 
-      const response = await fetch(targetUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
+          lastResponse = response;
+          successfulUrl = targetUrl;
 
-      lastResponse = response;
-      successfulUrl = targetUrl;
-
-      // Si no es 404, encontramos el microservicio correcto
-      if (response.status !== 404) {
-        break;
+          if (response.status !== 404 && response.status !== 502) {
+            found = true;
+            break;
+          }
+        } catch (fetchErr) {
+          console.warn(`[Proxy Descarga Masiva] Error conectando a ${targetUrl}:`, fetchErr.message);
+        }
       }
+      if (found) break;
+    }
+
+    if (!lastResponse) {
+      return NextResponse.json(
+        { error: 'No se pudo conectar con ningún servidor de backend para Descarga Masiva.' },
+        { status: 502 }
+      );
     }
 
     const contentType = lastResponse.headers.get('content-type') || '';
@@ -79,7 +102,7 @@ export async function POST(request, { params }) {
     console.error(`[Proxy Descarga Masiva] Error general:`, error.message);
     return NextResponse.json(
       {
-        error: `Error de conexión con el backend: ${error.message}`,
+        error: `Error interno de conexión: ${error.message}`,
         detalles: error.message,
       },
       { status: 502 }

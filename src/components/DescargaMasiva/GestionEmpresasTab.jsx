@@ -77,12 +77,10 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
 
   const handleOpenCrear = (empresa = null) => {
     setIsEditing(false);
-    if (empresa) {
-      setSelectedEmpresaRfc(empresa.Rfc);
-      setRazonSocialNombre(empresa.RazonSocial || empresa.NombreComercial || '');
-    } else {
-      setSelectedEmpresaRfc(empresasUsuario[0]?.Rfc || '');
-      setRazonSocialNombre(empresasUsuario[0]?.RazonSocial || empresasUsuario[0]?.NombreComercial || '');
+    const target = empresa || empresasUsuario[0];
+    if (target) {
+      setSelectedEmpresaRfc(target.Rfc);
+      setRazonSocialNombre(target.RazonSocial || target.NombreComercial || target.Nombre || target.Rfc);
     }
     setModalOpen(true);
   };
@@ -101,22 +99,30 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     setSuccessMsg(null);
 
     // Validación de seguridad estricta: verificar que el RFC pertenezca a la cuenta del usuario
-    const perteneceAUsuario = empresasUsuario.some(
+    const empresaEncontrada = empresasUsuario.find(
       (emp) => emp.Rfc?.toUpperCase() === selectedEmpresaRfc?.toUpperCase()
     );
 
-    if (!perteneceAUsuario) {
+    if (!empresaEncontrada) {
       setErrorMsg('No tiene autorización para dar de alta una empresa no asignada a su cuenta de Wise.');
       setSubmitting(false);
       return;
     }
 
+    const nombreFinal =
+      razonSocialNombre ||
+      empresaEncontrada.RazonSocial ||
+      empresaEncontrada.NombreComercial ||
+      empresaEncontrada.Nombre ||
+      selectedEmpresaRfc;
+
     const payload = {
       rfc: selectedEmpresaRfc,
       RFC: selectedEmpresaRfc,
       Rfc: selectedEmpresaRfc,
-      razon_social: razonSocialNombre,
-      RazonSocial: razonSocialNombre,
+      razon_social: nombreFinal,
+      RazonSocial: nombreFinal,
+      nombre: nombreFinal,
     };
 
     try {
@@ -332,36 +338,45 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
             </Alert>
 
             <Box display="flex" flexDirection="column" gap={2}>
-              <TextField
-                select
-                fullWidth
-                label="Empresa (RFC Autorizado)"
-                value={selectedEmpresaRfc}
-                onChange={(e) => {
-                  const rfc = e.target.value;
-                  setSelectedEmpresaRfc(rfc);
-                  const found = empresasUsuario.find((em) => em.Rfc === rfc);
-                  if (found) {
-                    setRazonSocialNombre(found.RazonSocial || found.NombreComercial || '');
-                  }
-                }}
-                disabled={isEditing}
-                required
-              >
-                {empresasUsuario.map((emp) => (
-                  <MenuItem key={emp.ID || emp.Rfc} value={emp.Rfc}>
-                    {emp.Rfc} — {emp.RazonSocial || emp.NombreComercial}
-                  </MenuItem>
-                ))}
-              </TextField>
+              {!isEditing && (
+                <TextField
+                  select
+                  fullWidth
+                  label="Empresa a Vincular"
+                  value={selectedEmpresaRfc}
+                  onChange={(e) => {
+                    const rfc = e.target.value;
+                    setSelectedEmpresaRfc(rfc);
+                    const found = empresasUsuario.find((em) => em.Rfc === rfc);
+                    if (found) {
+                      setRazonSocialNombre(found.RazonSocial || found.NombreComercial || found.Nombre || found.Rfc);
+                    }
+                  }}
+                  helperText="Empresa registrada en su cuenta de Wise"
+                >
+                  {empresasUsuario.map((emp) => (
+                    <MenuItem key={emp.ID || emp.Rfc} value={emp.Rfc}>
+                      <strong>{emp.Rfc}</strong> — {emp.RazonSocial || emp.NombreComercial || emp.Nombre}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
 
-              <TextField
-                label="Razón Social / Nombre Oficial"
-                fullWidth
-                value={razonSocialNombre}
-                onChange={(e) => setRazonSocialNombre(e.target.value)}
-                required
-              />
+              <Box bgcolor="grey.50" p={2} borderRadius={1.5} border="1px solid #e0e0e0">
+                <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                  RFC:
+                </Typography>
+                <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                  {selectedEmpresaRfc || '-'}
+                </Typography>
+
+                <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ mt: 1, display: 'block' }}>
+                  Razón Social Registrada:
+                </Typography>
+                <Typography variant="body2" fontWeight="medium">
+                  {razonSocialNombre || 'Razón Social predeterminada'}
+                </Typography>
+              </Box>
             </Box>
           </DialogContent>
 
