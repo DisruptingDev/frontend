@@ -35,17 +35,14 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
     requestUrl = `${baseUrl}${cleanEndpoint}`;
   }
 
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  const authToken =
-    token ||
-    (typeof window !== 'undefined'
-      ? sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || ''
-      : '');
+  let authToken = token;
+  if (!authToken && typeof window !== 'undefined') {
+    authToken = sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
+  }
 
   if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+    const cleanToken = authToken.replace(/^Bearer\s+/i, '').trim();
+    headers['Authorization'] = `Bearer ${cleanToken}`;
   }
 
   try {
@@ -54,7 +51,6 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
       headers,
       body: JSON.stringify(data),
     });
-
 
     const contentType = response.headers.get('content-type') || '';
     let responseData;
@@ -66,7 +62,8 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
 
     if (!response.ok) {
       const errorMessage =
-        (typeof responseData === 'object' && (responseData.error || responseData.mensaje || responseData.message)) ||
+        (typeof responseData === 'object' &&
+          (responseData.Error || responseData.error || responseData.mensaje || responseData.message)) ||
         (typeof responseData === 'string' && responseData) ||
         `Error HTTP ${response.status}: ${response.statusText}`;
       throw new Error(errorMessage);

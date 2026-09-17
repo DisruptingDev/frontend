@@ -16,7 +16,7 @@ export async function POST(request, context) {
     endpointPath = '/' + endpointPath;
   }
 
-  // URL base del backend desde variables de entorno
+  // Bases candidatas según configuración y entornos
   const candidateBases = [
     process.env.DESCARGA_MASIVA_BACKEND_URL,
     process.env.NEXT_PUBLIC_DESCARGA_MASIVA_URL,
@@ -46,14 +46,16 @@ export async function POST(request, context) {
       'Content-Type': 'application/json',
     };
     if (authHeader) {
-      headers['Authorization'] = authHeader;
+      const cleanToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+      headers['Authorization'] = `Bearer ${cleanToken}`;
     }
 
     let lastResponse = null;
+    let last401Response = null;
     let successfulUrl = '';
     let found = false;
 
-    // Intentar candidatos hasta encontrar el microservicio que no devuelva 404 ni 502
+    // Probar combinaciones de servidor y prefijo
     for (const base of candidateBases) {
       for (const prefix of candidatePrefixes) {
         const cleanPrefix = prefix ? (prefix.startsWith('/') ? prefix : `/${prefix}`) : '';
@@ -69,7 +71,17 @@ export async function POST(request, context) {
           lastResponse = response;
           successfulUrl = targetUrl;
 
-          if (response.status !== 404 && response.status !== 502) {
+          // Si responde éxito (2xx) o error de negocio (400, etc. diferente de 404, 502, 401)
+          if (response.status >= 200 && response.status < 400) {
+            found = true;
+            break;
+          } else if (response.status === 401) {
+            // Guardar el 401 pero seguir probando en caso de que el token pertenezca al otro servidor (prod vs sandbox)
+            if (!last401Response) {
+              last401Response = response;
+            }
+          } else if (response.status !== 404 && response.status !== 502) {
+            // Error de negocio del microservicio (ej. 400 Bad Request por sintaxis de datos)
             found = true;
             break;
           }
@@ -80,29 +92,31 @@ export async function POST(request, context) {
       if (found) break;
     }
 
-    if (!lastResponse) {
+    const finalResponse = found ? lastResponse : (last401Response || lastResponse);
+
+    if (!finalResponse) {
       return NextResponse.json(
-        { error: 'No se pudo conectar con ningún servidor de backend para Descarga Masiva.' },
+        { Error: 'No se pudo conectar con ningún servidor de backend para Descarga Masiva.' },
         { status: 502 }
       );
     }
 
-    const contentType = lastResponse.headers.get('content-type') || '';
+    const contentType = finalResponse.headers.get('content-type') || '';
     let responseData;
     if (contentType.includes('application/json')) {
-      responseData = await lastResponse.json();
+      responseData = await finalResponse.json();
     } else {
-      responseData = await lastResponse.text();
+      responseData = await finalResponse.text();
     }
 
-    console.log(`[Proxy Descarga Masiva] Resultado (${successfulUrl}) status: ${lastResponse.status}`);
+    console.log(`[Proxy Descarga Masiva] Resultado (${successfulUrl}) status: ${finalResponse.status}`);
 
-    return NextResponse.json(responseData, { status: lastResponse.status });
+    return NextResponse.json(responseData, { status: finalResponse.status });
   } catch (error) {
     console.error(`[Proxy Descarga Masiva] Error general:`, error.message);
     return NextResponse.json(
       {
-        error: `Error interno de conexión: ${error.message}`,
+        Error: `Error interno de conexión: ${error.message}`,
         detalles: error.message,
       },
       { status: 502 }
