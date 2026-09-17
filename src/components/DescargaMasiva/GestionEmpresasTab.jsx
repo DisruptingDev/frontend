@@ -113,7 +113,10 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
 
     const payload = {
       rfc: selectedEmpresaRfc,
+      RFC: selectedEmpresaRfc,
+      Rfc: selectedEmpresaRfc,
       razon_social: razonSocialNombre,
+      RazonSocial: razonSocialNombre,
     };
 
     try {

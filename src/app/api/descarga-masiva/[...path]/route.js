@@ -4,17 +4,25 @@ export async function POST(request, { params }) {
   const pathArray = params.path || [];
   const endpointPath = '/' + pathArray.join('/');
 
-  // URL del microservicio backend (puede ser configurada en .env)
-  const backendBase =
+  // URL base del backend desde variables de entorno
+  const backendBase = (
     process.env.DESCARGA_MASIVA_BACKEND_URL ||
     process.env.NEXT_PUBLIC_DESCARGA_MASIVA_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
-    'https://api.sandbox.wisefacturacion.com';
+    'https://api.sandbox.wisefacturacion.com'
+  ).replace(/\/+$/, '');
 
-  const cleanBase = backendBase.replace(/\/+$/, '');
-  // Si backendBase ya contiene /api/descargamasiva o un puerto específico, respetarlo; de lo contrario anexar /api/descargamasiva
-  const prefix = cleanBase.includes('/api/descargamasiva') ? '' : '/api/descargamasiva';
-  const targetUrl = `${cleanBase}${prefix}${endpointPath}`;
+  // Determinar prefijos candidatos según el entorno (producción vs sandbox)
+  // En producción (api.wisefacturacion.com) está en /api/buzontributario
+  // En sandbox (api.sandbox.wisefacturacion.com) está en /api/descargamasiva
+  let prefixes = [];
+  if (process.env.DESCARGA_MASIVA_PREFIX) {
+    prefixes = [process.env.DESCARGA_MASIVA_PREFIX];
+  } else if (backendBase.includes('sandbox')) {
+    prefixes = ['/api/descargamasiva', '/api/buzontributario', ''];
+  } else {
+    prefixes = ['/api/buzontributario', '/api/descargamasiva', ''];
+  }
 
   try {
     let body = {};
@@ -25,7 +33,6 @@ export async function POST(request, { params }) {
     }
 
     const authHeader = request.headers.get('authorization') || '';
-
     const headers = {
       'Content-Type': 'application/json',
     };
@@ -33,33 +40,47 @@ export async function POST(request, { params }) {
       headers['Authorization'] = authHeader;
     }
 
-    console.log(`[Proxy Descarga Masiva] POST ${targetUrl}`);
-    console.log(`[Proxy Descarga Masiva] Body enviado:`, JSON.stringify(body, null, 2));
+    let lastResponse = null;
+    let successfulUrl = '';
 
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    for (const prefix of prefixes) {
+      const cleanPrefix = prefix ? (prefix.startsWith('/') ? prefix : `/${prefix}`) : '';
+      const targetUrl = `${backendBase}${cleanPrefix}${endpointPath}`;
 
-    const contentType = response.headers.get('content-type') || '';
-    let responseData;
-    if (contentType.includes('application/json')) {
-      responseData = await response.json();
-    } else {
-      responseData = await response.text();
+      console.log(`[Proxy Descarga Masiva] Intentando POST: ${targetUrl}`);
+
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      lastResponse = response;
+      successfulUrl = targetUrl;
+
+      // Si no es 404, encontramos el microservicio correcto
+      if (response.status !== 404) {
+        break;
+      }
     }
 
-    console.log(`[Proxy Descarga Masiva] Backend status: ${response.status}`, responseData);
+    const contentType = lastResponse.headers.get('content-type') || '';
+    let responseData;
+    if (contentType.includes('application/json')) {
+      responseData = await lastResponse.json();
+    } else {
+      responseData = await lastResponse.text();
+    }
 
-    return NextResponse.json(responseData, { status: response.status });
+    console.log(`[Proxy Descarga Masiva] Resultado (${successfulUrl}) status: ${lastResponse.status}`);
+
+    return NextResponse.json(responseData, { status: lastResponse.status });
   } catch (error) {
-    console.error(`[Proxy Descarga Masiva] Error conectando con ${targetUrl}:`, error.message);
+    console.error(`[Proxy Descarga Masiva] Error general:`, error.message);
     return NextResponse.json(
       {
-        error: `No se pudo conectar con el backend en ${targetUrl}. ${error.message}`,
+        error: `Error de conexión con el backend: ${error.message}`,
         detalles: error.message,
-        url_intentada: targetUrl,
       },
       { status: 502 }
     );
