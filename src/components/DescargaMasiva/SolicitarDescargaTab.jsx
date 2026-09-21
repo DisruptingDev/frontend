@@ -56,6 +56,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
   const [loading, setLoading] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [mensajeError, setMensajeError] = useState(null);
+  const [detallesError, setDetallesError] = useState(null);
 
   // Atajos de fecha
   const setPeriodo = (tipo) => {
@@ -83,6 +84,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
     e.preventDefault();
     setMensajeExito(null);
     setMensajeError(null);
+    setDetallesError(null);
 
     if (!selectedRfc) {
       setMensajeError('Debe seleccionar un RFC de emisor autorizado.');
@@ -202,6 +204,12 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
     } catch (err) {
       console.error('Error al solicitar descarga al SAT:', err);
       setMensajeError(err.message || 'Error al conectar con el servicio del SAT/Prodigia.');
+      setDetallesError({
+        payload,
+        responseData: err.responseData || null,
+        targetUrl: err.responseData?._proxy_target_url || null,
+        status: err.status || null,
+      });
     } finally {
       setLoading(false);
     }
@@ -233,6 +241,38 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setMensajeError(null)}>
               {mensajeError}
             </Alert>
+          )}
+
+          {detallesError && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold" color="error.main" gutterBottom>
+                Diagnóstico de la Solicitud (Payload enviado y respuesta del servidor):
+              </Typography>
+
+              {detallesError.targetUrl && (
+                <Typography variant="caption" display="block" sx={{ mb: 1, color: 'text.secondary' }}>
+                  <strong>URL destino llamada:</strong> {detallesError.targetUrl} {detallesError.status ? `(Status: ${detallesError.status})` : ''}
+                </Typography>
+              )}
+
+              <Typography variant="caption" fontWeight="bold" display="block" sx={{ mt: 1, color: 'text.primary' }}>
+                Payload JSON enviado:
+              </Typography>
+              <Box component="pre" sx={{ fontSize: '0.75rem', bgcolor: '#0f172a', color: '#38bdf8', p: 1.5, borderRadius: 1, overflowX: 'auto', mt: 0.5 }}>
+                {JSON.stringify(detallesError.payload, null, 2)}
+              </Box>
+
+              {detallesError.responseData && (
+                <>
+                  <Typography variant="caption" fontWeight="bold" display="block" sx={{ mt: 1.5, color: 'text.primary' }}>
+                    Respuesta del servidor:
+                  </Typography>
+                  <Box component="pre" sx={{ fontSize: '0.75rem', bgcolor: '#0f172a', color: '#f87171', p: 1.5, borderRadius: 1, overflowX: 'auto', mt: 0.5 }}>
+                    {JSON.stringify(detallesError.responseData, null, 2)}
+                  </Box>
+                </>
+              )}
+            </Box>
           )}
 
           <form onSubmit={handleSubmit}>

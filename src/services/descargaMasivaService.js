@@ -6,18 +6,9 @@
 
 const getBaseUrl = () => {
   return (
-    process.env.NEXT_PUBLIC_DESCARGA_MASIVA_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     'https://api.sandbox.wisefacturacion.com'
   ).replace(/\/+$/, '');
-};
-
-const getPrefix = () => {
-  const customPrefix = process.env.NEXT_PUBLIC_DESCARGA_MASIVA_PREFIX;
-  if (customPrefix !== undefined) {
-    return customPrefix ? `/${customPrefix.replace(/^\/+|\/+$/g, '')}` : '';
-  }
-  return '/api/descarga-masiva';
 };
 
 /**
@@ -49,6 +40,8 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
     headers['Authorization'] = `Bearer ${cleanToken}`;
   }
 
+  console.log(`[descargaMasivaService] POST ${cleanEndpoint} -> Payload:`, data);
+
   try {
     let response = await fetch(requestUrl, {
       method: 'POST',
@@ -65,12 +58,17 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
     }
 
     if (!response.ok) {
+      console.error(`[descargaMasivaService] ERROR ${response.status} en ${endpoint}:`, responseData);
       const errorMessage =
         (typeof responseData === 'object' &&
           (responseData.Error || responseData.error || responseData.mensaje || responseData.message)) ||
         (typeof responseData === 'string' && responseData) ||
         `Error HTTP ${response.status}: ${response.statusText}`;
-      throw new Error(errorMessage);
+      const err = new Error(errorMessage);
+      err.responseData = responseData;
+      err.status = response.status;
+      err.payload = data;
+      throw err;
     }
 
     return responseData;
