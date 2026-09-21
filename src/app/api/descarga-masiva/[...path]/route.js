@@ -31,7 +31,7 @@ export async function POST(request, context) {
   // Prefijos a probar
   const candidatePrefixes = process.env.DESCARGA_MASIVA_PREFIX
     ? [process.env.DESCARGA_MASIVA_PREFIX]
-    : ['/api/buzontributario', '/api/descargamasiva', ''];
+    : ['/api/descargamasiva', '/api/buzontributario', ''];
 
   try {
     let body = {};

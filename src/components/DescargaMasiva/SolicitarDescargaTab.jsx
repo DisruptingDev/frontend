@@ -101,8 +101,28 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
 
     setLoading(true);
 
-    const fInicio = fechaInicio.includes('T') ? fechaInicio : `${fechaInicio}T00:00:00`;
-    const fFin = fechaFin.includes('T') ? fechaFin : `${fechaFin}T23:59:59`;
+    // En el SAT, la fecha y hora final NO puede ser posterior al momento actual del servidor.
+    // Si la fecha de fin seleccionada es hoy, usamos la hora actual; si es una fecha anterior, 23:59:59.
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    const nowTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const cleanDateStart = (d) => {
+      const base = d.includes('T') ? d.split('T')[0] : d;
+      return `${base}T00:00:00`;
+    };
+
+    const cleanDateEnd = (d) => {
+      const base = d.includes('T') ? d.split('T')[0] : d;
+      if (base === todayStr) {
+        return `${base}T${nowTimeStr}`;
+      }
+      return `${base}T23:59:59`;
+    };
+
+    const fInicio = cleanDateStart(fechaInicio);
+    const fFin = cleanDateEnd(fechaFin);
 
     const payload = {
       rfc: selectedRfc,
@@ -122,29 +142,31 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
     if (tipoFlujo === 'emitidas') {
       payload.rfc_emisor = selectedRfc;
       payload.RfcEmisor = selectedRfc;
-      if (rfcContraparte.trim()) {
+      if (rfcContraparte && rfcContraparte.trim()) {
         const contra = rfcContraparte.trim().toUpperCase();
         payload.rfc_receptor = contra;
         payload.RfcReceptor = contra;
         payload.rfc_receptores = [contra];
+        payload.RfcReceptores = [contra];
       }
     } else {
+      // En facturas recibidas, el solicitante ya es el receptor.
+      // El SAT prohíbe incluir el nodo RfcReceptores para consultas recibidas.
       payload.rfc_receptor = selectedRfc;
       payload.RfcReceptor = selectedRfc;
-      payload.rfc_receptores = [selectedRfc];
-      if (rfcContraparte.trim()) {
+      if (rfcContraparte && rfcContraparte.trim()) {
         const contra = rfcContraparte.trim().toUpperCase();
         payload.rfc_emisor = contra;
         payload.RfcEmisor = contra;
       }
     }
 
-    if (tipoComprobante !== 'todos') {
+    if (tipoComprobante && tipoComprobante !== 'todos') {
       payload.tipo_comprobante = tipoComprobante;
       payload.TipoComprobante = tipoComprobante;
     }
 
-    if (estadoComprobante !== 'todos') {
+    if (estadoComprobante && estadoComprobante !== 'todos') {
       payload.estado_comprobante = estadoComprobante;
       payload.EstadoComprobante = estadoComprobante === 'vigentes' ? '1' : '0';
     }
