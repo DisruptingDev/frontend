@@ -61,8 +61,14 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       let lista = [];
       if (Array.isArray(data)) {
         lista = data;
+      } else if (data && Array.isArray(data.razonesSociales)) {
+        lista = data.razonesSociales;
       } else if (data && Array.isArray(data.razones_sociales)) {
         lista = data.razones_sociales;
+      } else if (data && data.respuesta && Array.isArray(data.respuesta.razonesSociales)) {
+        lista = data.respuesta.razonesSociales;
+      } else if (data && data.respuesta && Array.isArray(data.respuesta)) {
+        lista = data.respuesta;
       } else if (data && Array.isArray(data.data)) {
         lista = data.data;
       }
@@ -126,8 +132,8 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
             certificado: '',
           },
         };
-        await descargaMasivaService.actualizarRazonSocial(payloadActualizar, token);
-        setSuccessMsg(`Razón social ${selectedEmpresaRfc} actualizada ante el SAT exitosamente.`);
+        const res = await descargaMasivaService.actualizarRazonSocial(payloadActualizar, token);
+        setSuccessMsg(res?.mensaje || `Razón social ${selectedEmpresaRfc} actualizada ante el SAT exitosamente.`);
       } else {
         const payloadCrear = {
           razonSocial: nombreFinal,
@@ -140,8 +146,8 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
             passCiec: '',
           },
         };
-        await descargaMasivaService.crearRazonSocial(payloadCrear, token);
-        setSuccessMsg(`Empresa ${selectedEmpresaRfc} dada de alta para descarga masiva SAT exitosamente.`);
+        const res = await descargaMasivaService.crearRazonSocial(payloadCrear, token);
+        setSuccessMsg(res?.mensaje || `Empresa ${selectedEmpresaRfc} dada de alta para descarga masiva SAT exitosamente.`);
       }
       setModalOpen(false);
       await cargarRazonesSocialesSAT();

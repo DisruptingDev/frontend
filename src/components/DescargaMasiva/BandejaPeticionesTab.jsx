@@ -92,13 +92,16 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
         lista = data;
       } else if (data && Array.isArray(data.peticiones)) {
         lista = data.peticiones;
+      } else if (data && Array.isArray(data.respuesta)) {
+        lista = data.respuesta;
+      } else if (data && data.respuesta && Array.isArray(data.respuesta.peticiones)) {
+        lista = data.respuesta.peticiones;
       } else if (data && Array.isArray(data.data)) {
         lista = data.data;
       }
       setPeticiones(lista);
     } catch (err) {
       console.warn('Aviso al cargar peticiones SAT:', err);
-      // No bloquear la interfaz si aún no hay peticiones
       setPeticiones([]);
     } finally {
       setLoading(false);
@@ -114,8 +117,8 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
         rfc: rfcFiltro !== 'todos' ? rfcFiltro : '',
         habilitado: 'true',
       };
-      await descargaMasivaService.sincronizarSAT(payload, token);
-      setSuccessMsg('Sincronización con el SAT completada. Actualizando estados...');
+      const res = await descargaMasivaService.sincronizarSAT(payload, token);
+      setSuccessMsg(res?.mensaje || 'Sincronización con el SAT completada. Actualizando estados...');
       await cargarPeticiones();
     } catch (err) {
       setErrorMsg(err.message || 'Error al ejecutar sincronización con SAT.');
@@ -137,7 +140,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
         res = await descargaMasivaService.verificarMulticomprobantes(payload, token);
       }
 
-      setSuccessMsg(`Estado de solicitud ${id} verificado con el SAT.`);
+      setSuccessMsg(res?.mensaje || `Estado de solicitud ${id} verificado con el SAT.`);
       await cargarPeticiones();
       return res;
     } catch (err) {

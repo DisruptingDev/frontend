@@ -71,6 +71,19 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
       throw err;
     }
 
+    // Validación del formato PadeResponse: Si el PAC devuelve un código de error de negocio (diferente de 200/201/0)
+    if (typeof responseData === 'object' && responseData !== null) {
+      if (responseData.codigo !== undefined && responseData.codigo !== 200 && responseData.codigo !== 201 && responseData.codigo !== 0) {
+        console.warn(`[descargaMasivaService] Error de negocio PAC (Código ${responseData.codigo}):`, responseData.mensaje);
+        const errMsg = responseData.mensaje || `Error PAC/SAT (Código ${responseData.codigo})`;
+        const err = new Error(errMsg);
+        err.responseData = responseData;
+        err.status = response.status;
+        err.payload = data;
+        throw err;
+      }
+    }
+
     return responseData;
   } catch (error) {
     console.error(`Error en apiRequest (${endpoint}):`, error);
@@ -190,13 +203,17 @@ export const descargaMasivaService = {
    */
   async solicitarMetadata(data, token = '') {
     const rfcList = Array.isArray(data.rfc) ? data.rfc : [data.rfc || data.RFC].filter(Boolean);
+    let petStr = (data.tipoPeticion || data.peticion || data.tipo || 'emitidos').toLowerCase();
+    if (petStr === 'emitidas') petStr = 'emitidos';
+    if (petStr === 'recibidas') petStr = 'recibidos';
+
     const payload = {
       rfc: rfcList,
-      tipoPeticion: data.tipoPeticion || data.peticion || data.tipo || 'emitidos',
+      tipoPeticion: petStr,
       fechaInicio: (data.fechaInicio || data.fecha_inicio || '').split('T')[0],
       fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
-      montoMinimo: String(data.montoMinimo || data.montoMin || '0'),
-      montoMaximo: String(data.montoMaximo || data.montoMax || '0'),
+      montoMinimo: String(data.montoMinimo !== undefined ? data.montoMinimo : '0'),
+      montoMaximo: String(data.montoMaximo !== undefined ? data.montoMaximo : '0'),
     };
     return apiRequest('/metadata/solicitar', payload, token);
   },
@@ -224,17 +241,22 @@ export const descargaMasivaService = {
    */
   async solicitarMulticomprobantes(data, token = '') {
     const rfcList = Array.isArray(data.rfc) ? data.rfc : [data.rfc || data.RFC].filter(Boolean);
+    let petStr = (data.peticion || data.tipoPeticion || data.tipo || 'emitidos').toLowerCase();
+    if (petStr === 'emitidas') petStr = 'emitidos';
+    if (petStr === 'recibidas') petStr = 'recibidos';
+
     const payload = {
       fechaInicio: (data.fechaInicio || data.fecha_inicio || '').split('T')[0],
       fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
       rfc: rfcList,
-      peticion: data.peticion || data.tipoPeticion || data.tipo || 'emitidos',
+      peticion: petStr,
     };
-    if (data.uuid) payload.uuid = data.uuid;
-    if (data.tipo) payload.tipo = data.tipo;
-    if (data.serie) payload.serie = data.serie;
-    if (data.montoMin !== undefined) payload.montoMin = String(data.montoMin);
-    if (data.montoMax !== undefined) payload.montoMax = String(data.montoMax);
+
+    if (data.uuid) payload.uuid = String(data.uuid);
+    if (data.tipo) payload.tipo = String(data.tipo);
+    if (data.serie) payload.serie = String(data.serie);
+    if (data.montoMin && data.montoMin !== '0') payload.montoMin = String(data.montoMin);
+    if (data.montoMax && data.montoMax !== '0') payload.montoMax = String(data.montoMax);
 
     return apiRequest('/multicomprobantes/solicitar', payload, token);
   },

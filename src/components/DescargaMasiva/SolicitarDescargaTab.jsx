@@ -126,17 +126,15 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
     const fInicio = fechaInicio.includes('T') ? fechaInicio.split('T')[0] : fechaInicio;
     const fFin = fechaFin.includes('T') ? fechaFin.split('T')[0] : fechaFin;
 
-    // Estructuración compatible con descargamasiva.MetadataSolicitarRequest y descargamasiva.MultiComprobantesRequest
+    // Normalización exigida por el PAC/SAT: 'emitidos' o 'recibidos' (con 'o')
+    const peticionNormalizada = tipoFlujo === 'recibidas' ? 'recibidos' : 'emitidos';
+
     const payload = {
       rfc: [selectedRfc],
-      peticion: tipoFlujo, // 'emitidos' | 'recibidos'
-      tipoPeticion: tipoFlujo, // 'emitidos' | 'recibidos'
+      peticion: peticionNormalizada,
+      tipoPeticion: peticionNormalizada,
       fechaInicio: fInicio,
       fechaFin: fFin,
-      montoMinimo: '0',
-      montoMaximo: '0',
-      montoMin: '0',
-      montoMax: '0',
     };
 
     if (tipoComprobante && tipoComprobante !== 'todos') {
@@ -152,14 +150,17 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       }
 
       const idSolicitud =
+        resultado?.solicitud ||
         resultado?.id_solicitud ||
         resultado?.id ||
         resultado?.folio ||
         resultado?.peticion_id ||
         'SAT-PENDING';
 
+      const msgPAC = resultado?.mensaje || 'Solicitud procesada con éxito por el PAC';
+
       setMensajeExito(
-        `Solicitud enviada correctamente ante el SAT con ID / Folio: ${idSolicitud}. El SAT procesará los comprobantes en breve.`
+        `PAC SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}`
       );
 
       if (onSolicitudCreada) {
@@ -168,7 +169,8 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
           id_solicitud: idSolicitud,
           tipo_descarga: tipoDescarga,
           fecha_solicitud: new Date().toISOString(),
-          estatus: 'En Proceso',
+          estatus: resultado?.mensaje || 'En Proceso',
+          respuestaPAC: resultado,
         });
       }
     } catch (err) {
