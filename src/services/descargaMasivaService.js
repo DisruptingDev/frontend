@@ -111,25 +111,32 @@ export const descargaMasivaService = {
    * @param {string} token
    */
   async crearRazonSocial(data, token = '') {
+    const isSyncActive = String(data.sync) === '1' || data.sync === true;
+
     const payload = {
       razonSocial: data.razonSocial || data.razon_social || '',
-      fechaInicioSync: data.fechaInicioSync || data.fecha_inicio_sync || '2024-01-01',
+      fechaInicioSync: isSyncActive
+        ? (data.fechaInicioSync || data.fecha_inicio_sync || '2024-01-01')
+        : '0000-00-00',
       maxComprobantesMensual: String(data.maxComprobantesMensual || data.max_comprobantes || '5000'),
       celular: data.celular || '',
-      sync: String(data.sync !== undefined ? data.sync : '1'),
+      sync: isSyncActive ? '1' : '0',
     };
-    if (data.fiel) {
+
+    if (data.fiel && (data.fiel.pfx || data.fiel.PFX)) {
       payload.fiel = {
         pfx: data.fiel.pfx || data.fiel.PFX || '',
         passPfx: data.fiel.passPfx || data.fiel.PassPFX || '',
       };
     }
-    if (data.ciec) {
+
+    if (data.ciec && (data.ciec.passCiec || data.ciec.PassCIEC)) {
       payload.ciec = {
-        rfc: data.ciec.rfc || data.ciec.RFC || '',
+        rfc: data.ciec.rfc || data.ciec.RFC || data.rfc || '',
         passCiec: data.ciec.passCiec || data.ciec.PassCIEC || '',
       };
     }
+
     return apiRequest('/razon-social/crear', payload, token);
   },
 
@@ -209,6 +216,7 @@ export const descargaMasivaService = {
 
     const payload = {
       rfc: rfcList,
+      peticion: petStr,
       tipoPeticion: petStr,
       fechaInicio: (data.fechaInicio || data.fecha_inicio || '').split('T')[0],
       fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
@@ -250,10 +258,11 @@ export const descargaMasivaService = {
       fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
       rfc: rfcList,
       peticion: petStr,
+      tipoPeticion: petStr,
     };
 
     if (data.uuid) payload.uuid = String(data.uuid);
-    if (data.tipo) payload.tipo = String(data.tipo);
+    if (data.tipo && data.tipo !== 'todos') payload.tipo = String(data.tipo);
     if (data.serie) payload.serie = String(data.serie);
     if (data.montoMin && data.montoMin !== '0') payload.montoMin = String(data.montoMin);
     if (data.montoMax && data.montoMax !== '0') payload.montoMax = String(data.montoMax);

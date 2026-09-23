@@ -177,7 +177,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       console.error('Error al solicitar descarga al SAT:', err);
       setMensajeError(err.message || 'Error al conectar con el servicio del SAT/Prodigia.');
       setDetallesError({
-        payload,
+        payload: err.payload || payload,
         responseData: err.responseData || null,
         targetUrl: err.responseData?._proxy_target_url || null,
         status: err.status || null,

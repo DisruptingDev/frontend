@@ -25,6 +25,12 @@ import {
   TextField,
   MenuItem,
   Divider,
+  Switch,
+  FormControlLabel,
+  RadioGroup,
+  Radio,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -46,6 +52,16 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
   const [submitting, setSubmitting] = useState(false);
   const [selectedEmpresaRfc, setSelectedEmpresaRfc] = useState('');
   const [razonSocialNombre, setRazonSocialNombre] = useState('');
+
+  // Parámetros de Autenticación y Sincronización SAT
+  const [tipoAuth, setTipoAuth] = useState('ciec'); // 'ciec' | 'fiel'
+  const [passCiec, setPassCiec] = useState('');
+  const [pfxBase64, setPfxBase64] = useState('');
+  const [passPfx, setPassPfx] = useState('');
+  const [enableSync, setEnableSync] = useState(false);
+  const [fechaInicioSync, setFechaInicioSync] = useState('2024-01-01');
+  const [celular, setCelular] = useState('');
+  const [maxComprobantesMensual, setMaxComprobantesMensual] = useState('5000');
 
   useEffect(() => {
     cargarRazonesSocialesSAT();
@@ -88,6 +104,14 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       setSelectedEmpresaRfc(target.Rfc);
       setRazonSocialNombre(target.RazonSocial || target.NombreComercial || target.Nombre || target.Rfc);
     }
+    setTipoAuth('ciec');
+    setPassCiec('');
+    setPfxBase64('');
+    setPassPfx('');
+    setEnableSync(false);
+    setFechaInicioSync('2024-01-01');
+    setCelular('');
+    setMaxComprobantesMensual('5000');
     setModalOpen(true);
   };
 
@@ -95,7 +119,21 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     setIsEditing(true);
     setSelectedEmpresaRfc(empresaSAT.rfc || empresaSAT.Rfc);
     setRazonSocialNombre(empresaSAT.razon_social || empresaSAT.RazonSocial || '');
+    setTipoAuth('fiel');
+    setPfxBase64('');
+    setPassPfx('');
     setModalOpen(true);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target.result.split(',')[1] || event.target.result;
+      setPfxBase64(base64);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGuardar = async (e) => {
@@ -104,7 +142,6 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Validación de seguridad estricta: verificar que el RFC pertenezca a la cuenta del usuario
     const empresaEncontrada = empresasUsuario.find(
       (emp) => emp.Rfc?.toUpperCase() === selectedEmpresaRfc?.toUpperCase()
     );
@@ -127,8 +164,8 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
         const payloadActualizar = {
           rfc: selectedEmpresaRfc,
           razon_social: {
-            pfx: '',
-            passPfx: '',
+            pfx: pfxBase64,
+            passPfx: passPfx,
             certificado: '',
           },
         };
@@ -137,15 +174,24 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       } else {
         const payloadCrear = {
           razonSocial: nombreFinal,
-          fechaInicioSync: '2024-01-01',
-          maxComprobantesMensual: '5000',
-          celular: '',
-          sync: '1',
-          ciec: {
-            rfc: selectedEmpresaRfc,
-            passCiec: '',
-          },
+          fechaInicioSync: enableSync ? (fechaInicioSync || '2024-01-01') : '0000-00-00',
+          maxComprobantesMensual: maxComprobantesMensual || '5000',
+          celular: celular || '',
+          sync: enableSync ? '1' : '0',
         };
+
+        if (tipoAuth === 'fiel') {
+          payloadCrear.fiel = {
+            pfx: pfxBase64,
+            passPfx: passPfx,
+          };
+        } else {
+          payloadCrear.ciec = {
+            rfc: selectedEmpresaRfc,
+            passCiec: passCiec,
+          };
+        }
+
         const res = await descargaMasivaService.crearRazonSocial(payloadCrear, token);
         setSuccessMsg(res?.mensaje || `Empresa ${selectedEmpresaRfc} dada de alta para descarga masiva SAT exitosamente.`);
       }
@@ -393,6 +439,85 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
                   {razonSocialNombre || 'Razón Social predeterminada'}
                 </Typography>
               </Box>
+
+              {/* Selector de Método de Autenticación */}
+              <FormControl component="fieldset">
+                <FormLabel component="legend" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                  Método de Autenticación SAT
+                </FormLabel>
+                <RadioGroup
+                  row
+                  value={tipoAuth}
+                  onChange={(e) => setTipoAuth(e.target.value)}
+                >
+                  <FormControlLabel value="ciec" control={<Radio size="small" />} label="CIEC / Contraseña SAT" />
+                  <FormControlLabel value="fiel" control={<Radio size="small" />} label="FIEL (.PFX / CSD)" />
+                </RadioGroup>
+              </FormControl>
+
+              {tipoAuth === 'ciec' ? (
+                <TextField
+                  label="Contraseña CIEC (SAT)"
+                  type="password"
+                  fullWidth
+                  value={passCiec}
+                  onChange={(e) => setPassCiec(e.target.value)}
+                  placeholder="Ingrese clave CIEC"
+                  helperText="Requerido por el SAT para autenticar la descarga"
+                />
+              ) : (
+                <Box display="flex" flexDirection="column" gap={1.5}>
+                  <Button variant="outlined" component="label" fullWidth>
+                    {pfxBase64 ? '✓ Archivo .PFX Cargado' : 'Seleccionar Archivo .PFX / .P12'}
+                    <input type="file" accept=".pfx,.p12" hidden onChange={handleFileUpload} />
+                  </Button>
+                  <TextField
+                    label="Contraseña del Archivo .PFX"
+                    type="password"
+                    fullWidth
+                    value={passPfx}
+                    onChange={(e) => setPassPfx(e.target.value)}
+                    placeholder="Contraseña PFX"
+                  />
+                </Box>
+              )}
+
+              <Divider sx={{ my: 1 }} />
+
+              {/* Control de Sincronización Automática */}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={enableSync}
+                    onChange={(e) => setEnableSync(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography variant="body2" fontWeight="bold">
+                      Habilitar Sincronización Automática (Sync)
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {enableSync
+                        ? 'El SAT sincronizará facturas automáticamente desde la fecha indicada.'
+                        : "Sin sincronización activa (enviará fechaInicioSync = '0000-00-00')."}
+                    </Typography>
+                  </Box>
+                }
+              />
+
+              {enableSync && (
+                <TextField
+                  label="Fecha Inicio Sincronización"
+                  type="date"
+                  fullWidth
+                  value={fechaInicioSync}
+                  onChange={(e) => setFechaInicioSync(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Fecha a partir de la cual el SAT sincronizará comprobantes"
+                />
+              )}
             </Box>
           </DialogContent>
 
