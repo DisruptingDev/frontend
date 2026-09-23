@@ -110,10 +110,10 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const payload = {};
-      if (rfcFiltro !== 'todos') {
-        payload.rfc = rfcFiltro;
-      }
+      const payload = {
+        rfc: rfcFiltro !== 'todos' ? rfcFiltro : '',
+        habilitado: 'true',
+      };
       await descargaMasivaService.sincronizarSAT(payload, token);
       setSuccessMsg('Sincronización con el SAT completada. Actualizando estados...');
       await cargarPeticiones();
@@ -125,15 +125,16 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
   };
 
   const handleVerificar = async (peticion) => {
-    const id = peticion.id_solicitud || peticion.id || peticion.folio;
+    const id = peticion.solicitud || peticion.id_solicitud || peticion.id || peticion.folio;
     setErrorMsg(null);
     try {
       let res;
       const esMeta = (peticion.tipo || peticion.tipo_descarga || '').toLowerCase().includes('meta');
+      const payload = { solicitud: id };
       if (esMeta) {
-        res = await descargaMasivaService.verificarMetadata({ id_solicitud: id, rfc: peticion.rfc }, token);
+        res = await descargaMasivaService.verificarMetadata(payload, token);
       } else {
-        res = await descargaMasivaService.verificarMulticomprobantes({ id_solicitud: id, rfc: peticion.rfc }, token);
+        res = await descargaMasivaService.verificarMulticomprobantes(payload, token);
       }
 
       setSuccessMsg(`Estado de solicitud ${id} verificado con el SAT.`);
@@ -196,7 +197,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
 
   const handleDescargarComprobanteIndividual = async (uuid, rfc) => {
     try {
-      const res = await descargaMasivaService.obtenerComprobante({ uuid, rfc }, token);
+      const res = await descargaMasivaService.obtenerComprobante({ contratoTimbrado: '', uuid }, token);
       const xmlStr = res?.xml || res?.xml_content || (typeof res === 'string' ? res : JSON.stringify(res));
       const blob = new Blob([xmlStr], { type: 'application/xml' });
       const url = URL.createObjectURL(blob);

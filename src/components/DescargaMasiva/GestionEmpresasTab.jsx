@@ -116,21 +116,31 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       empresaEncontrada.Nombre ||
       selectedEmpresaRfc;
 
-    const payload = {
-      rfc: selectedEmpresaRfc,
-      RFC: selectedEmpresaRfc,
-      Rfc: selectedEmpresaRfc,
-      razon_social: nombreFinal,
-      RazonSocial: nombreFinal,
-      nombre: nombreFinal,
-    };
-
     try {
       if (isEditing) {
-        await descargaMasivaService.actualizarRazonSocial(payload, token);
+        const payloadActualizar = {
+          rfc: selectedEmpresaRfc,
+          razon_social: {
+            pfx: '',
+            passPfx: '',
+            certificado: '',
+          },
+        };
+        await descargaMasivaService.actualizarRazonSocial(payloadActualizar, token);
         setSuccessMsg(`Razón social ${selectedEmpresaRfc} actualizada ante el SAT exitosamente.`);
       } else {
-        await descargaMasivaService.crearRazonSocial(payload, token);
+        const payloadCrear = {
+          razonSocial: nombreFinal,
+          fechaInicioSync: '2024-01-01',
+          maxComprobantesMensual: '5000',
+          celular: '',
+          sync: '1',
+          ciec: {
+            rfc: selectedEmpresaRfc,
+            passCiec: '',
+          },
+        };
+        await descargaMasivaService.crearRazonSocial(payloadCrear, token);
         setSuccessMsg(`Empresa ${selectedEmpresaRfc} dada de alta para descarga masiva SAT exitosamente.`);
       }
       setModalOpen(false);

@@ -85,7 +85,7 @@ export const descargaMasivaService = {
 
   /**
    * Lista las razones sociales registradas para descarga masiva SAT
-   * @param {Object} params - Filtros opcionales (ej. { rfc: '...' })
+   * @param {Object} params - ListarRazonesSocialesRequest
    * @param {string} token
    */
   async listarRazonesSociales(params = {}, token = '') {
@@ -94,29 +94,59 @@ export const descargaMasivaService = {
 
   /**
    * Crea / da de alta una razón social en el servicio SAT
-   * @param {Object} data - { rfc, razon_social, ... }
+   * @param {Object} data - CrearRazonSocialRequest { razonSocial, fechaInicioSync, maxComprobantesMensual, celular, fiel, ciec, sync }
    * @param {string} token
    */
   async crearRazonSocial(data, token = '') {
-    return apiRequest('/razon-social/crear', data, token);
+    const payload = {
+      razonSocial: data.razonSocial || data.razon_social || '',
+      fechaInicioSync: data.fechaInicioSync || data.fecha_inicio_sync || '2024-01-01',
+      maxComprobantesMensual: String(data.maxComprobantesMensual || data.max_comprobantes || '5000'),
+      celular: data.celular || '',
+      sync: String(data.sync !== undefined ? data.sync : '1'),
+    };
+    if (data.fiel) {
+      payload.fiel = {
+        pfx: data.fiel.pfx || data.fiel.PFX || '',
+        passPfx: data.fiel.passPfx || data.fiel.PassPFX || '',
+      };
+    }
+    if (data.ciec) {
+      payload.ciec = {
+        rfc: data.ciec.rfc || data.ciec.RFC || '',
+        passCiec: data.ciec.passCiec || data.ciec.PassCIEC || '',
+      };
+    }
+    return apiRequest('/razon-social/crear', payload, token);
   },
 
   /**
-   * Actualiza una razón social
-   * @param {Object} data
+   * Actualiza una razón social (Certificados / PFX)
+   * @param {Object} data - ActualizarRazonSocialRequest { rfc, razon_social: { pfx, passPfx, certificado } }
    * @param {string} token
    */
   async actualizarRazonSocial(data, token = '') {
-    return apiRequest('/razon-social/actualizar', data, token);
+    const payload = {
+      rfc: data.rfc || data.RFC || '',
+      razon_social: {
+        pfx: data.razon_social?.pfx || data.pfx || '',
+        passPfx: data.razon_social?.passPfx || data.passPfx || '',
+        certificado: data.razon_social?.certificado || data.certificado || '',
+      },
+    };
+    return apiRequest('/razon-social/actualizar', payload, token);
   },
 
   /**
    * Elimina / desvincula una razón social
-   * @param {Object} data - { id o rfc }
+   * @param {Object} data - EliminarRazonSocialRequest { rfc }
    * @param {string} token
    */
   async eliminarRazonSocial(data, token = '') {
-    return apiRequest('/razon-social/eliminar', data, token);
+    const payload = {
+      rfc: data.rfc || data.RFC || '',
+    };
+    return apiRequest('/razon-social/eliminar', payload, token);
   },
 
   // ==========================================
@@ -125,20 +155,28 @@ export const descargaMasivaService = {
 
   /**
    * Dispara sincronización con SAT/Prodigia
-   * @param {Object} data - { rfc, ... }
+   * @param {Object} data - SincronizarSATRequest { rfc, habilitado }
    * @param {string} token
    */
   async sincronizarSAT(data = {}, token = '') {
-    return apiRequest('/sat/sincronizar', data, token);
+    const payload = {
+      rfc: data.rfc || data.RFC || '',
+      habilitado: String(data.habilitado !== undefined ? data.habilitado : 'true'),
+    };
+    return apiRequest('/sat/sincronizar', payload, token);
   },
 
   /**
    * Lista el historial y estado actual de peticiones ante el SAT
-   * @param {Object} params - { rfc, estatus, ... }
+   * @param {Object} params - PeticionesSATRequest { rfc, limit }
    * @param {string} token
    */
   async listarPeticionesSAT(params = {}, token = '') {
-    return apiRequest('/sat/peticiones', params, token);
+    const payload = {
+      rfc: params.rfc || params.RFC || '',
+      limit: String(params.limit || '50'),
+    };
+    return apiRequest('/sat/peticiones', payload, token);
   },
 
   // ==========================================
@@ -147,20 +185,32 @@ export const descargaMasivaService = {
 
   /**
    * Solicita paquete de metadata al SAT
-   * @param {Object} data - { rfc, fecha_inicio, fecha_fin, tipo: 'emitidas'|'recibidas', rfc_contraparte, ... }
+   * @param {Object} data - MetadataSolicitarRequest { rfc: []string, tipoPeticion, fechaInicio, fechaFin, montoMinimo, montoMaximo }
    * @param {string} token
    */
   async solicitarMetadata(data, token = '') {
-    return apiRequest('/metadata/solicitar', data, token);
+    const rfcList = Array.isArray(data.rfc) ? data.rfc : [data.rfc || data.RFC].filter(Boolean);
+    const payload = {
+      rfc: rfcList,
+      tipoPeticion: data.tipoPeticion || data.peticion || data.tipo || 'emitidos',
+      fechaInicio: (data.fechaInicio || data.fecha_inicio || '').split('T')[0],
+      fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
+      montoMinimo: String(data.montoMinimo || data.montoMin || '0'),
+      montoMaximo: String(data.montoMaximo || data.montoMax || '0'),
+    };
+    return apiRequest('/metadata/solicitar', payload, token);
   },
 
   /**
-   * Verifica estatus y obtiene el contenido de metadata
-   * @param {Object} data - { id_solicitud, rfc, ... }
+   * Verifica estatus de solicitud de metadata
+   * @param {Object} data - VerificarSolicitudRequest { solicitud }
    * @param {string} token
    */
   async verificarMetadata(data, token = '') {
-    return apiRequest('/metadata/verificar', data, token);
+    const payload = {
+      solicitud: data.solicitud || data.id_solicitud || data.id || '',
+    };
+    return apiRequest('/metadata/verificar', payload, token);
   },
 
   // ==========================================
@@ -169,20 +219,36 @@ export const descargaMasivaService = {
 
   /**
    * Solicita descarga masiva de comprobantes XML al SAT
-   * @param {Object} data - { rfc, fecha_inicio, fecha_fin, tipo, tipo_comprobante, ... }
+   * @param {Object} data - MultiComprobantesRequest { fechaInicio, fechaFin, rfc: []string, peticion, uuid?, tipo?, serie?, montoMin?, montoMax? }
    * @param {string} token
    */
   async solicitarMulticomprobantes(data, token = '') {
-    return apiRequest('/multicomprobantes/solicitar', data, token);
+    const rfcList = Array.isArray(data.rfc) ? data.rfc : [data.rfc || data.RFC].filter(Boolean);
+    const payload = {
+      fechaInicio: (data.fechaInicio || data.fecha_inicio || '').split('T')[0],
+      fechaFin: (data.fechaFin || data.fecha_fin || '').split('T')[0],
+      rfc: rfcList,
+      peticion: data.peticion || data.tipoPeticion || data.tipo || 'emitidos',
+    };
+    if (data.uuid) payload.uuid = data.uuid;
+    if (data.tipo) payload.tipo = data.tipo;
+    if (data.serie) payload.serie = data.serie;
+    if (data.montoMin !== undefined) payload.montoMin = String(data.montoMin);
+    if (data.montoMax !== undefined) payload.montoMax = String(data.montoMax);
+
+    return apiRequest('/multicomprobantes/solicitar', payload, token);
   },
 
   /**
-   * Verifica estado del paquete masivo de XMLs y obtiene enlaces/paquetes
-   * @param {Object} data - { id_solicitud, rfc, ... }
+   * Verifica estado del paquete masivo de XMLs
+   * @param {Object} data - VerificarSolicitudRequest { solicitud }
    * @param {string} token
    */
   async verificarMulticomprobantes(data, token = '') {
-    return apiRequest('/multicomprobantes/verificar', data, token);
+    const payload = {
+      solicitud: data.solicitud || data.id_solicitud || data.id || '',
+    };
+    return apiRequest('/multicomprobantes/verificar', payload, token);
   },
 
   // ==========================================
@@ -191,11 +257,15 @@ export const descargaMasivaService = {
 
   /**
    * Obtiene un comprobante individual por UUID
-   * @param {Object} data - { uuid, rfc }
+   * @param {Object} data - ComprobanteRequest { contratoTimbrado, uuid }
    * @param {string} token
    */
   async obtenerComprobante(data, token = '') {
-    return apiRequest('/comprobante', data, token);
+    const payload = {
+      contratoTimbrado: data.contratoTimbrado || data.contrato || '',
+      uuid: data.uuid || '',
+    };
+    return apiRequest('/comprobante', payload, token);
   },
 };
 

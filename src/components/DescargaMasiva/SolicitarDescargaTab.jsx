@@ -123,54 +123,24 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       return `${base}T23:59:59`;
     };
 
-    const fInicio = cleanDateStart(fechaInicio);
-    const fFin = cleanDateEnd(fechaFin);
+    const fInicio = fechaInicio.includes('T') ? fechaInicio.split('T')[0] : fechaInicio;
+    const fFin = fechaFin.includes('T') ? fechaFin.split('T')[0] : fechaFin;
 
+    // Estructuración compatible con descargamasiva.MetadataSolicitarRequest y descargamasiva.MultiComprobantesRequest
     const payload = {
-      rfc: selectedRfc,
-      rfc_solicitante: selectedRfc,
-      RfcSolicitante: selectedRfc,
-      tipo: tipoFlujo, // 'emitidas' o 'recibidas'
-      tipo_solicitud: tipoDescarga === 'multicomprobantes' ? 'CFDI' : 'Metadata',
-      TipoSolicitud: tipoDescarga === 'multicomprobantes' ? 'CFDI' : 'Metadata',
-      fecha_inicio: fInicio,
-      fecha_fin: fFin,
-      fecha_inicial: fInicio,
-      fecha_final: fFin,
-      FechaInicial: fInicio,
-      FechaFinal: fFin,
+      rfc: [selectedRfc],
+      peticion: tipoFlujo, // 'emitidos' | 'recibidos'
+      tipoPeticion: tipoFlujo, // 'emitidos' | 'recibidos'
+      fechaInicio: fInicio,
+      fechaFin: fFin,
+      montoMinimo: '0',
+      montoMaximo: '0',
+      montoMin: '0',
+      montoMax: '0',
     };
 
-    if (tipoFlujo === 'emitidas') {
-      payload.rfc_emisor = selectedRfc;
-      payload.RfcEmisor = selectedRfc;
-      if (rfcContraparte && rfcContraparte.trim()) {
-        const contra = rfcContraparte.trim().toUpperCase();
-        payload.rfc_receptor = contra;
-        payload.RfcReceptor = contra;
-        payload.rfc_receptores = [contra];
-        payload.RfcReceptores = [contra];
-      }
-    } else {
-      // En facturas recibidas, el solicitante ya es el receptor.
-      // El SAT prohíbe incluir el nodo RfcReceptores para consultas recibidas.
-      payload.rfc_receptor = selectedRfc;
-      payload.RfcReceptor = selectedRfc;
-      if (rfcContraparte && rfcContraparte.trim()) {
-        const contra = rfcContraparte.trim().toUpperCase();
-        payload.rfc_emisor = contra;
-        payload.RfcEmisor = contra;
-      }
-    }
-
     if (tipoComprobante && tipoComprobante !== 'todos') {
-      payload.tipo_comprobante = tipoComprobante;
-      payload.TipoComprobante = tipoComprobante;
-    }
-
-    if (estadoComprobante && estadoComprobante !== 'todos') {
-      payload.estado_comprobante = estadoComprobante;
-      payload.EstadoComprobante = estadoComprobante === 'vigentes' ? '1' : '0';
+      payload.tipo = tipoComprobante;
     }
 
     try {
