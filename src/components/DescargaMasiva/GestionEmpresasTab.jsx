@@ -39,7 +39,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import descargaMasivaService from '@/services/descargaMasivaService';
-import { generarPfxDesdeFiel, readFileAsArrayBuffer } from '@/utils/fielUtils';
+import { generarPfxDesdeFiel, readFileAsArrayBuffer, readFileAsBase64 } from '@/utils/fielUtils';
 
 const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizadas }) => {
   const [razonesSocialesSAT, setRazonesSocialesSAT] = useState([]);
@@ -187,23 +187,19 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     }
 
     let finalPfxBase64 = '';
+    let cerBase64 = '';
 
     // Validación y generación explícita de PFX cuando tipoAuth === 'fiel' o en modo edición
     if (tipoAuth === 'fiel' || isEditing) {
       if (!passPfx) {
-        setErrorMsg('Favor de ingresar la contraseña de su FIEL / PFX.');
+        setErrorMsg('Favor de ingresar la contraseña de su FIEL / Llave Privada.');
         setSubmitting(false);
         return;
       }
 
       if (modoFiel === 'cerKey') {
-        if (!cerFile) {
-          setErrorMsg('Favor de seleccionar el archivo Certificado (.cer) de su FIEL.');
-          setSubmitting(false);
-          return;
-        }
-        if (!keyFile) {
-          setErrorMsg('Favor de seleccionar el archivo Llave Privada (.key) de su FIEL.');
+        if (!cerFile || !keyFile) {
+          setErrorMsg('Debe seleccionar el certificado (.cer) y la llave (.key).');
           setSubmitting(false);
           return;
         }
@@ -214,6 +210,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
 
           const resultadoFiel = generarPfxDesdeFiel(cerBuffer, keyBuffer, passPfx);
           finalPfxBase64 = resultadoFiel.pfxBase64;
+          cerBase64 = await readFileAsBase64(cerFile);
         } catch (fielErr) {
           setErrorMsg(`Error al procesar archivos FIEL: ${fielErr.message}`);
           setSubmitting(false);
@@ -222,7 +219,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       } else {
         // modo pfx directo
         if (!pfxBase64) {
-          setErrorMsg('Favor de seleccionar y subir su archivo FIEL en formato .PFX / .P12.');
+          setErrorMsg('Favor de seleccionar y subir su archivo en formato .PFX / .P12.');
           setSubmitting(false);
           return;
         }
@@ -250,7 +247,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
           razon_social: {
             pfx: finalPfxBase64,
             passPfx: passPfx,
-            certificado: '',
+            certificado: cerBase64 || '',
           },
         };
         const res = await descargaMasivaService.actualizarRazonSocial(payloadActualizar, token);
@@ -268,6 +265,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
           payloadCrear.fiel = {
             pfx: finalPfxBase64,
             passPfx: passPfx,
+            certificado: cerBase64 || '',
           };
         } else {
           payloadCrear.ciec = {
