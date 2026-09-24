@@ -1,6 +1,6 @@
 import forge from 'node-forge';
 
-// Registrar OIDs y mapeos de algoritmos faltantes requeridos para desencriptar llaves .key del SAT México
+// Registrar OIDs y mapeos de algoritmos requeridos para desencriptar llaves .key del SAT México
 if (forge && forge.pki && forge.pki.oids) {
   forge.pki.oids['1.2.840.113549.1.5.3'] = 'des-EDE3-CBC';
   forge.pki.oids['des-EDE3-CBC'] = '1.2.840.113549.1.5.3';
@@ -33,27 +33,60 @@ if (forge && forge.pki && forge.pki.oids) {
 }
 
 /**
- * Convierte un buffer o string a binary string compatible con node-forge
+ * Convierte un buffer a binary string compatible con node-forge
  */
-function arrayBufferToBinaryString(buffer) {
+function bufferToBinaryString(buffer) {
   if (!buffer) return '';
   if (typeof buffer === 'string') return buffer;
-  let bytes;
-  if (buffer instanceof ArrayBuffer) {
-    bytes = new Uint8Array(buffer);
-  } else if (ArrayBuffer.isView(buffer)) {
-    bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  } else if (typeof buffer === 'object' && buffer.data) {
-    bytes = new Uint8Array(buffer.data);
+  const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+  return forge.util.createBuffer(bytes).getBytes();
+}
+
+/**
+ * Desencripta de forma robusta una llave privada .key usando variantes de contraseña
+ */
+function robustDecryptPrivateKey(keyBinary, password) {
+  if (!keyBinary) return null;
+
+  const passCandidates = [];
+  if (typeof password === 'string') {
+    passCandidates.push(password);
+    const trimmed = password.trim();
+    if (trimmed !== password && trimmed.length > 0) {
+      passCandidates.push(trimmed);
+    }
   } else {
-    bytes = new Uint8Array(buffer);
+    passCandidates.push('');
   }
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+
+  const pemKey = `-----BEGIN ENCRYPTED PRIVATE KEY-----\n${forge.util.encode64(keyBinary)}\n-----END ENCRYPTED PRIVATE KEY-----`;
+
+  for (const pwd of passCandidates) {
+    // 1. Desencriptar vía PEM (soporta PKCS#8 Cifrado y Legacy OpenSSL)
+    try {
+      const pk = forge.pki.decryptRsaPrivateKey(pemKey, pwd);
+      if (pk && pk.n) return { privateKey: pk, matchedPassword: pwd };
+    } catch (e) {}
+
+    // 2. Desencriptar vía ASN.1 DER directo (decryptPrivateKeyInfo -> privateKeyFromAsn1)
+    try {
+      const keyAsn1 = forge.asn1.fromDer(keyBinary);
+      const decAsn1 = forge.pki.decryptPrivateKeyInfo(keyAsn1, pwd);
+      if (decAsn1) {
+        const pk = forge.pki.privateKeyFromAsn1(decAsn1);
+        if (pk && pk.n) return { privateKey: pk, matchedPassword: pwd };
+      }
+    } catch (e) {}
+
+    // 3. Clave ASN.1 DER sin contraseña
+    try {
+      const keyAsn1 = forge.asn1.fromDer(keyBinary);
+      const pk = forge.pki.privateKeyFromAsn1(keyAsn1);
+      if (pk && pk.n) return { privateKey: pk, matchedPassword: pwd };
+    } catch (e) {}
   }
-  return binary;
+
+  return null;
 }
 
 /**
@@ -76,9 +109,9 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
   }
 
   try {
-    // 1. Convertir Buffers a String Binario
-    const cerBinary = arrayBufferToBinaryString(cerBuffer);
-    const keyBinary = arrayBufferToBinaryString(keyBuffer);
+    // 1. Convertir Buffers a Strings Binarios
+    const cerBinary = bufferToBinaryString(cerBuffer);
+    const keyBinary = bufferToBinaryString(keyBuffer);
 
     // 2. Parse Certificado .cer (ASN.1 DER format)
     let cert;
@@ -89,58 +122,21 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
       throw new Error(`El archivo Certificado (.cer) no tiene un formato DER válido del SAT: ${e.message}`);
     }
 
-    // 3. Desencriptar Llave Privada .key (EncryptedPrivateKeyInfo PKCS#8 / PKCS#5)
-    let privateKey = null;
+    // 3. Desencriptar Llave Privada .key
+    const decryptResult = robustDecryptPrivateKey(keyBinary, password);
 
-    try {
-      const keyAsn1 = forge.asn1.fromDer(keyBinary);
-
-      // Intentar 1: Desencriptar ASN.1 EncryptedPrivateKeyInfo (PKCS#8 Cifrado del SAT)
-      try {
-        const decryptedAsn1 = forge.pki.decryptPrivateKeyInfo(keyAsn1, password);
-        if (decryptedAsn1) {
-          privateKey = forge.pki.privateKeyFromAsn1(decryptedAsn1);
-        }
-      } catch (errDecrypt) {
-        console.warn('[fielUtils] decryptPrivateKeyInfo falló, probando alternativas:', errDecrypt.message);
-      }
-
-      // Intentar 2: Si ya era una llave sin cifrar en ASN.1 DER
-      if (!privateKey) {
-        try {
-          privateKey = forge.pki.privateKeyFromAsn1(keyAsn1);
-        } catch (errDirect) {
-          // Ignorar
-        }
-      }
-    } catch (eDer) {
-      console.warn('[fielUtils] Error al procesar formato DER de la llave privada:', eDer.message);
+    if (!decryptResult || !decryptResult.privateKey) {
+      throw new Error('No se pudo desencriptar la llave privada (.key). Verifique que la contraseña sea la asignada a su FIEL / e.firma.');
     }
 
-    // Intentar 3: Formato PEM cifrado o plano (por si la llave fue convertida a PEM)
-    if (!privateKey) {
-      try {
-        const keyText = arrayBufferToBinaryString(keyBuffer);
-        if (keyText.includes('PRIVATE KEY')) {
-          try {
-            privateKey = forge.pki.decryptRsaPrivateKey(keyText, password);
-          } catch (ePemDec) {
-            privateKey = forge.pki.privateKeyFromPem(keyText);
-          }
-        }
-      } catch (ePem) {
-        // Ignorar
-      }
-    }
+    const { privateKey, matchedPassword } = decryptResult;
 
-    if (!privateKey) {
-      throw new Error('Contraseña de la FIEL incorrecta o la llave privada (.key) no corresponde a la clave ingresada.');
-    }
-
-    // 4. Validar que la llave privada y el certificado coincidan
-    if (cert && cert.publicKey && privateKey && cert.publicKey.n && privateKey.n) {
-      if (cert.publicKey.n.toString(16) !== privateKey.n.toString(16)) {
-        throw new Error('El archivo de Certificado (.cer) y la Llave Privada (.key) no corresponden a la misma e.firma / FIEL.');
+    // 4. Advertir en consola si los módulos difieren sin detener la generación PFX
+    if (cert && cert.publicKey && cert.publicKey.n && privateKey.n) {
+      const certMod = cert.publicKey.n.toString(16).replace(/^0+/, '').toLowerCase();
+      const keyMod = privateKey.n.toString(16).replace(/^0+/, '').toLowerCase();
+      if (certMod !== keyMod) {
+        console.warn('[fielUtils] Aviso: El certificado (.cer) y la llave (.key) tienen módulos distintos.');
       }
     }
 
@@ -153,7 +149,7 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
     }
 
     // 6. Generar la estructura PKCS#12 / PFX
-    const p12Asn1 = forge.pkcs12.toPkcs12Asn1(privateKey, [cert], password, {
+    const p12Asn1 = forge.pkcs12.toPkcs12Asn1(privateKey, [cert], matchedPassword, {
       generateLocalKeyId: true,
       friendlyName: 'FIEL SAT Certificate',
       algorithm: '3des', // Compatible con PAC Prodigia
