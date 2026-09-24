@@ -515,7 +515,7 @@ export default function ConciliacionPage() {
                                             <input
                                                 type="file"
                                                 hidden
-                                                accept=".xlsx,.xls,.csv,.txt"
+                                                accept=".xlsx,.xls,.csv,.txt,.pdf"
                                                 onChange={handleFileChange}
                                             />
                                             <CloudUploadIcon sx={{ fontSize: 44, color: '#1976d2', mb: 1 }} />
@@ -523,7 +523,7 @@ export default function ConciliacionPage() {
                                                 {file ? file.name : 'Seleccionar extracto bancario'}
                                             </Typography>
                                             <Typography variant="caption" color="textSecondary">
-                                                Formatos permitidos: .xlsx, .csv, .txt
+                                                Formatos permitidos: .pdf, .xlsx, .csv, .txt
                                             </Typography>
                                         </Box>
 

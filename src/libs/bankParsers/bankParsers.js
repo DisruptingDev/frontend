@@ -1,4 +1,45 @@
 import * as XLSX from 'xlsx';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pdfModule = require('pdf-parse');
+
+const MESES = {
+    'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
+    'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
+};
+
+async function extractTextFromPDFBuffer(pdfBuffer) {
+    let uint8Array;
+    if (Buffer.isBuffer(pdfBuffer)) {
+        uint8Array = new Uint8Array(pdfBuffer.buffer, pdfBuffer.byteOffset, pdfBuffer.byteLength);
+    } else if (pdfBuffer instanceof Uint8Array) {
+        uint8Array = pdfBuffer;
+    } else {
+        uint8Array = new Uint8Array(pdfBuffer);
+    }
+
+    // Compatibilidad con pdf-parse v2+ (PDFParse class)
+    if (pdfModule && pdfModule.PDFParse) {
+        const parser = new pdfModule.PDFParse(uint8Array);
+        const result = await parser.getText();
+        if (typeof parser.destroy === 'function') {
+            try { await parser.destroy(); } catch (e) {}
+        }
+        if (typeof result === 'string') return result;
+        if (result && typeof result.text === 'string') return result.text;
+    }
+
+    // Compatibilidad con pdf-parse v1 (Función directa)
+    const buf = Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer);
+    const fn = typeof pdfModule === 'function' ? pdfModule : (pdfModule ? pdfModule.default : null);
+    if (typeof fn === 'function') {
+        const res = await fn(buf);
+        return res ? (res.text || '') : '';
+    }
+
+    throw new Error('No se pudo inicializar la librería de extracción de PDF.');
+}
 
 function normalizar(str) {
     if (!str) return '';
@@ -56,6 +97,113 @@ function limpiarReferencia(val) {
     let str = String(val).trim();
     str = str.replace(/^[^a-zA-Z0-9]+/, '').replace(/[^a-zA-Z0-9]+$/, '').trim();
     return str;
+}
+
+export async function parsePDFBBVA(pdfBuffer) {
+    let text = '';
+    try {
+        text = await extractTextFromPDFBuffer(pdfBuffer);
+    } catch (err) {
+        console.error('Error al parsear PDF BBVA:', err);
+        throw new Error(`No se pudo leer el archivo PDF: ${err.message || err}`);
+    }
+
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+    const registros = [];
+    let movimientoActual = null;
+
+    // Regex para detectar el inicio de un movimiento: "05/AGO 05/AGO CODIGO DESCRIPCION MONTO"
+    const regexInicioMov = /^(\d{2}\/[A-Z]{3})\s+(\d{2}\/[A-Z]{3})\s+([A-Z0-9]+.*)/i;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Ignorar encabezados/pies repetidos de página
+        if (
+            line.startsWith('BBVA MEXICO') ||
+            line.startsWith('Estado de Cuenta') ||
+            line.includes('MAESTRA PYME BBVA') ||
+            line.includes('PAGINA ') ||
+            line.startsWith('No. Cuenta') ||
+            line.startsWith('No. Cliente') ||
+            line.startsWith('FECHA SALDO') ||
+            line.startsWith('OPER LIQ COD.')
+        ) {
+            continue;
+        }
+
+        const match = line.match(regexInicioMov);
+
+        if (match) {
+            if (movimientoActual) {
+                registros.push(movimientoActual);
+                movimientoActual = null;
+            }
+
+            const fechaStr = match[1].toUpperCase();
+            const resto = match[3];
+
+            // Extraer montos de la línea
+            const montosEncontrados = resto.match(/[\d,]+\.\d{2}/g);
+
+            if (montosEncontrados && montosEncontrados.length > 0) {
+                const montoLimpio = parseFloat(montosEncontrados[0].replace(/,/g, ''));
+
+                const parts = fechaStr.split('/');
+                const dia = parseInt(parts[0], 10);
+                const mesStr = parts[1];
+                const mesNum = MESES[mesStr] !== undefined ? MESES[mesStr] : new Date().getMonth();
+                const anio = new Date().getFullYear();
+                const fechaDate = new Date(anio, mesNum, dia);
+
+                movimientoActual = {
+                    linea: i + 1,
+                    fecha: fechaDate,
+                    monto: montoLimpio,
+                    referencia: '',
+                    referencia_raw: '',
+                    descripcionLines: [resto]
+                };
+            }
+        } else if (movimientoActual) {
+            const refMatch = line.match(/Ref\.?\s*(\d{6,18})/i);
+            if (refMatch && !movimientoActual.referencia) {
+                movimientoActual.referencia = refMatch[1];
+                movimientoActual.referencia_raw = refMatch[0];
+            }
+
+            movimientoActual.descripcionLines.push(line);
+        }
+    }
+
+    if (movimientoActual) {
+        registros.push(movimientoActual);
+    }
+
+    return registros.map((reg) => {
+        const descCompleta = reg.descripcionLines.join(' ');
+
+        let refFinal = reg.referencia;
+        if (!refFinal) {
+            const numMatch = descCompleta.match(/\b\d{8,18}\b/);
+            if (numMatch) {
+                refFinal = numMatch[0];
+            }
+        }
+
+        const refLimpia = limpiarReferencia(refFinal);
+
+        return {
+            linea: reg.linea,
+            fecha: reg.fecha,
+            referencia: refLimpia,
+            referencia_raw: reg.referencia_raw || refFinal || '',
+            monto: reg.monto,
+            descripcion: descCompleta,
+            texto_completo: descCompleta
+        };
+    });
 }
 
 export function parseGenerico(fileBuffer) {
@@ -117,7 +265,7 @@ export function parseGenerico(fileBuffer) {
 }
 
 export function parseBBVA(content) {
-    if (content instanceof ArrayBuffer) {
+    if (content instanceof ArrayBuffer || Buffer.isBuffer(content)) {
         return parseGenerico(content);
     }
 
@@ -145,7 +293,10 @@ export function parseBBVA(content) {
     return registros;
 }
 
-export function parseArchivoBancario(fileBuffer, banco = 'GENERICO') {
+export async function parseArchivoBancario(fileBuffer, banco = 'GENERICO', isPdf = false) {
+    if (isPdf) {
+        return await parsePDFBBVA(fileBuffer);
+    }
     switch (banco.toUpperCase()) {
         case 'BBVA':
             return parseBBVA(fileBuffer);
@@ -159,4 +310,5 @@ export function parseArchivoBancario(fileBuffer, banco = 'GENERICO') {
 }
 
 export const parseExcelFile = parseGenerico;
+
 

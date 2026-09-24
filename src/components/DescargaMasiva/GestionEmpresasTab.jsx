@@ -39,6 +39,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import descargaMasivaService from '@/services/descargaMasivaService';
+import { generarPfxDesdeFiel, readFileAsArrayBuffer } from '@/utils/fielUtils';
 
 const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizadas }) => {
   const [razonesSocialesSAT, setRazonesSocialesSAT] = useState([]);
@@ -54,9 +55,18 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
   const [razonSocialNombre, setRazonSocialNombre] = useState('');
 
   // Parámetros de Autenticación y Sincronización SAT
-  const [tipoAuth, setTipoAuth] = useState('ciec'); // 'ciec' | 'fiel'
+  const [tipoAuth, setTipoAuth] = useState('fiel'); // Default to 'fiel' as required by SAT descarga masiva
   const [passCiec, setPassCiec] = useState('');
+
+  // Modo de FIEL: 'cerKey' (por archivos .cer y .key) o 'pfx' (.pfx directo)
+  const [modoFiel, setModoFiel] = useState('cerKey');
+  const [cerFile, setCerFile] = useState(null);
+  const [cerFileName, setCerFileName] = useState('');
+  const [keyFile, setKeyFile] = useState(null);
+  const [keyFileName, setKeyFileName] = useState('');
+
   const [pfxBase64, setPfxBase64] = useState('');
+  const [pfxFileName, setPfxFileName] = useState('');
   const [passPfx, setPassPfx] = useState('');
   const [enableSync, setEnableSync] = useState(false);
   const [fechaInicioSync, setFechaInicioSync] = useState('2024-01-01');
@@ -97,6 +107,17 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     }
   };
 
+  const resetFormFiel = () => {
+    setModoFiel('cerKey');
+    setCerFile(null);
+    setCerFileName('');
+    setKeyFile(null);
+    setKeyFileName('');
+    setPfxBase64('');
+    setPfxFileName('');
+    setPassPfx('');
+  };
+
   const handleOpenCrear = (empresa = null) => {
     setIsEditing(false);
     const target = empresa || empresasUsuario[0];
@@ -104,10 +125,9 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       setSelectedEmpresaRfc(target.Rfc);
       setRazonSocialNombre(target.RazonSocial || target.NombreComercial || target.Nombre || target.Rfc);
     }
-    setTipoAuth('ciec');
+    setTipoAuth('fiel');
     setPassCiec('');
-    setPfxBase64('');
-    setPassPfx('');
+    resetFormFiel();
     setEnableSync(false);
     setFechaInicioSync('2024-01-01');
     setCelular('');
@@ -120,14 +140,28 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     setSelectedEmpresaRfc(empresaSAT.rfc || empresaSAT.Rfc);
     setRazonSocialNombre(empresaSAT.razon_social || empresaSAT.RazonSocial || '');
     setTipoAuth('fiel');
-    setPfxBase64('');
-    setPassPfx('');
+    resetFormFiel();
     setModalOpen(true);
   };
 
-  const handleFileUpload = (e) => {
+  const handleCerFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCerFile(file);
+    setCerFileName(file.name);
+  };
+
+  const handleKeyFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setKeyFile(file);
+    setKeyFileName(file.name);
+  };
+
+  const handlePfxFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPfxFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target.result.split(',')[1] || event.target.result;
@@ -152,6 +186,56 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       return;
     }
 
+    let finalPfxBase64 = '';
+
+    // Validación y generación explícita de PFX cuando tipoAuth === 'fiel' o en modo edición
+    if (tipoAuth === 'fiel' || isEditing) {
+      if (!passPfx) {
+        setErrorMsg('Favor de ingresar la contraseña de su FIEL / PFX.');
+        setSubmitting(false);
+        return;
+      }
+
+      if (modoFiel === 'cerKey') {
+        if (!cerFile) {
+          setErrorMsg('Favor de seleccionar el archivo Certificado (.cer) de su FIEL.');
+          setSubmitting(false);
+          return;
+        }
+        if (!keyFile) {
+          setErrorMsg('Favor de seleccionar el archivo Llave Privada (.key) de su FIEL.');
+          setSubmitting(false);
+          return;
+        }
+
+        try {
+          const cerBuffer = await readFileAsArrayBuffer(cerFile);
+          const keyBuffer = await readFileAsArrayBuffer(keyFile);
+
+          const resultadoFiel = generarPfxDesdeFiel(cerBuffer, keyBuffer, passPfx);
+          finalPfxBase64 = resultadoFiel.pfxBase64;
+        } catch (fielErr) {
+          setErrorMsg(`Error al procesar archivos FIEL: ${fielErr.message}`);
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        // modo pfx directo
+        if (!pfxBase64) {
+          setErrorMsg('Favor de seleccionar y subir su archivo FIEL en formato .PFX / .P12.');
+          setSubmitting(false);
+          return;
+        }
+        finalPfxBase64 = pfxBase64;
+      }
+    } else if (tipoAuth === 'ciec') {
+      if (!passCiec) {
+        setErrorMsg('Favor de ingresar la contraseña CIEC del SAT.');
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const nombreFinal =
       razonSocialNombre ||
       empresaEncontrada.RazonSocial ||
@@ -164,7 +248,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
         const payloadActualizar = {
           rfc: selectedEmpresaRfc,
           razon_social: {
-            pfx: pfxBase64,
+            pfx: finalPfxBase64,
             passPfx: passPfx,
             certificado: '',
           },
@@ -182,7 +266,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
 
         if (tipoAuth === 'fiel') {
           payloadCrear.fiel = {
-            pfx: pfxBase64,
+            pfx: finalPfxBase64,
             passPfx: passPfx,
           };
         } else {
@@ -199,7 +283,13 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       await cargarRazonesSocialesSAT();
       if (onEmpresasActualizadas) onEmpresasActualizadas();
     } catch (err) {
-      setErrorMsg(err.message || 'Error al registrar empresa ante el servicio de descarga SAT.');
+      const rawMsg = err.message || '';
+      if (rawMsg.toLowerCase().includes('fiel') || rawMsg.includes('parámetro fiel')) {
+        setErrorMsg('El servicio SAT/PAC reporta: "No se encontró el parámetro fiel". Por favor, suba los archivos de su FIEL (.cer y .key) y su contraseña.');
+        setTipoAuth('fiel');
+      } else {
+        setErrorMsg(rawMsg || 'Error al registrar empresa ante el servicio de descarga SAT.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -463,22 +553,104 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
                   value={passCiec}
                   onChange={(e) => setPassCiec(e.target.value)}
                   placeholder="Ingrese clave CIEC"
-                  helperText="Requerido por el SAT para autenticar la descarga"
+                  helperText="Nota: Si el SAT rechaza CIEC, seleccione FIEL (.PFX / CSD) y suba su archivo FIEL."
                 />
               ) : (
-                <Box display="flex" flexDirection="column" gap={1.5}>
-                  <Button variant="outlined" component="label" fullWidth>
-                    {pfxBase64 ? '✓ Archivo .PFX Cargado' : 'Seleccionar Archivo .PFX / .P12'}
-                    <input type="file" accept=".pfx,.p12" hidden onChange={handleFileUpload} />
-                  </Button>
-                  <TextField
-                    label="Contraseña del Archivo .PFX"
-                    type="password"
-                    fullWidth
-                    value={passPfx}
-                    onChange={(e) => setPassPfx(e.target.value)}
-                    placeholder="Contraseña PFX"
-                  />
+                <Box display="flex" flexDirection="column" gap={2}>
+                  {/* Selector de origen de archivos FIEL */}
+                  <FormControl component="fieldset">
+                    <FormLabel component="legend" sx={{ fontSize: '0.8rem', color: 'text.secondary', fontWeight: 600 }}>
+                      Origen de la FIEL (e.firma SAT)
+                    </FormLabel>
+                    <RadioGroup
+                      row
+                      value={modoFiel}
+                      onChange={(e) => setModoFiel(e.target.value)}
+                    >
+                      <FormControlLabel
+                        value="cerKey"
+                        control={<Radio size="small" />}
+                        label={
+                          <Typography variant="body2" fontWeight="bold">
+                            Archivos FIEL SAT (.cer y .key) — Recomendado
+                          </Typography>
+                        }
+                      />
+                      <FormControlLabel
+                        value="pfx"
+                        control={<Radio size="small" />}
+                        label={<Typography variant="body2">Archivo .PFX listo</Typography>}
+                      />
+                    </RadioGroup>
+                  </FormControl>
+
+                  {modoFiel === 'cerKey' ? (
+                    <Box display="flex" flexDirection="column" gap={1.5} bgcolor="grey.50" p={2} borderRadius={1.5} border="1px border.main">
+                      <Typography variant="caption" color="text.secondary">
+                        Seleccione los archivos oficiales entregados por el SAT para su e.firma (FIEL):
+                      </Typography>
+
+                      <Box display="flex" gap={1.5} flexWrap="wrap">
+                        {/* Botón Certificado .cer */}
+                        <Button
+                          variant={cerFile ? 'contained' : 'outlined'}
+                          color={cerFile ? 'success' : 'primary'}
+                          component="label"
+                          sx={{ flex: 1, minWidth: 200, textTransform: 'none' }}
+                        >
+                          {cerFile ? `✓ CER: ${cerFileName}` : '1. Subir Certificado (.cer)'}
+                          <input type="file" accept=".cer" hidden onChange={handleCerFileUpload} />
+                        </Button>
+
+                        {/* Botón Llave Privada .key */}
+                        <Button
+                          variant={keyFile ? 'contained' : 'outlined'}
+                          color={keyFile ? 'success' : 'primary'}
+                          component="label"
+                          sx={{ flex: 1, minWidth: 200, textTransform: 'none' }}
+                        >
+                          {keyFile ? `✓ KEY: ${keyFileName}` : '2. Subir Llave Privada (.key)'}
+                          <input type="file" accept=".key" hidden onChange={handleKeyFileUpload} />
+                        </Button>
+                      </Box>
+
+                      <TextField
+                        label="Contraseña de la FIEL (Llave Privada)"
+                        type="password"
+                        fullWidth
+                        value={passPfx}
+                        onChange={(e) => setPassPfx(e.target.value)}
+                        placeholder="Ingrese la clave de su FIEL / e.firma"
+                        helperText="La plataforma generará automáticamente la firma PFX requerida por el PAC."
+                        sx={{ mt: 1 }}
+                      />
+                    </Box>
+                  ) : (
+                    <Box display="flex" flexDirection="column" gap={1.5} bgcolor="grey.50" p={2} borderRadius={1.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        Suba su archivo en formato <strong>.PFX</strong> o <strong>.P12</strong> previamente generado:
+                      </Typography>
+                      <Button
+                        variant={pfxBase64 ? 'contained' : 'outlined'}
+                        color={pfxBase64 ? 'success' : 'primary'}
+                        component="label"
+                        fullWidth
+                      >
+                        {pfxBase64
+                          ? `✓ Archivo Cargado: ${pfxFileName}`
+                          : 'Subir Archivo .PFX / .P12'}
+                        <input type="file" accept=".pfx,.p12" hidden onChange={handlePfxFileUpload} />
+                      </Button>
+                      <TextField
+                        label="Contraseña del Archivo PFX"
+                        type="password"
+                        fullWidth
+                        value={passPfx}
+                        onChange={(e) => setPassPfx(e.target.value)}
+                        placeholder="Ingrese la clave asignada al PFX"
+                      />
+                    </Box>
+                  )}
                 </Box>
               )}
 

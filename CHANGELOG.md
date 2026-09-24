@@ -18,7 +18,7 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * FEAT - Solicitud de descarga masiva de comprobantes XML y metadata por rango de fechas, dirección de facturas (emitidas/recibidas) y filtros avanzados (RFC contraparte, tipo de comprobante, estatus).
 * FEAT - Bandeja de monitoreo y sincronización de peticiones ante el SAT con verificación de estatus y descarga de paquetes comprimidos (.zip).
 * FEAT - Integración para guardar e importar facturas descargadas directamente a la base de datos de Wise para alimentar reportes y cálculos contables (`ModalImportarContabilidad.jsx`).
-* FEAT - Gestión de empresas para descarga SAT con restricción y filtro estricto a las razones sociales registradas en la cuenta del usuario logueado.
+* FEAT - Gestión de empresas para descarga SAT con soporte para subir archivos oficiales FIEL del SAT (`.cer` y `.key`) + contraseña, convirtiéndolos automáticamente a formato PFX (PKCS#12) para el enrolamiento ante el PAC.
 * FEAT - Proxy API en Next.js (`/api/descarga-masiva/[...path]`) para reenvío seguro de peticiones hacia el microservicio oficial en `/api/descargamasiva` eliminando bloqueos de CORS.
 * FEAT - Nuevo acceso directo "Descarga Masiva SAT" con icono alusivo en la barra de navegación lateral (`SideBarMenu.jsx`).
 

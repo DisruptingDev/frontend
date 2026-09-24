@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { parseExcelFile, parseGenerico } from '@/libs/bankParsers/bankParsers';
+import { parseExcelFile, parseGenerico, parsePDFBBVA, parseArchivoBancario } from '@/libs/bankParsers/bankParsers';
 import { construirDescripcionConcepto } from '@/lib/services/servicioFacturacion';
 
 function serializeBigIntsAndDecimals(obj) {
@@ -978,7 +978,10 @@ export async function POST(request) {
         const buffer = Buffer.from(bytes);
 
         let movimientos = [];
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const fileNameLower = (file.name || '').toLowerCase();
+        if (fileNameLower.endsWith('.pdf') || file.type === 'application/pdf') {
+            movimientos = await parsePDFBBVA(buffer);
+        } else if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
             movimientos = parseExcelFile(buffer, banco);
         } else {
             const textContent = buffer.toString('utf-8');
