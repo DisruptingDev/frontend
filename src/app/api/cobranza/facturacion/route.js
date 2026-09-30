@@ -790,6 +790,12 @@ export async function POST(request) {
                                             itemUpdate.descuento_string = '0';
                                             itemUpdate.descuento = 0;
                                         }
+                                        // CORRECCIÓN OBLIGATORIA: Las colegiaturas universitarias deben
+                                        // ser ObjetoImp=02 (Sí objeto de impuesto) con TipoFactor=Exento.
+                                        // El valor '04' es incorrecto para servicios educativos.
+                                        if (cItem.objeto_imp !== '02') {
+                                            itemUpdate.objeto_imp = '02';
+                                        }
                                         if (Object.keys(itemUpdate).length > 0) {
                                             await prisma.concepto.update({
                                                 where: { id: cItem.id },
@@ -797,18 +803,35 @@ export async function POST(request) {
                                             });
                                         }
                                         
-                                        // Sanitizar Traslados Exentos
+                                        // Sanitizar Traslados: forzar Exento y limpiar importes
                                         if (cItem.impuestos && Array.isArray(cItem.impuestos)) {
                                             for (const imp of cItem.impuestos) {
                                                 if (imp.traslados && Array.isArray(imp.traslados)) {
                                                     for (const tras of imp.traslados) {
+                                                        const trasUpdate = {};
+                                                        // Si el tipo_factor ya es Exento, asegurar importe=0
                                                         if (tras.tipo_factor === 'Exento') {
                                                             if (tras.importe_string !== '0' || Number(tras.importe) !== 0) {
-                                                                await prisma.traslados.update({
-                                                                    where: { id: tras.id },
-                                                                    data: { importe_string: '0', importe: 0 }
-                                                                });
+                                                                trasUpdate.importe_string = '0';
+                                                                trasUpdate.importe = 0;
+                                                                trasUpdate.tasa_o_cuota = null;
+                                                                trasUpdate.tasa_o_cuota_string = null;
                                                             }
+                                                        }
+                                                        // Si el concepto fue corregido a ob02 y el traslado NO es Exento,
+                                                        // corregirlo también (caso: colegiatura guardada con IVA por error)
+                                                        if (tras.tipo_factor !== 'Exento' && tras.impuesto_clave === '002') {
+                                                            trasUpdate.tipo_factor = 'Exento';
+                                                            trasUpdate.importe = 0;
+                                                            trasUpdate.importe_string = '0';
+                                                            trasUpdate.tasa_o_cuota = null;
+                                                            trasUpdate.tasa_o_cuota_string = null;
+                                                        }
+                                                        if (Object.keys(trasUpdate).length > 0) {
+                                                            await prisma.traslados.update({
+                                                                where: { id: tras.id },
+                                                                data: trasUpdate
+                                                            });
                                                         }
                                                     }
                                                 }

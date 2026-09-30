@@ -43,22 +43,37 @@ function bufferToBinaryString(buffer) {
 }
 
 /**
- * Desencripta de forma robusta una llave privada .key usando variantes de contraseña
+ * Obtiene candidatos de contraseñas (raw, trim, UTF-8 encoded)
+ */
+function getPasswordCandidates(password) {
+  const candidates = [];
+  if (typeof password !== 'string') return [''];
+
+  const add = (p) => {
+    if (p !== undefined && p !== null && !candidates.includes(p)) {
+      candidates.push(p);
+    }
+  };
+
+  add(password);
+  add(password.trim());
+
+  try {
+    const utf8 = forge.util.encodeUtf8(password);
+    add(utf8);
+    add(utf8.trim());
+  } catch (e) {}
+
+  return candidates;
+}
+
+/**
+ * Desencripta de forma robusta una llave privada .key probando variantes de contraseña y formatos
  */
 function robustDecryptPrivateKey(keyBinary, password) {
   if (!keyBinary) return null;
 
-  const passCandidates = [];
-  if (typeof password === 'string') {
-    passCandidates.push(password);
-    const trimmed = password.trim();
-    if (trimmed !== password && trimmed.length > 0) {
-      passCandidates.push(trimmed);
-    }
-  } else {
-    passCandidates.push('');
-  }
-
+  const passCandidates = getPasswordCandidates(password);
   const pemKey = `-----BEGIN ENCRYPTED PRIVATE KEY-----\n${forge.util.encode64(keyBinary)}\n-----END ENCRYPTED PRIVATE KEY-----`;
 
   for (const pwd of passCandidates) {
@@ -78,7 +93,7 @@ function robustDecryptPrivateKey(keyBinary, password) {
       }
     } catch (e) {}
 
-    // 3. Clave ASN.1 DER sin contraseña
+    // 3. Clave ASN.1 DER sin contraseña (por si no requiere clave)
     try {
       const keyAsn1 = forge.asn1.fromDer(keyBinary);
       const pk = forge.pki.privateKeyFromAsn1(keyAsn1);
@@ -98,11 +113,11 @@ function robustDecryptPrivateKey(keyBinary, password) {
  * @returns {{ pfxBase64: string, serialNumber?: string }} Objeto con el PFX en Base64 y metadatos opcionales
  */
 export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
-  if (!cerBuffer) {
-    throw new Error('Es necesario seleccionar el archivo Certificado (.cer).');
+  if (!cerBuffer || (cerBuffer.byteLength !== undefined && cerBuffer.byteLength < 50)) {
+    throw new Error('El archivo Certificado (.cer) seleccionado está vacío o no es válido.');
   }
-  if (!keyBuffer) {
-    throw new Error('Es necesario seleccionar el archivo Llave Privada (.key).');
+  if (!keyBuffer || (keyBuffer.byteLength !== undefined && keyBuffer.byteLength < 50)) {
+    throw new Error('El archivo Llave Privada (.key) seleccionado está vacío o no es válido.');
   }
   if (!password) {
     throw new Error('Es necesario ingresar la contraseña de la FIEL.');
@@ -126,12 +141,17 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
     const decryptResult = robustDecryptPrivateKey(keyBinary, password);
 
     if (!decryptResult || !decryptResult.privateKey) {
-      throw new Error('No se pudo desencriptar la llave privada (.key). Verifique que la contraseña sea la asignada a su FIEL / e.firma.');
+      throw new Error(
+        'No se pudo desencriptar la llave privada (.key). Por favor verifique:\n' +
+        '1) Que la contraseña sea la clave asignada a su FIEL (e.firma) y no del CSD (Sello Digital).\n' +
+        '2) Que la contraseña no contenga espacios accidentales.\n' +
+        '3) Que el archivo .key seleccionado corresponda al de su FIEL.'
+      );
     }
 
     const { privateKey, matchedPassword } = decryptResult;
 
-    // 4. Advertir en consola si los módulos difieren sin detener la generación PFX
+    // 4. Advertir si los módulos difieren sin detener la generación
     if (cert && cert.publicKey && cert.publicKey.n && privateKey.n) {
       const certMod = cert.publicKey.n.toString(16).replace(/^0+/, '').toLowerCase();
       const keyMod = privateKey.n.toString(16).replace(/^0+/, '').toLowerCase();
@@ -152,7 +172,7 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
     const p12Asn1 = forge.pkcs12.toPkcs12Asn1(privateKey, [cert], matchedPassword, {
       generateLocalKeyId: true,
       friendlyName: 'FIEL SAT Certificate',
-      algorithm: '3des', // Compatible con PAC Prodigia
+      algorithm: '3des',
     });
 
     // 7. Exportar ASN.1 a DER y luego a Base64

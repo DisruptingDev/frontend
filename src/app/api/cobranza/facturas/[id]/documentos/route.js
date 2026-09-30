@@ -163,7 +163,7 @@ export async function GET(request, { params }) {
         const importeEnLetra = numeroALetras(totalNum);
 
         const mesAnio = new Date(comprobante.fecha).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }).toUpperCase();
-        
+
         const estudiantes = (comprobante.PagoAlumno || []).map(p => ({
             nombre: p.alumno ? `${p.alumno.nombre} ${p.alumno.apellido_paterno} ${p.alumno.apellido_materno || ''}`.trim().toUpperCase() : 'ESTUDIANTE GENERAL',
             matricula: p.alumno?.matricula || 'N/A',
@@ -333,8 +333,8 @@ export async function GET(request, { params }) {
                 <div><strong>Fecha Certificación SAT:</strong> ${fechaCertificacion}</div>
                 <div style="margin-top: 6px;">
                     ${esTimbrado ?
-                        '<span class="badge-success">✔ TIMBRADO SAT OFICIAL</span>' :
-                        '<span class="badge-warning">⚠️ PRE-FACTURA PENDIENTE DE TIMBRADO (BORRADOR)</span>'}
+                '<span class="badge-success">✔ TIMBRADO SAT OFICIAL</span>' :
+                '<span class="badge-warning">⚠️ PRE-FACTURA PENDIENTE DE TIMBRADO (BORRADOR)</span>'}
                 </div>
             </td>
         </tr>
