@@ -442,6 +442,15 @@ export async function POST(request) {
                             uso_cfdi: 'S01'
                         }
                     });
+                } else if (receptorGenerico.regimen_fiscal_receptor !== '616' || receptorGenerico.domicilio_fiscal_receptor !== (emisor.lugar_expedicion || '01000')) {
+                    receptorGenerico = await prisma.receptors.update({
+                        where: { id: receptorGenerico.id },
+                        data: {
+                            regimen_fiscal_receptor: '616',
+                            domicilio_fiscal_receptor: emisor.lugar_expedicion || receptorGenerico.domicilio_fiscal_receptor || '01000',
+                            uso_cfdi: 'S01'
+                        }
+                    });
                 }
                 receptor = receptorGenerico;
             }
@@ -591,6 +600,7 @@ export async function POST(request) {
             if (receptor_rfc) {
                 const rfcClean = receptor_rfc.toUpperCase().trim();
                 const nombreClean = (receptor_nombre || receptorObj?.nombre || 'RECEPTOR CLIENTE').toUpperCase().trim();
+                const esGenerico = rfcClean === 'XAXX010101000' || rfcClean === 'XEXX010101000';
 
                 let receptorExiste = await prisma.receptors.findFirst({
                     where: { rfc: rfcClean }
@@ -602,18 +612,25 @@ export async function POST(request) {
                             rfc: rfcClean,
                             nombre: nombreClean,
                             domicilio_fiscal_receptor: emisor.lugar_expedicion || '01000',
-                            regimen_fiscal_receptor: '616',
+                            regimen_fiscal_receptor: esGenerico ? '616' : '601',
                             uso_cfdi: uso_cfdi || 'S01'
                         }
                     });
-                } else if (receptor_nombre || uso_cfdi) {
-                    receptorExiste = await prisma.receptors.update({
-                        where: { id: receptorExiste.id },
-                        data: {
-                            nombre: nombreClean,
-                            uso_cfdi: uso_cfdi || receptorExiste.uso_cfdi
-                        }
-                    });
+                } else {
+                    const updateData = {};
+                    if (receptor_nombre) updateData.nombre = nombreClean;
+                    if (uso_cfdi) updateData.uso_cfdi = uso_cfdi;
+                    if (esGenerico) {
+                        updateData.regimen_fiscal_receptor = '616';
+                        if (emisor.lugar_expedicion) updateData.domicilio_fiscal_receptor = emisor.lugar_expedicion;
+                        updateData.uso_cfdi = uso_cfdi || 'S01';
+                    }
+                    if (Object.keys(updateData).length > 0) {
+                        receptorExiste = await prisma.receptors.update({
+                            where: { id: receptorExiste.id },
+                            data: updateData
+                        });
+                    }
                 }
 
                 receptorId = receptorExiste.id;

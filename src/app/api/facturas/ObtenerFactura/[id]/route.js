@@ -41,6 +41,7 @@ export async function GET(request, { params }) {
                 xml_timbrado: true,
                 emisors: true,
                 receptors: true,
+                informacion_globals: true,
                 Conceptos: {
                     include: {
                         Concepto: {
@@ -263,9 +264,9 @@ export async function GET(request, { params }) {
                 ImpuestosLocales: flatImpuestosLocales,
                 xml_timbrado: comprobante.xml_timbrado || undefined,
                 InformacionGlobal: {
-                    Anio: '',
-                    Meses: '',
-                    Periodicidad: ''
+                    Anio: comprobante.informacion_globals?.[0]?.anio || '',
+                    Meses: comprobante.informacion_globals?.[0]?.meses || '',
+                    Periodicidad: comprobante.informacion_globals?.[0]?.periodicidad || ''
                 }
             },
             uso_cfdi: { Descripcion: comprobante.uso_cfdi || 'Sin efectos fiscales' },

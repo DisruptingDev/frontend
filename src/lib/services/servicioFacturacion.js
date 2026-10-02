@@ -134,6 +134,14 @@ export async function obtenerOGenerarReceptorGenerico() {
                 uso_cfdi: 'S01'
             }
         });
+    } else if (receptorGenerico.regimen_fiscal_receptor !== '616' || receptorGenerico.uso_cfdi !== 'S01') {
+        receptorGenerico = await prisma.receptors.update({
+            where: { id: receptorGenerico.id },
+            data: {
+                regimen_fiscal_receptor: '616',
+                uso_cfdi: 'S01'
+            }
+        });
     }
     return receptorGenerico;
 }
@@ -363,7 +371,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
     const xmlBase = `<?xml version="1.0" encoding="UTF-8"?>
 <cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="${comprobante.serie}" Folio="${comprobante.folio}" Fecha="${comprobante.fecha}" FormaPago="03" MetodoPago="PUE" Moneda="MXN" SubTotal="${subtotalAcumulado.toFixed(2)}" Total="${totalAcumulado.toFixed(2)}" TipoDeComprobante="I" LugarExpedicion="${emisor.lugar_expedicion || '01000'}">
   <cfdi:Emisor Rfc="${emisor.rfc}" Nombre="${emisor.nombre}" RegimenFiscal="${emisor.regimen_fiscal || '601'}"/>
-  <cfdi:Receptor Rfc="${receptor.rfc}" Nombre="${receptor.nombre}" DomicilioFiscalReceptor="${receptor.domicilio_fiscal_receptor || emisor.lugar_expedicion || '01000'}" RegimenFiscalReceptor="${receptor.regimen_fiscal_receptor || '616'}" UsoCFDI="${receptor.uso_cfdi || 'S01'}"/>
+  <cfdi:Receptor Rfc="${receptor.rfc}" Nombre="${receptor.nombre}" DomicilioFiscalReceptor="${(receptor.rfc === 'XAXX010101000' || receptor.rfc === 'XEXX010101000') ? (emisor.lugar_expedicion || '01000') : (receptor.domicilio_fiscal_receptor || emisor.lugar_expedicion || '01000')}" RegimenFiscalReceptor="${(receptor.rfc === 'XAXX010101000' || receptor.rfc === 'XEXX010101000') ? '616' : (receptor.regimen_fiscal_receptor || '616')}" UsoCFDI="${(receptor.rfc === 'XAXX010101000' || receptor.rfc === 'XEXX010101000') ? 'S01' : (receptor.uso_cfdi || 'S01')}"/>
   <cfdi:Conceptos>
     ${xmlConceptosList.trim()}
   </cfdi:Conceptos>
