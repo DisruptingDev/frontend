@@ -297,29 +297,38 @@ export default function DataTable({ token, filtro }) {
     setOpenModal(true);
 
     try {
+      const cleanIds = (Array.isArray(ids) ? ids : [ids])
+        .map(id => (typeof id === 'object' && id !== null) ? (id.ID ?? id.id ?? id.Id ?? id.facturaID) : id)
+        .filter(id => id !== undefined && id !== null && id !== '' && !isNaN(Number(id)))
+        .map(id => Number(id));
+
+      if (cleanIds.length === 0) {
+        throw new Error('No se seleccionaron facturas válidas para enviar.');
+      }
+
       const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(ids),
+        body: JSON.stringify(cleanIds),
       });
+
       if (response.ok) {
-        console.log('Data received from API (correo):', response);
-        setLoading(false);
         setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
         setOpenModalSuccess(true);
       } else {
-        throw new Error('Error al enviar las facturas por correo');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || data.error || 'Error al enviar las facturas por correo');
       }
     } catch (error) {
       console.error('Error:', error);
-      setConfirmationMessage('Error al enviar las facturas por correo.');
+      setConfirmationMessage(error.message || 'Error al enviar las facturas por correo.');
       setOpenModalError(true);
     } finally {
       setLoading(false);
-      setOpenModal(false); // Ocultar el modal de espera
+      setOpenModal(false);
     }
   };
 

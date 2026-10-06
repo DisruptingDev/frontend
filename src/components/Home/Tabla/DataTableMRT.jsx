@@ -172,21 +172,33 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
     const handleEnviarCorreo = useCallback(async (ids) => {
         setIsLoading(true);
         try {
+            const cleanIds = (Array.isArray(ids) ? ids : [ids])
+                .map(id => (typeof id === 'object' && id !== null) ? (id.ID ?? id.id ?? id.Id ?? id.facturaID) : id)
+                .filter(id => id !== undefined && id !== null && id !== '' && !isNaN(Number(id)))
+                .map(id => Number(id));
+
+            if (cleanIds.length === 0) {
+                throw new Error('No se seleccionaron facturas válidas para enviar.');
+            }
+
             const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ids),
+                body: JSON.stringify(cleanIds),
             });
 
             if (response.ok) {
                 setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
                 setOpenModalSuccess(true);
+            } else {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || 'Error al enviar las facturas por correo');
             }
         } catch (error) {
-            setConfirmationMessage('Error al enviar las facturas por correo.');
+            setConfirmationMessage(error.message || 'Error al enviar las facturas por correo.');
             setOpenModalError(true);
         } finally {
             setIsLoading(false);
