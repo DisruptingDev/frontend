@@ -54,7 +54,8 @@ import {
     InputLabel,
     Select,
     Autocomplete,
-    Checkbox
+    Checkbox,
+    FormControlLabel
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -194,7 +195,8 @@ export default function CargosPage() {
         items: [
             { concepto: 'MATERIA', monto: '' }
         ],
-        fecha_vencimiento: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        fecha_vencimiento: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        enviar_correo: false
     });
 
     const handleAddItem = () => {
@@ -221,7 +223,8 @@ export default function CargosPage() {
 
     const [autoForm, setAutoForm] = useState({
         mes_periodo: new Date().toISOString().slice(0, 7),
-        carrera_filtro: 'TODAS'
+        carrera_filtro: 'TODAS',
+        enviar_correo: false
     });
 
     const fetchData = async () => {
@@ -384,7 +387,8 @@ export default function CargosPage() {
                 body: JSON.stringify({
                     generacion_automatica: true,
                     mes_periodo: autoForm.mes_periodo,
-                    carrera_filtro: autoForm.carrera_filtro
+                    carrera_filtro: autoForm.carrera_filtro,
+                    enviar_correo: !!autoForm.enviar_correo
                 })
             });
 
@@ -424,7 +428,8 @@ export default function CargosPage() {
         try {
             const payload = {
                 items: itemsValidos,
-                fecha_vencimiento: form.fecha_vencimiento
+                fecha_vencimiento: form.fecha_vencimiento,
+                enviar_correo: !!form.enviar_correo
             };
 
             if (form.alumnos_ids !== 'TODOS') {
@@ -846,6 +851,27 @@ export default function CargosPage() {
                                 <MenuItem value="Contaduría Pública">Contaduría Pública</MenuItem>
                             </TextField>
                         </Grid>
+                        <Grid item xs={12}>
+                            <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={!!autoForm.enviar_correo}
+                                            onChange={(e) => setAutoForm(prev => ({ ...prev, enviar_correo: e.target.checked }))}
+                                            color="primary"
+                                        />
+                                    }
+                                    label={
+                                        <Typography variant="body2" fontWeight="bold">
+                                            ✉️ Enviar la ficha por correo electrónico al alumno automáticamente al generar
+                                        </Typography>
+                                    }
+                                />
+                                <Typography variant="caption" color="textSecondary" display="block" sx={{ ml: 4 }}>
+                                    Si permanece desmarcada, las fichas se emitirán solo en la plataforma y podrás seleccionar cuáles enviar por correo posteriormente.
+                                </Typography>
+                            </Paper>
+                        </Grid>
                     </Grid>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
@@ -1056,6 +1082,27 @@ export default function CargosPage() {
                                 value={form.fecha_vencimiento}
                                 onChange={handleChange}
                             />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={!!form.enviar_correo}
+                                            onChange={(e) => setForm(prev => ({ ...prev, enviar_correo: e.target.checked }))}
+                                            color="primary"
+                                        />
+                                    }
+                                    label={
+                                        <Typography variant="body2" fontWeight="bold">
+                                            ✉️ Enviar la ficha por correo electrónico al alumno automáticamente al generar
+                                        </Typography>
+                                    }
+                                />
+                                <Typography variant="caption" color="textSecondary" display="block" sx={{ ml: 4 }}>
+                                    Si permanece desmarcada, la ficha solo se creará en el sistema y podrás enviarla posteriormente.
+                                </Typography>
+                            </Paper>
                         </Grid>
                     </Grid>
                 </DialogContent>
