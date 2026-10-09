@@ -458,8 +458,47 @@ export default function MóduloCobranzaUnificadoPage() {
 
     const [saving, setSaving] = useState(false);
     const [enviandoCorreoFicha, setEnviandoCorreoFicha] = useState(false);
+    const [selectedCargosFichas, setSelectedCargosFichas] = useState([]);
+    const [enviandoMasivoFichas, setEnviandoMasivoFichas] = useState(false);
     const [mensajeExito, setMensajeExito] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
+
+    const handleSelectAllFichas = (event) => {
+        if (event.target.checked) {
+            setSelectedCargosFichas(cargos.map(c => c.id));
+        } else {
+            setSelectedCargosFichas([]);
+        }
+    };
+
+    const handleSelectCargoFicha = (id) => {
+        setSelectedCargosFichas(prev =>
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+        );
+    };
+
+    const handleReenviarSeleccionadosFichas = async () => {
+        if (selectedCargosFichas.length === 0) {
+            alert('Por favor, selecciona al menos una ficha marcando las casillas en la tabla.');
+            return;
+        }
+        if (!window.confirm(`¿Estás seguro de que deseas enviar por correo las ${selectedCargosFichas.length} fichas seleccionadas? Esto puede tomar un momento.`)) return;
+
+        setEnviandoMasivoFichas(true);
+        let enviados = 0;
+        let errores = 0;
+        for (const cargoId of selectedCargosFichas) {
+            try {
+                const res = await fetch(`/api/cobranza/cargos/${cargoId}`, { method: 'POST' });
+                if (res.ok) enviados++; else errores++;
+            } catch {
+                errores++;
+            }
+        }
+        setEnviandoMasivoFichas(false);
+        setSelectedCargosFichas([]);
+        setMensajeExito(`Envío masivo finalizado. Correos enviados: ${enviados}${errores > 0 ? `, Errores: ${errores}` : ''}`);
+    };
 
     const handleReenviarCorreoFicha = async (cargoId) => {
         if (!cargoId) return;
@@ -1182,10 +1221,19 @@ export default function MóduloCobranzaUnificadoPage() {
                                     {/* PESTAÑA 2: FICHAS & CARGOS */}
                                     {currentTab === 2 && (
                                         <Box>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
                                                 <Typography variant="h6" fontWeight="bold">Fichas de Cobro y Referencias Módulo 10</Typography>
-                                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                                                     <Button variant="contained" color="success" startIcon={<AutoFixIcon />} onClick={() => setOpenAutoModal(true)}>⚡ Generación 1-Click</Button>
+                                                    <Button
+                                                        variant="outlined"
+                                                        color="info"
+                                                        startIcon={<EmailIcon />}
+                                                        disabled={enviandoMasivoFichas || selectedCargosFichas.length === 0}
+                                                        onClick={handleReenviarSeleccionadosFichas}
+                                                    >
+                                                        {enviandoMasivoFichas ? 'Enviando...' : `Enviar Seleccionados por Correo (${selectedCargosFichas.length})`}
+                                                    </Button>
                                                     <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setOpenCargoManualModal(true)}>Emitir Ficha</Button>
                                                 </Box>
                                             </Box>
@@ -1193,6 +1241,13 @@ export default function MóduloCobranzaUnificadoPage() {
                                                 <Table size="small">
                                                     <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                                                         <TableRow>
+                                                            <TableCell padding="checkbox">
+                                                                <Checkbox
+                                                                    checked={cargos.length > 0 && selectedCargosFichas.length === cargos.length}
+                                                                    indeterminate={selectedCargosFichas.length > 0 && selectedCargosFichas.length < cargos.length}
+                                                                    onChange={handleSelectAllFichas}
+                                                                />
+                                                            </TableCell>
                                                             <TableCell>Código de Ficha</TableCell>
                                                             <TableCell>Referencia Múl. 10</TableCell>
                                                             <TableCell>Alumno / Carrera</TableCell>
@@ -1207,11 +1262,17 @@ export default function MóduloCobranzaUnificadoPage() {
                                                     <TableBody>
                                                         {cargos.length === 0 ? (
                                                             <TableRow>
-                                                                <TableCell colSpan={9} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
+                                                                <TableCell colSpan={10} align="center" sx={{ py: 4, color: '#888' }}>No hay fichas pendientes registradas en este grupo.</TableCell>
                                                             </TableRow>
                                                         ) : (
                                                             cargos.slice(pageFichas * rowsFichas, pageFichas * rowsFichas + rowsFichas).map((cargo) => (
-                                                                <TableRow key={cargo.id} hover>
+                                                                <TableRow key={cargo.id} hover selected={selectedCargosFichas.includes(cargo.id)}>
+                                                                    <TableCell padding="checkbox">
+                                                                        <Checkbox
+                                                                            checked={selectedCargosFichas.includes(cargo.id)}
+                                                                            onChange={() => handleSelectCargoFicha(cargo.id)}
+                                                                        />
+                                                                    </TableCell>
                                                                     <TableCell>
                                                                         <Chip label={cargo.codigo_ficha || `F-${cargo.id}`} color="secondary" size="small" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }} />
                                                                     </TableCell>
