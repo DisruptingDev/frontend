@@ -195,8 +195,7 @@ export default function CargosPage() {
         items: [
             { concepto: 'MATERIA', monto: '' }
         ],
-        fecha_vencimiento: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        enviar_correo: false
+        fecha_vencimiento: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
 
     const handleAddItem = () => {
@@ -223,8 +222,7 @@ export default function CargosPage() {
 
     const [autoForm, setAutoForm] = useState({
         mes_periodo: new Date().toISOString().slice(0, 7),
-        carrera_filtro: 'TODAS',
-        enviar_correo: false
+        carrera_filtro: 'TODAS'
     });
 
     const fetchData = async () => {
@@ -387,8 +385,7 @@ export default function CargosPage() {
                 body: JSON.stringify({
                     generacion_automatica: true,
                     mes_periodo: autoForm.mes_periodo,
-                    carrera_filtro: autoForm.carrera_filtro,
-                    enviar_correo: !!autoForm.enviar_correo
+                    carrera_filtro: autoForm.carrera_filtro
                 })
             });
 
@@ -428,8 +425,7 @@ export default function CargosPage() {
         try {
             const payload = {
                 items: itemsValidos,
-                fecha_vencimiento: form.fecha_vencimiento,
-                enviar_correo: !!form.enviar_correo
+                fecha_vencimiento: form.fecha_vencimiento
             };
 
             if (form.alumnos_ids !== 'TODOS') {
@@ -520,7 +516,7 @@ export default function CargosPage() {
                                     disabled={enviandoMasivo || selectedCargos.length === 0}
                                     onClick={handleReenviarSeleccionados}
                                 >
-                                    {enviandoMasivo ? 'Enviando...' : `Reenviar Seleccionados (${selectedCargos.length})`}
+                                    {enviandoMasivo ? 'Enviando...' : `Enviar Seleccionados por Correo (${selectedCargos.length})`}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -853,22 +849,8 @@ export default function CargosPage() {
                         </Grid>
                         <Grid item xs={12}>
                             <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={!!autoForm.enviar_correo}
-                                            onChange={(e) => setAutoForm(prev => ({ ...prev, enviar_correo: e.target.checked }))}
-                                            color="primary"
-                                        />
-                                    }
-                                    label={
-                                        <Typography variant="body2" fontWeight="bold">
-                                            ✉️ Enviar la ficha por correo electrónico al alumno automáticamente al generar
-                                        </Typography>
-                                    }
-                                />
-                                <Typography variant="caption" color="textSecondary" display="block" sx={{ ml: 4 }}>
-                                    Si permanece desmarcada, las fichas se emitirán solo en la plataforma y podrás seleccionar cuáles enviar por correo posteriormente.
+                                <Typography variant="body2" color="textSecondary">
+                                    ℹ️ Las fichas de pago se generarán únicamente en el sistema. Podrás enviarlas por correo en cualquier momento desde la tabla de fichas.
                                 </Typography>
                             </Paper>
                         </Grid>
@@ -1085,22 +1067,8 @@ export default function CargosPage() {
                         </Grid>
                         <Grid item xs={12}>
                             <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8fafc', borderColor: '#cbd5e1' }}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={!!form.enviar_correo}
-                                            onChange={(e) => setForm(prev => ({ ...prev, enviar_correo: e.target.checked }))}
-                                            color="primary"
-                                        />
-                                    }
-                                    label={
-                                        <Typography variant="body2" fontWeight="bold">
-                                            ✉️ Enviar la ficha por correo electrónico al alumno automáticamente al generar
-                                        </Typography>
-                                    }
-                                />
-                                <Typography variant="caption" color="textSecondary" display="block" sx={{ ml: 4 }}>
-                                    Si permanece desmarcada, la ficha solo se creará en el sistema y podrás enviarla posteriormente.
+                                <Typography variant="body2" color="textSecondary">
+                                    ℹ️ La ficha de pago se generará únicamente en el sistema. Podrás enviarla por correo posteriormente usando el botón de la tabla.
                                 </Typography>
                             </Paper>
                         </Grid>

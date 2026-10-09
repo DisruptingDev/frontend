@@ -330,8 +330,7 @@ export async function POST(request) {
             fecha_vencimiento,
             monto_custom,
             grupo_id,
-            producto_id,
-            enviar_correo = false
+            producto_id
         } = body;
 
         if (generacion_automatica) {
@@ -439,24 +438,6 @@ export async function POST(request) {
                             producto_id: pId
                         }
                     });
-
-                    // Generar PDF de la ficha de cargo y enviar por correo al alumno en segundo plano (si está activado)
-                    if (enviar_correo) {
-                        try {
-                            const cargoCompleto = await prisma.cargoAlumno.findUnique({
-                                where: { id: nuevoCargo.id },
-                                include: {
-                                    alumno: { include: { receptor: true, emisor: true } },
-                                    concepto: true
-                                }
-                            });
-                            if (cargoCompleto) {
-                                generarYEnviarFichaPorCorreo(cargoCompleto).catch(e => console.error('Error enviando ficha por correo:', e));
-                            }
-                        } catch (e) {
-                            console.error('Error procesando ficha PDF para correo:', e.message);
-                        }
-                    }
 
                     cargosCreados.push(nuevoCargo);
                 }
@@ -640,39 +621,12 @@ export async function POST(request) {
                 }
             }
 
-            // Generar PDF y enviar correo en PDF al alumno (solo si enviar_correo es true)
-            let resEnvio = { correoEnviado: false };
-            if (enviar_correo) {
-                try {
-                    const cargoCompleto = await prisma.cargoAlumno.findUnique({
-                        where: { id: nuevoCargo.id },
-                        include: {
-                            alumno: { include: { receptor: true, emisor: true } },
-                            concepto: true
-                        }
-                    });
-                    if (cargoCompleto) {
-                        if (itemsFinales.length > 0) {
-                            cargoCompleto.detalles_items = JSON.stringify(itemsFinales);
-                        }
-                        resEnvio = await generarYEnviarFichaPorCorreo(cargoCompleto);
-                    }
-                } catch (e) {
-                    console.error('Error al generar PDF o enviar correo de la ficha:', e.message);
-                    resEnvio = { exito: false, error: e.message };
-                }
-            }
-            nuevoCargo.envio_correo = resEnvio;
-
+            nuevoCargo.envio_correo = { correoEnviado: false };
             cargosCreados.push(nuevoCargo);
         }
 
-        const correoNotif = cargosCreados.some(c => c.envio_correo?.correoEnviado)
-            ? ' y enviada por correo en PDF al alumno.'
-            : '.';
-
         return NextResponse.json(serializeBigIntsAndDecimals({
-            mensaje: `Ficha de pago emitida exitosamente${correoNotif} Código único asignado.`,
+            mensaje: `Ficha de pago emitida exitosamente. Código único asignado.`,
             total_generados: cargosCreados.length,
             cargos: cargosCreados
         }), { status: 201 });
