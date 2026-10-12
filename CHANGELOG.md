@@ -12,6 +12,19 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [0.01.10] - 2026-10-12
+### [FEAT]
+* FEAT - Envío de facturas por correo electrónico con soporte dinámico de plantillas PDF según la empresa emisora configurada (`plantilla_id`).
+* FEAT - Motor de renderizado HTML/CSS de CFDI 4.0 (`facturaHtmlService.js`) con soporte para todas las paletas y diseños de catálogo (Default, Default Azul, Minimalista, Minimalista Compact, Formal, Default Naranja, Dorado, Marine) incorporando logotipos institucionales, sellos fiscales digitales y código QR oficial del SAT.
+* FEAT - Generador de PDF en Node.js de alto rendimiento (`pdfGeneratorService.js`) utilizando instancia compartida (singleton) de Puppeteer con liberación automática de memoria tras inactividad.
+* FEAT - Servicio orquestador de envío por correo (`envioFacturaService.js`) con entrega de archivos PDF y XML timbrados a través de la API oficial de Mailgun con procesamiento por lotes y control de concurrencia para soportar múltiples usuarios en simultáneo sin sobrecargar el servidor.
+* FEAT - Nuevo endpoint en Next.js `/api/enviofacturas/EnviarFacturas` para desacoplar el envío de correos del servicio en Go, integrado directamente en la página principal (`DataTable.jsx`, `Tabla.jsx` y `DataTableMRT.jsx`).
+* FEAT - Conexión del envío de correo y representación de documentos en la vista de Cobranza (`/api/cobranza/facturas/[id]/documentos`) para utilizar la misma generación de plantilla y entrega por correo.
+
+### [FIX]
+* FIX - Corrección del tipo de datos de `sub_total`, `total` y `descuento` a `Decimal` en el esquema de Prisma para el modelo `comprobantes`, resolviendo error de incompatibilidad de tipos `P2032` en PostgreSQL.
+* FIX - Configuración del dominio activo de Mailgun (`mg.wisefacturacion.com`) en las variables de entorno para garantizar entrega de correos institucionales.
+
 ## [0.01.09] - 2026-09-17
 ### [FEAT]
 * FEAT - Nuevo módulo de Descarga Masiva de Facturas SAT conectado a través de Prodigia PAC (`/DescargaMasiva`).

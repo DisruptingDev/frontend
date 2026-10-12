@@ -181,7 +181,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                 throw new Error('No se seleccionaron facturas válidas para enviar.');
             }
 
-            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+            const response = await fetch('/api/enviofacturas/EnviarFacturas', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -431,7 +431,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
             }
 
             const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
-            await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+            await fetch('/api/enviofacturas/EnviarFacturas', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -705,7 +705,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
                 if (accionPostPago === 'TIMBRAR_Y_ENVIAR') {
                     await handleTimbrarBOD(idsPendientesTimbrar);
-                    await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
+                    await fetch('/api/enviofacturas/EnviarFacturas', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,

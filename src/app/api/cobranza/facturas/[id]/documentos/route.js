@@ -463,30 +463,19 @@ export async function GET(request, { params }) {
     }
 }
 
-// POST: Enviar PDF y XML por correo electrónico
+// POST: Enviar PDF y XML por correo electrónico con la plantilla de la empresa
 export async function POST(request, { params }) {
     try {
         const { id } = params;
-        const body = await request.json();
+        const body = await request.json().catch(() => ({}));
         const { email_destino } = body;
 
-        const comprobante = await prisma.comprobantes.findUnique({
-            where: { id: BigInt(id) },
-            include: {
-                emisors: true,
-                receptors: true,
-                PagoAlumno: { include: { alumno: true } }
-            }
-        });
-
-        if (!comprobante) {
-            return NextResponse.json({ error: 'Factura no encontrada.' }, { status: 404 });
-        }
-
-        const correoFinal = email_destino || comprobante.PagoAlumno[0]?.alumno?.email || 'estudiante@universidad.edu.mx';
+        const { enviarFacturaIndividual } = await import('@/lib/services/envioFacturaService');
+        const resultado = await enviarFacturaIndividual({ facturaId: id, emailDestino: email_destino });
 
         return NextResponse.json({
-            mensaje: `Los archivos PDF y XML de la factura ${comprobante.serie}-${comprobante.folio} han sido enviados exitosamente a ${correoFinal}.`
+            mensaje: `Los archivos PDF y XML de la factura ${resultado.serie || 'F'}-${resultado.folio || '0'} han sido enviados exitosamente a ${resultado.destinatario}.`,
+            ...resultado
         }, { status: 200 });
 
     } catch (error) {
