@@ -47,7 +47,8 @@ import {
     Chip,
     Tooltip,
     Checkbox,
-    FormControlLabel
+    FormControlLabel,
+    IconButton
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import {
@@ -59,7 +60,8 @@ import {
     PersonAdd as PersonAddIcon,
     FlashOn as FlashIcon,
     Receipt as ReceiptIcon,
-    ArrowForward as ArrowIcon
+    ArrowForward as ArrowIcon,
+    Clear as ClearIcon
 } from '@mui/icons-material';
 import { getDescripcionRegimen } from '@/utils/catalogoSAT';
 
@@ -321,17 +323,36 @@ export default function ConciliacionPage() {
         });
     };
 
+    // QUITAR PRESELECCIÓN / ASIGNACIÓN DE ALUMNO EN UNA FILA
+    const handleQuitarAsignacion = (idx) => {
+        setAlumnoSeleccionadoPorFila((prev) => ({
+            ...prev,
+            [idx]: ''
+        }));
+        setCargosSeleccionadosPorFila((prev) => ({
+            ...prev,
+            [idx]: []
+        }));
+        setAprobarSAFPorFila((prev) => {
+            const next = { ...prev };
+            delete next[idx];
+            return next;
+        });
+    };
+
     // PROCESAR ASIGNACIÓN MASIVA Y NAVEGAR DIRECTO A EMISIÓN DE FACTURAS
     const handleConfirmarConciliacionMasiva = async () => {
         if (!resultado || !resultado.pagos) return;
 
         const asignacionesFinales = resultado.pagos
             .map((item, idx) => {
-                const alumnoId = alumnoSeleccionadoPorFila[idx] || item.alumno_id;
+                const alumnoId = alumnoSeleccionadoPorFila[idx] !== undefined 
+                    ? alumnoSeleccionadoPorFila[idx] 
+                    : item.alumno_id;
                 const cargosSeleccionados = cargosSeleccionadosPorFila[idx] || [];
                 return { item, idx, alumno_id: alumnoId, cargos_ids: cargosSeleccionados };
             })
-            .filter(obj => obj.alumno_id);
+            .filter(obj => Boolean(obj.alumno_id));
 
         if (asignacionesFinales.length === 0) {
             router.push('/Cobranza/Facturacion');
@@ -585,32 +606,42 @@ export default function ConciliacionPage() {
                                                 </Box>
                                             </Box>
 
-                                            <Grid container spacing={2} sx={{ mb: 3 }}>
-                                                <Grid item xs={4}>
-                                                    <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9' }}>
-                                                        <Typography variant="h4" color="success.main" fontWeight="bold">
-                                                            {resultado.resumen.conciliados}
-                                                        </Typography>
-                                                        <Typography variant="caption" fontWeight="bold">Empatados Auto / Manual</Typography>
-                                                    </Paper>
-                                                </Grid>
-                                                <Grid item xs={4}>
-                                                    <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0' }}>
-                                                        <Typography variant="h4" color="warning.main" fontWeight="bold">
-                                                            {resultado.resumen.pendientes_revision}
-                                                        </Typography>
-                                                        <Typography variant="caption" fontWeight="bold">Sin Coincidencia (Revisión)</Typography>
-                                                    </Paper>
-                                                </Grid>
-                                                <Grid item xs={4}>
-                                                    <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e3f2fd' }}>
-                                                        <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ mt: 0.5 }}>
-                                                            ${parseMonto(resultado.resumen.monto_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                        </Typography>
-                                                        <Typography variant="caption" fontWeight="bold">Monto Total Extracto</Typography>
-                                                    </Paper>
-                                                </Grid>
-                                            </Grid>
+                                            {(() => {
+                                                const totalConciliados = resultado.pagos.filter((it, i) => {
+                                                    const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
+                                                    return Boolean(aid);
+                                                }).length;
+                                                const totalPendientes = resultado.pagos.length - totalConciliados;
+
+                                                return (
+                                                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                                                        <Grid item xs={4}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                                                                <Typography variant="h4" color="success.main" fontWeight="bold">
+                                                                    {totalConciliados}
+                                                                </Typography>
+                                                                <Typography variant="caption" fontWeight="bold">Empatados Auto / Manual</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                        <Grid item xs={4}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0' }}>
+                                                                <Typography variant="h4" color="warning.main" fontWeight="bold">
+                                                                    {totalPendientes}
+                                                                </Typography>
+                                                                <Typography variant="caption" fontWeight="bold">Sin Coincidencia (Revisión)</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                        <Grid item xs={4}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e3f2fd' }}>
+                                                                <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ mt: 0.5 }}>
+                                                                    ${parseMonto(resultado.resumen.monto_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                </Typography>
+                                                                <Typography variant="caption" fontWeight="bold">Monto Total Extracto</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                    </Grid>
+                                                );
+                                            })()}
 
                                             <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
                                                 Transacciones Empatadas y Pendientes de Asignación:
@@ -626,15 +657,19 @@ export default function ConciliacionPage() {
                                                             <TableCell sx={{ fontWeight: 'bold' }}>Alumno Asignado / Acción Manual</TableCell>
                                                         </TableRow>
                                                     </TableHead>
-                                                                                                        <TableBody>
+                                                    <TableBody>
                                                         {resultado.pagos.map((item, idx) => {
-                                                            const isSugerido = item.estado_conciliacion === 'SUGERIDO';
-                                                            const alumnoIdActual = alumnoSeleccionadoPorFila[idx] || item.alumno_id;
+                                                            const isOrigSugerido = item.estado_conciliacion === 'SUGERIDO';
+                                                            const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
+                                                                ? alumnoSeleccionadoPorFila[idx] 
+                                                                : (item.alumno_id ? item.alumno_id.toString() : '');
+                                                            const tieneAlumno = Boolean(alumnoIdActual);
+                                                            const esSugeridoActivo = isOrigSugerido && tieneAlumno && (!alumnoSeleccionadoPorFila[idx] || alumnoSeleccionadoPorFila[idx] === item.alumno_id?.toString());
                                                             
                                                             let cargosDisponibles = [];
-                                                            if (isSugerido && (!alumnoSeleccionadoPorFila[idx] || alumnoSeleccionadoPorFila[idx] === item.alumno_id.toString())) {
+                                                            if (esSugeridoActivo) {
                                                                 cargosDisponibles = item.cargos_pendientes || [];
-                                                            } else if (alumnoIdActual) {
+                                                            } else if (tieneAlumno) {
                                                                 cargosDisponibles = cargosPendientesGlobales.filter(c => c.alumno_id.toString() === alumnoIdActual.toString());
                                                             }
 
@@ -650,7 +685,14 @@ export default function ConciliacionPage() {
                                                             const saldoAFavor = Math.max(0, deposito - sumaMontoCargos);
 
                                                             return (
-                                                                <TableRow key={idx} sx={{ backgroundColor: isSugerido ? '#e8f5e9' : '#fff3e0' }}>
+                                                                <TableRow 
+                                                                    key={idx} 
+                                                                    sx={{ 
+                                                                        backgroundColor: !tieneAlumno 
+                                                                            ? '#fff8e1' 
+                                                                            : (esSugeridoActivo ? '#e8f5e9' : '#f0f7ff') 
+                                                                    }}
+                                                                >
                                                                     <TableCell sx={{ fontFamily: 'monospace' }}>
                                                                         <Typography variant="body2" fontWeight="bold">{item.referencia_bancaria}</Typography>
                                                                         {item.descripcion && (
@@ -660,19 +702,19 @@ export default function ConciliacionPage() {
                                                                         )}
                                                                     </TableCell>
                                                                     <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                                                        $${deposito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                        ${deposito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                                     </TableCell>
                                                                     <TableCell>
-                                                                        {isSugerido ? (
+                                                                        {esSugeridoActivo ? (
                                                                             <Chip
                                                                                 label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'}
                                                                                 color="success"
                                                                                 size="small"
                                                                                 icon={<CheckIcon />}
                                                                             />
-                                                                        ) : item.alumno_id ? (
+                                                                        ) : tieneAlumno ? (
                                                                             <Chip
-                                                                                label={item.metodo_matcheo ? `IDENTIFICADO (${item.metodo_matcheo})` : 'ALUMNO IDENTIFICADO'}
+                                                                                label={item.metodo_matcheo ? `IDENTIFICADO (${item.metodo_matcheo})` : 'ASIGNADO MANUAL'}
                                                                                 color="info"
                                                                                 size="small"
                                                                                 icon={<CheckIcon />}
@@ -682,32 +724,54 @@ export default function ConciliacionPage() {
                                                                         )}
                                                                     </TableCell>
                                                                     <TableCell sx={{ minWidth: 400 }}>
-                                                                        <FormControl size="small" sx={{ width: '100%', mb: 1 }}>
-                                                                            <InputLabel>Asignar Alumno...</InputLabel>
-                                                                            <Select
-                                                                                value={alumnoIdActual || ''}
-                                                                                label="Asignar Alumno..."
-                                                                                onChange={(e) => {
-                                                                                    setAlumnoSeleccionadoPorFila({
-                                                                                        ...alumnoSeleccionadoPorFila,
-                                                                                        [idx]: e.target.value
-                                                                                    });
-                                                                                    // Al cambiar de alumno, limpiamos sus cargos seleccionados
-                                                                                    setCargosSeleccionadosPorFila({
-                                                                                        ...cargosSeleccionadosPorFila,
-                                                                                        [idx]: []
-                                                                                    });
-                                                                                }}
-                                                                            >
-                                                                                {alumnos.map(al => (
-                                                                                    <MenuItem key={al.id} value={al.id.toString()}>
-                                                                                        {al.nombre} {al.apellido_paterno} ({al.matricula})
+                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                                            <FormControl size="small" sx={{ flexGrow: 1 }}>
+                                                                                <InputLabel>Asignar Alumno...</InputLabel>
+                                                                                <Select
+                                                                                    value={alumnoIdActual || ''}
+                                                                                    label="Asignar Alumno..."
+                                                                                    onChange={(e) => {
+                                                                                        const val = e.target.value;
+                                                                                        if (!val) {
+                                                                                            handleQuitarAsignacion(idx);
+                                                                                        } else {
+                                                                                            setAlumnoSeleccionadoPorFila((prev) => ({
+                                                                                                ...prev,
+                                                                                                [idx]: val
+                                                                                            }));
+                                                                                            // Al cambiar de alumno, limpiamos sus cargos seleccionados
+                                                                                            setCargosSeleccionadosPorFila((prev) => ({
+                                                                                                ...prev,
+                                                                                                [idx]: []
+                                                                                            }));
+                                                                                        }
+                                                                                    }}
+                                                                                >
+                                                                                    <MenuItem value="">
+                                                                                        <em>-- Sin asignar (Revisión manual) --</em>
                                                                                     </MenuItem>
-                                                                                ))}
-                                                                            </Select>
-                                                                        </FormControl>
+                                                                                    {alumnos.map(al => (
+                                                                                        <MenuItem key={al.id} value={al.id.toString()}>
+                                                                                            {al.nombre} {al.apellido_paterno} ({al.matricula})
+                                                                                        </MenuItem>
+                                                                                    ))}
+                                                                                </Select>
+                                                                            </FormControl>
+                                                                            {tieneAlumno && (
+                                                                                <Tooltip title="Quitar asignación / Desmarcar alumno">
+                                                                                    <IconButton
+                                                                                        size="small"
+                                                                                        color="error"
+                                                                                        onClick={() => handleQuitarAsignacion(idx)}
+                                                                                        sx={{ border: '1px solid #e57373', borderRadius: 1, p: 0.8 }}
+                                                                                    >
+                                                                                        <ClearIcon fontSize="small" />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                            )}
+                                                                        </Box>
 
-                                                                        {alumnoIdActual && (
+                                                                        {tieneAlumno && (
                                                                             <Box sx={{ mt: 1, backgroundColor: '#f9f9f9', p: 1, borderRadius: 1 }}>
                                                                                 <FormControl size="small" sx={{ width: '100%', mb: 1 }}>
                                                                                     <InputLabel>Fichas / Cargos a Pagar</InputLabel>
