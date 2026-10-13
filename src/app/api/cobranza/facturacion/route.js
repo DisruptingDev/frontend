@@ -549,7 +549,10 @@ export async function POST(request) {
             if (pagoExistente) {
                 await prisma.pagoAlumno.update({
                     where: { id: pagoExistente.id },
-                    data: { comprobante_id: nuevoComprobante.id }
+                    data: { 
+                        comprobante_id: nuevoComprobante.id,
+                        estado_conciliacion: 'CONCILIADO'
+                    }
                 });
             } else {
                 await prisma.pagoAlumno.create({
@@ -560,7 +563,7 @@ export async function POST(request) {
                         monto: montoTotal,
                         fecha_pago: new Date(),
                         referencia_bancaria: cargo.referencia_bancaria || `FAC-${nuevoComprobante.folio}`,
-                        estado_conciliacion: 'FACTURADO_MANUAL'
+                        estado_conciliacion: 'CONCILIADO'
                     }
                 });
             }
@@ -903,6 +906,15 @@ export async function POST(request) {
                     ]
                 },
                 data: { estatus: 'TIMBRADO' }
+            });
+
+            await prisma.pagoAlumno.updateMany({
+                where: {
+                    comprobante_id: { in: idsATimbrar.map(id => BigInt(id)) }
+                },
+                data: {
+                    estado_conciliacion: 'CONCILIADO'
+                }
             });
 
             const comprobantesTimbrados = await prisma.comprobantes.findMany({

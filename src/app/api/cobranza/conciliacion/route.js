@@ -1095,11 +1095,16 @@ export async function POST(request) {
         let pagosExistentes = [];
         try {
             pagosExistentes = await prisma.pagoAlumno.findMany({
+                where: {
+                    comprobante_id: { not: null },
+                    comprobante: { isNot: null }
+                },
                 select: {
                     monto: true,
                     fecha_pago: true,
                     referencia_bancaria: true,
                     alumno_id: true,
+                    comprobante_id: true,
                     comprobante: { select: { serie: true, folio: true } },
                     alumno: { select: { nombre: true, apellido_paterno: true, matricula: true } }
                 }
@@ -1140,8 +1145,9 @@ export async function POST(request) {
         };
 
         for (const mov of movimientos) {
-            // 1. Validar si este movimiento ya fue conciliado previamente (al volver a subir el archivo)
+            // 1. Validar si este movimiento ya fue conciliado (es decir, ya se le generó factura previamente)
             const pagoPrevio = pagosExistentes.find(p => {
+                if (!p.comprobante_id || !p.comprobante) return false;
                 const isSameMonto = Math.abs(Number(p.monto) - mov.monto) < 0.01;
                 let dateP = '';
                 try { dateP = new Date(p.fecha_pago).toISOString().split('T')[0]; } catch(e) {}
