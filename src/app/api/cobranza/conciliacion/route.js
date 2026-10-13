@@ -979,18 +979,30 @@ export async function POST(request) {
 
         let movimientos = [];
         const fileNameLower = (file.name || '').toLowerCase();
-        if (fileNameLower.endsWith('.pdf') || file.type === 'application/pdf') {
-            movimientos = await parsePDFBBVA(buffer);
-        } else if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
-            movimientos = parseExcelFile(buffer, banco);
-        } else {
-            const textContent = buffer.toString('utf-8');
-            movimientos = parseGenerico(textContent);
+        try {
+            if (fileNameLower.endsWith('.pdf') || file.type === 'application/pdf') {
+                movimientos = await parsePDFBBVA(buffer);
+            } else if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
+                movimientos = parseExcelFile(buffer, banco);
+            } else {
+                // Para CSV u otros formatos de texto o excel plano
+                try {
+                    movimientos = parseGenerico(buffer);
+                } catch (eCsv) {
+                    const textContent = buffer.toString('utf-8');
+                    movimientos = parseGenerico(textContent);
+                }
+            }
+        } catch (parseErr) {
+            console.error('Error parseando archivo bancario:', parseErr);
+            return NextResponse.json({ 
+                error: `Error al interpretar el archivo bancario (${file.name}): ${parseErr.message || 'Formato no reconocido o corrupto.'}` 
+            }, { status: 400 });
         }
 
         movimientos = sanitizeNullBytes(movimientos);
 
-        if (movimientos.length === 0) {
+        if (!movimientos || movimientos.length === 0) {
             return NextResponse.json({ error: 'El archivo no contiene movimientos bancarios válidos o con formato reconocible.' }, { status: 400 });
         }
 
