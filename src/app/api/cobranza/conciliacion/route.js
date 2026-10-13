@@ -1095,13 +1095,22 @@ export async function POST(request) {
         let pagosExistentes = [];
         try {
             pagosExistentes = await prisma.pagoAlumno.findMany({
-                select: { monto: true, fecha_pago: true, referencia_bancaria: true }
+                select: {
+                    monto: true,
+                    fecha_pago: true,
+                    referencia_bancaria: true,
+                    alumno_id: true,
+                    comprobante: { select: { serie: true, folio: true } },
+                    alumno: { select: { nombre: true, apellido_paterno: true, matricula: true } }
+                }
             });
         } catch(e) {}
 
         let conciliadosCount = 0;
         let pendientesCount = 0;
         let duplicadosCount = 0;
+        let yaConciliadosCount = 0;
+        let sinFichaCount = 0;
         let montoTotal = 0;
         const pagosProcesados = [];
 
@@ -1130,51 +1139,42 @@ export async function POST(request) {
             return false;
         };
 
-        // Validador estricto de código de ficha dentro del CONCEPTO / DESCRIPCIÓN
-        // Respeta rigurosamente los ceros (con o sin guión, ej. M-00001 o M00001)
-        const coincideFichaEnConcepto = (cargo, descripcionMov) => {
-            if (!cargo || !cargo.codigo_ficha || !descripcionMov) return false;
-            const codFichaRaw = String(cargo.codigo_ficha).trim().toUpperCase();
-            if (codFichaRaw.length < 4) return false;
-
-            const descRaw = String(descripcionMov || '').toUpperCase();
-            if (!descRaw) return false;
-
-            // Detectar prefijo de letras y parte numérica EXACTA (manteniendo TODOS los ceros)
-            const matchPrefijo = codFichaRaw.match(/^([A-Z]+)[-_ ]*(\d+)$/i);
-            let conGuion = codFichaRaw;
-            let sinGuion = codFichaRaw.replace(/[-_ ]/g, '');
-
-            if (matchPrefijo) {
-                const prefijo = matchPrefijo[1];
-                const numExacto = matchPrefijo[2]; // Conserva todos los ceros intactos
-                conGuion = `${prefijo}-${numExacto}`;
-                sinGuion = `${prefijo}${numExacto}`;
-            }
-
-            // Buscar como token delimitado para evitar falsos positivos
-            const escapeRegex = (s) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-            const regexConGuion = new RegExp('(?:^|[^A-Z0-9])' + escapeRegex(conGuion) + '(?:[^A-Z0-9]|$)', 'i');
-            const regexSinGuion = new RegExp('(?:^|[^A-Z0-9])' + escapeRegex(sinGuion) + '(?:[^A-Z0-9]|$)', 'i');
-
-            return regexConGuion.test(descRaw) || regexSinGuion.test(descRaw);
-        };
-
         for (const mov of movimientos) {
-            // Verificar si el movimiento ya fue procesado
-            const esDuplicado = pagosExistentes.some(p => {
+            // 1. Validar si este movimiento ya fue conciliado previamente (al volver a subir el archivo)
+            const pagoPrevio = pagosExistentes.find(p => {
                 const isSameMonto = Math.abs(Number(p.monto) - mov.monto) < 0.01;
                 let dateP = '';
                 try { dateP = new Date(p.fecha_pago).toISOString().split('T')[0]; } catch(e) {}
                 let dateM = '';
                 try { dateM = new Date(mov.fecha).toISOString().split('T')[0]; } catch(e) {}
                 const isSameDate = dateP !== '' && dateM !== '' && dateP === dateM;
-                const isSameRef = (p.referencia_bancaria || '') === (mov.referencia || '');
+
+                const refCleanP = cleanDigits(p.referencia_bancaria);
+                const refCleanM = cleanDigits(mov.referencia);
+                const isSameRef = (refCleanP && refCleanM && refCleanP === refCleanM) || 
+                                  (p.referencia_bancaria || '').trim() === (mov.referencia || '').trim() ||
+                                  (p.referencia_bancaria || '').trim() === (mov.referencia_raw || '').trim();
+
                 return isSameMonto && isSameDate && isSameRef;
             });
 
-            if (esDuplicado) {
-                duplicadosCount++;
+            if (pagoPrevio) {
+                yaConciliadosCount++;
+                pagosProcesados.push({
+                    id_tmp: `MOV-PREV-${yaConciliadosCount}`,
+                    referencia_bancaria: mov.referencia || 'SIN_REF',
+                    monto: mov.monto,
+                    fecha_pago: mov.fecha,
+                    descripcion: mov.descripcion,
+                    estado_conciliacion: 'YA_CONCILIADO',
+                    ya_conciliado: true,
+                    linea: mov.linea,
+                    alumno_id: pagoPrevio.alumno_id ? pagoPrevio.alumno_id.toString() : null,
+                    alumno_nombre: pagoPrevio.alumno ? `${pagoPrevio.alumno.nombre} ${pagoPrevio.alumno.apellido_paterno}` : '',
+                    alumno_matricula: pagoPrevio.alumno?.matricula || '',
+                    comprobante_folio: pagoPrevio.comprobante ? `${pagoPrevio.comprobante.serie}-${pagoPrevio.comprobante.folio}` : null,
+                    metodo_matcheo: pagoPrevio.comprobante ? `Pre-Factura ${pagoPrevio.comprobante.serie}-${pagoPrevio.comprobante.folio}` : 'Conciliado previamente'
+                });
                 continue;
             }
 
@@ -1200,50 +1200,69 @@ export async function POST(request) {
             }
 
             if (alumnoEncontrado) {
-                conciliadosCount++;
                 let alumnoCargosPendientes = cargosPendientes.filter(cp => String(cp.alumno_id) === String(alumnoEncontrado.id));
 
-                alumnoCargosPendientes.sort((a, b) => {
-                    const exactMontoA = Math.abs(Number(a.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(a.monto_total) - mov.monto) < 0.01;
-                    const exactMontoB = Math.abs(Number(b.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(b.monto_total) - mov.monto) < 0.01;
-                    if (exactMontoA && !exactMontoB) return -1;
-                    if (!exactMontoA && exactMontoB) return 1;
+                if (alumnoCargosPendientes.length === 0) {
+                    // Match con alumno pero SIN fichas/cargos pendientes
+                    // Se da la opción al usuario en la pantalla de Crear Ficha o Ignorar Monto
+                    sinFichaCount++;
+                    pagosProcesados.push({
+                        id_tmp: `MOV-SF-${sinFichaCount}`,
+                        referencia_bancaria: mov.referencia || 'SIN_REF',
+                        monto: mov.monto,
+                        fecha_pago: mov.fecha,
+                        descripcion: mov.descripcion,
+                        estado_conciliacion: 'MATCH_SIN_FICHA',
+                        linea: mov.linea,
+                        alumno_id: alumnoEncontrado.id.toString(),
+                        alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
+                        alumno_matricula: alumnoEncontrado.matricula,
+                        metodo_matcheo: `CLABE Interbancaria (${alumnoEncontrado.clabe_interbancaria})`,
+                        requiere_factura: alumnoEncontrado.requiere_factura,
+                        cargos_pendientes: []
+                    });
+                } else {
+                    conciliadosCount++;
+                    alumnoCargosPendientes.sort((a, b) => {
+                        const exactMontoA = Math.abs(Number(a.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(a.monto_total) - mov.monto) < 0.01;
+                        const exactMontoB = Math.abs(Number(b.monto_pendiente) - mov.monto) < 0.01 || Math.abs(Number(b.monto_total) - mov.monto) < 0.01;
+                        if (exactMontoA && !exactMontoB) return -1;
+                        if (!exactMontoA && exactMontoB) return 1;
 
-                    return Number(a.id) - Number(b.id);
-                });
+                        return Number(a.id) - Number(b.id);
+                    });
 
-                let montoDisponible = mov.monto;
-                const cargosSeleccionadosSugeridos = [];
-                for (const cargo of alumnoCargosPendientes) {
-                    if (montoDisponible <= 0) break;
-                    cargosSeleccionadosSugeridos.push(cargo.id.toString());
-                    montoDisponible -= Number(cargo.monto_pendiente);
+                    let montoDisponible = mov.monto;
+                    const cargosSeleccionadosSugeridos = [];
+                    for (const cargo of alumnoCargosPendientes) {
+                        if (montoDisponible <= 0) break;
+                        cargosSeleccionadosSugeridos.push(cargo.id.toString());
+                        montoDisponible -= Number(cargo.monto_pendiente);
+                    }
+
+                    const mappedCargos = alumnoCargosPendientes.map(cp => ({
+                        ...cp,
+                        concepto: cp.ConceptoCobro || cp.concepto || null,
+                        producto: cp.ConceptoCobro || cp.producto || null
+                    }));
+
+                    pagosProcesados.push({
+                        id_tmp: `MOV-${conciliadosCount}`,
+                        fecha_pago: mov.fecha,
+                        monto: mov.monto,
+                        referencia_bancaria: mov.referencia || `REF-${Date.now()}`,
+                        descripcion: mov.descripcion || '',
+                        linea: mov.linea,
+                        alumno_id: alumnoEncontrado.id.toString(),
+                        cargos_sugeridos: cargosSeleccionadosSugeridos,
+                        alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
+                        alumno_matricula: alumnoEncontrado.matricula,
+                        metodo_matcheo: metodoMatcheo,
+                        requiere_factura: alumnoEncontrado.requiere_factura,
+                        estado_conciliacion: 'SUGERIDO',
+                        cargos_pendientes: serializeBigIntsAndDecimals(mappedCargos)
+                    });
                 }
-
-                const mappedCargos = alumnoCargosPendientes.map(cp => ({
-                    ...cp,
-                    concepto: cp.ConceptoCobro || cp.concepto || null,
-                    producto: cp.ConceptoCobro || cp.producto || null
-                }));
-
-                pagosProcesados.push({
-                    id_tmp: `MOV-${conciliadosCount}`,
-                    fecha_pago: mov.fecha,
-                    monto: mov.monto,
-                    referencia_bancaria: mov.referencia || `REF-${Date.now()}`,
-                    descripcion: mov.descripcion || '',
-                    linea: mov.linea,
-                    alumno_id: alumnoEncontrado.id.toString(),
-                    cargos_sugeridos: cargosSeleccionadosSugeridos,
-                    alumno_nombre: `${alumnoEncontrado.nombre} ${alumnoEncontrado.apellido_paterno}`,
-                    alumno_matricula: alumnoEncontrado.matricula,
-                    metodo_matcheo: alumnoCargosPendientes.length === 0
-                        ? `${metodoMatcheo} - Saldo a Favor`
-                        : metodoMatcheo,
-                    requiere_factura: alumnoEncontrado.requiere_factura,
-                    estado_conciliacion: 'SUGERIDO',
-                    cargos_pendientes: serializeBigIntsAndDecimals(mappedCargos)
-                });
             } else {
                 pendientesCount++;
                 pagosProcesados.push({
@@ -1259,12 +1278,13 @@ export async function POST(request) {
         }
 
         const responseData = {
-            mensaje: `Conciliación bancaria procesada. ${conciliadosCount} movimientos conciliados, ${pendientesCount} sin coincidencia y ${duplicadosCount} ignorados por estar ya registrados.`,
+            mensaje: `Conciliación analizada: ${conciliadosCount} sugeridos con ficha, ${sinFichaCount} detectados sin ficha, ${pendientesCount} sin coincidencia y ${yaConciliadosCount} ya conciliados previamente.`,
             resumen: {
                 total_movimientos: movimientos.length,
                 conciliados: conciliadosCount,
                 pendientes_revision: pendientesCount,
-                duplicados_ignorados: duplicadosCount,
+                sin_ficha: sinFichaCount,
+                ya_conciliados: yaConciliadosCount,
                 monto_total: montoTotal,
                 debug_alumnos_count: todosLosAlumnos.length,
                 debug_cargos_count: cargosPendientes.length,

@@ -65,7 +65,10 @@ import {
     Receipt as ReceiptIcon,
     ArrowForward as ArrowIcon,
     Clear as ClearIcon,
-    Search as SearchIcon
+    Search as SearchIcon,
+    History as HistoryIcon,
+    Block as BlockIcon,
+    AddCircleOutline as AddIcon
 } from '@mui/icons-material';
 import { getDescripcionRegimen } from '@/utils/catalogoSAT';
 
@@ -102,11 +105,14 @@ export default function ConciliacionPage() {
 
     // Filtros de búsqueda en la tabla de transacciones
     const [busquedaTabla, setBusquedaTabla] = useState('');
-    const [filtroEstatus, setFiltroEstatus] = useState('TODOS'); // 'TODOS' | 'CON_ALUMNO' | 'SIN_ALUMNO'
+    const [filtroEstatus, setFiltroEstatus] = useState('TODOS'); // 'TODOS' | 'FALTANTES' | 'LISTOS' | 'SIN_FICHA' | 'YA_CONCILIADOS' | 'REVISION'
 
     // Estado para guardar la selección de alumno por cada fila en revisión
     const [alumnoSeleccionadoPorFila, setAlumnoSeleccionadoPorFila] = useState({});
     
+    // Estado para la acción en pagos con coincidencia de alumno pero sin ficha: { [idx]: 'IGNORAR' | 'CREAR_FICHA' }
+    const [accionSinFichaPorFila, setAccionSinFichaPorFila] = useState({});
+
     // Estado para la selección múltiple de cargos (Fichas) por fila
     // Formato: { [idxFila]: [id_cargo_1, id_cargo_2] }
     const [cargosSeleccionadosPorFila, setCargosSeleccionadosPorFila] = useState({});
@@ -300,19 +306,25 @@ export default function ConciliacionPage() {
             // Inicializar las pre-selecciones de cargos para sugerencias
             const initCargosSelec = {};
             const initAlumnosSelec = {};
+            const initAccionSinFicha = {};
             if (data.pagos) {
                 data.pagos.forEach((p, idx) => {
                     if (p.estado_conciliacion === 'SUGERIDO') { 
                         if (p.cargos_sugeridos) initCargosSelec[idx] = p.cargos_sugeridos; 
+                        if (p.alumno_id) initAlumnosSelec[idx] = p.alumno_id.toString();
+                    } else if (p.estado_conciliacion === 'MATCH_SIN_FICHA') {
+                        // Por defecto: IGNORAR monto en esta conciliación (pospuesto hasta que tenga ficha)
+                        initAccionSinFicha[idx] = 'IGNORAR';
                         if (p.alumno_id) initAlumnosSelec[idx] = p.alumno_id.toString();
                     }
                 });
             }
             setCargosSeleccionadosPorFila(initCargosSelec);
             setAlumnoSeleccionadoPorFila(initAlumnosSelec);
+            setAccionSinFichaPorFila(initAccionSinFicha);
 
             setResultado(data);
-            setMensajeExito(`Conciliación analizada: ${data.resumen.conciliados} sugerencias encontradas y ${data.resumen.pendientes_revision} pendientes. REVISA Y CONFIRMA para guardarlas.`);
+            setMensajeExito(`Conciliación analizada: ${data.resumen?.conciliados || 0} con ficha listos, ${data.resumen?.sin_ficha || 0} identificados sin ficha (pospuestos), y ${data.resumen?.pendientes_revision || 0} en revisión.`);
 
         } catch (err) {
             console.error(err);
@@ -346,6 +358,10 @@ export default function ConciliacionPage() {
             delete next[idx];
             return next;
         });
+        setAccionSinFichaPorFila((prev) => ({
+            ...prev,
+            [idx]: 'IGNORAR'
+        }));
     };
 
     // PROCESAR ASIGNACIÓN MASIVA Y NAVEGAR DIRECTO A EMISIÓN DE FACTURAS
@@ -354,16 +370,42 @@ export default function ConciliacionPage() {
 
         const asignacionesFinales = resultado.pagos
             .map((item, idx) => {
+                // 1. Si ya está conciliado previamente, se descarta para no duplicar
+                if (item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado) {
+                    return null;
+                }
+
+                // 2. Si es coincidencia pero sin ficha
+                if (item.estado_conciliacion === 'MATCH_SIN_FICHA') {
+                    const accion = accionSinFichaPorFila[idx] || 'IGNORAR';
+                    // Si el usuario eligió ignorar, no se procesa ahora
+                    if (accion === 'IGNORAR') {
+                        return null;
+                    }
+                    const alumnoId = alumnoSeleccionadoPorFila[idx] || item.alumno_id;
+                    if (!alumnoId) return null;
+                    return { item, idx, alumno_id: alumnoId, cargos_ids: [], aprobar_saf: true };
+                }
+
                 const alumnoId = alumnoSeleccionadoPorFila[idx] !== undefined 
                     ? alumnoSeleccionadoPorFila[idx] 
                     : item.alumno_id;
                 const cargosSeleccionados = cargosSeleccionadosPorFila[idx] || [];
-                return { item, idx, alumno_id: alumnoId, cargos_ids: cargosSeleccionados };
+                
+                if (!alumnoId) return null;
+
+                return { 
+                    item, 
+                    idx, 
+                    alumno_id: alumnoId, 
+                    cargos_ids: cargosSeleccionados, 
+                    aprobar_saf: !!aprobarSAFPorFila[idx] 
+                };
             })
-            .filter(obj => Boolean(obj.alumno_id));
+            .filter(Boolean);
 
         if (asignacionesFinales.length === 0) {
-            router.push('/Cobranza/Facturacion');
+            setError('No hay movimientos pendientes para procesar. Los registros seleccionados ya fueron conciliados previamente o fueron ignorados.');
             return;
         }
 
@@ -386,7 +428,7 @@ export default function ConciliacionPage() {
                         descripcion: p.item.descripcion,
                         cargos_ids: p.cargos_ids,
                         serie_id: serieSeleccionada,
-                        aprobar_saf: !!aprobarSAFPorFila[p.idx]
+                        aprobar_saf: p.aprobar_saf
                     }))
                 })
             });
@@ -591,16 +633,31 @@ export default function ConciliacionPage() {
                                                     Detalle Completo de Registros del Extracto Bancario
                                                 </Typography>
                                                 <Box sx={{ display: 'flex', gap: 1 }}>
-                                                    <Button
-                                                        variant="contained"
-                                                        color="success"
-                                                        startIcon={procesandoMasivo ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
-                                                        onClick={handleConfirmarConciliacionMasiva}
-                                                        disabled={procesandoMasivo}
-                                                        sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                                    >
-                                                        {procesandoMasivo ? 'Generando Pre-Facturas...' : '⚡ Confirmar Conciliación y Generar Pre-Facturas'}
-                                                    </Button>
+                                                    {(() => {
+                                                        const listosParaFacturar = resultado.pagos.filter((item, idx) => {
+                                                            if (item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado) return false;
+                                                            if (item.estado_conciliacion === 'MATCH_SIN_FICHA') {
+                                                                return accionSinFichaPorFila[idx] === 'CREAR_FICHA';
+                                                            }
+                                                            const aid = alumnoSeleccionadoPorFila[idx] !== undefined ? alumnoSeleccionadoPorFila[idx] : item.alumno_id;
+                                                            return Boolean(aid);
+                                                        }).length;
+
+                                                        return (
+                                                            <Button
+                                                                variant="contained"
+                                                                color="success"
+                                                                startIcon={procesandoMasivo ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
+                                                                onClick={handleConfirmarConciliacionMasiva}
+                                                                disabled={procesandoMasivo || listosParaFacturar === 0}
+                                                                sx={{ fontWeight: 'bold', textTransform: 'none' }}
+                                                            >
+                                                                {procesandoMasivo 
+                                                                    ? 'Generando Pre-Facturas...' 
+                                                                    : `⚡ Confirmar Conciliación (${listosParaFacturar} a Facturar)`}
+                                                            </Button>
+                                                        );
+                                                    })()}
                                                     <Button
                                                         variant="outlined"
                                                         color="primary"
@@ -615,47 +672,65 @@ export default function ConciliacionPage() {
                                             </Box>
 
                                             {(() => {
-                                                const totalConciliados = resultado.pagos.filter((it, i) => {
-                                                    const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
-                                                    return Boolean(aid);
-                                                }).length;
-                                                const totalPendientes = resultado.pagos.length - totalConciliados;
+                                                const totalListosConFicha = resultado.pagos.filter(it => it.estado_conciliacion === 'SUGERIDO').length;
+                                                const totalSinFicha = resultado.pagos.filter(it => it.estado_conciliacion === 'MATCH_SIN_FICHA').length;
+                                                const totalYaConciliados = resultado.pagos.filter(it => it.estado_conciliacion === 'YA_CONCILIADO' || it.ya_conciliado).length;
+                                                const totalRevision = resultado.pagos.filter(it => it.estado_conciliacion === 'REVISION').length;
+                                                const totalFaltantes = resultado.pagos.filter(it => it.estado_conciliacion !== 'YA_CONCILIADO' && !it.ya_conciliado).length;
 
                                                 return (
                                                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                                                        <Grid item xs={4}>
+                                                        <Grid item xs={12} sm={6} md={2.4}>
                                                             <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9' }}>
                                                                 <Typography variant="h4" color="success.main" fontWeight="bold">
-                                                                    {totalConciliados}
+                                                                    {totalListosConFicha}
                                                                 </Typography>
-                                                                <Typography variant="caption" fontWeight="bold">Empatados Auto / Manual</Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Listos con Ficha</Typography>
+                                                                <Typography variant="caption" color="textSecondary">Se facturan directo</Typography>
                                                             </Paper>
                                                         </Grid>
-                                                        <Grid item xs={4}>
+                                                        <Grid item xs={12} sm={6} md={2.4}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fffde7', border: '1px solid #ffe082' }}>
+                                                                <Typography variant="h4" sx={{ color: '#f57f17' }} fontWeight="bold">
+                                                                    {totalSinFicha}
+                                                                </Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Sin Ficha (Pospuestos)</Typography>
+                                                                <Typography variant="caption" color="textSecondary">Ignorados por defecto</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6} md={2.4}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
+                                                                <Typography variant="h4" sx={{ color: '#757575' }} fontWeight="bold">
+                                                                    {totalYaConciliados}
+                                                                </Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Ya Conciliados</Typography>
+                                                                <Typography variant="caption" color="textSecondary">No se duplicarán</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6} md={2.4}>
                                                             <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0' }}>
                                                                 <Typography variant="h4" color="warning.main" fontWeight="bold">
-                                                                    {totalPendientes}
+                                                                    {totalRevision}
                                                                 </Typography>
-                                                                <Typography variant="caption" fontWeight="bold">Sin Coincidencia (Revisión)</Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Sin Alumno (Revisión)</Typography>
+                                                                <Typography variant="caption" color="textSecondary">Requiere asignar</Typography>
                                                             </Paper>
                                                         </Grid>
-                                                        <Grid item xs={4}>
+                                                        <Grid item xs={12} sm={6} md={2.4}>
                                                             <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e3f2fd' }}>
                                                                 <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ mt: 0.5 }}>
-                                                                    ${parseMonto(resultado.resumen.monto_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                    ${parseMonto(resultado.resumen?.monto_total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                                 </Typography>
-                                                                <Typography variant="caption" fontWeight="bold">Monto Total Extracto</Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Monto Total Extracto</Typography>
+                                                                <Typography variant="caption" color="textSecondary">{resultado.pagos.length} registros</Typography>
                                                             </Paper>
                                                         </Grid>
                                                     </Grid>
                                                 );
                                             })()}
 
-                                            <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
-                                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-                                                    <Typography variant="subtitle2" fontWeight="bold">
-                                                        Transacciones ({resultado.pagos.length}):
-                                                    </Typography>
+                                            <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center', flexWrap: 'wrap' }}>
                                                     <Chip 
                                                         label={`Todos (${resultado.pagos.length})`}
                                                         size="small"
@@ -665,25 +740,43 @@ export default function ConciliacionPage() {
                                                         sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                                                     />
                                                     <Chip 
-                                                        label={`Con Alumno (${resultado.pagos.filter((it, i) => {
-                                                            const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
-                                                            return Boolean(aid);
-                                                        }).length})`}
+                                                        label={`Faltantes (${resultado.pagos.filter(it => it.estado_conciliacion !== 'YA_CONCILIADO' && !it.ya_conciliado).length})`}
                                                         size="small"
-                                                        color={filtroEstatus === 'CON_ALUMNO' ? 'success' : 'default'}
-                                                        variant={filtroEstatus === 'CON_ALUMNO' ? 'filled' : 'outlined'}
-                                                        onClick={() => setFiltroEstatus('CON_ALUMNO')}
+                                                        color={filtroEstatus === 'FALTANTES' ? 'info' : 'default'}
+                                                        variant={filtroEstatus === 'FALTANTES' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('FALTANTES')}
                                                         sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                                                     />
                                                     <Chip 
-                                                        label={`Sin Alumno / Revisión (${resultado.pagos.filter((it, i) => {
-                                                            const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
-                                                            return !aid;
-                                                        }).length})`}
+                                                        label={`Listos con Ficha (${resultado.pagos.filter(it => it.estado_conciliacion === 'SUGERIDO').length})`}
                                                         size="small"
-                                                        color={filtroEstatus === 'SIN_ALUMNO' ? 'warning' : 'default'}
-                                                        variant={filtroEstatus === 'SIN_ALUMNO' ? 'filled' : 'outlined'}
-                                                        onClick={() => setFiltroEstatus('SIN_ALUMNO')}
+                                                        color={filtroEstatus === 'LISTOS' ? 'success' : 'default'}
+                                                        variant={filtroEstatus === 'LISTOS' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('LISTOS')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Sin Ficha (${resultado.pagos.filter(it => it.estado_conciliacion === 'MATCH_SIN_FICHA').length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'SIN_FICHA' ? 'warning' : 'default'}
+                                                        variant={filtroEstatus === 'SIN_FICHA' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('SIN_FICHA')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Ya Conciliados (${resultado.pagos.filter(it => it.estado_conciliacion === 'YA_CONCILIADO' || it.ya_conciliado).length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'YA_CONCILIADOS' ? 'secondary' : 'default'}
+                                                        variant={filtroEstatus === 'YA_CONCILIADOS' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('YA_CONCILIADOS')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Revisión (${resultado.pagos.filter(it => it.estado_conciliacion === 'REVISION').length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'REVISION' ? 'error' : 'default'}
+                                                        variant={filtroEstatus === 'REVISION' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('REVISION')}
                                                         sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                                                     />
                                                 </Box>
@@ -693,7 +786,7 @@ export default function ConciliacionPage() {
                                                     placeholder="Buscar por nombre, matrícula o referencia..."
                                                     value={busquedaTabla}
                                                     onChange={(e) => setBusquedaTabla(e.target.value)}
-                                                    sx={{ minWidth: 320 }}
+                                                    sx={{ minWidth: 280 }}
                                                     InputProps={{
                                                         startAdornment: (
                                                             <InputAdornment position="start">
@@ -711,27 +804,33 @@ export default function ConciliacionPage() {
                                                 />
                                             </Box>
 
-                                            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 450 }}>
+                                            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 480 }}>
                                                 <Table size="small" stickyHeader>
                                                     <TableHead>
                                                         <TableRow sx={{ backgroundColor: '#1b384a' }}>
                                                             <TableCell sx={{ fontWeight: 'bold' }}>Referencia / Extracto</TableCell>
                                                             <TableCell sx={{ fontWeight: 'bold' }}>Monto</TableCell>
                                                             <TableCell sx={{ fontWeight: 'bold' }}>Estatus Matcheo</TableCell>
-                                                            <TableCell sx={{ fontWeight: 'bold' }}>Alumno Asignado / Acción Manual</TableCell>
+                                                            <TableCell sx={{ fontWeight: 'bold' }}>Alumno Asignado / Acción</TableCell>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
                                                         {resultado.pagos
                                                             .map((item, idx) => ({ item, idx }))
                                                             .filter(({ item, idx }) => {
+                                                                const isYaConciliado = item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado;
+                                                                const isMatchSinFicha = item.estado_conciliacion === 'MATCH_SIN_FICHA';
+                                                                const isSugerido = item.estado_conciliacion === 'SUGERIDO';
                                                                 const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
                                                                     ? alumnoSeleccionadoPorFila[idx] 
                                                                     : (item.alumno_id ? item.alumno_id.toString() : '');
                                                                 const tieneAlumno = Boolean(alumnoIdActual);
 
-                                                                if (filtroEstatus === 'CON_ALUMNO' && !tieneAlumno) return false;
-                                                                if (filtroEstatus === 'SIN_ALUMNO' && tieneAlumno) return false;
+                                                                if (filtroEstatus === 'FALTANTES' && isYaConciliado) return false;
+                                                                if (filtroEstatus === 'LISTOS' && !isSugerido) return false;
+                                                                if (filtroEstatus === 'SIN_FICHA' && !isMatchSinFicha) return false;
+                                                                if (filtroEstatus === 'YA_CONCILIADOS' && !isYaConciliado) return false;
+                                                                if (filtroEstatus === 'REVISION' && (isYaConciliado || isMatchSinFicha || isSugerido)) return false;
 
                                                                 if (busquedaTabla.trim()) {
                                                                     const q = busquedaTabla.toLowerCase().trim();
@@ -750,6 +849,8 @@ export default function ConciliacionPage() {
                                                                 return true;
                                                             })
                                                             .map(({ item, idx }) => {
+                                                            const isYaConciliado = item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado;
+                                                            const isMatchSinFicha = item.estado_conciliacion === 'MATCH_SIN_FICHA';
                                                             const isOrigSugerido = item.estado_conciliacion === 'SUGERIDO';
                                                             const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
                                                                 ? alumnoSeleccionadoPorFila[idx] 
@@ -776,13 +877,20 @@ export default function ConciliacionPage() {
                                                             const deposito = parseMonto(item.monto);
                                                             const saldoAFavor = Math.max(0, deposito - sumaMontoCargos);
 
+                                                            const filaBgColor = isYaConciliado
+                                                                ? '#f5f5f5'
+                                                                : isMatchSinFicha
+                                                                    ? '#fffde7'
+                                                                    : !tieneAlumno
+                                                                        ? '#fff8e1'
+                                                                        : (esSugeridoActivo ? '#e8f5e9' : '#f0f7ff');
+
                                                             return (
                                                                 <TableRow 
                                                                     key={idx} 
                                                                     sx={{ 
-                                                                        backgroundColor: !tieneAlumno 
-                                                                            ? '#fff8e1' 
-                                                                            : (esSugeridoActivo ? '#e8f5e9' : '#f0f7ff') 
+                                                                        backgroundColor: filaBgColor,
+                                                                        opacity: isYaConciliado ? 0.85 : 1
                                                                     }}
                                                                 >
                                                                     <TableCell sx={{ fontFamily: 'monospace' }}>
@@ -792,12 +900,46 @@ export default function ConciliacionPage() {
                                                                                 {item.descripcion}
                                                                             </Typography>
                                                                         )}
+                                                                        {item.linea && (
+                                                                            <Typography variant="caption" sx={{ color: '#9e9e9e', fontSize: '0.65rem' }}>
+                                                                                Fila Excel #{item.linea}
+                                                                            </Typography>
+                                                                        )}
                                                                     </TableCell>
-                                                                    <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                                                        ${deposito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                    <TableCell sx={{ fontWeight: 'bold' }}>
+                                                                        {isYaConciliado ? (
+                                                                            <Box>
+                                                                                <Typography variant="body2" sx={{ color: '#757575', textDecoration: 'line-through' }}>
+                                                                                    ${deposito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                                </Typography>
+                                                                                <Typography variant="caption" sx={{ color: '#4caf50', fontWeight: 'bold', display: 'block' }}>
+                                                                                    Ya conciliado
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        ) : (
+                                                                            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                                                                                ${deposito.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                                            </Typography>
+                                                                        )}
                                                                     </TableCell>
                                                                     <TableCell>
-                                                                        {esSugeridoActivo ? (
+                                                                        {isYaConciliado ? (
+                                                                            <Chip
+                                                                                label={item.comprobante_folio ? `YA CONCILIADO (${item.comprobante_folio})` : 'YA CONCILIADO'}
+                                                                                color="default"
+                                                                                size="small"
+                                                                                icon={<HistoryIcon />}
+                                                                                sx={{ backgroundColor: '#e0e0e0', color: '#616161', fontWeight: 'bold' }}
+                                                                            />
+                                                                        ) : isMatchSinFicha ? (
+                                                                            <Chip
+                                                                                label={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'MATCH SIN FICHA (A Facturar)' : 'MATCH SIN FICHA (Pospuesto)'}
+                                                                                color={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'primary' : 'warning'}
+                                                                                size="small"
+                                                                                icon={<WarningIcon />}
+                                                                                sx={{ fontWeight: 'bold' }}
+                                                                            />
+                                                                        ) : esSugeridoActivo ? (
                                                                             <Chip
                                                                                 label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'}
                                                                                 color="success"
@@ -816,114 +958,181 @@ export default function ConciliacionPage() {
                                                                         )}
                                                                     </TableCell>
                                                                     <TableCell sx={{ minWidth: 400 }}>
-                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                                            <Autocomplete
-                                                                                size="small"
-                                                                                fullWidth
-                                                                                options={alumnos}
-                                                                                value={alumnoSeleccionadoObj}
-                                                                                getOptionLabel={(option) => {
-                                                                                    if (!option) return '';
-                                                                                    const apMat = option.apellido_materno ? ` ${option.apellido_materno}` : '';
-                                                                                    const mat = option.matricula ? ` [${option.matricula}]` : '';
-                                                                                    return `${option.nombre || ''} ${option.apellido_paterno || ''}${apMat}${mat}`.trim();
-                                                                                }}
-                                                                                isOptionEqualToValue={(option, val) => option?.id?.toString() === val?.id?.toString()}
-                                                                                filterOptions={(options, state) => {
-                                                                                    const query = (state.inputValue || '').toLowerCase().trim();
-                                                                                    if (!query) return options;
-                                                                                    return options.filter(a => {
-                                                                                        const fullStr = `${a.nombre || ''} ${a.apellido_paterno || ''} ${a.apellido_materno || ''} ${a.matricula || ''}`.toLowerCase();
-                                                                                        return fullStr.includes(query);
-                                                                                    });
-                                                                                }}
-                                                                                onChange={(event, newValue) => {
-                                                                                    if (!newValue) {
-                                                                                        handleQuitarAsignacion(idx);
-                                                                                    } else {
-                                                                                        setAlumnoSeleccionadoPorFila((prev) => ({
-                                                                                            ...prev,
-                                                                                            [idx]: newValue.id.toString()
-                                                                                        }));
-                                                                                        // Al cambiar de alumno, limpiamos sus cargos seleccionados
-                                                                                        setCargosSeleccionadosPorFila((prev) => ({
-                                                                                            ...prev,
-                                                                                            [idx]: []
-                                                                                        }));
-                                                                                    }
-                                                                                }}
-                                                                                renderInput={(params) => (
-                                                                                    <TextField
-                                                                                        {...params}
-                                                                                        label="Buscar y Asignar Alumno..."
-                                                                                        placeholder="Escribe el nombre o matrícula..."
+                                                                        {isYaConciliado ? (
+                                                                            <Box sx={{ p: 1.2, borderRadius: 1.5, backgroundColor: '#ffffff', border: '1px solid #e0e0e0' }}>
+                                                                                <Typography variant="body2" fontWeight="bold" color="#424242">
+                                                                                    {item.alumno_nombre ? `${item.alumno_nombre} ${item.alumno_matricula ? `[${item.alumno_matricula}]` : ''}` : 'Registro bancario previo'}
+                                                                                </Typography>
+                                                                                <Typography variant="caption" color="textSecondary" display="block">
+                                                                                    {item.comprobante_folio 
+                                                                                        ? `✅ Registrado previamente con Pre-Factura ${item.comprobante_folio}. Se omite para no duplicar.` 
+                                                                                        : '✅ Movimiento ya registrado y conciliado previamente en el sistema.'}
+                                                                                </Typography>
+                                                                            </Box>
+                                                                        ) : isMatchSinFicha ? (
+                                                                            <Box sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: '#fffde7', border: '1px solid #ffe082' }}>
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+                                                                                    <Box>
+                                                                                        <Typography variant="caption" sx={{ color: '#b78103', fontWeight: 'bold', display: 'block' }}>
+                                                                                            ALUMNO COINCIDENTE POR CLABE:
+                                                                                        </Typography>
+                                                                                        <Typography variant="body2" fontWeight="bold" color="#1b384a">
+                                                                                            {item.alumno_nombre} {item.alumno_matricula ? `[${item.alumno_matricula}]` : ''}
+                                                                                        </Typography>
+                                                                                    </Box>
+                                                                                    <Chip 
+                                                                                        label={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'Opción: Crear Ficha y Facturar' : 'Opción: Pospuesto (Ignorar monto)'} 
+                                                                                        color={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'primary' : 'default'}
                                                                                         size="small"
+                                                                                        variant="filled"
+                                                                                        sx={{ fontWeight: 'bold' }}
                                                                                     />
-                                                                                )}
-                                                                                noOptionsText="Sin alumnos coincidentes"
-                                                                            />
-                                                                            {tieneAlumno && (
-                                                                                <Tooltip title="Quitar asignación / Desmarcar alumno">
-                                                                                    <IconButton
+                                                                                </Box>
+                                                                                <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 1.2 }}>
+                                                                                    ℹ️ No tiene fichas o cargos pendientes en el sistema. Es probable que más adelante se le genere su ficha.
+                                                                                </Typography>
+                                                                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                                                                    <Button
                                                                                         size="small"
-                                                                                        color="error"
-                                                                                        onClick={() => handleQuitarAsignacion(idx)}
-                                                                                        sx={{ border: '1px solid #e57373', borderRadius: 1, p: 0.8 }}
+                                                                                        variant={accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? 'contained' : 'outlined'}
+                                                                                        color="inherit"
+                                                                                        startIcon={<BlockIcon />}
+                                                                                        onClick={() => setAccionSinFichaPorFila(prev => ({ ...prev, [idx]: 'IGNORAR' }))}
+                                                                                        sx={{ 
+                                                                                            textTransform: 'none', 
+                                                                                            fontSize: '0.75rem',
+                                                                                            backgroundColor: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#616161' : 'transparent',
+                                                                                            color: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#fff' : '#616161',
+                                                                                            '&:hover': {
+                                                                                                backgroundColor: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#424242' : '#eeeeee'
+                                                                                            }
+                                                                                        }}
                                                                                     >
-                                                                                        <ClearIcon fontSize="small" />
-                                                                                    </IconButton>
-                                                                                </Tooltip>
-                                                                            )}
-                                                                        </Box>
+                                                                                        🚫 Ignorar monto en esta conciliación (Pospuesto)
+                                                                                    </Button>
+                                                                                    <Button
+                                                                                        size="small"
+                                                                                        variant={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'contained' : 'outlined'}
+                                                                                        color="primary"
+                                                                                        startIcon={<AddIcon />}
+                                                                                        onClick={() => setAccionSinFichaPorFila(prev => ({ ...prev, [idx]: 'CREAR_FICHA' }))}
+                                                                                        sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                                                                                    >
+                                                                                        ➕ Crear Ficha y Facturar ahora
+                                                                                    </Button>
+                                                                                </Box>
+                                                                            </Box>
+                                                                        ) : (
+                                                                            <>
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                                                    <Autocomplete
+                                                                                        size="small"
+                                                                                        fullWidth
+                                                                                        options={alumnos}
+                                                                                        value={alumnoSeleccionadoObj}
+                                                                                        getOptionLabel={(option) => {
+                                                                                            if (!option) return '';
+                                                                                            const apMat = option.apellido_materno ? ` ${option.apellido_materno}` : '';
+                                                                                            const mat = option.matricula ? ` [${option.matricula}]` : '';
+                                                                                            return `${option.nombre || ''} ${option.apellido_paterno || ''}${apMat}${mat}`.trim();
+                                                                                        }}
+                                                                                        isOptionEqualToValue={(option, val) => option?.id?.toString() === val?.id?.toString()}
+                                                                                        filterOptions={(options, state) => {
+                                                                                            const query = (state.inputValue || '').toLowerCase().trim();
+                                                                                            if (!query) return options;
+                                                                                            return options.filter(a => {
+                                                                                                const fullStr = `${a.nombre || ''} ${a.apellido_paterno || ''} ${a.apellido_materno || ''} ${a.matricula || ''}`.toLowerCase();
+                                                                                                return fullStr.includes(query);
+                                                                                            });
+                                                                                        }}
+                                                                                        onChange={(event, newValue) => {
+                                                                                            if (!newValue) {
+                                                                                                handleQuitarAsignacion(idx);
+                                                                                            } else {
+                                                                                                setAlumnoSeleccionadoPorFila((prev) => ({
+                                                                                                    ...prev,
+                                                                                                    [idx]: newValue.id.toString()
+                                                                                                }));
+                                                                                                setCargosSeleccionadosPorFila((prev) => ({
+                                                                                                    ...prev,
+                                                                                                    [idx]: []
+                                                                                                }));
+                                                                                            }
+                                                                                        }}
+                                                                                        renderInput={(params) => (
+                                                                                            <TextField
+                                                                                                {...params}
+                                                                                                label="Buscar y Asignar Alumno..."
+                                                                                                placeholder="Escribe el nombre o matrícula..."
+                                                                                                size="small"
+                                                                                            />
+                                                                                        )}
+                                                                                        noOptionsText="Sin alumnos coincidentes"
+                                                                                    />
+                                                                                    {tieneAlumno && (
+                                                                                        <Tooltip title="Quitar asignación / Desmarcar alumno">
+                                                                                            <IconButton
+                                                                                                size="small"
+                                                                                                color="error"
+                                                                                                onClick={() => handleQuitarAsignacion(idx)}
+                                                                                                sx={{ border: '1px solid #e57373', borderRadius: 1, p: 0.8 }}
+                                                                                            >
+                                                                                                <ClearIcon fontSize="small" />
+                                                                                            </IconButton>
+                                                                                        </Tooltip>
+                                                                                    )}
+                                                                                </Box>
 
-                                                                        {tieneAlumno && (
-                                                                            <Box sx={{ mt: 1, backgroundColor: '#f9f9f9', p: 1, borderRadius: 1 }}>
-                                                                                <FormControl size="small" sx={{ width: '100%', mb: 1 }}>
-                                                                                    <InputLabel>Fichas / Cargos a Pagar</InputLabel>
-                                                                                    <Select
-                                                                                        multiple
-                                                                                        value={seleccionadosIds}
-                                                                                        label="Fichas / Cargos a Pagar"
-                                                                                        onChange={(e) => handleCargoSelectChange(idx, e)}
-                                                                                        renderValue={(selected) => (
-                                                                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                                                                                {selected.map((value) => {
-                                                                                                    const c = cargosDisponibles.find(cd => cd.id.toString() === value.toString());
-                                                                                                    return <Chip key={value} label={c ? `${c.concepto?.nombre || 'Cargo'} ($${parseMonto(c.monto_pendiente).toFixed(2)})` : value} size="small" />;
-                                                                                                })}
+                                                                                {tieneAlumno && (
+                                                                                    <Box sx={{ mt: 1, backgroundColor: '#f9f9f9', p: 1, borderRadius: 1 }}>
+                                                                                        <FormControl size="small" sx={{ width: '100%', mb: 1 }}>
+                                                                                            <InputLabel>Fichas / Cargos a Pagar</InputLabel>
+                                                                                            <Select
+                                                                                                multiple
+                                                                                                value={seleccionadosIds}
+                                                                                                label="Fichas / Cargos a Pagar"
+                                                                                                onChange={(e) => handleCargoSelectChange(idx, e)}
+                                                                                                renderValue={(selected) => (
+                                                                                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                                                                        {selected.map((value) => {
+                                                                                                            const c = cargosDisponibles.find(cd => cd.id.toString() === value.toString());
+                                                                                                            return <Chip key={value} label={c ? `${c.concepto?.nombre || 'Cargo'} ($${parseMonto(c.monto_pendiente).toFixed(2)})` : value} size="small" />;
+                                                                                                        })}
+                                                                                                    </Box>
+                                                                                                )}
+                                                                                            >
+                                                                                                {cargosDisponibles.map(c => (
+                                                                                                    <MenuItem key={c.id} value={c.id.toString()}>
+                                                                                                        {c.concepto?.nombre || 'Colegiatura'} - $${parseMonto(c.monto_pendiente).toFixed(2)} {c.codigo_ficha ? `(${c.codigo_ficha})` : ''}
+                                                                                                    </MenuItem>
+                                                                                                ))}
+                                                                                                {cargosDisponibles.length === 0 && (
+                                                                                                    <MenuItem disabled value="">El alumno no tiene cargos pendientes</MenuItem>
+                                                                                                )}
+                                                                                            </Select>
+                                                                                        </FormControl>
+                                                                                        
+                                                                                        {saldoAFavor > 0 && (
+                                                                                            <Box sx={{ mt: 1, p: 1, border: '1px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd' }}>
+                                                                                                <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
+                                                                                                    <Typography variant="caption" fontWeight="bold">
+                                                                                                        {cargosDisponibles.length === 0 
+                                                                                                            ? `No hay fichas pendientes. Se generará automáticamente una ficha por $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` 
+                                                                                                            : `Se detectó un excedente/Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Se facturará y asignará automáticamente al alumno.`}
+                                                                                                    </Typography>
+                                                                                                </Alert>
                                                                                             </Box>
                                                                                         )}
-                                                                                    >
-                                                                                        {cargosDisponibles.map(c => (
-                                                                                            <MenuItem key={c.id} value={c.id.toString()}>
-                                                                                                {c.concepto?.nombre || 'Colegiatura'} - $${parseMonto(c.monto_pendiente).toFixed(2)} {c.codigo_ficha ? `(${c.codigo_ficha})` : ''}
-                                                                                            </MenuItem>
-                                                                                        ))}
-                                                                                        {cargosDisponibles.length === 0 && (
-                                                                                            <MenuItem disabled value="">El alumno no tiene cargos pendientes</MenuItem>
+                                                                                        {sumaMontoCargos > deposito && seleccionadosIds.length > 0 && (
+                                                                                            <Alert severity="warning" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
+                                                                                                <Typography variant="caption">
+                                                                                                    Faltarán $${(sumaMontoCargos - deposito).toLocaleString('es-MX', { minimumFractionDigits: 2 })} para liquidar fichas
+                                                                                                </Typography>
+                                                                                            </Alert>
                                                                                         )}
-                                                                                    </Select>
-                                                                                </FormControl>
-                                                                                
-                                                                                {saldoAFavor > 0 && (
-                                                                                    <Box sx={{ mt: 1, p: 1, border: '1px dashed #2196f3', borderRadius: 1, backgroundColor: '#e3f2fd' }}>
-                                                                                        <Alert severity="info" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
-                                                                                            <Typography variant="caption" fontWeight="bold">
-                                                                                                {cargosDisponibles.length === 0 
-                                                                                                    ? `No hay fichas pendientes. Se generará automáticamente una ficha por $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` 
-                                                                                                    : `Se detectó un excedente/Saldo a Favor de $${saldoAFavor.toLocaleString('es-MX', { minimumFractionDigits: 2 })}. Se facturará y asignará automáticamente al alumno.`}
-                                                                                            </Typography>
-                                                                                        </Alert>
                                                                                     </Box>
                                                                                 )}
-                                                                                {sumaMontoCargos > deposito && seleccionadosIds.length > 0 && (
-                                                                                    <Alert severity="warning" sx={{ py: 0, px: 1, '& .MuiAlert-message': { p: 0.5 } }}>
-                                                                                        <Typography variant="caption">
-                                                                                            Faltarán $${(sumaMontoCargos - deposito).toLocaleString('es-MX', { minimumFractionDigits: 2 })} para liquidar fichas
-                                                                                        </Typography>
-                                                                                    </Alert>
-                                                                                )}
-                                                                            </Box>
+                                                                            </>
                                                                         )}
                                                                     </TableCell>
                                                                 </TableRow>
