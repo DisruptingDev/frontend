@@ -1109,46 +1109,69 @@ export async function POST(request) {
         let montoTotal = 0;
         const pagosProcesados = [];
 
-        const coincideFicha = (c, refClean, dClean, textoClean = '', textoCompletoConSimbolos = '') => {
-            if (!c) return false;
-            const stripZ = (s) => (s || '').replace(/^0+/, '');
+        const cleanDigits = (s) => String(s || '').replace(/\D/g, '');
+        const stripZeros = (s) => (s || '').replace(/^0+/, '');
 
-            // Códigos asociados al cargo a verificar
-            const codigosCargo = [c.codigo_ficha, c.referencia_bancaria].filter(Boolean);
+        // Validador estricto de CLABE interbancaria (18 dígitos)
+        const esMatchCLABE = (refColVal, clabeAlumno) => {
+            if (!refColVal || !clabeAlumno) return false;
+            const r = cleanDigits(refColVal);
+            const c = cleanDigits(clabeAlumno);
+            // Una CLABE interbancaria en México tiene 18 dígitos (mínimo 10 dígitos)
+            if (c.length < 10 || r.length < 10) return false;
 
-            for (const cod of codigosCargo) {
-                const codUpper = String(cod).trim().toUpperCase();
-                if (!codUpper || codUpper.length < 2) continue;
+            // 1. Coincidencia exacta de los dígitos
+            if (r === c) return true;
 
-                // 1. Variante con guión o tal cual (ej. "M-0000", "SAF-000")
-                const conGuion = codUpper;
-                // 2. Variante sin guión (ej. "M0000", "SAF000")
-                const sinGuion = codUpper.replace(/[^A-Z0-9]/g, '');
-                const sinGuionNoZeros = stripZ(sinGuion);
+            // 2. Coincidencia sin ceros a la izquierda (por si Excel los eliminó al guardar numérico)
+            const rZ = stripZeros(r);
+            const cZ = stripZeros(c);
+            if (cZ.length >= 10 && rZ === cZ) return true;
 
-                // A. Búsqueda sin guión en concepto limpio, texto o referencia
-                if (sinGuion.length >= 3) {
-                    if (dClean.includes(sinGuion) || textoClean.includes(sinGuion) || refClean.includes(sinGuion)) return true;
+            // 3. Si la columna referencia contiene la CLABE completa del alumno (mínimo 16 dígitos)
+            if (c.length >= 16 && r.includes(c)) return true;
+            if (cZ.length >= 16 && rZ.includes(cZ)) return true;
+
+            return false;
+        };
+
+        // Validador de código de ficha dentro del CONCEPTO / DESCRIPCIÓN (ej. M-0000, SAF-000 con o sin guión)
+        const coincideFichaEnConcepto = (cargo, descripcionMov, textoCompletoMov) => {
+            if (!cargo) return false;
+            const descRaw = String(descripcionMov || '').toUpperCase();
+            const textoRaw = String(textoCompletoMov || '').toUpperCase();
+            const textoBusqueda = `${descRaw} ${textoRaw}`.trim();
+            if (!textoBusqueda) return false;
+
+            const textoCleanNoSymbols = textoBusqueda.replace(/[^A-Z0-9]/g, '');
+
+            const codigosAChecar = [cargo.codigo_ficha, cargo.referencia_bancaria].filter(Boolean);
+
+            for (const codigo of codigosAChecar) {
+                const codUpper = String(codigo).trim().toUpperCase();
+                if (!codUpper || codUpper.length < 3) continue;
+
+                // 1. Coincidencia directa con guión o tal cual (ej. "M-0001", "SAF-0002")
+                if (textoBusqueda.includes(codUpper)) {
+                    return true;
                 }
-                if (sinGuionNoZeros.length >= 3) {
-                    if (stripZ(dClean).includes(sinGuionNoZeros) || stripZ(textoClean).includes(sinGuionNoZeros) || stripZ(refClean).includes(sinGuionNoZeros)) return true;
+
+                // 2. Coincidencia sin guión ni símbolos (ej. "M0001", "SAF0002")
+                const codSinSimbolos = codUpper.replace(/[^A-Z0-9]/g, '');
+                if (codSinSimbolos.length >= 3 && textoCleanNoSymbols.includes(codSinSimbolos)) {
+                    return true;
                 }
 
-                // B. Búsqueda con guión en texto original/concepto con símbolos (ej. "M-0000", "SAF-000")
-                if (conGuion.length >= 3 && textoCompletoConSimbolos) {
-                    if (textoCompletoConSimbolos.includes(conGuion)) return true;
-                }
-
-                // C. Búsqueda inteligente por prefijo y número (ej. M-0001 coincide con M1, M-1, M0001, M-0001)
+                // 3. Manejo de prefijo y número sin ceros a la izquierda (ej. "M-00001" coincide con "M-1" o "M1")
                 const matchPrefijo = codUpper.match(/^([A-Z]+)[-_ ]*0*(\d+)$/i);
                 if (matchPrefijo) {
                     const prefijo = matchPrefijo[1];
                     const num = matchPrefijo[2];
-                    const varConGuion = `${prefijo}-${num}`;
-                    const varSinGuion = `${prefijo}${num}`;
+                    const cortoConGuion = `${prefijo}-${num}`;
+                    const cortoSinGuion = `${prefijo}${num}`;
 
-                    if (varConGuion.length >= 3 && textoCompletoConSimbolos && textoCompletoConSimbolos.includes(varConGuion)) return true;
-                    if (varSinGuion.length >= 3 && (dClean.includes(varSinGuion) || textoClean.includes(varSinGuion) || refClean.includes(varSinGuion))) return true;
+                    if (textoBusqueda.includes(cortoConGuion)) return true;
+                    if (cortoSinGuion.length >= 3 && textoCleanNoSymbols.includes(cortoSinGuion)) return true;
                 }
             }
 
@@ -1179,51 +1202,26 @@ export async function POST(request) {
             let metodoMatcheo = null;
             
             const refMovOriginal = (mov.referenciaLimpia || mov.referencia || '').toUpperCase();
-            const descOriginal = (mov.descripcion || '').toUpperCase();
-            const textoOriginal = (mov.texto_completo || '').toUpperCase();
-            const textoCompletoConSimbolos = `${descOriginal} ${textoOriginal} ${refMovOriginal}`;
-            
-            const cleanStr = (s) => {
-                if (!s) return '';
-                return String(s)
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/ñ/g, "n")
-                    .replace(/Ñ/g, "N")
-                    .replace(/[^a-zA-Z0-9]/g, '')
-                    .toUpperCase();
-            };
-            const stripZeros = (s) => (s || '').replace(/^0+/, '');
-            const refMovClean = cleanStr(refMovOriginal);
-            const descClean = cleanStr(descOriginal);
-            const textoClean = cleanStr(textoOriginal);
-            const refMovCleanNoZeros = stripZeros(refMovClean);
-            const descCleanNoZeros = stripZeros(descClean);
-            const textoCleanNoZeros = stripZeros(textoClean);
+            const refMovRaw = (mov.referencia_raw || '').toUpperCase();
 
-            // 1. Matcheo por CLABE interbancaria del alumno con la columna REFERENCIA del archivo
-            if (refMovClean && refMovClean.length >= 5) {
-                alumnoEncontrado = todosLosAlumnos.find(a => {
-                    if (!a.clabe_interbancaria) return false;
-                    const clabeAlu = cleanStr(a.clabe_interbancaria);
-                    const clabeAluNoZeros = stripZeros(clabeAlu);
-                    if (!clabeAlu || clabeAlu.length < 5) return false;
+            // =========================================================================
+            // PASO 1: Matcheo estricto por CLABE interbancaria del alumno con la columna REFERENCIA
+            // =========================================================================
+            alumnoEncontrado = todosLosAlumnos.find(a => {
+                if (!a.clabe_interbancaria) return false;
+                return esMatchCLABE(refMovOriginal, a.clabe_interbancaria) || esMatchCLABE(refMovRaw, a.clabe_interbancaria);
+            });
 
-                    // Coincidencia estricta contra la columna referencia
-                    if (refMovClean === clabeAlu || refMovClean.includes(clabeAlu) || clabeAlu.includes(refMovClean)) return true;
-                    if (clabeAluNoZeros.length >= 5 && (refMovCleanNoZeros === clabeAluNoZeros || refMovCleanNoZeros.includes(clabeAluNoZeros) || clabeAluNoZeros.includes(refMovCleanNoZeros))) return true;
-
-                    return false;
-                });
-
-                if (alumnoEncontrado) {
-                    metodoMatcheo = `CLABE Interbancaria en Referencia (${alumnoEncontrado.clabe_interbancaria})`;
-                }
+            if (alumnoEncontrado) {
+                metodoMatcheo = `CLABE Interbancaria en Referencia (${alumnoEncontrado.clabe_interbancaria})`;
             }
 
-            // 2. Si no hubo match por CLABE, buscar la clave de la ficha en el CONCEPTO / DESCRIPCIÓN (ej. M-0000, SAF-000 con o sin guión)
+            // =========================================================================
+            // PASO 2: Si no hubo match por CLABE, buscar código de ficha en CONCEPTO / DESCRIPCIÓN
+            //         (ej. formatos tipo M-0000, SAF-000 con o sin guión)
+            // =========================================================================
             if (!alumnoEncontrado) {
-                const cargoMatcheado = cargosPendientes.find(c => coincideFicha(c, refMovClean, descClean, textoClean, textoCompletoConSimbolos));
+                const cargoMatcheado = cargosPendientes.find(c => coincideFichaEnConcepto(c, mov.descripcion, mov.texto_completo));
 
                 if (cargoMatcheado) {
                     alumnoEncontrado = todosLosAlumnos.find(a => String(a.id) === String(cargoMatcheado.alumno_id));
@@ -1233,18 +1231,18 @@ export async function POST(request) {
                 }
             }
 
-            // (Nota: El matcheo por nombres de alumno ha sido desactivado según lo requerido)
+            // (El matcheo por nombres de alumno permanece desactivado)
 
             if (alumnoEncontrado) {
                 let alumnoCargosPendientes = cargosPendientes.filter(cp => String(cp.alumno_id) === String(alumnoEncontrado.id));
 
                 // Priorización inteligente de los cargos del alumno:
-                // 1º Coincidencia explícita de código de ficha / referencia
+                // 1º Coincidencia explícita de código de ficha en concepto
                 // 2º Coincidencia exacta de monto
                 // 3º Antigüedad ID asc
                 alumnoCargosPendientes.sort((a, b) => {
-                    const matchA = coincideFicha(a, refMovClean, descClean, textoClean, textoCompletoConSimbolos);
-                    const matchB = coincideFicha(b, refMovClean, descClean, textoClean, textoCompletoConSimbolos);
+                    const matchA = coincideFichaEnConcepto(a, mov.descripcion, mov.texto_completo);
+                    const matchB = coincideFichaEnConcepto(b, mov.descripcion, mov.texto_completo);
                     if (matchA && !matchB) return -1;
                     if (!matchA && matchB) return 1;
 
