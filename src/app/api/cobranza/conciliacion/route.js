@@ -1068,18 +1068,15 @@ export async function POST(request) {
         try {
             cargosPendientes = await prisma.cargoAlumno.findMany({
                 where: { AND: andFiltersCargos },
-                include: { ConceptoCobro: true, Alumno: true }
+                include: { concepto: true, alumno: true }
             });
         } catch (e1) {
             try {
                 cargosPendientes = await prisma.cargoAlumno.findMany({
-                    where: { AND: andFiltersCargos },
-                    include: { concepto: true, alumno: true }
-                });
-            } catch (e2) {
-                cargosPendientes = await prisma.cargoAlumno.findMany({
                     where: { AND: andFiltersCargos }
                 });
+            } catch (e2) {
+                console.error('Error cargando cargosPendientes:', e2.message);
             }
         }
 
