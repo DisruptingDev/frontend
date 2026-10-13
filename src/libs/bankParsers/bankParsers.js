@@ -1,15 +1,32 @@
 import * as XLSX from 'xlsx';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const pdfModule = require('pdf-parse');
 
 const MESES = {
     'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
     'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
 };
 
+async function getPdfModule() {
+    try {
+        const mod = await import('pdf-parse');
+        return mod.default || mod;
+    } catch (e1) {
+        try {
+            const { createRequire } = await import('module');
+            const req = createRequire(import.meta.url);
+            return req('pdf-parse');
+        } catch (e2) {
+            console.error('Error cargando módulo pdf-parse:', e2);
+            return null;
+        }
+    }
+}
+
 async function extractTextFromPDFBuffer(pdfBuffer) {
+    const pdfModule = await getPdfModule();
+    if (!pdfModule) {
+        throw new Error('La librería para procesar archivos PDF no está disponible en este entorno. Por favor use un archivo Excel (.xlsx) o CSV.');
+    }
+
     let uint8Array;
     if (Buffer.isBuffer(pdfBuffer)) {
         uint8Array = new Uint8Array(pdfBuffer.buffer, pdfBuffer.byteOffset, pdfBuffer.byteLength);
@@ -20,7 +37,7 @@ async function extractTextFromPDFBuffer(pdfBuffer) {
     }
 
     // Compatibilidad con pdf-parse v2+ (PDFParse class)
-    if (pdfModule && pdfModule.PDFParse) {
+    if (pdfModule.PDFParse) {
         const parser = new pdfModule.PDFParse(uint8Array);
         const result = await parser.getText();
         if (typeof parser.destroy === 'function') {

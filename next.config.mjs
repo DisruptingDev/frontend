@@ -21,6 +21,7 @@ const nextConfig = {
         config.cache = false;
         return config;
     },
+    serverExternalPackages: ['pdf-parse'],
     eslint: {
         ignoreDuringBuilds: true,
     },
