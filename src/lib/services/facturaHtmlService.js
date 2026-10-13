@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { getDescripcionRegimen, getDescripcionUsoCFDI } from '../../utils/catalogoSAT.js';
+import { getDescripcionRegimen, getDescripcionUsoCFDI } from '@/utils/catalogoSAT';
 
 // Paletas de diseño según el ID de plantilla registrado en la BD
 const PALETAS_PLANTILLAS = {

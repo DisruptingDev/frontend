@@ -1,7 +1,7 @@
-import prisma from '../prisma.js';
-import { sendEmailViaMailgun } from './mailgunService.js';
-import { generarHtmlFactura } from './facturaHtmlService.js';
-import { generarPdfDesdeHtml } from './pdfGeneratorService.js';
+import prisma from '@/lib/prisma';
+import { sendEmailViaMailgun } from '@/lib/services/mailgunService';
+import { generarHtmlFactura } from '@/lib/services/facturaHtmlService';
+import { generarPdfDesdeHtml } from '@/lib/services/pdfGeneratorService';
 
 /**
  * Plantilla de correo para el cuerpo del mensaje

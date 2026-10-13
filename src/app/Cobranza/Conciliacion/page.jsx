@@ -272,7 +272,16 @@ export default function ConciliacionPage() {
                 body: formData
             });
 
-            const data = await response.json();
+            const textResponse = await response.text();
+            let data;
+            try {
+                data = JSON.parse(textResponse);
+            } catch (jsonErr) {
+                if (!response.ok) {
+                    throw new Error(`Error en el servidor (${response.status}): No se pudo procesar la respuesta. Verifique que el archivo sea válido.`);
+                }
+                throw new Error('La respuesta del servidor no tiene un formato JSON válido.');
+            }
 
             if (!response.ok) {
                 throw new Error(data.error || 'Error al procesar el archivo');

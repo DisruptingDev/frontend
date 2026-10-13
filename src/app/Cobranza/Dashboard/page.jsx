@@ -1074,7 +1074,17 @@ export default function MóduloCobranzaUnificadoPage() {
                 body: formData
             });
 
-            const data = await res.json();
+            const textRes = await res.text();
+            let data;
+            try {
+                data = JSON.parse(textRes);
+            } catch (jsonErr) {
+                if (!res.ok) {
+                    throw new Error(`Error en el servidor (${res.status}): No se pudo procesar la respuesta.`);
+                }
+                throw new Error('La respuesta del servidor no tiene un formato JSON válido.');
+            }
+
             if (!res.ok) throw new Error(data.error || 'Error al procesar la conciliación');
 
             const initAlumnosSelec = {};

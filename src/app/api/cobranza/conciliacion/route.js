@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { parseExcelFile, parseGenerico, parsePDFBBVA, parseArchivoBancario } from '@/libs/bankParsers/bankParsers';
 import { construirDescripcionConcepto } from '@/lib/services/servicioFacturacion';
 
+export const dynamic = 'force-dynamic';
+
 function serializeBigIntsAndDecimals(obj) {
     if (obj === null || obj === undefined) return obj;
     if (typeof obj === 'bigint') return obj.toString();
@@ -972,8 +974,6 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No se ha adjuntado ningún archivo para conciliación.' }, { status: 400 });
         }
 
-        const emisor = await obtenerOGenerarEmisorPredeterminado();
-
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
@@ -1347,7 +1347,7 @@ export async function POST(request) {
             pagos: pagosProcesados
         };
         
-        return NextResponse.json(responseData, { status: 200 });
+        return NextResponse.json(serializeBigIntsAndDecimals(responseData), { status: 200 });
 
     } catch (error) {
         console.error('Error procesando conciliacion:', error);
