@@ -34,7 +34,8 @@ import {
     Divider,
     Checkbox,
     Tabs,
-    Tab
+    Tab,
+    InputAdornment
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,7 +51,9 @@ import {
     FilterList as FilterListIcon,
     Delete as DeleteIcon,
     CloudUpload as CloudUploadIcon,
-    Download as DownloadIcon
+    Download as DownloadIcon,
+    Search as SearchIcon,
+    Clear as ClearIcon
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import { REGIMENES_FISCALES, USOS_CFDI, getDescripcionRegimen, getDescripcionUsoCFDI } from '@/utils/catalogoSAT';
@@ -89,6 +92,7 @@ export default function AlumnosView() {
     const [globalError, setGlobalError] = useState(null);
     const [mensajeExito, setMensajeExito] = useState('');
     const [filtroEstatus, setFiltroEstatus] = useState('TODOS');
+    const [busquedaNombre, setBusquedaNombre] = useState('');
 
     // Estado para Importación de Alumnos desde Excel
     const [openImportModal, setOpenImportModal] = useState(false);
@@ -792,8 +796,34 @@ export default function AlumnosView() {
     };
 
     const alumnosFiltrados = alumnos.filter(a => {
-        if (filtroEstatus === 'TODOS') return true;
-        return (a.estatus || 'ACTIVO').toUpperCase() === filtroEstatus;
+        if (filtroEstatus !== 'TODOS') {
+            if ((a.estatus || 'ACTIVO').toUpperCase() !== filtroEstatus) return false;
+        }
+
+        if (busquedaNombre.trim()) {
+            const query = busquedaNombre.toLowerCase().trim();
+            const nomCompleto = `${a.nombre || ''} ${a.apellido_paterno || ''} ${a.apellido_materno || ''}`.toLowerCase();
+            const matricula = (a.matricula || '').toLowerCase();
+            const curp = (a.curp || '').toLowerCase();
+            const email = (a.email || '').toLowerCase();
+            const carrera = (a.carrera || a.programa_academico?.nombre || '').toLowerCase();
+            const clabe = (a.clabe_interbancaria || '').toLowerCase();
+            const refPago = (a.referencia_pago || '').toLowerCase();
+
+            if (
+                !nomCompleto.includes(query) &&
+                !matricula.includes(query) &&
+                !curp.includes(query) &&
+                !email.includes(query) &&
+                !carrera.includes(query) &&
+                !clabe.includes(query) &&
+                !refPago.includes(query)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
     return (
@@ -859,26 +889,57 @@ export default function AlumnosView() {
                         {mensajeExito && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMensajeExito('')}>{mensajeExito}</Alert>}
                         {error && <Alert severity="error" sx={{ mb: 2, fontWeight: 'bold' }} onClose={() => setError('')}>{error}</Alert>}
 
-                        {/* Barra de Filtros */}
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <FilterListIcon color="action" />
-                                <Typography variant="body2" fontWeight="bold" color="textSecondary">
-                                    Filtrar por Estatus:
-                                </Typography>
+                        {/* Barra de Filtros y Búsqueda */}
+                        <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                                {/* Buscador por Nombre, Matrícula o CURP */}
+                                <TextField
+                                    size="small"
+                                    placeholder="Buscar por nombre, matrícula, CURP o correo..."
+                                    value={busquedaNombre}
+                                    onChange={(e) => setBusquedaNombre(e.target.value)}
+                                    sx={{ minWidth: 320, bgcolor: '#f8fafc' }}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon fontSize="small" color="action" />
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: busquedaNombre ? (
+                                            <InputAdornment position="end">
+                                                <IconButton size="small" onClick={() => setBusquedaNombre('')}>
+                                                    <ClearIcon fontSize="small" />
+                                                </IconButton>
+                                            </InputAdornment>
+                                        ) : null
+                                    }}
+                                />
+
+                                {/* Filtro por Estatus */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <FilterListIcon color="action" />
+                                    <Typography variant="body2" fontWeight="bold" color="textSecondary">
+                                        Estatus:
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        size="small"
+                                        value={filtroEstatus}
+                                        onChange={(e) => setFiltroEstatus(e.target.value)}
+                                        sx={{ minWidth: 190, bgcolor: '#f8fafc' }}
+                                    >
+                                        <MenuItem value="TODOS">Todos los alumnos ({alumnos.length})</MenuItem>
+                                        <MenuItem value="ACTIVO">🟢 Activos ({alumnos.filter(a => (a.estatus || 'ACTIVO') === 'ACTIVO').length})</MenuItem>
+                                        <MenuItem value="BAJA">🔴 Baja ({alumnos.filter(a => a.estatus === 'BAJA').length})</MenuItem>
+                                        <MenuItem value="GRADUADO">🎓 Graduados ({alumnos.filter(a => a.estatus === 'GRADUADO').length})</MenuItem>
+                                    </TextField>
+                                </Box>
                             </Box>
-                            <TextField
-                                select
-                                size="small"
-                                value={filtroEstatus}
-                                onChange={(e) => setFiltroEstatus(e.target.value)}
-                                sx={{ minWidth: 200, bgcolor: '#f8fafc' }}
-                            >
-                                <MenuItem value="TODOS">Todos los alumnos ({alumnos.length})</MenuItem>
-                                <MenuItem value="ACTIVO">🟢 Activos ({alumnos.filter(a => (a.estatus || 'ACTIVO') === 'ACTIVO').length})</MenuItem>
-                                <MenuItem value="BAJA">🔴 Baja ({alumnos.filter(a => a.estatus === 'BAJA').length})</MenuItem>
-                                <MenuItem value="GRADUADO">🎓 Graduados ({alumnos.filter(a => a.estatus === 'GRADUADO').length})</MenuItem>
-                            </TextField>
+
+                            {/* Indicador de alumnos encontrados */}
+                            <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 'bold' }}>
+                                Mostrando {alumnosFiltrados.length} de {alumnos.length} alumnos
+                            </Typography>
                         </Box>
 
                         {globalError && (
