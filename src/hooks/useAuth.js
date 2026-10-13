@@ -22,7 +22,7 @@ export function useAuth() {
       return [];
     }
     try {
-      const response = await fetch(
+      let response = await fetch(
         `${apiUrl}/api/gestionusuarios/RolCopy/${rolId}`,
         {
           headers: {
@@ -32,12 +32,25 @@ export function useAuth() {
         }
       );
 
+      // Si falla RolCopy, intentar con el endpoint estándar /Rol/{id}
+      if (!response.ok) {
+        response = await fetch(
+          `${apiUrl}/api/gestionusuarios/Rol/${rolId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(
-          `Error al obtener permisos: ${response.status} - ${errorText}`
+        console.warn(
+          `Aviso al obtener permisos: ${response.status} - ${errorText}`
         );
-        throw new Error("Error al obtener permisos");
+        return [];
       }
 
       const rolData = await response.json();
@@ -54,7 +67,7 @@ export function useAuth() {
         clave: p.clave || p.Clave, // also store lowercase just in case
       }));
     } catch (error) {
-      console.error("Error fetching permissions:", error);
+      console.warn("Error fetching permissions:", error);
       return [];
     }
   };

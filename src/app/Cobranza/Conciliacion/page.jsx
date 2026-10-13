@@ -278,13 +278,13 @@ export default function ConciliacionPage() {
                 data = JSON.parse(textResponse);
             } catch (jsonErr) {
                 if (!response.ok) {
-                    throw new Error(`Error en el servidor (${response.status}): No se pudo procesar la respuesta. Verifique que el archivo sea válido.`);
+                    throw new Error(`Error en el servidor (${response.status}): ${textResponse.slice(0, 300) || 'No se pudo procesar la respuesta. Verifique que el archivo sea válido.'}`);
                 }
                 throw new Error('La respuesta del servidor no tiene un formato JSON válido.');
             }
 
             if (!response.ok) {
-                throw new Error(data.error || 'Error al procesar el archivo');
+                throw new Error(data.error || data.message || `Error en el servidor (${response.status})`);
             }
 
             // Inicializar las pre-selecciones de cargos para sugerencias
