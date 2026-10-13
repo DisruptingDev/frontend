@@ -48,7 +48,10 @@ import {
     Tooltip,
     Checkbox,
     FormControlLabel,
-    IconButton
+    IconButton,
+    TextField,
+    Autocomplete,
+    InputAdornment
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import {
@@ -61,7 +64,8 @@ import {
     FlashOn as FlashIcon,
     Receipt as ReceiptIcon,
     ArrowForward as ArrowIcon,
-    Clear as ClearIcon
+    Clear as ClearIcon,
+    Search as SearchIcon
 } from '@mui/icons-material';
 import { getDescripcionRegimen } from '@/utils/catalogoSAT';
 
@@ -95,6 +99,10 @@ export default function ConciliacionPage() {
     const [mensajeExito, setMensajeExito] = useState('');
     const [procesandoMasivo, setProcesandoMasivo] = useState(false);
     const [cargosPendientesGlobales, setCargosPendientesGlobales] = useState([]);
+
+    // Filtros de búsqueda en la tabla de transacciones
+    const [busquedaTabla, setBusquedaTabla] = useState('');
+    const [filtroEstatus, setFiltroEstatus] = useState('TODOS'); // 'TODOS' | 'CON_ALUMNO' | 'SIN_ALUMNO'
 
     // Estado para guardar la selección de alumno por cada fila en revisión
     const [alumnoSeleccionadoPorFila, setAlumnoSeleccionadoPorFila] = useState({});
@@ -643,9 +651,65 @@ export default function ConciliacionPage() {
                                                 );
                                             })()}
 
-                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-                                                Transacciones Empatadas y Pendientes de Asignación:
-                                            </Typography>
+                                            <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">
+                                                        Transacciones ({resultado.pagos.length}):
+                                                    </Typography>
+                                                    <Chip 
+                                                        label={`Todos (${resultado.pagos.length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'TODOS' ? 'primary' : 'default'}
+                                                        variant={filtroEstatus === 'TODOS' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('TODOS')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Con Alumno (${resultado.pagos.filter((it, i) => {
+                                                            const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
+                                                            return Boolean(aid);
+                                                        }).length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'CON_ALUMNO' ? 'success' : 'default'}
+                                                        variant={filtroEstatus === 'CON_ALUMNO' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('CON_ALUMNO')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                    <Chip 
+                                                        label={`Sin Alumno / Revisión (${resultado.pagos.filter((it, i) => {
+                                                            const aid = alumnoSeleccionadoPorFila[i] !== undefined ? alumnoSeleccionadoPorFila[i] : it.alumno_id;
+                                                            return !aid;
+                                                        }).length})`}
+                                                        size="small"
+                                                        color={filtroEstatus === 'SIN_ALUMNO' ? 'warning' : 'default'}
+                                                        variant={filtroEstatus === 'SIN_ALUMNO' ? 'filled' : 'outlined'}
+                                                        onClick={() => setFiltroEstatus('SIN_ALUMNO')}
+                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                                                    />
+                                                </Box>
+
+                                                <TextField
+                                                    size="small"
+                                                    placeholder="Buscar por nombre, matrícula o referencia..."
+                                                    value={busquedaTabla}
+                                                    onChange={(e) => setBusquedaTabla(e.target.value)}
+                                                    sx={{ minWidth: 320 }}
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                <SearchIcon fontSize="small" color="action" />
+                                                            </InputAdornment>
+                                                        ),
+                                                        endAdornment: busquedaTabla ? (
+                                                            <InputAdornment position="end">
+                                                                <IconButton size="small" onClick={() => setBusquedaTabla('')}>
+                                                                    <ClearIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </InputAdornment>
+                                                        ) : null
+                                                    }}
+                                                />
+                                            </Box>
 
                                             <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 450 }}>
                                                 <Table size="small" stickyHeader>
@@ -658,13 +722,41 @@ export default function ConciliacionPage() {
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
-                                                        {resultado.pagos.map((item, idx) => {
+                                                        {resultado.pagos
+                                                            .map((item, idx) => ({ item, idx }))
+                                                            .filter(({ item, idx }) => {
+                                                                const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
+                                                                    ? alumnoSeleccionadoPorFila[idx] 
+                                                                    : (item.alumno_id ? item.alumno_id.toString() : '');
+                                                                const tieneAlumno = Boolean(alumnoIdActual);
+
+                                                                if (filtroEstatus === 'CON_ALUMNO' && !tieneAlumno) return false;
+                                                                if (filtroEstatus === 'SIN_ALUMNO' && tieneAlumno) return false;
+
+                                                                if (busquedaTabla.trim()) {
+                                                                    const q = busquedaTabla.toLowerCase().trim();
+                                                                    const aluObj = alumnos.find(a => a.id.toString() === alumnoIdActual);
+                                                                    const nomAlu = aluObj 
+                                                                        ? `${aluObj.nombre} ${aluObj.apellido_paterno} ${aluObj.apellido_materno || ''} ${aluObj.matricula || ''}`.toLowerCase()
+                                                                        : (item.alumno_nombre ? item.alumno_nombre.toLowerCase() : '');
+                                                                    const ref = (item.referencia_bancaria || '').toLowerCase();
+                                                                    const desc = (item.descripcion || '').toLowerCase();
+                                                                    const monto = (item.monto || '').toString();
+
+                                                                    if (!nomAlu.includes(q) && !ref.includes(q) && !desc.includes(q) && !monto.includes(q)) {
+                                                                        return false;
+                                                                    }
+                                                                }
+                                                                return true;
+                                                            })
+                                                            .map(({ item, idx }) => {
                                                             const isOrigSugerido = item.estado_conciliacion === 'SUGERIDO';
                                                             const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
                                                                 ? alumnoSeleccionadoPorFila[idx] 
                                                                 : (item.alumno_id ? item.alumno_id.toString() : '');
                                                             const tieneAlumno = Boolean(alumnoIdActual);
                                                             const esSugeridoActivo = isOrigSugerido && tieneAlumno && (!alumnoSeleccionadoPorFila[idx] || alumnoSeleccionadoPorFila[idx] === item.alumno_id?.toString());
+                                                            const alumnoSeleccionadoObj = alumnos.find(a => a.id.toString() === alumnoIdActual?.toString()) || null;
                                                             
                                                             let cargosDisponibles = [];
                                                             if (esSugeridoActivo) {
@@ -725,38 +817,51 @@ export default function ConciliacionPage() {
                                                                     </TableCell>
                                                                     <TableCell sx={{ minWidth: 400 }}>
                                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                                            <FormControl size="small" sx={{ flexGrow: 1 }}>
-                                                                                <InputLabel>Asignar Alumno...</InputLabel>
-                                                                                <Select
-                                                                                    value={alumnoIdActual || ''}
-                                                                                    label="Asignar Alumno..."
-                                                                                    onChange={(e) => {
-                                                                                        const val = e.target.value;
-                                                                                        if (!val) {
-                                                                                            handleQuitarAsignacion(idx);
-                                                                                        } else {
-                                                                                            setAlumnoSeleccionadoPorFila((prev) => ({
-                                                                                                ...prev,
-                                                                                                [idx]: val
-                                                                                            }));
-                                                                                            // Al cambiar de alumno, limpiamos sus cargos seleccionados
-                                                                                            setCargosSeleccionadosPorFila((prev) => ({
-                                                                                                ...prev,
-                                                                                                [idx]: []
-                                                                                            }));
-                                                                                        }
-                                                                                    }}
-                                                                                >
-                                                                                    <MenuItem value="">
-                                                                                        <em>-- Sin asignar (Revisión manual) --</em>
-                                                                                    </MenuItem>
-                                                                                    {alumnos.map(al => (
-                                                                                        <MenuItem key={al.id} value={al.id.toString()}>
-                                                                                            {al.nombre} {al.apellido_paterno} ({al.matricula})
-                                                                                        </MenuItem>
-                                                                                    ))}
-                                                                                </Select>
-                                                                            </FormControl>
+                                                                            <Autocomplete
+                                                                                size="small"
+                                                                                fullWidth
+                                                                                options={alumnos}
+                                                                                value={alumnoSeleccionadoObj}
+                                                                                getOptionLabel={(option) => {
+                                                                                    if (!option) return '';
+                                                                                    const apMat = option.apellido_materno ? ` ${option.apellido_materno}` : '';
+                                                                                    const mat = option.matricula ? ` [${option.matricula}]` : '';
+                                                                                    return `${option.nombre || ''} ${option.apellido_paterno || ''}${apMat}${mat}`.trim();
+                                                                                }}
+                                                                                isOptionEqualToValue={(option, val) => option?.id?.toString() === val?.id?.toString()}
+                                                                                filterOptions={(options, state) => {
+                                                                                    const query = (state.inputValue || '').toLowerCase().trim();
+                                                                                    if (!query) return options;
+                                                                                    return options.filter(a => {
+                                                                                        const fullStr = `${a.nombre || ''} ${a.apellido_paterno || ''} ${a.apellido_materno || ''} ${a.matricula || ''}`.toLowerCase();
+                                                                                        return fullStr.includes(query);
+                                                                                    });
+                                                                                }}
+                                                                                onChange={(event, newValue) => {
+                                                                                    if (!newValue) {
+                                                                                        handleQuitarAsignacion(idx);
+                                                                                    } else {
+                                                                                        setAlumnoSeleccionadoPorFila((prev) => ({
+                                                                                            ...prev,
+                                                                                            [idx]: newValue.id.toString()
+                                                                                        }));
+                                                                                        // Al cambiar de alumno, limpiamos sus cargos seleccionados
+                                                                                        setCargosSeleccionadosPorFila((prev) => ({
+                                                                                            ...prev,
+                                                                                            [idx]: []
+                                                                                        }));
+                                                                                    }
+                                                                                }}
+                                                                                renderInput={(params) => (
+                                                                                    <TextField
+                                                                                        {...params}
+                                                                                        label="Buscar y Asignar Alumno..."
+                                                                                        placeholder="Escribe el nombre o matrícula..."
+                                                                                        size="small"
+                                                                                    />
+                                                                                )}
+                                                                                noOptionsText="Sin alumnos coincidentes"
+                                                                            />
                                                                             {tieneAlumno && (
                                                                                 <Tooltip title="Quitar asignación / Desmarcar alumno">
                                                                                     <IconButton

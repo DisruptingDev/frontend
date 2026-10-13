@@ -1221,8 +1221,8 @@ export async function POST(request) {
                 }
             }
 
-            // 3. Matcheo por Nombre de Alumno en Descripción SPEI (Completa)
-            if (!alumnoEncontrado && mov.descripcion) {
+            // 3. Matcheo por Nombre de Alumno o Matrícula en Descripción/Texto Bancario
+            if (!alumnoEncontrado && (mov.descripcion || mov.texto_completo || mov.referencia)) {
                 const cleanStrWithSpaces = (s) => {
                     if (!s) return '';
                     return String(s)
@@ -1236,9 +1236,19 @@ export async function POST(request) {
                         .toUpperCase();
                 };
                 
-                const descCleanSpaces = cleanStrWithSpaces(mov.descripcion);
+                const textoCompletoBusqueda = cleanStrWithSpaces(`${mov.descripcion || ''} ${mov.texto_completo || ''} ${mov.referencia || ''}`);
                 
                 alumnoEncontrado = todosLosAlumnos.find(a => {
+                    // Match por matrícula si tiene al menos 4 caracteres
+                    if (a.matricula) {
+                        const matClean = cleanStr(a.matricula);
+                        if (matClean.length >= 4) {
+                            if (refMovClean.includes(matClean) || descClean.includes(matClean) || textoClean.includes(matClean)) {
+                                return true;
+                            }
+                        }
+                    }
+
                     const nom = cleanStrWithSpaces(a.nombre);
                     const pat = cleanStrWithSpaces(a.apellido_paterno);
                     const mat = cleanStrWithSpaces(a.apellido_materno);
@@ -1248,14 +1258,29 @@ export async function POST(request) {
                     const p1 = `${nom} ${pat}`.trim();
                     const p2 = `${nom} ${pat} ${mat}`.trim();
                     const p3 = `${pat} ${mat} ${nom}`.trim();
+                    const p4 = `${pat} ${nom}`.trim();
 
-                    if (p2.length >= 6 && descCleanSpaces.includes(p2)) return true;
-                    if (p3.length >= 6 && descCleanSpaces.includes(p3)) return true;
-                    if (p1.length >= 6 && descCleanSpaces.includes(p1)) return true;
+                    if (p2.length >= 6 && textoCompletoBusqueda.includes(p2)) return true;
+                    if (p3.length >= 6 && textoCompletoBusqueda.includes(p3)) return true;
+                    if (p1.length >= 6 && textoCompletoBusqueda.includes(p1)) return true;
+                    if (p4.length >= 6 && textoCompletoBusqueda.includes(p4)) return true;
+
+                    // Si el nombre es compuesto (ej. "JUAN CARLOS"), probar con cada nombre individual + apellido
+                    const partesNom = nom.split(' ').filter(p => p.length >= 3);
+                    if (partesNom.length > 1) {
+                        for (const parte of partesNom) {
+                            const combi1 = `${parte} ${pat}`;
+                            const combi2 = `${pat} ${parte}`;
+                            if (combi1.length >= 7 && textoCompletoBusqueda.includes(combi1)) return true;
+                            if (combi2.length >= 7 && textoCompletoBusqueda.includes(combi2)) return true;
+                        }
+                    }
 
                     return false;
                 });
-                if (alumnoEncontrado) metodoMatcheo = 'Coincidencia Nombre Alumno SPEI (Completa)';
+                if (alumnoEncontrado) {
+                    metodoMatcheo = 'Coincidencia Nombre Alumno / Matrícula en Transferencia';
+                }
             }
 
             if (alumnoEncontrado) {
