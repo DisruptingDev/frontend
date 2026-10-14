@@ -1144,6 +1144,8 @@ export async function POST(request) {
             return false;
         };
 
+        const fichasAsignadas = new Set();
+
         for (const mov of movimientos) {
             // 1. Validar si este movimiento ya fue conciliado (es decir, ya se le generó factura previamente)
             const pagoPrevio = pagosExistentes.find(p => {
@@ -1188,7 +1190,7 @@ export async function POST(request) {
 
             // =========================================================================
             // COINCIDENCIA ESTRICTA CON FICHAS CREADAS DE LOS ALUMNOS
-            // (Solo se marcan pagos que encuentren fichas reales pendientes)
+            // (Solo se marcan pagos que encuentren fichas reales pendientes y cada ficha se usa una sola vez)
             // =========================================================================
             let cargoEncontrado = null;
             let alumnoEncontrado = null;
@@ -1199,39 +1201,43 @@ export async function POST(request) {
             const mDescClean = String(mov.descripcion || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
             for (const cargo of cargosPendientes) {
+                // Una ficha ya asignada en este archivo bancario no debe volver a asignarse a otro pago
+                if (fichasAsignadas.has(cargo.id.toString())) continue;
+
                 const cRefDigits = cleanDigits(cargo.referencia_bancaria);
                 const cFichaClean = String(cargo.codigo_ficha || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
                 const cClabe = cleanDigits(cargo.alumno?.clabe_interbancaria);
 
-                // 1. Coincidencia por Referencia Bancaria de la Ficha (mínimo 6 dígitos)
-                if (cRefDigits && cRefDigits.length >= 6) {
-                    if (mRefDigits === cRefDigits || (mRefDigits.length >= 6 && mRefDigits.includes(cRefDigits))) {
+                // 1. Coincidencia por Referencia Bancaria de la Ficha (mínimo 8 dígitos reales)
+                if (cRefDigits && cRefDigits.length >= 8 && !/^0+$/.test(cRefDigits)) {
+                    if (mRefDigits === cRefDigits || (mRefDigits.length >= 8 && mRefDigits.includes(cRefDigits))) {
                         cargoEncontrado = cargo;
                         metodoMatcheo = `Ficha (Ref: ${cargo.referencia_bancaria})`;
                         break;
                     }
                 }
 
-                // 2. Coincidencia por Código de Ficha (ej: M-00038, M00038, SAF-46032)
-                if (cFichaClean && cFichaClean.length >= 4) {
-                    if (mRefClean.includes(cFichaClean) || mDescClean.includes(cFichaClean)) {
+                // 2. Coincidencia por Código de Ficha (ej: ME-00058, DAEIE-00052, M-00038)
+                if (cFichaClean && cFichaClean.length >= 5) {
+                    if (mRefClean === cFichaClean || mRefClean.includes(cFichaClean) || mDescClean.includes(cFichaClean)) {
                         cargoEncontrado = cargo;
-                        metodoMatcheo = `Ficha ${cargo.codigo_ficha}`;
+                        metodoMatcheo = `Código Ficha ${cargo.codigo_ficha}`;
                         break;
                     }
                 }
 
-                // 3. Coincidencia por CLABE Interbancaria (18 dígitos) del alumno que tiene esta ficha creada
+                // 3. Coincidencia por CLABE Interbancaria (ESTRICTAMENTE 18 DÍGITOS)
                 if (cClabe && cClabe.length === 18) {
-                    if (mRefDigits === cClabe || mRefDigits.includes(cClabe)) {
+                    if (mRefDigits === cClabe || (mRefDigits.length >= 18 && mRefDigits.includes(cClabe))) {
                         cargoEncontrado = cargo;
-                        metodoMatcheo = `CLABE (${cargo.alumno.clabe_interbancaria}) - Ficha ${cargo.codigo_ficha || cargo.id}`;
+                        metodoMatcheo = `CLABE (${cargo.alumno?.clabe_interbancaria}) - Ficha ${cargo.codigo_ficha || cargo.id}`;
                         break;
                     }
                 }
             }
 
             if (cargoEncontrado && cargoEncontrado.alumno) {
+                fichasAsignadas.add(cargoEncontrado.id.toString());
                 alumnoEncontrado = cargoEncontrado.alumno;
                 let alumnoCargosPendientes = cargosPendientes.filter(cp => String(cp.alumno_id) === String(alumnoEncontrado.id));
 
@@ -1298,7 +1304,6 @@ export async function POST(request) {
                 pendientes_revision: pendientesCount,
                 ya_conciliados: yaConciliadosCount,
                 monto_total: montoTotal,
-                debug_alumnos_count: todosLosAlumnos.length,
                 debug_cargos_count: cargosPendientes.length,
                 debug_grupo_id: grupoId
             },
