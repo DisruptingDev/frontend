@@ -30,6 +30,7 @@ import Header from '@/components/Header/Header.jsx';
 import SideBarMenu from '@/components/Dashborard/SideBarMenu';
 import AlumnosView from '@/components/Cobranza/AlumnosView';
 import ResumenTab from './tabs/ResumenTab';
+import ConciliacionTab from './tabs/ConciliacionTab';
 import {
     Box,
     Button,
@@ -137,9 +138,6 @@ export default function MóduloCobranzaUnificadoPage() {
     // PAGINATION STATES
     const [pageFichas, setPageFichas] = useState(0);
     const [rowsFichas, setRowsFichas] = useState(10);
-    
-    const [pageConcil, setPageConcil] = useState(0);
-    const [rowsConcil, setRowsConcil] = useState(10);
 
     const [pageFact, setPageFact] = useState(0);
     const [rowsFact, setRowsFact] = useState(10);
@@ -168,13 +166,6 @@ export default function MóduloCobranzaUnificadoPage() {
         totalPagos: 0,
         ultimosPagos: []
     });
-
-    // CONCILIACIÓN BANCARIA
-    const [bancoSeleccionado, setBancoSeleccionado] = useState('GENERICO');
-    const [archivoBancario, setArchivoBancario] = useState(null);
-    const [procesandoConciliacion, setProcesandoConciliacion] = useState(false);
-    const [resultadoConciliacion, setResultadoConciliacion] = useState(null);
-    const [alumnoSeleccionadoFilaDashboard, setAlumnoSeleccionadoFilaDashboard] = useState({});
     const [openEditModal, setOpenEditModal] = useState(false);
     const [guardandoEdicion, setGuardandoEdicion] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -319,118 +310,6 @@ export default function MóduloCobranzaUnificadoPage() {
             setErrorMsg(err.message);
         } finally {
             setEliminando(false);
-        }
-    };
-
-    const handleAsignarAlumnoManualDashboard = async (item, idx) => {
-        const alumnoId = alumnoSeleccionadoFilaDashboard[idx];
-        if (!alumnoId) {
-            setErrorMsg(`Seleccione un alumno para asignar el pago de $${parseMonto(item.monto).toFixed(2)}.`);
-            return;
-        }
-
-        setProcesandoConciliacion(true);
-        setErrorMsg('');
-        setMensajeExito('');
-
-        try {
-            const res = await fetch('/api/cobranza/conciliacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'ASIGNAR_MANUAL',
-                    alumno_id: alumnoId,
-                    emisor_id: emisorSeleccionado,
-                    monto: Number(item.monto),
-                    fecha_pago: item.fecha_pago,
-                    referencia_bancaria: item.referencia_bancaria,
-                    descripcion: item.descripcion
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error al asignar alumno');
-
-            setMensajeExito(data.mensaje);
-
-            if (resultadoConciliacion && resultadoConciliacion.pagos) {
-                const nuevosPagos = [...resultadoConciliacion.pagos];
-                nuevosPagos[idx] = {
-                    ...nuevosPagos[idx],
-                    estado_conciliacion: 'CONCILIADO',
-                    alumno_nombre: data.alumno_nombre,
-                    metodo_matcheo: 'Asignación Manual',
-                    comprobante_folio: data.comprobante_folio
-                };
-
-                setResultadoConciliacion({
-                    ...resultadoConciliacion,
-                    resumen: {
-                        ...resultadoConciliacion.resumen,
-                        conciliados: (resultadoConciliacion.resumen?.conciliados || 0) + 1,
-                        pendientes_revision: Math.max(0, (resultadoConciliacion.resumen?.pendientes_revision || 0) - 1)
-                    },
-                    pagos: nuevosPagos
-                });
-            }
-            loadDataForTab();
-        } catch (err) {
-            setErrorMsg(err.message);
-        } finally {
-            setProcesandoConciliacion(false);
-        }
-    };
-
-    const handleConfirmarConciliacionMasivaDashboard = async () => {
-        console.log('Confirmar masivo clicked. resultadoConciliacion:', resultadoConciliacion);
-        console.log('alumnoSeleccionadoFilaDashboard:', alumnoSeleccionadoFilaDashboard);
-        if (!resultadoConciliacion || !resultadoConciliacion.pagos) return;
-
-        const pendientesAsignados = resultadoConciliacion.pagos
-            .map((item, idx) => ({ item, idx, alumno_id: alumnoSeleccionadoFilaDashboard[idx] }))
-            .filter(obj => obj.item.estado_conciliacion !== 'CONCILIADO' && obj.alumno_id);
-
-        console.log('pendientesAsignados:', pendientesAsignados);
-
-        if (pendientesAsignados.length === 0) {
-            console.log('pendientesAsignados is empty, switching to tab 4');
-            setCurrentTab(4); // Cambiar a pestaña Facturación
-            return;
-        }
-
-        setProcesandoConciliacion(true);
-        setErrorMsg('');
-        setMensajeExito('');
-
-        try {
-            const res = await fetch('/api/cobranza/conciliacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'CONFIRMAR_MASIVO',
-                    emisor_id: emisorSeleccionado,
-                    asignaciones: pendientesAsignados.map(p => ({
-                        alumno_id: p.alumno_id,
-                        monto: Number(p.item.monto),
-                        fecha_pago: p.item.fecha_pago,
-                        referencia_bancaria: p.item.referencia_bancaria,
-                        descripcion: p.item.descripcion
-                    }))
-                })
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Error en conciliación masiva');
-
-            setMensajeExito(data.mensaje);
-            loadDataForTab();
-            setTimeout(() => {
-                setCurrentTab(4);
-            }, 1200);
-        } catch (err) {
-            setErrorMsg(err.message);
-        } finally {
-            setProcesandoConciliacion(false);
         }
     };
 
@@ -1038,75 +917,6 @@ export default function MóduloCobranzaUnificadoPage() {
         }
     };
 
-    // CONCILIACIÓN BANCARIA
-    const handleProcesarConciliacion = async () => {
-        if (!archivoBancario) {
-            setErrorMsg('Debe seleccionar un archivo de extracto bancario.');
-            return;
-        }
-
-        setProcesandoConciliacion(true);
-        setErrorMsg('');
-
-        let grupoId = '';
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem('usuario');
-            if (storedUser) {
-                try {
-                    const parsed = JSON.parse(storedUser);
-                    grupoId = parsed.grupo_id || parsed.grupoId || '';
-                } catch (e) { }
-            }
-            if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
-        }
-        const isSuper = typeof window !== 'undefined' && (localStorage.getItem('superUser') === 'true' || localStorage.getItem('BOD') === 'true');
-
-        const formData = new FormData();
-        formData.append('file', archivoBancario);
-        formData.append('banco', bancoSeleccionado);
-        if (emisorSeleccionado) formData.append('emisor_id', emisorSeleccionado);
-        if (grupoId) formData.append('grupo_id', grupoId);
-        if (isSuper) formData.append('is_superadmin', 'true');
-
-        try {
-            const res = await fetch('/api/cobranza/conciliacion', {
-                method: 'POST',
-                body: formData
-            });
-
-            const textRes = await res.text();
-            let data;
-            try {
-                data = JSON.parse(textRes);
-            } catch (jsonErr) {
-                if (!res.ok) {
-                    throw new Error(`Error en el servidor (${res.status}): No se pudo procesar la respuesta.`);
-                }
-                throw new Error('La respuesta del servidor no tiene un formato JSON válido.');
-            }
-
-            if (!res.ok) throw new Error(data.error || 'Error al procesar la conciliación');
-
-            const initAlumnosSelec = {};
-            if (data.pagos) {
-                data.pagos.forEach((p, idx) => {
-                    if (p.estado_conciliacion === 'SUGERIDO' || p.estado_conciliacion === 'CONCILIADO') {
-                        if (p.alumno_id) initAlumnosSelec[idx] = BigInt(p.alumno_id).toString();
-                    }
-                });
-            }
-            setAlumnoSeleccionadoFilaDashboard(initAlumnosSelec);
-
-            setResultadoConciliacion(data);
-            setMensajeExito(`Conciliación completada. Se generaron las facturas pendientes de timbrado exitosamente.`);
-            loadDataForTab();
-        } catch (err) {
-            setErrorMsg(err.message);
-        } finally {
-            setProcesandoConciliacion(false);
-        }
-    };
-
     // EXPORTAR REPORTE A EXCEL
     const handleExportarReporteExcel = () => {
         if (!reporteMensual.pagos || reporteMensual.pagos.length === 0) return;
@@ -1349,144 +1159,14 @@ export default function MóduloCobranzaUnificadoPage() {
 
                                     {/* PESTAÑA 3: CONCILIACIÓN BANCARIA CON ASIGNACIÓN MANUAL */}
                                     {currentTab === 3 && (
-                                        <Box>
-                                            <Card elevation={3} sx={{ mb: 3, p: 3 }}>
-                                                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                                                    🏛️ Subir Extracto Bancario / Reporte de Movimientos
-                                                </Typography>
-                                                <Grid container spacing={2} alignItems="center">
-                                                    <Grid item xs={12} sm={4}>
-                                                        <TextField select label="Banco Origen" fullWidth size="small" value={bancoSeleccionado} onChange={(e) => setBancoSeleccionado(e.target.value)}>
-                                                            <MenuItem value="GENERICO">Excel / CSV Genérico</MenuItem>
-                                                            <MenuItem value="BBVA">BBVA Bancomer</MenuItem>
-                                                            <MenuItem value="BANORTE">Banorte</MenuItem>
-                                                            <MenuItem value="SANTANDER">Santander</MenuItem>
-                                                        </TextField>
-                                                    </Grid>
-                                                    <Grid item xs={12} sm={5}>
-                                                        <Button variant="outlined" component="label" fullWidth startIcon={<UploadIcon />}>
-                                                            {archivoBancario ? archivoBancario.name : 'Seleccionar Archivo (.xlsx, .csv)'}
-                                                            <input type="file" hidden accept=".xlsx, .xls, .csv, .txt" onChange={(e) => setArchivoBancario(e.target.files[0])} />
-                                                        </Button>
-                                                    </Grid>
-                                                    <Grid item xs={12} sm={3}>
-                                                        <Button variant="contained" color="primary" fullWidth disabled={procesandoConciliacion} onClick={handleProcesarConciliacion}>
-                                                            {procesandoConciliacion ? 'Procesando...' : '⚡ Ejecutar Conciliación'}
-                                                        </Button>
-                                                    </Grid>
-                                                </Grid>
-                                            </Card>
-
-                                            {resultadoConciliacion && resultadoConciliacion.pagos && (
-                                                <Card elevation={3} sx={{ mt: 3 }}>
-                                                    <CardContent sx={{ p: 3 }}>
-                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                                                            <Typography variant="h6" fontWeight="bold" sx={{ color: '#1b384a' }}>
-                                                                Resultado y Asignación de Movimientos Bancarios
-                                                            </Typography>
-                                                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                                                <Button
-                                                                    variant="contained"
-                                                                    color="success"
-                                                                    startIcon={procesandoConciliacion ? <CircularProgress size={18} color="inherit" /> : <FlashIcon />}
-                                                                    onClick={handleConfirmarConciliacionMasivaDashboard}
-                                                                    disabled={procesandoConciliacion}
-                                                                    sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                                                >
-                                                                    {procesandoConciliacion ? 'Generando Pre-Facturas...' : '⚡ Confirmar Conciliación y Generar Pre-Facturas'}
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outlined"
-                                                                    color="primary"
-                                                                    startIcon={<PrintIcon />}
-                                                                    onClick={() => setCurrentTab(2)}
-                                                                    sx={{ fontWeight: 'bold', textTransform: 'none' }}
-                                                                >
-                                                                    Ver Pre-Facturas
-                                                                </Button>
-                                                            </Box>
-                                                        </Box>
-                                                        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
-                                                            <Table size="small" stickyHeader>
-                                                                <TableHead sx={{ backgroundColor: '#1b384a' }}>
-                                                                    <TableRow>
-                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Referencia / Extracto</TableCell>
-                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Monto</TableCell>
-                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Estatus Matcheo</TableCell>
-                                                                        <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Alumno Asignado / Acción Manual</TableCell>
-                                                                    </TableRow>
-                                                                </TableHead>
-                                                                <TableBody>
-                                                                    {resultadoConciliacion.pagos.slice(pageConcil * rowsConcil, pageConcil * rowsConcil + rowsConcil).map((item, idx) => {
-                                                                        const isSugerido = item.estado_conciliacion === 'SUGERIDO' || item.estado_conciliacion === 'CONCILIADO';
-                                                                        const alumnoIdFila = alumnoSeleccionadoFilaDashboard[idx] || (isSugerido ? item.alumno_id : null);
-
-                                                                        return (
-                                                                            <TableRow key={idx} sx={{ backgroundColor: isSugerido ? '#e8f5e9' : '#fff3e0' }}>
-                                                                                <TableCell sx={{ fontFamily: 'monospace' }}>
-                                                                                    <Typography variant="body2" fontWeight="bold">{item.referencia_bancaria}</Typography>
-                                                                                    {item.descripcion && (
-                                                                                        <Typography variant="caption" color="textSecondary" display="block" noWrap sx={{ maxWidth: 220 }}>
-                                                                                            {item.descripcion}
-                                                                                        </Typography>
-                                                                                    )}
-                                                                                </TableCell>
-                                                                                <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                                                                    ${parseMonto(item.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                                                </TableCell>
-                                                                                <TableCell>
-                                                                                    {isSugerido ? (
-                                                                                        <Chip label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'} color="success" size="small" icon={<CheckIcon />} />
-                                                                                    ) : (
-                                                                                        <Chip label="⚠️ SIN MATCHEAR" color="warning" size="small" icon={<WarningIcon />} />
-                                                                                    )}
-                                                                                </TableCell>
-                                                                                <TableCell sx={{ minWidth: 260 }}>
-                                                                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                                                                        <Autocomplete
-                                                                                            size="small"
-                                                                                            options={alumnos}
-                                                                                            getOptionLabel={(al) => `${al.nombre} ${al.apellido_paterno} ${al.apellido_materno || ''} (${al.matricula})`.trim()}
-                                                                                            value={alumnos.find(a => a.id.toString() === (alumnoIdFila ? alumnoIdFila.toString() : '')) || null}
-                                                                                            onChange={(e, newValue) => setAlumnoSeleccionadoFilaDashboard({
-                                                                                                ...alumnoSeleccionadoFilaDashboard,
-                                                                                                [idx]: newValue ? newValue.id.toString() : ''
-                                                                                            })}
-                                                                                            renderInput={(params) => <TextField {...params} label="Buscar y asignar alumno..." />}
-                                                                                            sx={{ flexGrow: 1, minWidth: 260 }}
-                                                                                            noOptionsText="No se encontraron alumnos"
-                                                                                        />
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="warning"
-                                                                                            size="small"
-                                                                                            disabled={procesandoConciliacion || !alumnoIdFila}
-                                                                                            onClick={() => handleAsignarAlumnoManualDashboard(item, idx)}
-                                                                                            sx={{ textTransform: 'none', px: 1.5, whiteSpace: 'nowrap' }}
-                                                                                        >
-                                                                                            Asignar
-                                                                                        </Button>
-                                                                                    </Box>
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        )
-                                                                    })}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </TableContainer>
-                                    <TablePagination
-                                        rowsPerPageOptions={[10, 25, 50, 100]}
-                                        component="div"
-                                        count={resultadoConciliacion.pagos.length}
-                                        rowsPerPage={rowsConcil}
-                                        page={pageConcil}
-                                        onPageChange={(e, newP) => setPageConcil(newP)}
-                                        onRowsPerPageChange={(e) => { setRowsConcil(parseInt(e.target.value, 10)); setPageConcil(0); }}
-                                    />
-                                                    </CardContent>
-                                                </Card>
-                                            )}
-                                        </Box>
+                                        <ConciliacionTab
+                                            emisorSeleccionado={emisorSeleccionado}
+                                            emisores={emisores}
+                                            alumnos={alumnos}
+                                            cargos={cargos}
+                                            onNavigateToTab={(tabIdx) => setCurrentTab(tabIdx)}
+                                            onRefreshDashboard={loadDataForTab}
+                                        />
                                     )}
 
                                     {/* PESTAÑA 4: FACTURACIÓN CFDI UNIFICADA (BORRADORES Y TIMBRADAS SAT) */}
