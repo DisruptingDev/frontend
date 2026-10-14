@@ -236,13 +236,8 @@ export default function ConciliacionTab({
             if (grupoId) formData.append('grupo_id', grupoId);
             if (isSuper) formData.append('is_superadmin', 'true');
 
-            const token = typeof window !== 'undefined' ? (localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '') : '';
             const response = await fetch('/api/cobranza/conciliacion', {
                 method: 'POST',
-                headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
-                    'x-grupo-id': grupoId || ''
-                },
                 body: formData
             });
 
@@ -279,8 +274,6 @@ export default function ConciliacionTab({
 
             setResultado(data);
             setMensajeExito(data.mensaje || `Conciliación completada con éxito.`);
-
-            if (onRefreshDashboard) onRefreshDashboard();
 
         } catch (err) {
             console.error(err);
@@ -503,13 +496,13 @@ export default function ConciliacionTab({
 
                 <Grid container spacing={2} alignItems="center">
                     {/* Selector de Banco */}
-                    <Grid item xs={12} sm={3}>
+                    <Grid item xs={12} sm={4}>
                         <FormControl fullWidth size="small">
-                            <InputLabel id="banco-select-label">Banco / Formato</InputLabel>
+                            <InputLabel id="banco-select-label">Banco Origen / Formato</InputLabel>
                             <Select
                                 labelId="banco-select-label"
                                 value={banco}
-                                label="Banco / Formato"
+                                label="Banco Origen / Formato"
                                 onChange={(e) => setBanco(e.target.value)}
                             >
                                 <MenuItem value="GENERICO">Excel / CSV Genérico</MenuItem>
@@ -521,33 +514,8 @@ export default function ConciliacionTab({
                         </FormControl>
                     </Grid>
 
-                    {/* Selector de Emisor si hay varios */}
-                    {emisores && emisores.length > 0 && (
-                        <Grid item xs={12} sm={3}>
-                            <FormControl fullWidth size="small">
-                                <InputLabel id="emisor-select-label">Empresa / Emisor</InputLabel>
-                                <Select
-                                    labelId="emisor-select-label"
-                                    value={emisorSeleccionado}
-                                    label="Empresa / Emisor"
-                                    onChange={(e) => {
-                                        const nid = e.target.value;
-                                        setEmisorSeleccionado(nid);
-                                        actualizarSeries(nid, emisores);
-                                    }}
-                                >
-                                    {emisores.map(e => (
-                                        <MenuItem key={e.id} value={e.id.toString()}>
-                                            {e.rfc} - {e.nombre}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    )}
-
                     {/* Botón Selección de Archivo */}
-                    <Grid item xs={12} sm={emisores && emisores.length > 0 ? 3 : 5}>
+                    <Grid item xs={12} sm={5}>
                         <Button
                             variant="outlined"
                             component="label"
@@ -572,7 +540,7 @@ export default function ConciliacionTab({
                     </Grid>
 
                     {/* Botón Ejecutar */}
-                    <Grid item xs={12} sm={emisores && emisores.length > 0 ? 3 : 4}>
+                    <Grid item xs={12} sm={3}>
                         <Button
                             variant="contained"
                             color="primary"
