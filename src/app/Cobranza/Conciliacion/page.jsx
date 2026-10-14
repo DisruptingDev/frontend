@@ -105,13 +105,10 @@ export default function ConciliacionPage() {
 
     // Filtros de búsqueda en la tabla de transacciones
     const [busquedaTabla, setBusquedaTabla] = useState('');
-    const [filtroEstatus, setFiltroEstatus] = useState('TODOS'); // 'TODOS' | 'FALTANTES' | 'LISTOS' | 'SIN_FICHA' | 'YA_CONCILIADOS' | 'REVISION'
+    const [filtroEstatus, setFiltroEstatus] = useState('TODOS'); // 'TODOS' | 'FALTANTES' | 'LISTOS' | 'YA_CONCILIADOS' | 'REVISION'
 
     // Estado para guardar la selección de alumno por cada fila en revisión
     const [alumnoSeleccionadoPorFila, setAlumnoSeleccionadoPorFila] = useState({});
-    
-    // Estado para la acción en pagos con coincidencia de alumno pero sin ficha: { [idx]: 'IGNORAR' | 'CREAR_FICHA' }
-    const [accionSinFichaPorFila, setAccionSinFichaPorFila] = useState({});
 
     // Estado para la selección múltiple de cargos (Fichas) por fila
     // Formato: { [idxFila]: [id_cargo_1, id_cargo_2] }
@@ -306,25 +303,19 @@ export default function ConciliacionPage() {
             // Inicializar las pre-selecciones de cargos para sugerencias
             const initCargosSelec = {};
             const initAlumnosSelec = {};
-            const initAccionSinFicha = {};
             if (data.pagos) {
                 data.pagos.forEach((p, idx) => {
                     if (p.estado_conciliacion === 'SUGERIDO') { 
                         if (p.cargos_sugeridos) initCargosSelec[idx] = p.cargos_sugeridos; 
-                        if (p.alumno_id) initAlumnosSelec[idx] = p.alumno_id.toString();
-                    } else if (p.estado_conciliacion === 'MATCH_SIN_FICHA') {
-                        // Por defecto: IGNORAR monto en esta conciliación (pospuesto hasta que tenga ficha)
-                        initAccionSinFicha[idx] = 'IGNORAR';
                         if (p.alumno_id) initAlumnosSelec[idx] = p.alumno_id.toString();
                     }
                 });
             }
             setCargosSeleccionadosPorFila(initCargosSelec);
             setAlumnoSeleccionadoPorFila(initAlumnosSelec);
-            setAccionSinFichaPorFila(initAccionSinFicha);
 
             setResultado(data);
-            setMensajeExito(`Conciliación analizada: ${data.resumen?.conciliados || 0} con ficha listos, ${data.resumen?.sin_ficha || 0} identificados sin ficha (pospuestos), y ${data.resumen?.pendientes_revision || 0} en revisión.`);
+            setMensajeExito(data.mensaje || `Conciliación analizada: ${data.resumen?.conciliados || 0} con ficha listos, ${data.resumen?.ya_conciliados || 0} ya conciliados, y ${data.resumen?.pendientes_revision || 0} en revisión.`);
 
         } catch (err) {
             console.error(err);
@@ -358,10 +349,6 @@ export default function ConciliacionPage() {
             delete next[idx];
             return next;
         });
-        setAccionSinFichaPorFila((prev) => ({
-            ...prev,
-            [idx]: 'IGNORAR'
-        }));
     };
 
     // PROCESAR ASIGNACIÓN MASIVA Y NAVEGAR DIRECTO A EMISIÓN DE FACTURAS
@@ -373,18 +360,6 @@ export default function ConciliacionPage() {
                 // 1. Si ya está conciliado previamente, se descarta para no duplicar
                 if (item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado) {
                     return null;
-                }
-
-                // 2. Si es coincidencia pero sin ficha
-                if (item.estado_conciliacion === 'MATCH_SIN_FICHA') {
-                    const accion = accionSinFichaPorFila[idx] || 'IGNORAR';
-                    // Si el usuario eligió ignorar, no se procesa ahora
-                    if (accion === 'IGNORAR') {
-                        return null;
-                    }
-                    const alumnoId = alumnoSeleccionadoPorFila[idx] || item.alumno_id;
-                    if (!alumnoId) return null;
-                    return { item, idx, alumno_id: alumnoId, cargos_ids: [], aprobar_saf: true };
                 }
 
                 const alumnoId = alumnoSeleccionadoPorFila[idx] !== undefined 
@@ -405,7 +380,7 @@ export default function ConciliacionPage() {
             .filter(Boolean);
 
         if (asignacionesFinales.length === 0) {
-            setError('No hay movimientos pendientes para procesar. Los registros seleccionados ya fueron conciliados previamente o fueron ignorados.');
+            setError('No hay movimientos pendientes para procesar. Los registros seleccionados ya fueron conciliados previamente o no tienen un alumno asignado.');
             return;
         }
 
@@ -636,9 +611,6 @@ export default function ConciliacionPage() {
                                                     {(() => {
                                                         const listosParaFacturar = resultado.pagos.filter((item, idx) => {
                                                             if (item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado) return false;
-                                                            if (item.estado_conciliacion === 'MATCH_SIN_FICHA') {
-                                                                return accionSinFichaPorFila[idx] === 'CREAR_FICHA';
-                                                            }
                                                             const aid = alumnoSeleccionadoPorFila[idx] !== undefined ? alumnoSeleccionadoPorFila[idx] : item.alumno_id;
                                                             return Boolean(aid);
                                                         }).length;
@@ -673,15 +645,14 @@ export default function ConciliacionPage() {
 
                                             {(() => {
                                                 const totalListosConFicha = resultado.pagos.filter(it => it.estado_conciliacion === 'SUGERIDO').length;
-                                                const totalSinFicha = resultado.pagos.filter(it => it.estado_conciliacion === 'MATCH_SIN_FICHA').length;
                                                 const totalYaConciliados = resultado.pagos.filter(it => it.estado_conciliacion === 'YA_CONCILIADO' || it.ya_conciliado).length;
                                                 const totalRevision = resultado.pagos.filter(it => it.estado_conciliacion === 'REVISION').length;
                                                 const totalFaltantes = resultado.pagos.filter(it => it.estado_conciliacion !== 'YA_CONCILIADO' && !it.ya_conciliado).length;
 
                                                 return (
                                                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                                                        <Grid item xs={12} sm={6} md={2.4}>
-                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9' }}>
+                                                        <Grid item xs={12} sm={6} md={3}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e8f5e9', border: '1px solid #c8e6c9' }}>
                                                                 <Typography variant="h4" color="success.main" fontWeight="bold">
                                                                     {totalListosConFicha}
                                                                 </Typography>
@@ -689,35 +660,26 @@ export default function ConciliacionPage() {
                                                                 <Typography variant="caption" color="textSecondary">Se facturan directo</Typography>
                                                             </Paper>
                                                         </Grid>
-                                                        <Grid item xs={12} sm={6} md={2.4}>
-                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fffde7', border: '1px solid #ffe082' }}>
-                                                                <Typography variant="h4" sx={{ color: '#f57f17' }} fontWeight="bold">
-                                                                    {totalSinFicha}
-                                                                </Typography>
-                                                                <Typography variant="caption" fontWeight="bold" display="block">Sin Ficha (Pospuestos)</Typography>
-                                                                <Typography variant="caption" color="textSecondary">Ignorados por defecto</Typography>
-                                                            </Paper>
-                                                        </Grid>
-                                                        <Grid item xs={12} sm={6} md={2.4}>
+                                                        <Grid item xs={12} sm={6} md={3}>
                                                             <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
                                                                 <Typography variant="h4" sx={{ color: '#757575' }} fontWeight="bold">
                                                                     {totalYaConciliados}
                                                                 </Typography>
                                                                 <Typography variant="caption" fontWeight="bold" display="block">Ya Conciliados</Typography>
-                                                                <Typography variant="caption" color="textSecondary">No se duplicarán</Typography>
+                                                                <Typography variant="caption" color="textSecondary">Pre-factura previa</Typography>
                                                             </Paper>
                                                         </Grid>
-                                                        <Grid item xs={12} sm={6} md={2.4}>
-                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0' }}>
+                                                        <Grid item xs={12} sm={6} md={3}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#fff3e0', border: '1px solid #ffe0b2' }}>
                                                                 <Typography variant="h4" color="warning.main" fontWeight="bold">
                                                                     {totalRevision}
                                                                 </Typography>
-                                                                <Typography variant="caption" fontWeight="bold" display="block">Sin Alumno (Revisión)</Typography>
-                                                                <Typography variant="caption" color="textSecondary">Requiere asignar</Typography>
+                                                                <Typography variant="caption" fontWeight="bold" display="block">Sin Coincidencia (Revisión)</Typography>
+                                                                <Typography variant="caption" color="textSecondary">Ficha no creada / pendiente</Typography>
                                                             </Paper>
                                                         </Grid>
-                                                        <Grid item xs={12} sm={6} md={2.4}>
-                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e3f2fd' }}>
+                                                        <Grid item xs={12} sm={6} md={3}>
+                                                            <Paper elevation={1} sx={{ p: 2, textAlign: 'center', backgroundColor: '#e3f2fd', border: '1px solid #bbdefb' }}>
                                                                 <Typography variant="h5" color="primary.main" fontWeight="bold" sx={{ mt: 0.5 }}>
                                                                     ${parseMonto(resultado.resumen?.monto_total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                                                 </Typography>
@@ -753,14 +715,6 @@ export default function ConciliacionPage() {
                                                         color={filtroEstatus === 'LISTOS' ? 'success' : 'default'}
                                                         variant={filtroEstatus === 'LISTOS' ? 'filled' : 'outlined'}
                                                         onClick={() => setFiltroEstatus('LISTOS')}
-                                                        sx={{ cursor: 'pointer', fontWeight: 'bold' }}
-                                                    />
-                                                    <Chip 
-                                                        label={`Sin Ficha (${resultado.pagos.filter(it => it.estado_conciliacion === 'MATCH_SIN_FICHA').length})`}
-                                                        size="small"
-                                                        color={filtroEstatus === 'SIN_FICHA' ? 'warning' : 'default'}
-                                                        variant={filtroEstatus === 'SIN_FICHA' ? 'filled' : 'outlined'}
-                                                        onClick={() => setFiltroEstatus('SIN_FICHA')}
                                                         sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                                                     />
                                                     <Chip 
@@ -819,7 +773,6 @@ export default function ConciliacionPage() {
                                                             .map((item, idx) => ({ item, idx }))
                                                             .filter(({ item, idx }) => {
                                                                 const isYaConciliado = item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado;
-                                                                const isMatchSinFicha = item.estado_conciliacion === 'MATCH_SIN_FICHA';
                                                                 const isSugerido = item.estado_conciliacion === 'SUGERIDO';
                                                                 const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
                                                                     ? alumnoSeleccionadoPorFila[idx] 
@@ -828,9 +781,8 @@ export default function ConciliacionPage() {
 
                                                                 if (filtroEstatus === 'FALTANTES' && isYaConciliado) return false;
                                                                 if (filtroEstatus === 'LISTOS' && !isSugerido) return false;
-                                                                if (filtroEstatus === 'SIN_FICHA' && !isMatchSinFicha) return false;
                                                                 if (filtroEstatus === 'YA_CONCILIADOS' && !isYaConciliado) return false;
-                                                                if (filtroEstatus === 'REVISION' && (isYaConciliado || isMatchSinFicha || isSugerido)) return false;
+                                                                if (filtroEstatus === 'REVISION' && (isYaConciliado || isSugerido)) return false;
 
                                                                 if (busquedaTabla.trim()) {
                                                                     const q = busquedaTabla.toLowerCase().trim();
@@ -850,7 +802,6 @@ export default function ConciliacionPage() {
                                                             })
                                                             .map(({ item, idx }) => {
                                                             const isYaConciliado = item.estado_conciliacion === 'YA_CONCILIADO' || item.ya_conciliado;
-                                                            const isMatchSinFicha = item.estado_conciliacion === 'MATCH_SIN_FICHA';
                                                             const isOrigSugerido = item.estado_conciliacion === 'SUGERIDO';
                                                             const alumnoIdActual = alumnoSeleccionadoPorFila[idx] !== undefined 
                                                                 ? alumnoSeleccionadoPorFila[idx] 
@@ -879,11 +830,9 @@ export default function ConciliacionPage() {
 
                                                             const filaBgColor = isYaConciliado
                                                                 ? '#f5f5f5'
-                                                                : isMatchSinFicha
-                                                                    ? '#fffde7'
-                                                                    : !tieneAlumno
-                                                                        ? '#fff8e1'
-                                                                        : (esSugeridoActivo ? '#e8f5e9' : '#f0f7ff');
+                                                                : !tieneAlumno
+                                                                    ? '#fff8e1'
+                                                                    : (esSugeridoActivo ? '#e8f5e9' : '#f0f7ff');
 
                                                             return (
                                                                 <TableRow 
@@ -931,14 +880,6 @@ export default function ConciliacionPage() {
                                                                                 icon={<HistoryIcon />}
                                                                                 sx={{ backgroundColor: '#e0e0e0', color: '#616161', fontWeight: 'bold' }}
                                                                             />
-                                                                        ) : isMatchSinFicha ? (
-                                                                            <Chip
-                                                                                label={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'MATCH SIN FICHA (A Facturar)' : 'MATCH SIN FICHA (Pospuesto)'}
-                                                                                color={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'primary' : 'warning'}
-                                                                                size="small"
-                                                                                icon={<WarningIcon />}
-                                                                                sx={{ fontWeight: 'bold' }}
-                                                                            />
                                                                         ) : esSugeridoActivo ? (
                                                                             <Chip
                                                                                 label={item.metodo_matcheo ? `SUGERIDO (${item.metodo_matcheo})` : 'SUGERIDO'}
@@ -968,59 +909,6 @@ export default function ConciliacionPage() {
                                                                                         ? `✅ Registrado previamente con Pre-Factura ${item.comprobante_folio}. Se omite para no duplicar.` 
                                                                                         : '✅ Movimiento ya registrado y conciliado previamente en el sistema.'}
                                                                                 </Typography>
-                                                                            </Box>
-                                                                        ) : isMatchSinFicha ? (
-                                                                            <Box sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: '#fffde7', border: '1px solid #ffe082' }}>
-                                                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-                                                                                    <Box>
-                                                                                        <Typography variant="caption" sx={{ color: '#b78103', fontWeight: 'bold', display: 'block' }}>
-                                                                                            ALUMNO COINCIDENTE POR CLABE:
-                                                                                        </Typography>
-                                                                                        <Typography variant="body2" fontWeight="bold" color="#1b384a">
-                                                                                            {item.alumno_nombre} {item.alumno_matricula ? `[${item.alumno_matricula}]` : ''}
-                                                                                        </Typography>
-                                                                                    </Box>
-                                                                                    <Chip 
-                                                                                        label={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'Opción: Crear Ficha y Facturar' : 'Opción: Pospuesto (Ignorar monto)'} 
-                                                                                        color={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'primary' : 'default'}
-                                                                                        size="small"
-                                                                                        variant="filled"
-                                                                                        sx={{ fontWeight: 'bold' }}
-                                                                                    />
-                                                                                </Box>
-                                                                                <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 1.2 }}>
-                                                                                    ℹ️ No tiene fichas o cargos pendientes en el sistema. Es probable que más adelante se le genere su ficha.
-                                                                                </Typography>
-                                                                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                                                                    <Button
-                                                                                        size="small"
-                                                                                        variant={accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? 'contained' : 'outlined'}
-                                                                                        color="inherit"
-                                                                                        startIcon={<BlockIcon />}
-                                                                                        onClick={() => setAccionSinFichaPorFila(prev => ({ ...prev, [idx]: 'IGNORAR' }))}
-                                                                                        sx={{ 
-                                                                                            textTransform: 'none', 
-                                                                                            fontSize: '0.75rem',
-                                                                                            backgroundColor: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#616161' : 'transparent',
-                                                                                            color: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#fff' : '#616161',
-                                                                                            '&:hover': {
-                                                                                                backgroundColor: accionSinFichaPorFila[idx] !== 'CREAR_FICHA' ? '#424242' : '#eeeeee'
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        🚫 Ignorar monto en esta conciliación (Pospuesto)
-                                                                                    </Button>
-                                                                                    <Button
-                                                                                        size="small"
-                                                                                        variant={accionSinFichaPorFila[idx] === 'CREAR_FICHA' ? 'contained' : 'outlined'}
-                                                                                        color="primary"
-                                                                                        startIcon={<AddIcon />}
-                                                                                        onClick={() => setAccionSinFichaPorFila(prev => ({ ...prev, [idx]: 'CREAR_FICHA' }))}
-                                                                                        sx={{ textTransform: 'none', fontSize: '0.75rem' }}
-                                                                                    >
-                                                                                        ➕ Crear Ficha y Facturar ahora
-                                                                                    </Button>
-                                                                                </Box>
                                                                             </Box>
                                                                         ) : (
                                                                             <>
