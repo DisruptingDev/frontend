@@ -100,7 +100,13 @@ async function getGrupoIdFromRequest(request, body = null) {
 function sanitizeNullBytes(val) {
     if (val === null || val === undefined) return val;
     if (typeof val === 'string') {
-        return val.replace(/\u0000/g, '');
+        return val.replace(/\0/g, '').replace(/\u0000/g, '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+    }
+    if (val instanceof Date) {
+        return val;
+    }
+    if (typeof val === 'bigint' || typeof val === 'number' || typeof val === 'boolean') {
+        return val;
     }
     if (typeof val === 'object') {
         if (Array.isArray(val)) {
@@ -114,6 +120,15 @@ function sanitizeNullBytes(val) {
         );
     }
     return val;
+}
+
+function cleanString(val) {
+    if (val === null || val === undefined) return '';
+    return String(val)
+        .replace(/\0/g, '')
+        .replace(/\u0000/g, '')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+        .trim();
 }
 
 function parseFechaSegura(val) {
@@ -314,28 +329,28 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
     }
 
     const conceptosHeader = await dbClient.conceptos.create({
-        data: {
+        data: sanitizeNullBytes({
             comprobante_id: comprobante.id,
             grupo_id: grupoId || emisor.grupo_id,
             total_impuestos_trasladados: 0,
             total_impuestos_retenidos: 0,
             total_impuestos_trasladados_string: "0.00",
             total_impuestos_retenidos_string: "0.00"
-        }
+        })
     });
 
     let listaItemsFinal = [];
     if (Array.isArray(items) && items.length > 0) {
         listaItemsFinal = items.map(it => ({
-            descripcion: (it.descripcion || it.concepto || 'Servicios Educativos').trim(),
+            descripcion: cleanString(it.descripcion || it.concepto || 'Servicios Educativos'),
             monto: Number(it.monto || it.valor_unitario || 0),
-            clave_prod_serv: it.clave_prod_serv || ''
+            clave_prod_serv: cleanString(it.clave_prod_serv || '')
         })).filter(it => it.monto > 0);
     }
 
     if (listaItemsFinal.length === 0) {
         listaItemsFinal = [{
-            descripcion: descripcionConcepto || 'Colegiatura y Servicios Educativos Integrales',
+            descripcion: cleanString(descripcionConcepto || 'Colegiatura y Servicios Educativos Integrales'),
             monto: Number(monto || 0),
             clave_prod_serv: ''
         }];
@@ -350,12 +365,18 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
         subtotalAcumulado += montoNeto;
         totalAcumulado += montoNeto;
 
-        const descSat = (item.descripcion || 'Servicios Educativos').trim();
+        const descSat = cleanString(item.descripcion || 'Servicios Educativos');
+        const descXml = descSat
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
 
         const conceptoDB = await dbClient.concepto.create({
-            data: {
+            data: sanitizeNullBytes({
                 conceptos_id: conceptosHeader.id,
-                clave_prod_serv: item.clave_prod_serv || '',
+                clave_prod_serv: cleanString(item.clave_prod_serv) || '',
                 clave_unidad: 'E48',
                 unidad: 'Servicio',
                 cantidad: 1n,
@@ -367,7 +388,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
                 descuento: 0,
                 descuento_string: '0',
                 objeto_imp: '02'
-            }
+            })
         });
 
         const impuestoConcepto = await dbClient.impuestos.create({
@@ -386,7 +407,7 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
             }
         });
 
-        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${item.clave_prod_serv || ''}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descSat}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="02">
+        xmlConceptosList += `    <cfdi:Concepto ClaveProdServ="${cleanString(item.clave_prod_serv)}" Cantidad="1" ClaveUnidad="E48" Unidad="Servicio" Descripcion="${descXml}" ValorUnitario="${montoNeto.toFixed(2)}" Importe="${montoNeto.toFixed(2)}" ObjetoImp="02">
       <cfdi:Impuestos>
         <cfdi:Traslados>
           <cfdi:Traslado Base="${montoNeto.toFixed(2)}" Impuesto="002" TipoFactor="Exento"/>
@@ -398,24 +419,39 @@ async function crearEstructuraCompletaCFDI({ comprobante, emisor, receptor, desc
     subtotalAcumulado = Number(subtotalAcumulado.toFixed(2));
     totalAcumulado = Number(totalAcumulado.toFixed(2));
 
+    const serieClean = cleanString(comprobante.serie) || 'F';
+    const folioClean = cleanString(comprobante.folio) || '1';
+    const fechaClean = cleanString(comprobante.fecha) || getFechaLocalSAT();
+    const lugarExpClean = cleanString(emisor.lugar_expedicion) || '01000';
+    const emisorRfcClean = cleanString(emisor.rfc);
+    const emisorNombreClean = cleanString(emisor.nombre).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const emisorRegimenClean = cleanString(emisor.regimen_fiscal) || '601';
+    const receptorRfcClean = cleanString(receptor.rfc);
+    const receptorNombreClean = cleanString(receptor.nombre).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const receptorCpClean = cleanString(receptor.domicilio_fiscal_receptor) || lugarExpClean;
+    const receptorRegimenClean = cleanString(receptor.regimen_fiscal_receptor) || '616';
+    const receptorUsoClean = cleanString(receptor.uso_cfdi) || 'S01';
+
     const xmlBase = `<?xml version="1.0" encoding="UTF-8"?>
-<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="${comprobante.serie}" Folio="${comprobante.folio}" Fecha="${comprobante.fecha}" FormaPago="03" MetodoPago="PUE" Moneda="MXN" SubTotal="${subtotalAcumulado.toFixed(2)}" Total="${totalAcumulado.toFixed(2)}" TipoDeComprobante="I" LugarExpedicion="${emisor.lugar_expedicion || '01000'}">
-  <cfdi:Emisor Rfc="${emisor.rfc}" Nombre="${emisor.nombre}" RegimenFiscal="${emisor.regimen_fiscal || '601'}"/>
-  <cfdi:Receptor Rfc="${receptor.rfc}" Nombre="${receptor.nombre}" DomicilioFiscalReceptor="${receptor.domicilio_fiscal_receptor || emisor.lugar_expedicion || '01000'}" RegimenFiscalReceptor="${receptor.regimen_fiscal_receptor || '616'}" UsoCFDI="${receptor.uso_cfdi || 'S01'}"/>
+<cfdi:Comprobante xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="${serieClean}" Folio="${folioClean}" Fecha="${fechaClean}" FormaPago="03" MetodoPago="PUE" Moneda="MXN" SubTotal="${subtotalAcumulado.toFixed(2)}" Total="${totalAcumulado.toFixed(2)}" TipoDeComprobante="I" LugarExpedicion="${lugarExpClean}">
+  <cfdi:Emisor Rfc="${emisorRfcClean}" Nombre="${emisorNombreClean}" RegimenFiscal="${emisorRegimenClean}"/>
+  <cfdi:Receptor Rfc="${receptorRfcClean}" Nombre="${receptorNombreClean}" DomicilioFiscalReceptor="${receptorCpClean}" RegimenFiscalReceptor="${receptorRegimenClean}" UsoCFDI="${receptorUsoClean}"/>
   <cfdi:Conceptos>
 ${xmlConceptosList.trimEnd()}
   </cfdi:Conceptos>
 </cfdi:Comprobante>`;
 
+    const cleanXml = cleanString(xmlBase);
+
     await dbClient.comprobantes.update({
         where: { id: comprobante.id },
-        data: {
+        data: sanitizeNullBytes({
             sub_total: String(subtotalAcumulado),
             sub_total_string: subtotalAcumulado.toFixed(2),
             total: String(totalAcumulado),
             total_string: totalAcumulado.toFixed(2),
-            xml_timbrado: xmlBase
-        }
+            xml_timbrado: cleanXml
+        })
     });
 }
 
