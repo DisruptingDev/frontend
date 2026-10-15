@@ -244,25 +244,38 @@ async function obtenerOGenerarConceptoDefault(grupoId = null) {
 
 // Obtener y validar la Serie y Folio real desde el catálogo de Series
 async function obtenerSiguienteFolioSerie(emisorId, dbClient = prisma, serieId = null) {
-    let whereClause = {
-        emisor_id: BigInt(emisorId),
-        tipo_comprobante: 'I'
-    };
+    let serie = null;
+
     if (serieId) {
         try {
-            whereClause.id = BigInt(serieId);
+            serie = await dbClient.series.findFirst({
+                where: {
+                    id: BigInt(serieId),
+                    emisor_id: BigInt(emisorId)
+                }
+            });
         } catch(e) {}
     }
 
-    let serie = await dbClient.series.findFirst({
-        where: whereClause
-    });
-
-    if (!serie && serieId) {
-        // Fallback: si la serie específica por id no se encuentra, buscar cualquiera del emisor
-        delete whereClause.id;
+    // 1. Priorizar serie 'U' si está configurada para este emisor
+    if (!serie) {
         serie = await dbClient.series.findFirst({
-            where: whereClause
+            where: {
+                emisor_id: BigInt(emisorId),
+                tipo_comprobante: 'I',
+                clave: { equals: 'U', mode: 'insensitive' }
+            }
+        });
+    }
+
+    // 2. Si no tiene 'U', tomar la serie de tipo Ingreso disponible del emisor
+    if (!serie) {
+        serie = await dbClient.series.findFirst({
+            where: {
+                emisor_id: BigInt(emisorId),
+                tipo_comprobante: 'I'
+            },
+            orderBy: { id: 'asc' }
         });
     }
 

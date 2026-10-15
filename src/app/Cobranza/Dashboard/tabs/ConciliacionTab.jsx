@@ -126,7 +126,9 @@ export default function ConciliacionTab({
         const em = (listaEmisores || []).find(e => e.id.toString() === emisorId.toString());
         if (em && em.series && em.series.length > 0) {
             setSeriesDisponibles(em.series);
-            setSerieSeleccionada(em.series[0].id.toString());
+            // Priorizar serie 'U' si el emisor la tiene configurada
+            const serieU = em.series.find(s => (s.clave || '').trim().toUpperCase() === 'U');
+            setSerieSeleccionada((serieU || em.series[0]).id.toString());
         } else {
             setSeriesDisponibles([]);
             setSerieSeleccionada('');
