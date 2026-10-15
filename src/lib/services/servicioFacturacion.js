@@ -377,11 +377,6 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
   </cfdi:Conceptos>
 </cfdi:Comprobante>`;
 
-    const cleanXml = (xmlBase || '')
-        .replace(/\0/g, '')
-        .replace(/\u0000/g, '')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-
     await prisma.comprobantes.update({
         where: { id: comprobante.id },
         data: {
@@ -392,8 +387,7 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
             descuento: '0',
             descuento_string: '0',
             exportacion: '01',
-            tipo_cambio: '1',
-            xml_timbrado: cleanXml
+            tipo_cambio: '1'
         }
     });
 

@@ -441,17 +441,16 @@ ${xmlConceptosList.trimEnd()}
   </cfdi:Conceptos>
 </cfdi:Comprobante>`;
 
-    const cleanXml = cleanString(xmlBase);
-
+    // Las pre-facturas en borrador NO llevan xml_timbrado (el XML timbrado oficial lo genera el microservicio Go al timbrar ante el SAT).
+    // Omitir xml_timbrado aquí previene cualquier fallo de codificación UTF-8 / bytes nulos en PostgreSQL y garantiza la persistencia atómica.
     await dbClient.comprobantes.update({
         where: { id: comprobante.id },
-        data: sanitizeNullBytes({
+        data: {
             sub_total: String(subtotalAcumulado),
             sub_total_string: subtotalAcumulado.toFixed(2),
             total: String(totalAcumulado),
-            total_string: totalAcumulado.toFixed(2),
-            xml_timbrado: cleanXml
-        })
+            total_string: totalAcumulado.toFixed(2)
+        }
     });
 }
 
