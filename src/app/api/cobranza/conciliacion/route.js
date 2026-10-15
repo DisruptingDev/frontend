@@ -234,12 +234,22 @@ async function obtenerSiguienteFolioSerie(emisorId, dbClient = prisma, serieId =
         tipo_comprobante: 'I'
     };
     if (serieId) {
-        whereClause.id = BigInt(serieId);
+        try {
+            whereClause.id = BigInt(serieId);
+        } catch(e) {}
     }
 
     let serie = await dbClient.series.findFirst({
         where: whereClause
     });
+
+    if (!serie && serieId) {
+        // Fallback: si la serie específica por id no se encuentra, buscar cualquiera del emisor
+        delete whereClause.id;
+        serie = await dbClient.series.findFirst({
+            where: whereClause
+        });
+    }
 
     if (!serie) {
         serie = await dbClient.series.create({
@@ -419,7 +429,9 @@ export async function POST(request) {
         // =========================================================================
         if (contentType.includes('application/json')) {
             const body = sanitizeNullBytes(await request.json());
-            const { action, alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, emisor_id, grupo_id, serie_id } = body;
+            const resolvedGrupoId = await getGrupoIdFromRequest(request, body);
+            const { action, alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, emisor_id, serie_id } = body;
+            const grupo_id = body.grupo_id || resolvedGrupoId;
 
             if (action === 'ASIGNAR_MANUAL') {
                 if (!alumno_id) {
@@ -435,8 +447,9 @@ export async function POST(request) {
                     return NextResponse.json({ error: 'El alumno seleccionado no existe.' }, { status: 404 });
                 }
 
-                const emisor = await obtenerOGenerarEmisorPredeterminado(emisor_id);
-                const conceptoDefault = await obtenerOGenerarConceptoDefault(grupo_id);
+                const emisor = await obtenerOGenerarEmisorPredeterminado(emisor_id, grupo_id);
+                const targetGrupoId = grupo_id ? BigInt(grupo_id) : (emisor.grupo_id ? BigInt(emisor.grupo_id) : (alumnoObj.grupo_id ? BigInt(alumnoObj.grupo_id) : null));
+                const conceptoDefault = await obtenerOGenerarConceptoDefault(targetGrupoId);
 
                 let cargoEncontrado = await prisma.cargoAlumno.findFirst({
                     where: { alumno_id: BigInt(alumno_id), estatus: { in: ['PENDIENTE', 'PARCIAL'] }, monto_pendiente: { gt: 0 } },
@@ -472,7 +485,7 @@ export async function POST(request) {
                             monto_pendiente: montoNum,
                             referencia_bancaria: refBancariaSegura,
                             estatus: 'PENDIENTE',
-                            grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
+                            grupo_id: targetGrupoId
                         },
                         include: { producto: true, concepto: true }
                     });
@@ -519,7 +532,7 @@ export async function POST(request) {
                     data: sanitizeNullBytes({
                         emisors: { connect: { id: BigInt(emisor.id) } },
                         receptors: { connect: { id: BigInt(receptorId) } },
-                        ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
+                        ...(targetGrupoId ? { grupos: { connect: { id: targetGrupoId } } } : {}),
                         version: '4.0',
                         serie: serie,
                         folio: folio,
@@ -541,7 +554,7 @@ export async function POST(request) {
 
                 await prisma.$executeRawUnsafe(`
                     UPDATE "comprobantes" 
-                    SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
+                    SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}${targetGrupoId ? `, "grupo_id" = ${targetGrupoId}` : ''}
                     WHERE id = ${comprobanteAuto.id}
                 `);
 
@@ -573,7 +586,7 @@ export async function POST(request) {
                     emisor,
                     receptor: receptorObj,
                     monto: montoNum,
-                    grupoId: emisor.grupo_id,
+                    grupoId: targetGrupoId,
                     items: [{
                         descripcion: descConcepto,
                         monto: montoNum,
@@ -591,7 +604,7 @@ export async function POST(request) {
                         metodo_pago: '03',
                         estado_conciliacion: 'CONCILIADO',
                         comprobante_id: comprobanteAuto.id,
-                        grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
+                        grupo_id: targetGrupoId
                     }
                 });
 
@@ -603,14 +616,15 @@ export async function POST(request) {
                 }, { status: 200 });
             }
 
-                        if (action === 'CONFIRMAR_MASIVO') {
+            if (action === 'CONFIRMAR_MASIVO') {
                 const { asignaciones } = body;
                 if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
                     return NextResponse.json({ error: 'No hay asignaciones para procesar.' }, { status: 400 });
                 }
 
-                const emisor = await obtenerOGenerarEmisorPredeterminado(emisor_id);
+                const emisor = await obtenerOGenerarEmisorPredeterminado(emisor_id, grupo_id);
                 const procesados = [];
+                const errores = [];
 
                 for (const asig of asignaciones) {
                     const { alumno_id, monto, fecha_pago, referencia_bancaria, descripcion, cargos_ids, serie_id } = asig;
@@ -621,60 +635,71 @@ export async function POST(request) {
                                 where: { id: BigInt(alumno_id) },
                                 include: { receptor: true, programa_academico: true }
                             });
-                            if (!alumnoObj) return;
+                            if (!alumnoObj) {
+                                throw new Error(`El alumno con ID ${alumno_id} no fue encontrado`);
+                            }
+
+                            const targetGrupoId = grupo_id 
+                                ? BigInt(grupo_id) 
+                                : (emisor.grupo_id ? BigInt(emisor.grupo_id) : (alumnoObj.grupo_id ? BigInt(alumnoObj.grupo_id) : null));
 
                             let montoRestante = Number(monto);
                             let cargosAplicados = [];
                             
-                            // Si el usuario seleccionó cargos específicos, los buscamos
+                            // 1. Si el usuario seleccionó cargos específicos válidos, los buscamos
                             if (cargos_ids && Array.isArray(cargos_ids) && cargos_ids.length > 0) {
-                                const cargosSeleccionados = await tx.cargoAlumno.findMany({
-                                    where: { id: { in: cargos_ids.map(id => BigInt(id)) }, monto_pendiente: { gt: 0 } },
-                                    include: { producto: true, concepto: true },
-                                    orderBy: { id: 'asc' }
-                                });
-
-                                if (cargosSeleccionados.length > 0) {
-                                    try {
-                                        const cIdsStr = cargosSeleccionados.map(c => c.id.toString()).join(',');
-                                        const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cIdsStr})`);
-                                        const rawMap = {};
-                                        for (const r of rawItems) {
-                                            rawMap[r.id.toString()] = r.detalles_items;
-                                        }
-                                        for (const c of cargosSeleccionados) {
-                                            if (rawMap[c.id.toString()]) {
-                                                c.detalles_items = rawMap[c.id.toString()];
-                                            }
-                                        }
-                                    } catch (e) {}
-                                }
-                                
-                                for (const cargo of cargosSeleccionados) {
-                                    if (montoRestante <= 0) break;
-                                    const pendiente = Number(cargo.monto_pendiente);
-                                    if (pendiente <= 0) continue;
-                                    
-                                    const aplicar = Math.min(pendiente, montoRestante);
-                                    montoRestante -= aplicar;
-                                    
-                                    const nuevoPagado = Number(cargo.monto_pagado) + aplicar;
-                                    const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
-                                    const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
-                                    
-                                    await tx.cargoAlumno.update({
-                                        where: { id: cargo.id },
-                                        data: {
-                                            monto_pagado: nuevoPagado,
-                                            monto_pendiente: nuevoPendiente,
-                                            estatus: nuevoEstatus
-                                        }
+                                const validIds = cargos_ids.filter(id => id && String(id).trim() !== '').map(id => BigInt(id));
+                                if (validIds.length > 0) {
+                                    const cargosSeleccionados = await tx.cargoAlumno.findMany({
+                                        where: { id: { in: validIds }, monto_pendiente: { gt: 0 } },
+                                        include: { producto: true, concepto: true },
+                                        orderBy: { id: 'asc' }
                                     });
+
+                                    if (cargosSeleccionados.length > 0) {
+                                        try {
+                                            const cIdsStr = cargosSeleccionados.map(c => c.id.toString()).join(',');
+                                            const rawItems = await tx.$queryRawUnsafe(`SELECT id, detalles_items FROM "CargoAlumno" WHERE id IN (${cIdsStr})`);
+                                            const rawMap = {};
+                                            for (const r of rawItems) {
+                                                rawMap[r.id.toString()] = r.detalles_items;
+                                            }
+                                            for (const c of cargosSeleccionados) {
+                                                if (rawMap[c.id.toString()]) {
+                                                    c.detalles_items = rawMap[c.id.toString()];
+                                                }
+                                            }
+                                        } catch (e) {}
+                                    }
                                     
-                                    cargosAplicados.push({ cargo, montoAplicado: aplicar });
+                                    for (const cargo of cargosSeleccionados) {
+                                        if (montoRestante <= 0) break;
+                                        const pendiente = Number(cargo.monto_pendiente);
+                                        if (pendiente <= 0) continue;
+                                        
+                                        const aplicar = Math.min(pendiente, montoRestante);
+                                        montoRestante -= aplicar;
+                                        
+                                        const nuevoPagado = Number(cargo.monto_pagado) + aplicar;
+                                        const nuevoPendiente = Number(cargo.monto_total) - nuevoPagado;
+                                        const nuevoEstatus = nuevoPendiente <= 0 ? 'PAGADO' : 'PARCIAL';
+                                        
+                                        await tx.cargoAlumno.update({
+                                            where: { id: cargo.id },
+                                            data: {
+                                                monto_pagado: nuevoPagado,
+                                                monto_pendiente: nuevoPendiente,
+                                                estatus: nuevoEstatus
+                                            }
+                                        });
+                                        
+                                        cargosAplicados.push({ cargo, montoAplicado: aplicar });
+                                    }
                                 }
-                            } else {
-                                // Si no se seleccionó cargo (quizás no había pendientes), intentar con el más antiguo si existe
+                            }
+                            
+                            // 2. Si no se aplicó a cargos seleccionados (o quedaron fondos), buscar cargos pendientes del alumno
+                            if (cargosAplicados.length === 0 && montoRestante > 0) {
                                 let cargoEncontrado = await tx.cargoAlumno.findFirst({
                                     where: { alumno_id: alumnoObj.id, estatus: { in: ['PENDIENTE', 'PARCIAL', 'VENCIDO'] }, monto_pendiente: { gt: 0 } },
                                     include: { producto: true, concepto: true },
@@ -705,9 +730,19 @@ export async function POST(request) {
                                 }
                             }
                             
-                            // Si sobró monto (Saldo a favor)
+                            // 3. Si sobró monto (Saldo a favor)
                             if (montoRestante > 0.01) {
-                                const concDef = await tx.conceptoCobro.findFirst({ where: { nombre: 'Colegiatura' } });
+                                let concDef = await tx.conceptoCobro.findFirst({
+                                    where: {
+                                        OR: [
+                                            { nombre: { contains: 'Colegiatura', mode: 'insensitive' } },
+                                            { nombre: { contains: 'Mensualidad', mode: 'insensitive' } }
+                                        ]
+                                    }
+                                });
+                                if (!concDef) {
+                                    concDef = await tx.conceptoCobro.findFirst({ orderBy: { id: 'asc' } });
+                                }
                                 const concId = concDef ? concDef.id : BigInt(1);
                                 
                                 // Generar código SAF consecutivo
@@ -730,6 +765,10 @@ export async function POST(request) {
                                 const proximoSafNum = maxSafNum + 1;
                                 const nuevoCodigoSAF = `SAF-${String(proximoSafNum).padStart(5, '0')}`;
                                 let refSAF = `REF-${nuevoCodigoSAF}`;
+                                const refExiste = await tx.cargoAlumno.findFirst({ where: { referencia_bancaria: refSAF } });
+                                if (refExiste) {
+                                    refSAF = `${refSAF}-${Date.now()}`;
+                                }
 
                                 const cargoSaldoAFavor = await tx.cargoAlumno.create({
                                     data: {
@@ -743,7 +782,7 @@ export async function POST(request) {
                                         fecha_emision: new Date(),
                                         fecha_vencimiento: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Válido por 1 año
                                         estatus: 'PAGADO',
-                                        grupo_id: grupo_id ? BigInt(grupo_id) : alumnoObj.grupo_id
+                                        grupo_id: targetGrupoId
                                     }
                                 });
                                 
@@ -779,7 +818,7 @@ export async function POST(request) {
                                 data: sanitizeNullBytes({
                                     emisors: { connect: { id: BigInt(emisor.id) } },
                                     receptors: { connect: { id: BigInt(receptorId) } },
-                                    ...(emisor.grupo_id ? { grupos: { connect: { id: BigInt(emisor.grupo_id) } } } : {}),
+                                    ...(targetGrupoId ? { grupos: { connect: { id: targetGrupoId } } } : {}),
                                     version: '4.0',
                                     serie: serie,
                                     folio: folio,
@@ -801,7 +840,7 @@ export async function POST(request) {
 
                             await tx.$executeRawUnsafe(`
                                  UPDATE "comprobantes" 
-                                 SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}
+                                 SET "sub_total" = '${subTotalStr}', "total" = '${subTotalStr}', "descuento" = '0.00', "emisor_id" = ${emisor.id}, "receptor_id" = ${receptorId}${targetGrupoId ? `, "grupo_id" = ${targetGrupoId}` : ''}
                                  WHERE id = ${comprobanteAuto.id}
                              `);
 
@@ -917,7 +956,7 @@ export async function POST(request) {
                                 emisor,
                                 receptor: receptorObj,
                                 monto: Number(monto),
-                                grupoId: emisor.grupo_id,
+                                grupoId: targetGrupoId,
                                 items: itemsList,
                                 dbClient: tx
                             });
@@ -934,7 +973,7 @@ export async function POST(request) {
                                         metodo_pago: '03',
                                         estado_conciliacion: 'CONCILIADO',
                                         comprobante_id: comprobanteAuto.id,
-                                        grupo_id: grupo_id ? BigInt(grupo_id) : emisor.grupo_id
+                                        grupo_id: targetGrupoId
                                     }
                                 });
                             }
@@ -945,16 +984,25 @@ export async function POST(request) {
                             });
                         });
                     } catch (e) {
-                        if (e.message !== 'SAF_NO_APROBADO') {
-                            console.error('Error procesando fila:', e);
-                        }
+                        console.error('Error procesando fila conciliación:', e);
+                        errores.push({ alumno_id: asig.alumno_id, error: e.message });
                     }
                 }
 
+                if (procesados.length === 0 && asignaciones.length > 0) {
+                    const primerError = errores[0]?.error || 'No se pudieron procesar las asignaciones.';
+                    return NextResponse.json({
+                        error: `No se pudo generar ninguna pre-factura: ${primerError}`,
+                        total_procesados: 0,
+                        errores
+                    }, { status: 400 });
+                }
+
                 return NextResponse.json({
-                    mensaje: `Se han guardado y generado ${procesados.length} pre-facturas exitosamente.`,
+                    mensaje: `Se han guardado y generado ${procesados.length} pre-facturas exitosamente.${errores.length > 0 ? ` (${errores.length} movimientos tuvieron advertencias o errores).` : ''}`,
                     total_procesados: procesados.length,
-                    procesados
+                    procesados,
+                    errores
                 }, { status: 200 });
             }
 

@@ -354,14 +354,22 @@ export default function ConciliacionTab({
             let token = '';
             if (typeof window !== 'undefined') {
                 token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
-                const storedUser = localStorage.getItem('usuario');
+                const storedUser = localStorage.getItem('usuario') || localStorage.getItem('user');
                 if (storedUser) {
                     try {
                         const parsed = JSON.parse(storedUser);
-                        grupoId = parsed.grupo_id || parsed.grupoId || '';
+                        grupoId = parsed.grupo_id || parsed.grupoId || parsed.GrupoID || '';
                     } catch (e) {}
                 }
                 if (!grupoId) grupoId = localStorage.getItem('grupo_id') || '';
+            }
+
+            let finalEmisorId = emisorSeleccionado || emisorProp;
+            if (!finalEmisorId && typeof window !== 'undefined') {
+                finalEmisorId = localStorage.getItem('emisor_id_predeterminado') || '';
+            }
+            if (!finalEmisorId && emisores && emisores.length > 0) {
+                finalEmisorId = emisores[0].id ? emisores[0].id.toString() : '';
             }
 
             const response = await fetch('/api/cobranza/conciliacion', {
@@ -373,7 +381,8 @@ export default function ConciliacionTab({
                 },
                 body: JSON.stringify({
                     action: 'CONFIRMAR_MASIVO',
-                    emisor_id: emisorSeleccionado,
+                    emisor_id: finalEmisorId,
+                    grupo_id: grupoId || undefined,
                     asignaciones: asignacionesFinales.map(p => ({
                         alumno_id: p.alumno_id,
                         monto: Number(p.item.monto),
@@ -381,7 +390,7 @@ export default function ConciliacionTab({
                         referencia_bancaria: p.item.referencia_bancaria,
                         descripcion: p.item.descripcion,
                         cargos_ids: p.cargos_ids,
-                        serie_id: serieSeleccionada,
+                        serie_id: p.serie_id || serieSeleccionada,
                         aprobar_saf: p.aprobar_saf
                     }))
                 })
@@ -390,7 +399,14 @@ export default function ConciliacionTab({
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Error en conciliación masiva');
 
-            setMensajeExito(data.mensaje || 'Conciliación masiva procesada exitosamente.');
+            if (!data.total_procesados || data.total_procesados === 0) {
+                const detalleErrores = data.errores && data.errores.length > 0
+                    ? data.errores.join(' | ')
+                    : 'No se generaron facturas ni pre-facturas para los movimientos seleccionados.';
+                throw new Error(detalleErrores);
+            }
+
+            setMensajeExito(data.mensaje || `Se procesaron ${data.total_procesados} movimientos exitosamente y se generaron sus pre-facturas.`);
             if (onRefreshDashboard) onRefreshDashboard();
 
             // Navegar a pestaña Facturación si está disponible el handler
