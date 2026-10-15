@@ -377,19 +377,18 @@ export async function crearEstructuraCompletaCFDI({ comprobante, emisor, recepto
   </cfdi:Conceptos>
 </cfdi:Comprobante>`;
 
-    await prisma.comprobantes.update({
-        where: { id: comprobante.id },
-        data: {
-            sub_total: String(subtotalAcumulado),
-            sub_total_string: subtotalAcumulado.toFixed(2),
-            total: String(totalAcumulado),
-            total_string: totalAcumulado.toFixed(2),
-            descuento: '0',
-            descuento_string: '0',
-            exportacion: '01',
-            tipo_cambio: '1'
-        }
-    });
+    await prisma.$executeRawUnsafe(`
+        UPDATE "comprobantes"
+        SET "sub_total" = '${subtotalAcumulado.toFixed(2)}',
+            "sub_total_string" = '${subtotalAcumulado.toFixed(2)}',
+            "total" = '${totalAcumulado.toFixed(2)}',
+            "total_string" = '${totalAcumulado.toFixed(2)}',
+            "descuento" = '0',
+            "descuento_string" = '0',
+            "exportacion" = '01',
+            "tipo_cambio" = '1'
+        WHERE id = ${comprobante.id}
+    `);
 
     // 3. Insertar impuestos locales si existen
     if (impuestosLocales && impuestosLocales.length > 0) {

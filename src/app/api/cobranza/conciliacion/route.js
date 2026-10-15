@@ -442,16 +442,15 @@ ${xmlConceptosList.trimEnd()}
 </cfdi:Comprobante>`;
 
     // Las pre-facturas en borrador NO llevan xml_timbrado (el XML timbrado oficial lo genera el microservicio Go al timbrar ante el SAT).
-    // Omitir xml_timbrado aquí previene cualquier fallo de codificación UTF-8 / bytes nulos en PostgreSQL y garantiza la persistencia atómica.
-    await dbClient.comprobantes.update({
-        where: { id: comprobante.id },
-        data: {
-            sub_total: String(subtotalAcumulado),
-            sub_total_string: subtotalAcumulado.toFixed(2),
-            total: String(totalAcumulado),
-            total_string: totalAcumulado.toFixed(2)
-        }
-    });
+    // Actualizamos totales directamente vía SQL seguro para erradicar cualquier invocación de prisma.comprobantes.update o error de codificación.
+    await dbClient.$executeRawUnsafe(`
+        UPDATE "comprobantes"
+        SET "sub_total" = '${subtotalAcumulado.toFixed(2)}',
+            "sub_total_string" = '${subtotalAcumulado.toFixed(2)}',
+            "total" = '${totalAcumulado.toFixed(2)}',
+            "total_string" = '${totalAcumulado.toFixed(2)}'
+        WHERE id = ${comprobante.id}
+    `);
 }
 
 // POST: Procesar conciliación bancaria O asignación manual de movimiento a un alumno
