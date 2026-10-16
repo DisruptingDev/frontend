@@ -68,7 +68,18 @@ export async function enviarFacturaIndividual({ facturaId, emailDestino = null }
                 }
             },
             Conceptos: {
-                include: { Concepto: true }
+                include: {
+                    Concepto: {
+                        include: {
+                            impuestos: {
+                                include: {
+                                    traslados: true,
+                                    retencions: true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     });

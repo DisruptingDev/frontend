@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import prisma from '@/lib/prisma';
 import { getDescripcionRegimen, getDescripcionUsoCFDI } from '@/utils/catalogoSAT';
 
 // Paletas de diseño según el ID de plantilla registrado en la BD
@@ -208,6 +209,132 @@ export async function generarHtmlFactura(comprobante) {
             importe: subtotalNum,
             objeto_imp: '02'
         });
+    }
+
+    // =========================================================================
+    // IMPUESTOS FEDERALES (Traslados y Retenciones)
+    // =========================================================================
+    const trasladosFederales = [];
+    const retencionesFederales = [];
+
+    if (comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
+        for (const cGroup of comprobante.Conceptos) {
+            if (cGroup.Concepto && Array.isArray(cGroup.Concepto)) {
+                for (const item of cGroup.Concepto) {
+                    if (item.impuestos && Array.isArray(item.impuestos)) {
+                        for (const imp of item.impuestos) {
+                            if (imp.traslados && Array.isArray(imp.traslados)) {
+                                for (const t of imp.traslados) {
+                                    trasladosFederales.push({
+                                        nombre: 'IVA',
+                                        tasa: Number(t.tasa_o_cuota != null ? t.tasa_o_cuota : (t.tasa != null ? t.tasa : 0.16)),
+                                        importe: Number(t.importe != null ? t.importe : 0)
+                                    });
+                                }
+                            }
+                            if (imp.retencions && Array.isArray(imp.retencions)) {
+                                for (const r of imp.retencions) {
+                                    retencionesFederales.push({
+                                        nombre: r.impuesto_clave === '001' ? 'ISR' : (r.impuesto_clave === '002' ? 'IVA' : 'Retención'),
+                                        tasa: Number(r.tasa_o_cuota != null ? r.tasa_o_cuota : (r.tasa != null ? r.tasa : 0)),
+                                        importe: Number(r.importe != null ? r.importe : 0)
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // IMPUESTOS LOCALES (Traslados y Retenciones)
+    // =========================================================================
+    let trasladosLocales = [];
+    let retencionesLocales = [];
+
+    // 1. Verificar si ya vienen en comprobante (p. ej. comprobante.Complemento?.ImpuestosLocales o comprobante.impuestosLocales)
+    const rawImpLoc = comprobante.Complemento?.ImpuestosLocales || comprobante.impuestos_locales || comprobante.ImpuestosLocales || comprobante.impuestosLocales;
+    if (rawImpLoc) {
+        if (Array.isArray(rawImpLoc)) {
+            rawImpLoc.forEach(item => {
+                const tipo = (item.Tipo || '').toLowerCase();
+                if (tipo.includes('traslado')) {
+                    trasladosLocales.push({
+                        nombre: item.Nombre || item.ImpLocTrasladado || 'ISH',
+                        tasa: Number(item.Tasa != null ? item.Tasa : (item.TasadeTraslado != null ? item.TasadeTraslado : 0)),
+                        importe: Math.abs(Number(item.Importe || 0))
+                    });
+                } else if (tipo.includes('retencion') || tipo.includes('retención')) {
+                    retencionesLocales.push({
+                        nombre: item.Nombre || item.ImpLocRetenido || 'Retención Local',
+                        tasa: Number(item.Tasa != null ? item.Tasa : (item.TasadeRetencion != null ? item.TasadeRetencion : 0)),
+                        importe: Math.abs(Number(item.Importe || 0))
+                    });
+                }
+            });
+        } else if (typeof rawImpLoc === 'object') {
+            const tras = rawImpLoc.TrasladosLocales || rawImpLoc.traslado_locals || [];
+            const ret = rawImpLoc.RetencionesLocales || rawImpLoc.retencion_locals || [];
+            if (Array.isArray(tras)) {
+                tras.forEach(t => trasladosLocales.push({
+                    nombre: t.ImpLocTrasladado || t.imp_loc_trasladado || t.Nombre || 'ISH',
+                    tasa: Number(t.TasadeTraslado != null ? t.TasadeTraslado : (t.tasade_traslado != null ? t.tasade_traslado : (t.Tasa != null ? t.Tasa : 0))),
+                    importe: Math.abs(Number(t.Importe != null ? t.Importe : (t.importe != null ? t.importe : 0)))
+                }));
+            }
+            if (Array.isArray(ret)) {
+                ret.forEach(r => retencionesLocales.push({
+                    nombre: r.ImpLocRetenido || r.imp_loc_retenido || r.Nombre || 'Retención Local',
+                    tasa: Number(r.TasadeRetencion != null ? r.TasadeRetencion : (r.tasade_retencion != null ? r.tasade_retencion : (r.Tasa != null ? r.Tasa : 0))),
+                    importe: Math.abs(Number(r.Importe != null ? r.Importe : (r.importe != null ? r.importe : 0)))
+                }));
+            }
+        }
+    }
+
+    // 2. Si no vinieron adjuntos en el objeto comprobante pero tenemos comprobante.id, consultar la base de datos
+    if (trasladosLocales.length === 0 && retencionesLocales.length === 0 && comprobante.id) {
+        try {
+            const compId = BigInt(comprobante.id);
+            const impLocRows = await prisma.$queryRaw`
+                SELECT il.id, il.version, il.totalde_retenciones, il.totalde_traslados
+                FROM complementos c
+                JOIN impuestos_locales il ON il.complemento_id = c.id
+                WHERE c.comprobante_id = ${compId}
+                LIMIT 1
+            `;
+            if (impLocRows && impLocRows.length > 0) {
+                const ilId = impLocRows[0].id;
+                const dbTraslados = await prisma.$queryRaw`
+                    SELECT imp_loc_trasladado, tasade_traslado, importe
+                    FROM traslado_locals
+                    WHERE impuestos_locales_id = ${ilId}
+                `;
+                const dbRetenciones = await prisma.$queryRaw`
+                    SELECT imp_loc_retenido, tasade_retencion, importe
+                    FROM retencion_locals
+                    WHERE impuestos_locales_id = ${ilId}
+                `;
+                (dbTraslados || []).forEach(t => {
+                    trasladosLocales.push({
+                        nombre: t.imp_loc_trasladado || 'ISH',
+                        tasa: Number(t.tasade_traslado || 0),
+                        importe: Math.abs(Number(t.importe || 0))
+                    });
+                });
+                (dbRetenciones || []).forEach(r => {
+                    retencionesLocales.push({
+                        nombre: r.imp_loc_retenido || 'Retención Local',
+                        tasa: Number(r.tasade_retencion || 0),
+                        importe: Math.abs(Number(r.importe || 0))
+                    });
+                });
+            }
+        } catch (dbErr) {
+            console.warn('[generarHtmlFactura] No se pudieron cargar impuestos locales de BD:', dbErr.message);
+        }
     }
 
     // Sellos y QR
@@ -462,6 +589,30 @@ export async function generarHtmlFactura(comprobante) {
                         <span>Descuento:</span>
                         <span>-$${descuentoNum.toFixed(2)}</span>
                     </div>` : ''}
+                    ${trasladosFederales.map(tf => `
+                    <div class="totals-row">
+                        <span>${tf.nombre} (${(tf.tasa * 100).toFixed(2)}% Traslado Federal):</span>
+                        <span>$${tf.importe.toFixed(2)}</span>
+                    </div>
+                    `).join('')}
+                    ${trasladosLocales.map(tl => `
+                    <div class="totals-row" style="color: ${paleta.primario}; font-weight: 500;">
+                        <span>${tl.nombre} (${tl.tasa.toFixed(2)}% Traslado Local):</span>
+                        <span>+$${tl.importe.toFixed(2)}</span>
+                    </div>
+                    `).join('')}
+                    ${retencionesFederales.map(rf => `
+                    <div class="totals-row" style="color: #b91c1c;">
+                        <span>${rf.nombre} (${(rf.tasa * 100).toFixed(2)}% Retención Federal):</span>
+                        <span>-$${rf.importe.toFixed(2)}</span>
+                    </div>
+                    `).join('')}
+                    ${retencionesLocales.map(rl => `
+                    <div class="totals-row" style="color: #b91c1c;">
+                        <span>${rl.nombre} (${rl.tasa.toFixed(2)}% Retención Local):</span>
+                        <span>-$${rl.importe.toFixed(2)}</span>
+                    </div>
+                    `).join('')}
                     <div class="totals-row totals-final">
                         <span>TOTAL:</span>
                         <span>$${totalNum.toFixed(2)} ${comprobante.moneda || 'MXN'}</span>

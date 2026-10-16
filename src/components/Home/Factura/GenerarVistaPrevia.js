@@ -232,18 +232,37 @@ const fillTemplate = async (template, data) => {
     : "";
 
   // Generar HTML para Impuestos Locales (Traslados y Retenciones)
-  const imploc = factura.Complemento?.ImpuestosLocales || (Array.isArray(factura.ImpuestosLocales) ? {
-    TrasladosLocales: factura.ImpuestosLocales.filter((i) => i.Tipo === "Traslado").map((i) => ({
-      ImpLocTrasladado: i.Nombre,
-      Importe: i.Importe,
-      TasadeTraslado: i.Tasa
-    })),
-    RetencionesLocales: factura.ImpuestosLocales.filter((i) => i.Tipo === "Retencion").map((i) => ({
-      ImpLocRetenido: i.Nombre,
-      Importe: i.Importe,
-      TasadeRetencion: i.Tasa
-    }))
-  } : null);
+  const rawLoc = factura.Complemento?.ImpuestosLocales || factura.Complemento?.impuestos_locales || factura.ImpuestosLocales || factura.impuestosLocales || factura.impuestos_locales;
+  let imploc = null;
+  if (Array.isArray(rawLoc)) {
+    imploc = {
+      TrasladosLocales: rawLoc.filter((i) => (i.Tipo || '').toLowerCase().includes('traslado')).map((i) => ({
+        ImpLocTrasladado: i.Nombre || i.ImpLocTrasladado || i.imp_loc_trasladado,
+        Importe: i.Importe != null ? i.Importe : i.importe,
+        TasadeTraslado: i.Tasa != null ? i.Tasa : (i.TasadeTraslado != null ? i.TasadeTraslado : i.tasade_traslado)
+      })),
+      RetencionesLocales: rawLoc.filter((i) => (i.Tipo || '').toLowerCase().includes('retencion') || (i.Tipo || '').toLowerCase().includes('retención')).map((i) => ({
+        ImpLocRetenido: i.Nombre || i.ImpLocRetenido || i.imp_loc_retenido,
+        Importe: i.Importe != null ? i.Importe : i.importe,
+        TasadeRetencion: i.Tasa != null ? i.Tasa : (i.TasadeRetencion != null ? i.TasadeRetencion : i.tasade_retencion)
+      }))
+    };
+  } else if (rawLoc && typeof rawLoc === 'object') {
+    const rawTras = rawLoc.TrasladosLocales || rawLoc.traslado_locals || [];
+    const rawRet = rawLoc.RetencionesLocales || rawLoc.retencion_locals || [];
+    imploc = {
+      TrasladosLocales: Array.isArray(rawTras) ? rawTras.map(t => ({
+        ImpLocTrasladado: t.ImpLocTrasladado || t.imp_loc_trasladado || t.Nombre,
+        Importe: t.Importe != null ? t.Importe : t.importe,
+        TasadeTraslado: t.TasadeTraslado != null ? t.TasadeTraslado : (t.tasade_traslado != null ? t.tasade_traslado : t.Tasa)
+      })) : [],
+      RetencionesLocales: Array.isArray(rawRet) ? rawRet.map(r => ({
+        ImpLocRetenido: r.ImpLocRetenido || r.imp_loc_retenido || r.Nombre,
+        Importe: r.Importe != null ? r.Importe : r.importe,
+        TasadeRetencion: r.TasadeRetencion != null ? r.TasadeRetencion : (r.tasade_retencion != null ? r.tasade_retencion : r.Tasa)
+      })) : []
+    };
+  }
 
   let impuestosLocalesHTML = "";
   if (imploc?.TrasladosLocales && Array.isArray(imploc.TrasladosLocales)) {
