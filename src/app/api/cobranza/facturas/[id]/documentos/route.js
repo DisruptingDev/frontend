@@ -81,14 +81,30 @@ function numeroALetras(monto) {
 }
 
 // GET: Descargar XML o Renderizar PDF Oficial CFDI 4.0 utilizando la Plantilla asociada al Emisor
-export async function GET(request, { params }) {
+export async function GET(request, context) {
     try {
-        const { id } = params;
+        const resolvedParams = context?.params ? await context.params : {};
+        const id = resolvedParams.id;
         const { searchParams } = new URL(request.url);
         const tipo = searchParams.get('tipo') || 'xml';
 
-        const comprobante = await prisma.comprobantes.findUnique({
-            where: { id: BigInt(id) },
+        let idBigInt = null;
+        try {
+            idBigInt = BigInt(id);
+        } catch {
+            idBigInt = null;
+        }
+
+        const orConditions = [];
+        if (idBigInt !== null) {
+            orConditions.push({ id: idBigInt });
+        }
+        orConditions.push({ folio: String(id) });
+
+        const comprobante = await prisma.comprobantes.findFirst({
+            where: {
+                OR: orConditions
+            },
             include: {
                 emisors: true,
                 receptors: true,

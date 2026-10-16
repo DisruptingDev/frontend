@@ -18,14 +18,41 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
     try {
-        const { id } = params;
+        const resolvedParams = context?.params ? await context.params : {};
+        const id = resolvedParams.id;
         if (!id) {
             return NextResponse.json({ error: 'ID no proporcionado' }, { status: 400 });
         }
 
-        const compId = BigInt(id);
+        let compId = null;
+        try {
+            compId = BigInt(id);
+        } catch {
+            compId = null;
+        }
+
+        // Si id no es directamente el id de la tabla o necesitamos asegurar el comprobante
+        const orConditions = [];
+        if (compId !== null) {
+            orConditions.push({ id: compId });
+        }
+        orConditions.push({ folio: String(id) });
+
+        const comp = await prisma.comprobantes.findFirst({
+            where: { OR: orConditions },
+            select: { id: true }
+        });
+
+        if (comp) {
+            compId = comp.id;
+        } else if (!compId) {
+            return NextResponse.json({
+                ImpuestosLocales: null,
+                impuestosLocales: []
+            });
+        }
 
         const impLocRows = await prisma.$queryRaw`
             SELECT il.id, il.version, il.totalde_retenciones, il.totalde_traslados, il.complemento_id

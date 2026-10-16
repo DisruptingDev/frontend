@@ -517,26 +517,55 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
         setIsLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
-                method: 'GET',
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            // 1. Intentar primero con la ruta local Next.js (que contiene la plantilla oficial y el desglose de impuestos locales)
+            let response = null;
+            try {
+                response = await fetch(`/api/descargararchivos/VerPDF/${id}`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            } catch (errLocal) {
+                console.warn('Ruta local VerPDF no disponible, intentando API externa:', errLocal);
+            }
 
-            if (response.ok) {
-                const blob = await response.blob();
-                const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-                const pdfUrl = URL.createObjectURL(pdfBlob);
-                if (newWindow && !newWindow.closed) {
-                    newWindow.location.href = pdfUrl;
+            // 2. Si la ruta local falló o no respondió OK, usar la API externa como respaldo
+            if ((!response || !response.ok) && apiUrl) {
+                response = await fetch(`${apiUrl}/api/descargararchivos/VerPDF/${id}`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            }
+
+            if (response && response.ok) {
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('text/html')) {
+                    const htmlText = await response.text();
+                    if (newWindow && !newWindow.closed) {
+                        newWindow.document.open();
+                        newWindow.document.write(htmlText);
+                        newWindow.document.close();
+                    } else {
+                        const blob = new Blob([htmlText], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        setTimeout(() => URL.revokeObjectURL(url), 60000);
+                    }
                 } else {
-                    const a = document.createElement('a');
-                    a.href = pdfUrl;
-                    a.download = `Prefactura_${id}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
+                    const blob = await response.blob();
+                    const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    if (newWindow && !newWindow.closed) {
+                        newWindow.location.href = pdfUrl;
+                    } else {
+                        const a = document.createElement('a');
+                        a.href = pdfUrl;
+                        a.download = `Prefactura_${id}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                    }
+                    setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
                 }
-                setTimeout(() => URL.revokeObjectURL(pdfUrl), 60000);
             } else {
                 if (newWindow && !newWindow.closed) newWindow.close();
                 let errorMsg = 'No se pudo visualizar el PDF de la factura/prefactura.';
@@ -559,7 +588,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [token]);
+    }, [token, apiUrl]);
 
     const handleCancelarFactura = useCallback((row) => {
         const filtro = {

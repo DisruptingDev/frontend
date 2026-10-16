@@ -16,15 +16,31 @@ function serializeBigIntsAndDecimals(obj) {
     return obj;
 }
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
     try {
-        const { id } = params;
+        const resolvedParams = context?.params ? await context.params : {};
+        const id = resolvedParams.id;
         if (!id) {
             return NextResponse.json({ error: 'ID no proporcionado' }, { status: 400 });
         }
 
-        const comprobante = await prisma.comprobantes.findUnique({
-            where: { id: BigInt(id) },
+        let idBigInt = null;
+        try {
+            idBigInt = BigInt(id);
+        } catch {
+            idBigInt = null;
+        }
+
+        const orConditions = [];
+        if (idBigInt !== null) {
+            orConditions.push({ id: idBigInt });
+        }
+        orConditions.push({ folio: String(id) });
+
+        const comprobante = await prisma.comprobantes.findFirst({
+            where: {
+                OR: orConditions
+            },
             select: {
                 id: true,
                 serie: true,
@@ -164,7 +180,7 @@ export async function GET(request, { params }) {
                 SELECT il.id, il.version, il.totalde_retenciones, il.totalde_traslados
                 FROM complementos c
                 JOIN impuestos_locales il ON il.complemento_id = c.id
-                WHERE c.comprobante_id = ${BigInt(id)}
+                WHERE c.comprobante_id = ${comprobante.id}
                 LIMIT 1
             `;
             if (impLocRows && impLocRows.length > 0) {
@@ -252,6 +268,8 @@ export async function GET(request, { params }) {
                 MetodoPago: extraerClaveSAT(comprobante.metodo_pago, 'PUE'),
                 FormaPago: extraerClaveSAT(comprobante.forma_pago, '03'),
                 UsoCFDI: extraerClaveSAT(comprobante.uso_cfdi || receptorObj.uso_cfdi, 'S01'),
+                SubTotal: parseFloat(comprobante.sub_total_string || 0),
+                Total: parseFloat(comprobante.total_string || 0),
                 Descripcion: descComprobante,
                 Observaciones: descComprobante,
                 Conceptos: {
