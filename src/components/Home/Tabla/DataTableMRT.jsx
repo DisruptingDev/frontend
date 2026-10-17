@@ -635,30 +635,57 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
         setIsLoading(true);
         try {
+            let lastErrorMessage = '';
             const results = await Promise.all(idsToDelete.map(async (id) => {
                 if (!id) return false;
                 try {
-                    const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`,
-                        },
-                    });
-
-                    if (!response.ok) {
-                        const errorBody = await response.text();
-                        console.error(`Error al eliminar ID ${id}. Status: ${response.status}, Body: ${errorBody}`);
-                        return false;
+                    // 1. Intentar primero con la ruta interna de Next.js
+                    let response = null;
+                    try {
+                        response = await fetch(`/api/facturas/EliminarFactura/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                    } catch (localErr) {
+                        console.warn('Ruta local EliminarFactura falló, intentando API externa:', localErr);
                     }
-                    return true;
+
+                    // 2. Si la ruta local no respondió OK, usar la API externa como respaldo
+                    if ((!response || !response.ok) && apiUrl) {
+                        response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                    }
+
+                    if (response && response.ok) {
+                        return true;
+                    }
+
+                    if (response) {
+                        try {
+                            const errData = await response.json();
+                            if (errData?.error || errData?.Error || errData?.message) {
+                                lastErrorMessage = errData.error || errData.Error || errData.message;
+                            }
+                        } catch {
+                            const errTxt = await response.text().catch(() => '');
+                            if (errTxt && errTxt.length < 200) lastErrorMessage = errTxt;
+                        }
+                    }
+                    return false;
                 } catch (err) {
                     console.error(`Error de red al eliminar ID ${id}:`, err);
+                    lastErrorMessage = err.message;
                     return false;
                 }
             }));
-
 
             const allOk = results.length > 0 && results.every(res => res);
             const someOk = results.some(res => res);
@@ -667,16 +694,16 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
                 setConfirmationMessage(idsToDelete.length === 1 ? 'Factura eliminada correctamente.' : 'Facturas eliminadas correctamente.');
                 setOpenModalSuccess(true);
             } else if (someOk) {
-                setConfirmationMessage('Algunas facturas no se pudieron eliminar.');
+                setConfirmationMessage('Algunas facturas no se pudieron eliminar. ' + (lastErrorMessage ? `(${lastErrorMessage})` : ''));
                 setOpenModalError(true);
             } else {
-                setConfirmationMessage('Error al eliminar las facturas. Por favor, verifica el estado de las mismas.');
+                setConfirmationMessage(lastErrorMessage || 'Error al eliminar las facturas. Por favor, verifica el estado de las mismas.');
                 setOpenModalError(true);
             }
             fetchData();
         } catch (error) {
             console.error('Error en la solicitud DELETE:', error);
-            setConfirmationMessage('Ocurrió un error inesperado al eliminar.');
+            setConfirmationMessage('Ocurrió un error inesperado al eliminar: ' + error.message);
             setOpenModalError(true);
         } finally {
             setIsLoading(false);
@@ -684,7 +711,7 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
             setMenuRow(null);
             setIdsFacturasToDelete([]);
         }
-    }, [idsFacturasToDelete, token, fetchData]);
+    }, [idsFacturasToDelete, token, apiUrl, fetchData]);
 
     const handleFacturaPago = useCallback(async (row) => {
         try {

@@ -855,32 +855,59 @@ export default function DataTable({ token }) {
         if (!facturaIdToDelete) return;
 
         try {
-            const response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            // 1. Intentar primero con la ruta interna de Next.js
+            let response = null;
+            try {
+                response = await fetch(`/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            } catch (localErr) {
+                console.warn('Ruta local EliminarFactura falló, intentando API externa:', localErr);
+            }
 
-            if (response.ok) {
+            // 2. Si la ruta local no respondió OK, usar la API externa como respaldo
+            if ((!response || !response.ok) && apiUrl) {
+                response = await fetch(`${apiUrl}/api/facturas/EliminarFactura/${facturaIdToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+
+            if (response && response.ok) {
                 setConfirmationMessage('La factura se ha eliminado correctamente.');
                 setOpenModalSuccess(true);
                 fetchData();
             } else {
-                setConfirmationMessage('Error al eliminar la factura.');
+                let errorMsg = 'Error al eliminar la factura.';
+                if (response) {
+                    try {
+                        const errData = await response.json();
+                        errorMsg = errData?.error || errData?.Error || errData?.message || errorMsg;
+                    } catch {
+                        const errTxt = await response.text().catch(() => '');
+                        if (errTxt && errTxt.length < 200) errorMsg = errTxt;
+                    }
+                }
+                setConfirmationMessage(errorMsg);
                 setOpenModalError(true);
             }
         } catch (error) {
             console.error('Error en la solicitud DELETE:', error);
-            setConfirmationMessage('Error al eliminar la factura.');
+            setConfirmationMessage('Error al eliminar la factura: ' + error.message);
             setOpenModalError(true);
         } finally {
             setOpenModalConfirm(false);
             setMenuRow(null);
             setFacturaIdToDelete(null);
         }
-    }, [facturaIdToDelete, token, fetchData]);
+    }, [facturaIdToDelete, token, apiUrl, fetchData]);
 
     const handleFacturaPago = useCallback(async (row) => {
         try {
