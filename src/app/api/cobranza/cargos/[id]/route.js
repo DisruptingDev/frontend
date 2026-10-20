@@ -141,15 +141,60 @@ export async function DELETE(request, { params }) {
         const { id } = params;
 
         const cargo = await prisma.cargoAlumno.findUnique({
-            where: { id: BigInt(id) }
+            where: { id: BigInt(id) },
+            include: {
+                PagoAlumno: {
+                    include: {
+                        comprobante: {
+                            select: {
+                                id: true,
+                                uuid: true,
+                                estatus: true,
+                                serie: true,
+                                folio: true
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         if (!cargo) {
             return NextResponse.json({ error: 'Cargo/Ficha no encontrada.' }, { status: 404 });
         }
 
+        // 1. Candado crítico de Facturación: Si tiene pagos con facturas timbradas ante el SAT
+        const pagosConComprobante = cargo.PagoAlumno || [];
+        const tieneFacturaTimbrada = pagosConComprobante.some(p => {
+            if (!p.comprobante) return false;
+            const tieneUuid = Boolean(p.comprobante.uuid && String(p.comprobante.uuid).trim().length > 10);
+            const estatusUpper = String(p.comprobante.estatus || '').trim().toUpperCase();
+            return tieneUuid || estatusUpper === 'TIMBRADO' || estatusUpper === 'TIMBRADA';
+        });
+
+        if (tieneFacturaTimbrada) {
+            return NextResponse.json({
+                error: 'No se puede eliminar la ficha porque tiene facturas timbradas ante el SAT asociadas. Por regla fiscal y de negocio, un comprobante timbrado no puede eliminarse.'
+            }, { status: 400 });
+        }
+
+        // 2. Candado de pagos realizados
+        const montoPagadoNum = Number(cargo.monto_pagado || 0);
+        if (montoPagadoNum > 0 || cargo.estatus === 'PAGADO' || cargo.estatus === 'PARCIAL') {
+            return NextResponse.json({
+                error: 'No se puede eliminar una ficha que ya cuenta con pagos registrados o conciliados.'
+            }, { status: 400 });
+        }
+
         if (cargo.estatus !== 'PENDIENTE' && cargo.estatus !== 'VENCIDO') {
-            return NextResponse.json({ error: 'Solo se pueden eliminar fichas con estatus PENDIENTE o VENCIDO.' }, { status: 400 });
+            return NextResponse.json({ error: 'Solo se pueden eliminar fichas con estatus PENDIENTE o VENCIDO sin pagos.' }, { status: 400 });
+        }
+
+        // 3. Si existen pagos en borrador o huérfanos sin timbrar, desvincular o limpiar con seguridad
+        if (pagosConComprobante.length > 0) {
+            await prisma.pagoAlumno.deleteMany({
+                where: { cargo_id: BigInt(id) }
+            });
         }
 
         await prisma.cargoAlumno.delete({

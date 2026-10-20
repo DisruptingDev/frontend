@@ -26,7 +26,9 @@ import SendIcon from '@mui/icons-material/Send';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import descargaMasivaService from '@/services/descargaMasivaService';
+import { readFileAsBase64 } from '@/utils/fielUtils';
 
 const getInitialDates = () => {
   const now = new Date();
@@ -47,6 +49,11 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
   const [tipoFlujo, setTipoFlujo] = useState('emitidas'); // 'emitidas' | 'recibidas'
   const [fechaInicio, setFechaInicio] = useState(firstDay);
   const [fechaFin, setFechaFin] = useState(today);
+
+  // Credenciales e.firma para autenticación directa al SAT
+  const [cerFile, setCerFile] = useState(null);
+  const [keyFile, setKeyFile] = useState(null);
+  const [passwordFiel, setPasswordFiel] = useState('');
 
   // Filtros avanzados
   const [rfcContraparte, setRfcContraparte] = useState('');
@@ -101,7 +108,23 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       return;
     }
 
+    if (!cerFile || !keyFile || !passwordFiel) {
+      setMensajeError('Para conectar con el SAT, debe adjuntar su Certificado (.cer), Llave (.key) e ingresar la Contraseña de su e.firma (FIEL).');
+      return;
+    }
+
     setLoading(true);
+
+    let cerBase64 = '';
+    let keyBase64 = '';
+    try {
+      cerBase64 = await readFileAsBase64(cerFile);
+      keyBase64 = await readFileAsBase64(keyFile);
+    } catch (readErr) {
+      setMensajeError('Error al leer archivos de la e.firma: ' + readErr.message);
+      setLoading(false);
+      return;
+    }
 
     // En el SAT, la fecha y hora final NO puede ser posterior al momento actual del servidor.
     // Si la fecha de fin seleccionada es hoy, usamos la hora actual; si es una fecha anterior, 23:59:59.
@@ -135,6 +158,9 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       tipoPeticion: peticionNormalizada,
       fechaInicio: fInicio,
       fechaFin: fFin,
+      cer: cerBase64,
+      key: keyBase64,
+      password: passwordFiel,
     };
 
     if (tipoComprobante && tipoComprobante !== 'todos') {
@@ -314,6 +340,74 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                     />
                   </RadioGroup>
                 </FormControl>
+              </Grid>
+
+              {/* SECCIÓN DE AUTENTICACIÓN CON E.FIRMA (FIEL) ANTE EL SAT */}
+              <Grid item xs={12}>
+                <Box sx={{ p: 2, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
+                  <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+                    <VpnKeyIcon color="success" />
+                    <Typography variant="subtitle2" fontWeight="bold" color="success.dark">
+                      Credenciales de e.firma (FIEL) para Autenticación Directa ante el SAT
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                    El SAT exige firmar digitalmente cada petición con el certificado y llave de la e.firma de la empresa seleccionada.
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                        size="medium"
+                        color={cerFile ? "success" : "primary"}
+                        sx={{ height: 48, textTransform: 'none' }}
+                      >
+                        {cerFile ? `✓ ${cerFile.name}` : 'Seleccionar .CER'}
+                        <input
+                          type="file"
+                          accept=".cer"
+                          hidden
+                          onChange={(e) => setCerFile(e.target.files[0] || null)}
+                        />
+                      </Button>
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        fullWidth
+                        size="medium"
+                        color={keyFile ? "success" : "primary"}
+                        sx={{ height: 48, textTransform: 'none' }}
+                      >
+                        {keyFile ? `✓ ${keyFile.name}` : 'Seleccionar .KEY'}
+                        <input
+                          type="file"
+                          accept=".key"
+                          hidden
+                          onChange={(e) => setKeyFile(e.target.files[0] || null)}
+                        />
+                      </Button>
+                    </Grid>
+
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        type="password"
+                        size="small"
+                        label="Contraseña de la Clave Privada"
+                        value={passwordFiel}
+                        onChange={(e) => setPasswordFiel(e.target.value)}
+                        placeholder="Contraseña e.firma"
+                        required
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
               </Grid>
 
               <Grid item xs={12}>

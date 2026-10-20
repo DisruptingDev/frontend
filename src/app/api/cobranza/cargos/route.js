@@ -404,6 +404,45 @@ export async function POST(request) {
                 const diaVenc = alumno.dia_pago || 5;
                 const fechaVenc = new Date(year, month - 1, diaVenc);
 
+                const primerDiaMes = new Date(year, month - 1, 1, 0, 0, 0, 0);
+                const ultimoDiaMes = new Date(year, month, 0, 23, 59, 59, 999);
+
+                // Validar si el alumno ya tiene un cargo para este mismo periodo/mes
+                const cargoExistentePeriodo = await prisma.cargoAlumno.findFirst({
+                    where: {
+                        alumno_id: alumno.id,
+                        fecha_vencimiento: {
+                            gte: primerDiaMes,
+                            lte: ultimoDiaMes
+                        }
+                    },
+                    include: {
+                        PagoAlumno: {
+                            include: {
+                                comprobante: {
+                                    select: { uuid: true, estatus: true }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (cargoExistentePeriodo) {
+                    const yaPagado = cargoExistentePeriodo.estatus === 'PAGADO' || Number(cargoExistentePeriodo.monto_pagado || 0) >= Number(cargoExistentePeriodo.monto_total || 0);
+                    const tieneFacturaTimbrada = (cargoExistentePeriodo.PagoAlumno || []).some(p => {
+                        return p.comprobante && (Boolean(p.comprobante.uuid) || ['TIMBRADO', 'TIMBRADA'].includes(String(p.comprobante.estatus).toUpperCase()));
+                    });
+
+                    if (yaPagado || tieneFacturaTimbrada) {
+                        errores.push(`Alumno ${alumno.matricula || alumno.id} (${alumno.nombre} ${alumno.apellido_paterno || ''}): Omitido porque ya cuenta con ficha pagada o factura timbrada para el periodo ${year}-${String(month).padStart(2, '0')}.`);
+                        continue;
+                    }
+
+                    // Si ya tiene una ficha pendiente para este mismo periodo, no duplicar
+                    errores.push(`Alumno ${alumno.matricula || alumno.id} (${alumno.nombre} ${alumno.apellido_paterno || ''}): Omitido porque ya cuenta con la ficha ${cargoExistentePeriodo.codigo_ficha || cargoExistentePeriodo.id} emitida para este periodo.`);
+                    continue;
+                }
+
                 const identificadorParaReferencia = alumno.matricula || alumno.clabe_interbancaria || alumno.id.toString();
 
                 const referencia = generarReferenciaBancaria({
@@ -440,14 +479,16 @@ export async function POST(request) {
                     });
 
                     cargosCreados.push(nuevoCargo);
+                } else {
+                    errores.push(`Alumno ${alumno.matricula || alumno.id}: Ya existe un cobro con la misma referencia bancaria.`);
                 }
             }
 
             return NextResponse.json(serializeBigIntsAndDecimals({
-                mensaje: `Generación automática completada. Se emitieron ${cargosCreados.length} fichas. ${errores.length > 0 ? `Se omitieron ${errores.length} alumnos por no tener monto asignado.` : ''}`,
+                mensaje: `Generación automática completada. Se emitieron ${cargosCreados.length} fichas. ${errores.length > 0 ? `Se omitieron ${errores.length} alumnos.` : ''}`,
                 total_generados: cargosCreados.length,
                 cargos: cargosCreados,
-                errores: errores
+                detalles_omisiones: errores
             }), { status: 201 });
         }
 

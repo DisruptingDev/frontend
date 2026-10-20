@@ -994,9 +994,16 @@ export async function POST(request) {
                 return NextResponse.json({ error: 'Las pre-facturas no existen.' }, { status: 404 });
             }
 
-            const comprobantesTimbrados = comprobantes.filter(c => c.estatus === 'TIMBRADO');
+            const comprobantesTimbrados = comprobantes.filter(c => {
+                const tieneUuid = Boolean(c.uuid && String(c.uuid).trim().length > 10);
+                const estatusUpper = String(c.estatus || '').trim().toUpperCase();
+                return tieneUuid || estatusUpper === 'TIMBRADO' || estatusUpper === 'TIMBRADA' || estatusUpper === 'CANCELADA';
+            });
             if (comprobantesTimbrados.length > 0) {
-                return NextResponse.json({ error: 'No se puede eliminar pre-facturas que ya han sido timbradas ante el SAT.' }, { status: 400 });
+                const foliosStr = comprobantesTimbrados.map(c => `${c.serie || 'F'}-${c.folio || c.id} (UUID: ${c.uuid || 'N/A'})`).join(', ');
+                return NextResponse.json({
+                    error: `No se pueden eliminar comprobantes timbrados ante el SAT o con UUID oficial: ${foliosStr}. Por ley fiscal, no deben eliminarse.`
+                }, { status: 400 });
             }
 
             // Ordenar por folio descendente para asegurar que se recuperen en orden si se eliminan múltiples

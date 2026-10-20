@@ -1132,7 +1132,9 @@ export default function MóduloCobranzaUnificadoPage() {
                                                                             <EmailIcon />
                                                                         </IconButton>
                                                                     </Tooltip>
-                                                                    {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') && (
+                                                                    {(cargo.estatus === 'PENDIENTE' || cargo.estatus === 'VENCIDO') &&
+                                                                        Number(cargo.monto_pagado || 0) === 0 &&
+                                                                        !(cargo.PagoAlumno?.some(p => p.comprobante?.uuid || ['TIMBRADO', 'TIMBRADA'].includes(String(p.comprobante?.estatus).toUpperCase()))) && (
                                                                         <Tooltip title="Eliminar Ficha">
                                                                             <IconButton color="error" size="small" onClick={() => handleDeleteFicha(cargo.id)}>
                                                                                 <DeleteIcon />

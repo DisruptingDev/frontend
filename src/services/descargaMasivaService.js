@@ -223,6 +223,9 @@ export const descargaMasivaService = {
       montoMinimo: String(data.montoMinimo !== undefined ? data.montoMinimo : '0'),
       montoMaximo: String(data.montoMaximo !== undefined ? data.montoMaximo : '0'),
     };
+    if (data.cer) payload.cer = data.cer;
+    if (data.key) payload.key = data.key;
+    if (data.password) payload.password = data.password;
     return apiRequest('/metadata/solicitar', payload, token);
   },
 
@@ -260,6 +263,10 @@ export const descargaMasivaService = {
       peticion: petStr,
       tipoPeticion: petStr,
     };
+
+    if (data.cer) payload.cer = data.cer;
+    if (data.key) payload.key = data.key;
+    if (data.password) payload.password = data.password;
 
     if (data.uuid) payload.uuid = String(data.uuid);
     if (data.tipo && data.tipo !== 'todos') payload.tipo = String(data.tipo);
