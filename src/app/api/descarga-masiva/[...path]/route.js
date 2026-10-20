@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import forge from 'node-forge';
 import {
+  cargarCredencialesFiel,
   autenticarConSat,
   solicitarDescargaSat,
   verificarSolicitudSat,
@@ -86,16 +88,8 @@ export async function POST(request, context) {
       const esMetadata = endpoint.includes('metadata');
       const tipoDescargaSat = esMetadata ? 'Metadata' : 'CFDI';
 
-      // 1. Autenticar y obtener token WRAP
-      const tokenSat = await autenticarConSat({
-        cerInput: cer,
-        keyInput: key,
-        password
-      });
-
-      // 2. Enviar solicitud de descarga
+      // Enviar solicitud de descarga directa al SAT
       const paramsSat = {
-        tokenSat,
         rfcSolicitante,
         fechaInicio,
         fechaFin,
@@ -119,8 +113,7 @@ export async function POST(request, context) {
         solicitud: resSat.id_solicitud,
         id_solicitud: resSat.id_solicitud,
         mensaje: resSat.mensaje,
-        estado: 'Aceptada',
-        token_sat: tokenSat
+        estado: 'Aceptada'
       }, { status: 200 });
     }
 
@@ -138,8 +131,7 @@ export async function POST(request, context) {
         rfc,
         cer,
         key,
-        password,
-        token_sat
+        password
       } = body;
 
       const idSol = solicitud || id_solicitud;
@@ -155,15 +147,8 @@ export async function POST(request, context) {
         }, { status: 400 });
       }
 
-      let activeToken = token_sat;
-      if (!activeToken) {
-        activeToken = await autenticarConSat({ cerInput: cer, keyInput: key, password });
-      }
-
       const resVerifica = await verificarSolicitudSat({
-        tokenSat: activeToken,
         idSolicitud: idSol,
-        rfcSolicitante: rfcSol,
         cerInput: cer,
         keyInput: key,
         password
@@ -176,8 +161,7 @@ export async function POST(request, context) {
         estado: resVerifica.estado_texto,
         mensaje: resVerifica.mensaje || `Estado SAT: ${resVerifica.estado_texto}`,
         numero_cfdis: resVerifica.numero_cfdis,
-        ids_paquetes: resVerifica.ids_paquetes,
-        token_sat: activeToken
+        ids_paquetes: resVerifica.ids_paquetes
       }, { status: 200 });
     }
 
@@ -195,8 +179,7 @@ export async function POST(request, context) {
         rfc,
         cer,
         key,
-        password,
-        token_sat
+        password
       } = body;
 
       const targetPaquete = id_paquete || idPaquete;
@@ -206,15 +189,14 @@ export async function POST(request, context) {
         return NextResponse.json({ error: 'Se requiere el ID de paquete y RFC.' }, { status: 400 });
       }
 
-      let activeToken = token_sat;
-      if (!activeToken) {
-        activeToken = await autenticarConSat({ cerInput: cer, keyInput: key, password });
+      if (!cer || !key || !password) {
+        return NextResponse.json({
+          error: 'Credenciales de e.firma requeridas (.cer, .key y contraseña) para descargar del SAT.'
+        }, { status: 400 });
       }
 
       const resDescarga = await descargarPaqueteSat({
-        tokenSat: activeToken,
         idPaquete: targetPaquete,
-        rfcSolicitante: rfcSol,
         cerInput: cer,
         keyInput: key,
         password
