@@ -22,6 +22,34 @@ export async function POST(request, context) {
     }
 
     // =========================================================================
+    // 0. CONVERTIR CER + KEY (FIEL) A PFX EN SERVIDOR
+    // =========================================================================
+    if (endpoint === 'fiel/convertir' || endpoint === 'convertir-fiel') {
+      const { cer, key, password } = body;
+      if (!cer || !key || !password) {
+        return NextResponse.json({
+          error: 'Debe proporcionar certificado (.cer), llave (.key) y contraseña de la FIEL.'
+        }, { status: 400 });
+      }
+
+      const { cert, privateKey, serialNumber } = cargarCredencialesFiel(cer, key, password);
+
+      const p12Asn1 = forge.pkcs12.toPkcs12Asn1(privateKey, [cert], password, {
+        generateLocalKeyId: true,
+        friendlyName: 'FIEL SAT Certificate',
+        algorithm: '3des'
+      });
+
+      const p12Der = forge.asn1.toDer(p12Asn1).getBytes();
+      const pfxBase64 = forge.util.encode64(p12Der);
+
+      return NextResponse.json({
+        pfxBase64,
+        serialNumber
+      }, { status: 200 });
+    }
+
+    // =========================================================================
     // 1. SOLICITAR DESCARGA DIRECTA AL SAT (CFDI o METADATA)
     // =========================================================================
     if (

@@ -112,7 +112,7 @@ function robustDecryptPrivateKey(keyBinary, password) {
  * @param {string} password - Contraseña de la FIEL / Llave Privada
  * @returns {{ pfxBase64: string, serialNumber?: string }} Objeto con el PFX en Base64 y metadatos opcionales
  */
-export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
+export async function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
   if (!cerBuffer || (cerBuffer.byteLength !== undefined && cerBuffer.byteLength < 50)) {
     throw new Error('El archivo Certificado (.cer) seleccionado está vacío o no es válido.');
   }
@@ -123,59 +123,34 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
     throw new Error('Es necesario ingresar la contraseña de la FIEL.');
   }
 
+  // 1. Convertir Buffers a Strings Binarios y Base64
+  const cerBinary = bufferToBinaryString(cerBuffer);
+  const keyBinary = bufferToBinaryString(keyBuffer);
+  const cerBase64 = forge.util.encode64(cerBinary);
+  const keyBase64 = forge.util.encode64(keyBinary);
+
+  // 2. Parse Certificado .cer (ASN.1 DER format)
+  let cert;
   try {
-    // 1. Convertir Buffers a Strings Binarios
-    const cerBinary = bufferToBinaryString(cerBuffer);
-    const keyBinary = bufferToBinaryString(keyBuffer);
+    const cerAsn1 = forge.asn1.fromDer(cerBinary);
+    cert = forge.pki.certificateFromAsn1(cerAsn1);
+  } catch (e) {
+    throw new Error(`El archivo Certificado (.cer) no tiene un formato DER válido del SAT: ${e.message}`);
+  }
 
-    // 2. Parse Certificado .cer (ASN.1 DER format)
-    let cert;
-    try {
-      const cerAsn1 = forge.asn1.fromDer(cerBinary);
-      cert = forge.pki.certificateFromAsn1(cerAsn1);
-    } catch (e) {
-      throw new Error(`El archivo Certificado (.cer) no tiene un formato DER válido del SAT: ${e.message}`);
-    }
+  // 3. Desencriptar Llave Privada .key localmente en navegador (si es soportada por node-forge)
+  const decryptResult = robustDecryptPrivateKey(keyBinary, password);
 
-    // 3. Desencriptar Llave Privada .key
-    const decryptResult = robustDecryptPrivateKey(keyBinary, password);
-
-    if (!decryptResult || !decryptResult.privateKey) {
-      throw new Error(
-        'No se pudo desencriptar la llave privada (.key). Por favor verifique:\n' +
-        '1) Que la contraseña sea la clave asignada a su FIEL (e.firma) y no del CSD (Sello Digital).\n' +
-        '2) Que la contraseña no contenga espacios accidentales.\n' +
-        '3) Que el archivo .key seleccionado corresponda al de su FIEL.'
-      );
-    }
-
+  if (decryptResult && decryptResult.privateKey) {
     const { privateKey, matchedPassword } = decryptResult;
+    let serialNumber = cert?.serialNumber || '';
 
-    // 4. Advertir si los módulos difieren sin detener la generación
-    if (cert && cert.publicKey && cert.publicKey.n && privateKey.n) {
-      const certMod = cert.publicKey.n.toString(16).replace(/^0+/, '').toLowerCase();
-      const keyMod = privateKey.n.toString(16).replace(/^0+/, '').toLowerCase();
-      if (certMod !== keyMod) {
-        console.warn('[fielUtils] Aviso: El certificado (.cer) y la llave (.key) tienen módulos distintos.');
-      }
-    }
-
-    // 5. Extraer metadatos del certificado
-    let serialNumber = '';
-    try {
-      serialNumber = cert.serialNumber || '';
-    } catch (e) {
-      console.warn('No se pudo extraer número de serie del certificado:', e);
-    }
-
-    // 6. Generar la estructura PKCS#12 / PFX
     const p12Asn1 = forge.pkcs12.toPkcs12Asn1(privateKey, [cert], matchedPassword, {
       generateLocalKeyId: true,
       friendlyName: 'FIEL SAT Certificate',
       algorithm: '3des',
     });
 
-    // 7. Exportar ASN.1 a DER y luego a Base64
     const p12Der = forge.asn1.toDer(p12Asn1).getBytes();
     const p12Base64 = forge.util.encode64(p12Der);
 
@@ -183,10 +158,42 @@ export function generarPfxDesdeFiel(cerBuffer, keyBuffer, password) {
       pfxBase64: p12Base64,
       serialNumber,
     };
-  } catch (err) {
-    console.error('[fielUtils] Error al generar PFX:', err);
-    throw err;
   }
+
+  // 4. Si el navegador no pudo desencriptar (ej. formato moderno PBES2/AES del SAT 2024-2026),
+  // delegar la conversión al endpoint del servidor que usa Node.js crypto nativo
+  try {
+    const res = await fetch('/api/descarga-masiva/fiel/convertir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cer: cerBase64,
+        key: keyBase64,
+        password: password
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.pfxBase64) {
+      return {
+        pfxBase64: data.pfxBase64,
+        serialNumber: data.serialNumber || cert?.serialNumber || ''
+      };
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (servErr) {
+    console.warn('[fielUtils] Fallback a servidor falló:', servErr.message);
+  }
+
+  throw new Error(
+    'No se pudo desencriptar la llave privada (.key). Por favor verifique:\n' +
+    '1) Que la contraseña sea la clave asignada a su FIEL (e.firma) y no del CSD (Sello Digital).\n' +
+    '2) Que la contraseña no contenga espacios accidentales.\n' +
+    '3) Que el archivo .key seleccionado corresponda al de su FIEL.'
+  );
 }
 
 /**

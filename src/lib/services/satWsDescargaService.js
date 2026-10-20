@@ -144,6 +144,7 @@ export async function autenticarConSat({ cerInput, keyInput, password }) {
   const { cert, privateKey, certBase64 } = cargarCredencialesFiel(cerInput, keyInput, password);
 
   const now = new Date();
+  // Formato exacto ISO 8601 con milisegundos en UTC (yyyy-MM-ddTHH:mm:ss.fffZ) requerido por el SAT
   const created = now.toISOString();
   const expires = new Date(now.getTime() + 5 * 60 * 1000).toISOString();
   const tokenId = `uuid-${crypto.randomUUID()}-1`;
@@ -155,7 +156,7 @@ export async function autenticarConSat({ cerInput, keyInput, password }) {
   mdSha1.update(canonicalTimestamp, 'utf8');
   const digestValue = forge.util.encode64(mdSha1.digest().getBytes());
 
-  const canonicalSignedInfo = `<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#"><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"></CanonicalizationMethod><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"></SignatureMethod><Reference URI="#_0"><Transforms><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"></Transform></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></DigestMethod><DigestValue>${digestValue}</DigestValue></Reference></SignedInfo>`;
+  const canonicalSignedInfo = `<SignedInfo xmlns="http://www.w3.org/2000/09/xmldsig#"><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI="#_0"><Transforms><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>${digestValue}</DigestValue></Reference></SignedInfo>`;
 
   const mdSign = forge.md.sha1.create();
   mdSign.update(canonicalSignedInfo, 'utf8');
