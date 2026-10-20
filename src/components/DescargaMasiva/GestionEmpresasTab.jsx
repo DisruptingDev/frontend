@@ -208,7 +208,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
           const cerBuffer = await readFileAsArrayBuffer(cerFile);
           const keyBuffer = await readFileAsArrayBuffer(keyFile);
 
-          const resultadoFiel = generarPfxDesdeFiel(cerBuffer, keyBuffer, passPfx);
+          const resultadoFiel = await generarPfxDesdeFiel(cerBuffer, keyBuffer, passPfx);
           finalPfxBase64 = resultadoFiel.pfxBase64;
           cerBase64 = await readFileAsBase64(cerFile);
         } catch (fielErr) {
