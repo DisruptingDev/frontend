@@ -57,16 +57,62 @@ export function cargarCredencialesFiel(cerInput, keyInput, password) {
 
   let privateKey = null;
   const passwordsToTry = [password, password.trim()];
-  for (const p of passwordsToTry) {
-    try {
-      privateKey = forge.pki.decryptRsaPrivateKey(keyDer, p);
-      if (privateKey) break;
-    } catch {}
-    try {
-      const keyAsn1 = forge.asn1.fromDer(keyDer);
-      privateKey = forge.pki.decryptPrivateKeyInfo(keyAsn1, p);
-      if (privateKey) break;
-    } catch {}
+
+  // 1. Intentar con Node.js crypto nativo (Soporta PKCS#8 PBES2 / AES / 3DES modernos del SAT)
+  let rawKeyBuffer = null;
+  try {
+    if (Buffer.isBuffer(keyInput)) {
+      rawKeyBuffer = keyInput;
+    } else if (typeof keyInput === 'string') {
+      const clean = keyInput.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+      rawKeyBuffer = Buffer.from(clean, 'base64');
+    }
+  } catch {}
+
+  if (rawKeyBuffer) {
+    for (const p of passwordsToTry) {
+      try {
+        const nodeKey = crypto.createPrivateKey({
+          key: rawKeyBuffer,
+          format: 'der',
+          type: 'pkcs8',
+          passphrase: p
+        });
+
+        const pemString = nodeKey.export({
+          type: 'pkcs1',
+          format: 'pem'
+        });
+
+        privateKey = forge.pki.privateKeyFromPem(pemString);
+        if (privateKey) break;
+      } catch (errNode) {
+        // Seguir intentando
+      }
+    }
+  }
+
+  // 2. Si falló crypto nativo, intentar los fallbacks de node-forge (PEM y ASN.1 DER directo)
+  if (!privateKey) {
+    const pemKey = `-----BEGIN ENCRYPTED PRIVATE KEY-----\n${forge.util.encode64(keyDer)}\n-----END ENCRYPTED PRIVATE KEY-----`;
+    for (const p of passwordsToTry) {
+      try {
+        privateKey = forge.pki.decryptRsaPrivateKey(pemKey, p);
+        if (privateKey) break;
+      } catch {}
+      try {
+        privateKey = forge.pki.decryptRsaPrivateKey(keyDer, p);
+        if (privateKey) break;
+      } catch {}
+      try {
+        const keyAsn1 = forge.asn1.fromDer(keyDer);
+        const decAsn1 = forge.pki.decryptPrivateKeyInfo(keyAsn1, p);
+        if (decAsn1) {
+          privateKey = forge.pki.privateKeyFromAsn1(decAsn1);
+          if (privateKey) break;
+        }
+      } catch {}
+    }
   }
 
   if (!privateKey) {
