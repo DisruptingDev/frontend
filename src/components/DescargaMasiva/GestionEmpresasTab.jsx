@@ -189,6 +189,13 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     let finalPfxBase64 = '';
     let cerBase64 = '';
 
+    const nombreFinal =
+      razonSocialNombre ||
+      empresaEncontrada.RazonSocial ||
+      empresaEncontrada.NombreComercial ||
+      empresaEncontrada.Nombre ||
+      selectedEmpresaRfc;
+
     // Validación y generación explícita de PFX cuando tipoAuth === 'fiel' o en modo edición
     if (tipoAuth === 'fiel' || isEditing) {
       if (!passPfx) {
@@ -243,13 +250,6 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
         return;
       }
     }
-
-    const nombreFinal =
-      razonSocialNombre ||
-      empresaEncontrada.RazonSocial ||
-      empresaEncontrada.NombreComercial ||
-      empresaEncontrada.Nombre ||
-      selectedEmpresaRfc;
 
     try {
       if (isEditing) {
