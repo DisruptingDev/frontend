@@ -50,24 +50,25 @@ const DescargaMasivaView = ({ token }) => {
               Authorization: `Bearer ${activeToken}`,
             },
           });
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            data.forEach((e) => {
-              const rfc = (e.Rfc || e.rfc || '').toUpperCase().trim();
-              if (rfc) {
-                mapEmpresas.set(rfc, {
-                  ...e,
-                  Rfc: rfc,
-                  rfc: rfc,
-                  RazonSocial: e.RazonSocial || e.NombreComercial || e.Nombre || rfc,
-                });
-              }
-            });
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              data.forEach((e) => {
+                const rfc = (e.Rfc || e.rfc || '').toUpperCase().trim();
+                if (rfc) {
+                  mapEmpresas.set(rfc, {
+                    ...e,
+                    Rfc: rfc,
+                    rfc: rfc,
+                    RazonSocial: e.RazonSocial || e.NombreComercial || e.Nombre || rfc,
+                  });
+                }
+              });
+            }
           }
+        } catch (errEmisor) {
+          console.warn('Aviso cargando catalogo emisor:', errEmisor);
         }
-      } catch (errEmisor) {
-        console.warn('Aviso cargando catalogo emisor:', errEmisor);
       }
 
       // 2. Obtener empresas que tienen FIEL registrada en base de datos local
