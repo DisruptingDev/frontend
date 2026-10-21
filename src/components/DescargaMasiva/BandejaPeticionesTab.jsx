@@ -78,20 +78,22 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
   }, [rfcFiltro, token]);
 
   const cargarPeticiones = async () => {
-    if (!token) return;
     setLoading(true);
     setErrorMsg(null);
     try {
       const params = {};
-      if (rfcFiltro !== 'todos') {
+      if (rfcFiltro && rfcFiltro !== 'todos') {
         params.rfc = rfcFiltro;
       }
       const data = await descargaMasivaService.listarPeticionesSAT(params, token);
+      console.log('[BandejaPeticionesTab] Datos recibidos de listarPeticionesSAT:', data);
       let lista = [];
       if (Array.isArray(data)) {
         lista = data;
       } else if (data && Array.isArray(data.peticiones)) {
         lista = data.peticiones;
+      } else if (data && Array.isArray(data.solicitudes)) {
+        lista = data.solicitudes;
       } else if (data && Array.isArray(data.respuesta)) {
         lista = data.respuesta;
       } else if (data && data.respuesta && Array.isArray(data.respuesta.peticiones)) {
@@ -101,7 +103,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
       }
       setPeticiones(lista);
     } catch (err) {
-      console.warn('Aviso al cargar peticiones SAT:', err);
+      console.error('[BandejaPeticionesTab] Error al cargar peticiones SAT:', err);
       setPeticiones([]);
     } finally {
       setLoading(false);

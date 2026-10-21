@@ -10,16 +10,29 @@ import {
 } from '@/lib/services/satWsDescargaService';
 
 export async function GET(request, context) {
-  const resolvedParams = context?.params ? await context.params : {};
-  const pathParam = resolvedParams.path;
-  const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
-  const endpoint = pathArray.join('/').toLowerCase();
+  let endpoint = '';
+  try {
+    const resolvedParams = context?.params ? await Promise.resolve(context.params) : {};
+    const pathParam = resolvedParams.path;
+    const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
+    endpoint = pathArray.join('/').toLowerCase();
+  } catch {}
+
+  if (!endpoint && request?.url) {
+    try {
+      const parsedUrl = new URL(request.url);
+      const match = parsedUrl.pathname.match(/\/api\/descarga-masiva\/(.+)/i);
+      if (match && match[1]) {
+        endpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+      }
+    } catch {}
+  }
 
   const { searchParams } = new URL(request.url);
   const rfcFilter = searchParams.get('rfc');
 
   // Listar empresas con FIEL guardada
-  if (endpoint === 'fiel/listar' || endpoint === 'fiel') {
+  if (endpoint === 'fiel/listar' || endpoint === 'fiel' || endpoint.endsWith('fiel/listar')) {
     try {
       const empresasFiel = await prisma.sat_empresas_fiel.findMany({
         select: {
@@ -95,11 +108,23 @@ export async function GET(request, context) {
 }
 
 export async function POST(request, context) {
-  const resolvedParams = context?.params ? await context.params : {};
-  const pathParam = resolvedParams.path;
-  const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
+  let endpoint = '';
+  try {
+    const resolvedParams = context?.params ? await Promise.resolve(context.params) : {};
+    const pathParam = resolvedParams.path;
+    const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
+    endpoint = pathArray.join('/').toLowerCase();
+  } catch {}
 
-  let endpoint = pathArray.join('/').toLowerCase();
+  if (!endpoint && request?.url) {
+    try {
+      const parsedUrl = new URL(request.url);
+      const match = parsedUrl.pathname.match(/\/api\/descarga-masiva\/(.+)/i);
+      if (match && match[1]) {
+        endpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+      }
+    } catch {}
+  }
 
   try {
     let body = {};
@@ -195,7 +220,12 @@ export async function POST(request, context) {
     }
 
     // C) Listar razones sociales (utilizado por GestionEmpresasTab)
-    if (endpoint === 'razon-social/listar') {
+    if (
+      endpoint === 'razon-social/listar' ||
+      endpoint === 'razon_social/listar' ||
+      endpoint.endsWith('razon-social/listar') ||
+      endpoint.endsWith('razonsocial/listar')
+    ) {
       const empresasFiel = await prisma.sat_empresas_fiel.findMany({
         select: {
           id: true,

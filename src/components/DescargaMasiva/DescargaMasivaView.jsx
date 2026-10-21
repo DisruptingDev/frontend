@@ -31,19 +31,25 @@ const DescargaMasivaView = ({ token }) => {
   }, [token]);
 
   const fetchEmpresasUsuario = async () => {
-    if (!token) return;
     setLoadingEmpresas(true);
     setErrorEmpresas(null);
     try {
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || ''
+          : '');
+
       const mapEmpresas = new Map();
 
       // 1. Obtener empresas desde catálogo de emisores
-      try {
-        const response = await fetch(`${mainApiUrl}/api/catalogos/Catalogos/Emisor`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      if (activeToken) {
+        try {
+          const response = await fetch(`${mainApiUrl}/api/catalogos/Catalogos/Emisor`, {
+            headers: {
+              Authorization: `Bearer ${activeToken}`,
+            },
+          });
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
@@ -66,10 +72,10 @@ const DescargaMasivaView = ({ token }) => {
 
       // 2. Obtener empresas que tienen FIEL registrada en base de datos local
       try {
+        const headersFiel = {};
+        if (activeToken) headersFiel['Authorization'] = `Bearer ${activeToken}`;
         const resFiel = await fetch('/api/descarga-masiva/fiel/listar', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: headersFiel,
         });
         if (resFiel.ok) {
           const dataFiel = await resFiel.json();

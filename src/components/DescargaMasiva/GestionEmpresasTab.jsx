@@ -79,11 +79,11 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
   }, [token]);
 
   const cargarRazonesSocialesSAT = async () => {
-    if (!token) return;
     setLoading(true);
     setErrorMsg(null);
     try {
       const data = await descargaMasivaService.listarRazonesSociales({}, token);
+      console.log('[GestionEmpresasTab] Datos recibidos de listarRazonesSociales:', data);
       let lista = [];
       if (Array.isArray(data)) {
         lista = data;
@@ -91,6 +91,8 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
         lista = data.razonesSociales;
       } else if (data && Array.isArray(data.razones_sociales)) {
         lista = data.razones_sociales;
+      } else if (data && Array.isArray(data.empresas)) {
+        lista = data.empresas;
       } else if (data && data.respuesta && Array.isArray(data.respuesta.razonesSociales)) {
         lista = data.respuesta.razonesSociales;
       } else if (data && data.respuesta && Array.isArray(data.respuesta)) {
@@ -100,7 +102,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       }
       setRazonesSocialesSAT(lista);
     } catch (err) {
-      console.warn('Aviso cargando razones sociales SAT:', err);
+      console.error('[GestionEmpresasTab] Aviso cargando razones sociales SAT:', err);
       setRazonesSocialesSAT([]);
     } finally {
       setLoading(false);
