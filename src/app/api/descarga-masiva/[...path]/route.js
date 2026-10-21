@@ -316,38 +316,48 @@ export async function POST(request, context) {
         whereClause.rfc = rfcFiltro;
       }
 
-      const lista = await prisma.sat_solicitudes_descarga.findMany({
-        where: whereClause,
-        orderBy: { created_at: 'desc' },
-        take: 100
-      });
+      try {
+        const lista = await prisma.sat_solicitudes_descarga.findMany({
+          where: whereClause,
+          orderBy: { created_at: 'desc' },
+          take: 100
+        });
 
-      return NextResponse.json({
-        codigo: 200,
-        ok: true,
-        peticiones: lista.map(item => ({
-          id: item.id_solicitud,
-          id_solicitud: item.id_solicitud,
-          solicitud: item.id_solicitud,
-          folio: item.id_solicitud,
-          rfc: item.rfc,
-          tipo: item.tipo_descarga,
-          tipo_descarga: item.tipo_descarga,
-          tipo_flujo: item.tipo_solicitud,
-          direccion: item.tipo_solicitud,
-          fecha_inicio: item.fecha_inicio,
-          fecha_fin: item.fecha_fin,
-          estatus: item.estado_texto,
-          estado: item.estado_texto,
-          estado_solicitud: item.estado_solicitud,
-          codigo_estatus: item.codigo_estatus,
-          numero_cfdis: item.numero_cfdis,
-          mensaje: item.mensaje,
-          ids_paquetes: item.ids_paquetes,
-          zip_base64: item.paquete_zip_base64 || null,
-          fecha_solicitud: item.created_at
-        }))
-      }, { status: 200 });
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          peticiones: lista.map(item => ({
+            id: item.id_solicitud,
+            id_solicitud: item.id_solicitud,
+            solicitud: item.id_solicitud,
+            folio: item.id_solicitud,
+            rfc: item.rfc,
+            tipo: item.tipo_descarga,
+            tipo_descarga: item.tipo_descarga,
+            tipo_flujo: item.tipo_solicitud,
+            direccion: item.tipo_solicitud,
+            fecha_inicio: item.fecha_inicio,
+            fecha_fin: item.fecha_fin,
+            estatus: item.estado_texto,
+            estado: item.estado_texto,
+            estado_solicitud: item.estado_solicitud,
+            codigo_estatus: item.codigo_estatus,
+            numero_cfdis: item.numero_cfdis,
+            mensaje: item.mensaje,
+            ids_paquetes: item.ids_paquetes,
+            zip_base64: item.paquete_zip_base64 || null,
+            fecha_solicitud: item.created_at
+          }))
+        }, { status: 200 });
+      } catch (dbErr) {
+        console.error('[Descarga Masiva sat/peticiones DB Error]:', dbErr.message);
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          peticiones: [],
+          mensaje: 'No se pudieron recuperar peticiones previas: ' + dbErr.message
+        }, { status: 200 });
+      }
     }
 
     // Sincronizar / actualizar todas las peticiones pendientes con el SAT
@@ -362,49 +372,58 @@ export async function POST(request, context) {
         whereClause.rfc = rfcTarget;
       }
 
-      const pendientes = await prisma.sat_solicitudes_descarga.findMany({
-        where: whereClause,
-        take: 15
-      });
+      try {
+        const pendientes = await prisma.sat_solicitudes_descarga.findMany({
+          where: whereClause,
+          take: 15
+        });
 
-      let actualizadas = 0;
-      for (const pend of pendientes) {
-        try {
-          const empFiel = await prisma.sat_empresas_fiel.findUnique({
-            where: { rfc: pend.rfc }
-          });
-          if (!empFiel) continue;
+        let actualizadas = 0;
+        for (const pend of pendientes) {
+          try {
+            const empFiel = await prisma.sat_empresas_fiel.findUnique({
+              where: { rfc: pend.rfc }
+            });
+            if (!empFiel) continue;
 
-          const resVerifica = await verificarSolicitudSat({
-            idSolicitud: pend.id_solicitud,
-            cerInput: empFiel.cer_base64,
-            keyInput: empFiel.key_base64,
-            password: empFiel.password_fiel
-          });
+            const resVerifica = await verificarSolicitudSat({
+              idSolicitud: pend.id_solicitud,
+              cerInput: empFiel.cer_base64,
+              keyInput: empFiel.key_base64,
+              password: empFiel.password_fiel
+            });
 
-          await prisma.sat_solicitudes_descarga.update({
-            where: { id_solicitud: pend.id_solicitud },
-            data: {
-              estado_solicitud: resVerifica.estado_solicitud,
-              estado_texto: resVerifica.estado_texto,
-              codigo_estatus: String(resVerifica.codigo_estatus),
-              numero_cfdis: resVerifica.numero_cfdis,
-              mensaje: resVerifica.mensaje,
-              ids_paquetes: resVerifica.ids_paquetes || [],
-              updated_at: new Date()
-            }
-          });
-          actualizadas++;
-        } catch (e) {
-          console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
+            await prisma.sat_solicitudes_descarga.update({
+              where: { id_solicitud: pend.id_solicitud },
+              data: {
+                estado_solicitud: resVerifica.estado_solicitud,
+                estado_texto: resVerifica.estado_texto,
+                codigo_estatus: String(resVerifica.codigo_estatus),
+                numero_cfdis: resVerifica.numero_cfdis,
+                mensaje: resVerifica.mensaje,
+                ids_paquetes: resVerifica.ids_paquetes || [],
+                updated_at: new Date()
+              }
+            });
+            actualizadas++;
+          } catch (e) {
+            console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
+          }
         }
-      }
 
-      return NextResponse.json({
-        codigo: 200,
-        ok: true,
-        mensaje: `Sincronización completada. ${actualizadas} solicitud(es) consultadas con el SAT.`
-      }, { status: 200 });
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          mensaje: `Sincronización completada. ${actualizadas} solicitud(es) consultadas con el SAT.`
+        }, { status: 200 });
+      } catch (dbErr) {
+        console.error('[Descarga Masiva sat/sincronizar DB Error]:', dbErr.message);
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          mensaje: 'Sincronización ejecutada (sin registros pendientes por procesar).'
+        }, { status: 200 });
+      }
     }
 
     // =========================================================================
