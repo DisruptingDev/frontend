@@ -210,26 +210,32 @@ export async function POST(request, context) {
 
     // B) Listar empresas con FIEL guardada
     if (endpoint === 'fiel/listar' || endpoint === 'fiel') {
-      const empresasFiel = await prisma.sat_empresas_fiel.findMany({
-        select: {
-          id: true,
-          rfc: true,
-          razon_social: true,
-          no_certificado: true,
-          vigente_hasta: true,
-          created_at: true,
-          updated_at: true
-        },
-        orderBy: { created_at: 'desc' }
-      });
+      try {
+        const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+          select: {
+            id: true,
+            rfc: true,
+            razon_social: true,
+            no_certificado: true,
+            vigente_hasta: true,
+            created_at: true,
+            updated_at: true
+          },
+          orderBy: { created_at: 'desc' }
+        });
 
-      return NextResponse.json({
-        ok: true,
-        empresas: empresasFiel.map(e => ({
-          ...e,
-          id: e.id ? e.id.toString() : null
-        }))
-      }, { status: 200 });
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          empresas: empresasFiel.map(e => ({
+            ...e,
+            id: e.id ? e.id.toString() : null
+          }))
+        }, { status: 200 });
+      } catch (fielListErr) {
+        console.error('[fiel/listar Error]:', fielListErr.message);
+        return NextResponse.json({ codigo: 200, ok: true, empresas: [] }, { status: 200 });
+      }
     }
 
     // C) Listar razones sociales (utilizado por GestionEmpresasTab)
@@ -239,34 +245,39 @@ export async function POST(request, context) {
       endpoint.endsWith('razon-social/listar') ||
       endpoint.endsWith('razonsocial/listar')
     ) {
-      const empresasFiel = await prisma.sat_empresas_fiel.findMany({
-        select: {
-          id: true,
-          rfc: true,
-          razon_social: true,
-          no_certificado: true,
-          vigente_hasta: true,
-          created_at: true,
-          updated_at: true
-        },
-        orderBy: { created_at: 'desc' }
-      });
+      try {
+        const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+          select: {
+            id: true,
+            rfc: true,
+            razon_social: true,
+            no_certificado: true,
+            vigente_hasta: true,
+            created_at: true,
+            updated_at: true
+          },
+          orderBy: { created_at: 'desc' }
+        });
 
-      return NextResponse.json({
-        codigo: 200,
-        ok: true,
-        razonesSociales: empresasFiel.map(e => ({
-          id: e.id ? e.id.toString() : null,
-          rfc: e.rfc,
-          Rfc: e.rfc,
-          razon_social: e.razon_social,
-          RazonSocial: e.razon_social,
-          no_certificado: e.no_certificado,
-          vigente_hasta: e.vigente_hasta,
-          sync: '1',
-          estatus: 'Activa con FIEL Directa SAT'
-        }))
-      }, { status: 200 });
+        return NextResponse.json({
+          codigo: 200,
+          ok: true,
+          razonesSociales: empresasFiel.map(e => ({
+            id: e.id ? e.id.toString() : null,
+            rfc: e.rfc,
+            Rfc: e.rfc,
+            razon_social: e.razon_social,
+            RazonSocial: e.razon_social,
+            no_certificado: e.no_certificado,
+            vigente_hasta: e.vigente_hasta,
+            sync: '1',
+            estatus: 'Activa con FIEL Directa SAT'
+          }))
+        }, { status: 200 });
+      } catch (rsListErr) {
+        console.error('[razon-social/listar Error]:', rsListErr.message);
+        return NextResponse.json({ codigo: 200, ok: true, razonesSociales: [] }, { status: 200 });
+      }
     }
 
     // D) Crear/Actualizar Razón Social desde GestionEmpresasTab
