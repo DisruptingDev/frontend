@@ -300,6 +300,12 @@ export async function POST(request, context) {
           }, { status: 200 });
         }
       }
+
+      return NextResponse.json({
+        codigo: 200,
+        ok: true,
+        mensaje: `Empresa ${targetRfc || 'seleccionada'} procesada exitosamente.`
+      }, { status: 200 });
     }
 
     // =========================================================================

@@ -35,20 +35,68 @@ const DescargaMasivaView = ({ token }) => {
     setLoadingEmpresas(true);
     setErrorEmpresas(null);
     try {
-      const response = await fetch(`${mainApiUrl}/api/catalogos/Catalogos/Emisor`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`Error al obtener empresas: ${response.statusText}`);
+      const mapEmpresas = new Map();
+
+      // 1. Obtener empresas desde catálogo de emisores
+      try {
+        const response = await fetch(`${mainApiUrl}/api/catalogos/Catalogos/Emisor`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            data.forEach((e) => {
+              const rfc = (e.Rfc || e.rfc || '').toUpperCase().trim();
+              if (rfc) {
+                mapEmpresas.set(rfc, {
+                  ...e,
+                  Rfc: rfc,
+                  rfc: rfc,
+                  RazonSocial: e.RazonSocial || e.NombreComercial || e.Nombre || rfc,
+                });
+              }
+            });
+          }
+        }
+      } catch (errEmisor) {
+        console.warn('Aviso cargando catalogo emisor:', errEmisor);
       }
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setEmpresas(data.sort((a, b) => (b.ID || 0) - (a.ID || 0)));
-      } else {
-        setEmpresas([]);
+
+      // 2. Obtener empresas que tienen FIEL registrada en base de datos local
+      try {
+        const resFiel = await fetch('/api/descarga-masiva/fiel/listar', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (resFiel.ok) {
+          const dataFiel = await resFiel.json();
+          const listaFiel = dataFiel.empresas || dataFiel.razonesSociales || [];
+          listaFiel.forEach((f) => {
+            const rfc = (f.rfc || f.Rfc || '').toUpperCase().trim();
+            if (rfc) {
+              if (mapEmpresas.has(rfc)) {
+                const actual = mapEmpresas.get(rfc);
+                actual.tieneFiel = true;
+              } else {
+                mapEmpresas.set(rfc, {
+                  ID: f.id || rfc,
+                  Rfc: rfc,
+                  rfc: rfc,
+                  RazonSocial: f.razon_social || f.RazonSocial || rfc,
+                  tieneFiel: true,
+                });
+              }
+            }
+          });
+        }
+      } catch (errFiel) {
+        console.warn('Aviso cargando empresas fiel:', errFiel);
       }
+
+      setEmpresas(Array.from(mapEmpresas.values()));
     } catch (err) {
       console.error('Error al cargar emisores del usuario:', err);
       setErrorEmpresas('No se pudieron cargar las empresas asignadas a su cuenta.');

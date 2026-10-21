@@ -214,8 +214,10 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
 
       const msgPAC = resultado?.mensaje || 'Solicitud procesada con éxito por el PAC';
 
+      setMensajeError(null);
+      setDetallesError(null);
       setMensajeExito(
-        `PAC SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}`
+        `SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}`
       );
 
       if (onSolicitudCreada) {
@@ -224,12 +226,13 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
           id_solicitud: idSolicitud,
           tipo_descarga: tipoDescarga,
           fecha_solicitud: new Date().toISOString(),
-          estatus: resultado?.mensaje || 'En Proceso',
+          estatus: resultado?.mensaje || 'Aceptada',
           respuestaPAC: resultado,
         });
       }
     } catch (err) {
       console.error('Error al solicitar descarga al SAT:', err);
+      setMensajeExito(null);
       setMensajeError(err.message || 'Error al conectar con el servicio del SAT/Prodigia.');
       setDetallesError({
         payload: err.payload || payload,

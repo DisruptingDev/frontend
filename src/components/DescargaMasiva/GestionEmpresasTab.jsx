@@ -265,6 +265,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
         setSuccessMsg(res?.mensaje || `Razón social ${selectedEmpresaRfc} actualizada ante el SAT exitosamente.`);
       } else {
         const payloadCrear = {
+          rfc: selectedEmpresaRfc,
           razonSocial: nombreFinal,
           fechaInicioSync: enableSync ? (fechaInicioSync || '2024-01-01') : '0000-00-00',
           maxComprobantesMensual: maxComprobantesMensual || '5000',
@@ -321,17 +322,50 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
     }
   };
 
-  // Cruce de información: Solo las empresas que el usuario tiene registradas
-  const empresasConEstatus = empresasUsuario.map((empUser) => {
-    const regSAT = razonesSocialesSAT.find(
-      (s) => (s.rfc || s.Rfc || '').toUpperCase() === (empUser.Rfc || '').toUpperCase()
-    );
-    return {
-      ...empUser,
-      registradaEnSAT: !!regSAT,
-      datosSAT: regSAT || null,
-    };
-  });
+  // Cruce de información: Combinar las empresas del usuario con las registradas con FIEL en la base de datos
+  const empresasConEstatus = (() => {
+    const mapEmpresas = new Map();
+
+    // 1. Agregar empresas del catálogo del usuario
+    empresasUsuario.forEach((empUser) => {
+      const rfc = (empUser.Rfc || empUser.rfc || '').toUpperCase().trim();
+      if (!rfc) return;
+      const regSAT = razonesSocialesSAT.find(
+        (s) => (s.rfc || s.Rfc || '').toUpperCase().trim() === rfc
+      );
+      mapEmpresas.set(rfc, {
+        ...empUser,
+        Rfc: rfc,
+        rfc: rfc,
+        RazonSocial: empUser.RazonSocial || empUser.NombreComercial || empUser.Nombre || regSAT?.razon_social || rfc,
+        registradaEnSAT: !!regSAT,
+        datosSAT: regSAT || null,
+      });
+    });
+
+    // 2. Agregar empresas que ya tienen su FIEL guardada en la base de datos (por si no estaban en el catálogo inicial)
+    razonesSocialesSAT.forEach((satEmp) => {
+      const rfc = (satEmp.rfc || satEmp.Rfc || '').toUpperCase().trim();
+      if (!rfc) return;
+      if (!mapEmpresas.has(rfc)) {
+        mapEmpresas.set(rfc, {
+          ID: satEmp.id || rfc,
+          Rfc: rfc,
+          rfc: rfc,
+          RazonSocial: satEmp.razon_social || satEmp.RazonSocial || rfc,
+          RegimenFiscal: 'General',
+          registradaEnSAT: true,
+          datosSAT: satEmp,
+        });
+      } else {
+        const actual = mapEmpresas.get(rfc);
+        actual.registradaEnSAT = true;
+        actual.datosSAT = satEmp;
+      }
+    });
+
+    return Array.from(mapEmpresas.values());
+  })();
 
   return (
     <Box>

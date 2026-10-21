@@ -71,9 +71,11 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
       throw err;
     }
 
-    // Validación del formato PadeResponse: Si el PAC devuelve un código de error de negocio (diferente de 200/201/0)
+    // Validación del formato PadeResponse: Si el PAC devuelve un código de error de negocio (diferente de 200/201/0 y 5000 del SAT)
     if (typeof responseData === 'object' && responseData !== null) {
-      if (responseData.codigo !== undefined && responseData.codigo !== 200 && responseData.codigo !== 201 && responseData.codigo !== 0) {
+      const cod = responseData.codigo;
+      const isSuccessCode = cod === 200 || cod === 201 || cod === 0 || cod === 5000 || cod === '5000' || responseData.ok === true || responseData.estado === 'Aceptada' || responseData.estado === 'Terminada';
+      if (cod !== undefined && !isSuccessCode) {
         console.warn(`[descargaMasivaService] Error de negocio PAC (Código ${responseData.codigo}):`, responseData.mensaje);
         const errMsg = responseData.mensaje || `Error PAC/SAT (Código ${responseData.codigo})`;
         const err = new Error(errMsg);
