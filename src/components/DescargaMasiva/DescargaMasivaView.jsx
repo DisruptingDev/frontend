@@ -103,7 +103,9 @@ const DescargaMasivaView = ({ token }) => {
         console.warn('Aviso cargando empresas fiel:', errFiel);
       }
 
-      setEmpresas(Array.from(mapEmpresas.values()));
+      const resultadoEmpresas = Array.from(mapEmpresas.values());
+      console.log('[DescargaMasivaView] Empresas cargadas para el usuario:', resultadoEmpresas);
+      setEmpresas(resultadoEmpresas);
     } catch (err) {
       console.error('Error al cargar emisores del usuario:', err);
       setErrorEmpresas('No se pudieron cargar las empresas asignadas a su cuenta.');

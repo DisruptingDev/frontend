@@ -18,15 +18,21 @@ export async function GET(request, context) {
     endpoint = pathArray.join('/').toLowerCase();
   } catch {}
 
-  if (!endpoint && request?.url) {
+  if (request?.url) {
     try {
       const parsedUrl = new URL(request.url);
       const match = parsedUrl.pathname.match(/\/api\/descarga-masiva\/(.+)/i);
       if (match && match[1]) {
-        endpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+        const urlEndpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+        if (!endpoint || endpoint !== urlEndpoint) {
+          endpoint = urlEndpoint;
+        }
       }
     } catch {}
   }
+
+  endpoint = (endpoint || '').replace(/^\/+|\/+$/g, '');
+  console.log(`[Descarga Masiva Proxy GET] Endpoint recibido: "${endpoint}"`);
 
   const { searchParams } = new URL(request.url);
   const rfcFilter = searchParams.get('rfc');
@@ -116,15 +122,22 @@ export async function POST(request, context) {
     endpoint = pathArray.join('/').toLowerCase();
   } catch {}
 
-  if (!endpoint && request?.url) {
+  if (request?.url) {
     try {
       const parsedUrl = new URL(request.url);
       const match = parsedUrl.pathname.match(/\/api\/descarga-masiva\/(.+)/i);
       if (match && match[1]) {
-        endpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+        const urlEndpoint = match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
+        if (!endpoint || endpoint !== urlEndpoint) {
+          endpoint = urlEndpoint;
+        }
       }
     } catch {}
   }
+
+  // Quitar slash inicial y final
+  endpoint = (endpoint || '').replace(/^\/+|\/+$/g, '');
+  console.log(`[Descarga Masiva Proxy POST] Endpoint recibido: "${endpoint}"`);
 
   try {
     let body = {};
@@ -240,6 +253,7 @@ export async function POST(request, context) {
       });
 
       return NextResponse.json({
+        codigo: 200,
         ok: true,
         razonesSociales: empresasFiel.map(e => ({
           id: e.id ? e.id.toString() : null,

@@ -57,6 +57,8 @@ const apiRequest = async (endpoint, data = {}, token = '') => {
       responseData = await response.text();
     }
 
+    console.log(`[descargaMasivaService] POST ${cleanEndpoint} -> Status: ${response.status}, Data:`, responseData);
+
     if (!response.ok) {
       console.error(`[descargaMasivaService] ERROR ${response.status} en ${endpoint}:`, responseData);
       const errorMessage =
