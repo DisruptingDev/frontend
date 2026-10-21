@@ -148,32 +148,60 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
     }
   };
 
-  const handleDescargarZIP = (peticion) => {
+  const handleDescargarZIP = async (peticion) => {
+    setErrorMsg(null);
     if (peticion.paquete_url || peticion.url_descarga) {
       window.open(peticion.paquete_url || peticion.url_descarga, '_blank');
       return;
     }
-    if (peticion.zip_base64 || peticion.archivo_zip) {
-      const base64Data = peticion.zip_base64 || peticion.archivo_zip;
+    let base64Data = peticion.zip_base64 || peticion.archivo_zip;
+
+    // Si aún no tenemos el base64 directo, solicitarlo al backend que lo descargará del SAT
+    if (!base64Data) {
+      try {
+        const idSol = peticion.id_solicitud || peticion.solicitud || peticion.id;
+        const resDesc = await descargaMasivaService.descargarPaquete({
+          id_solicitud: idSol,
+          rfc: peticion.rfc
+        }, token);
+        base64Data = resDesc?.paquete_b64 || resDesc?.zip_base64;
+      } catch (e) {
+        console.warn('Error al solicitar descarga de paquete:', e);
+      }
+    }
+
+    if (base64Data) {
       const link = document.createElement('a');
       link.href = `data:application/zip;base64,${base64Data}`;
       link.download = `comprobantes_${peticion.rfc || 'sat'}_${peticion.id_solicitud || 'paquete'}.zip`;
       link.click();
       return;
     }
-    setErrorMsg('El paquete aún no cuenta con un archivo ZIP disponible para descarga directa.');
+    setErrorMsg('El paquete aún no cuenta con un archivo ZIP disponible para descarga directa. Verifique el estatus ante el SAT.');
   };
 
   const handleAbrirImportacionContable = async (peticion) => {
     setSelectedSolicitud(peticion);
-    // Verificar si ya tiene data o consultarla
-    if (peticion.zip_base64 || peticion.paquete_url || peticion.comprobantes) {
-      setSelectedZipData(peticion.zip_base64 || peticion.paquete_url || peticion.comprobantes);
-    } else {
-      const verified = await handleVerificar(peticion);
-      const dataZip = verified?.zip_base64 || verified?.paquete_url || verified?.comprobantes;
-      setSelectedZipData(dataZip || null);
+    setErrorMsg(null);
+    let dataZip = peticion.zip_base64 || peticion.paquete_url || peticion.comprobantes;
+
+    if (!dataZip) {
+      try {
+        const verified = await handleVerificar(peticion);
+        dataZip = verified?.zip_base64 || verified?.paquete_url || verified?.comprobantes;
+        if (!dataZip) {
+          const resDesc = await descargaMasivaService.descargarPaquete({
+            id_solicitud: peticion.id_solicitud || peticion.solicitud || peticion.id,
+            rfc: peticion.rfc
+          }, token);
+          dataZip = resDesc?.paquete_b64 || resDesc?.zip_base64;
+        }
+      } catch (err) {
+        console.warn('Aviso al preparar paquete para contabilidad:', err);
+      }
     }
+
+    setSelectedZipData(dataZip || null);
     setModalImportarOpen(true);
   };
 

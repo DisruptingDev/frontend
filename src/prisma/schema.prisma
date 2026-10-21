@@ -989,3 +989,36 @@ model subsidio_al_empleos {
   nomina_id        Int?
   otro_pago_id     Int?
 }
+
+model sat_empresas_fiel {
+  id             BigInt    @id @default(autoincrement())
+  rfc            String    @unique @db.VarChar(13)
+  razon_social   String?   @db.VarChar(255)
+  cer_base64     String
+  key_base64     String
+  password_fiel  String
+  no_certificado String?   @db.VarChar(50)
+  vigente_hasta  DateTime? @db.Timestamptz(6)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model sat_solicitudes_descarga {
+  id                 BigInt    @id @default(autoincrement())
+  id_solicitud       String    @unique @db.VarChar(64)
+  rfc                String    @db.VarChar(13)
+  tipo_descarga      String    @db.VarChar(20)
+  tipo_solicitud     String    @db.VarChar(20)
+  fecha_inicio       String?   @db.VarChar(25)
+  fecha_fin          String?   @db.VarChar(25)
+  estado_solicitud   Int?      @default(1)
+  estado_texto       String?   @default("Aceptada") @db.VarChar(50)
+  codigo_estatus     String?   @db.VarChar(50)
+  numero_cfdis       Int?      @default(0)
+  mensaje            String?
+  ids_paquetes       Json?     @default("[]")
+  paquete_zip_base64 String?
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
+}
+

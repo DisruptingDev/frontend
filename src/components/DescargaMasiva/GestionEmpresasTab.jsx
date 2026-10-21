@@ -204,6 +204,7 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
           return;
         }
 
+        let keyBase64 = '';
         try {
           const cerBuffer = await readFileAsArrayBuffer(cerFile);
           const keyBuffer = await readFileAsArrayBuffer(keyFile);
@@ -211,6 +212,16 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
           const resultadoFiel = await generarPfxDesdeFiel(cerBuffer, keyBuffer, passPfx);
           finalPfxBase64 = resultadoFiel.pfxBase64;
           cerBase64 = await readFileAsBase64(cerFile);
+          keyBase64 = await readFileAsBase64(keyFile);
+
+          // Guardar automáticamente en la base de datos local para que las solicitudes posteriores no pidan archivos
+          await descargaMasivaService.guardarFiel({
+            rfc: selectedEmpresaRfc,
+            razonSocial: nombreFinal,
+            cer: cerBase64,
+            key: keyBase64,
+            password: passPfx
+          }, token).catch(e => console.warn('Aviso guardando FIEL en BD local:', e));
         } catch (fielErr) {
           setErrorMsg(`Error al procesar archivos FIEL: ${fielErr.message}`);
           setSubmitting(false);

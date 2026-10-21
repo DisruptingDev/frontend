@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import forge from 'node-forge';
+import prisma from '@/lib/prisma';
 import {
   cargarCredencialesFiel,
   autenticarConSat,
@@ -7,6 +8,91 @@ import {
   verificarSolicitudSat,
   descargarPaqueteSat
 } from '@/lib/services/satWsDescargaService';
+
+export async function GET(request, context) {
+  const resolvedParams = context?.params ? await context.params : {};
+  const pathParam = resolvedParams.path;
+  const pathArray = Array.isArray(pathParam) ? pathParam : pathParam ? [pathParam] : [];
+  const endpoint = pathArray.join('/').toLowerCase();
+
+  const { searchParams } = new URL(request.url);
+  const rfcFilter = searchParams.get('rfc');
+
+  // Listar empresas con FIEL guardada
+  if (endpoint === 'fiel/listar' || endpoint === 'fiel') {
+    try {
+      const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+        select: {
+          id: true,
+          rfc: true,
+          razon_social: true,
+          no_certificado: true,
+          vigente_hasta: true,
+          created_at: true,
+          updated_at: true
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      return NextResponse.json({
+        ok: true,
+        empresas: empresasFiel.map(e => ({
+          ...e,
+          id: e.id ? e.id.toString() : null
+        }))
+      }, { status: 200 });
+    } catch (err) {
+      console.error('[Descarga Masiva GET fiel/listar Error]:', err);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  }
+
+  // Listar peticiones registradas
+  if (endpoint === 'sat/peticiones' || endpoint === 'peticiones') {
+    try {
+      const whereClause = {};
+      if (rfcFilter && rfcFilter !== 'todos') {
+        whereClause.rfc = rfcFilter;
+      }
+
+      const lista = await prisma.sat_solicitudes_descarga.findMany({
+        where: whereClause,
+        orderBy: { created_at: 'desc' },
+        take: 100
+      });
+
+      return NextResponse.json({
+        ok: true,
+        peticiones: lista.map(item => ({
+          id: item.id_solicitud,
+          id_solicitud: item.id_solicitud,
+          solicitud: item.id_solicitud,
+          rfc: item.rfc,
+          tipo: item.tipo_descarga,
+          tipo_descarga: item.tipo_descarga,
+          tipo_flujo: item.tipo_solicitud,
+          direccion: item.tipo_solicitud,
+          fecha_inicio: item.fecha_inicio,
+          fecha_fin: item.fecha_fin,
+          estatus: item.estado_texto,
+          estado: item.estado_texto,
+          estado_solicitud: item.estado_solicitud,
+          codigo_estatus: item.codigo_estatus,
+          numero_cfdis: item.numero_cfdis,
+          mensaje: item.mensaje,
+          ids_paquetes: item.ids_paquetes,
+          zip_base64: item.paquete_zip64 || item.paquete_zip_base64 || null,
+          fecha_solicitud: item.created_at
+        }))
+      }, { status: 200 });
+    } catch (err) {
+      console.error('[Descarga Masiva GET sat/peticiones Error]:', err);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ error: 'Endpoint GET no encontrado' }, { status: 404 });
+}
 
 export async function POST(request, context) {
   const resolvedParams = context?.params ? await context.params : {};
@@ -24,7 +110,305 @@ export async function POST(request, context) {
     }
 
     // =========================================================================
-    // 0. CONVERTIR CER + KEY (FIEL) A PFX EN SERVIDOR
+    // 0. GESTIÓN DE EMPRESAS Y FIEL EN BASE DE DATOS
+    // =========================================================================
+
+    // A) Guardar o actualizar FIEL de una empresa
+    if (endpoint === 'fiel/guardar' || endpoint === 'guardar-fiel') {
+      const { rfc, razonSocial, razon_social, cer, key, password } = body;
+      const targetRfc = (rfc || '').toUpperCase().trim();
+      const targetNombre = razonSocial || razon_social || '';
+
+      if (!targetRfc || !cer || !key || !password) {
+        return NextResponse.json({
+          error: 'Debe proporcionar RFC, certificado (.cer), llave (.key) y contraseña de la FIEL.'
+        }, { status: 400 });
+      }
+
+      // Validar y desencriptar la FIEL para asegurar que funciona y extraer vigencia y no. de certificado
+      const { cert, serialNumber } = cargarCredencialesFiel(cer, key, password);
+      const vigenteHasta = cert.validity?.notAfter || null;
+
+      // Limpiar certificados a base64 limpio
+      const cleanCer = cer.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+      const cleanKey = key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+
+      const guardado = await prisma.sat_empresas_fiel.upsert({
+        where: { rfc: targetRfc },
+        update: {
+          razon_social: targetNombre || undefined,
+          cer_base64: cleanCer,
+          key_base64: cleanKey,
+          password_fiel: password,
+          no_certificado: serialNumber || null,
+          vigente_hasta: vigenteHasta,
+          updated_at: new Date()
+        },
+        create: {
+          rfc: targetRfc,
+          razon_social: targetNombre || targetRfc,
+          cer_base64: cleanCer,
+          key_base64: cleanKey,
+          password_fiel: password,
+          no_certificado: serialNumber || null,
+          vigente_hasta: vigenteHasta,
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+
+      return NextResponse.json({
+        ok: true,
+        mensaje: `FIEL de la empresa ${targetRfc} guardada en base de datos exitosamente.`,
+        empresa: {
+          id: guardado.id ? guardado.id.toString() : null,
+          rfc: guardado.rfc,
+          razon_social: guardado.razon_social,
+          no_certificado: guardado.no_certificado,
+          vigente_hasta: guardado.vigente_hasta
+        }
+      }, { status: 200 });
+    }
+
+    // B) Listar empresas con FIEL guardada
+    if (endpoint === 'fiel/listar' || endpoint === 'fiel') {
+      const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+        select: {
+          id: true,
+          rfc: true,
+          razon_social: true,
+          no_certificado: true,
+          vigente_hasta: true,
+          created_at: true,
+          updated_at: true
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      return NextResponse.json({
+        ok: true,
+        empresas: empresasFiel.map(e => ({
+          ...e,
+          id: e.id ? e.id.toString() : null
+        }))
+      }, { status: 200 });
+    }
+
+    // C) Listar razones sociales (utilizado por GestionEmpresasTab)
+    if (endpoint === 'razon-social/listar') {
+      const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+        select: {
+          id: true,
+          rfc: true,
+          razon_social: true,
+          no_certificado: true,
+          vigente_hasta: true,
+          created_at: true,
+          updated_at: true
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      return NextResponse.json({
+        ok: true,
+        razonesSociales: empresasFiel.map(e => ({
+          id: e.id ? e.id.toString() : null,
+          rfc: e.rfc,
+          Rfc: e.rfc,
+          razon_social: e.razon_social,
+          RazonSocial: e.razon_social,
+          no_certificado: e.no_certificado,
+          vigente_hasta: e.vigente_hasta,
+          sync: '1',
+          estatus: 'Activa con FIEL Directa SAT'
+        }))
+      }, { status: 200 });
+    }
+
+    // D) Crear/Actualizar Razón Social desde GestionEmpresasTab
+    if (endpoint === 'razon-social/crear' || endpoint === 'razon-social/actualizar') {
+      const {
+        rfc,
+        razonSocial,
+        razon_social,
+        fiel,
+        cer,
+        key,
+        password
+      } = body;
+
+      const targetRfc = (rfc || body.ciec?.rfc || '').toUpperCase().trim();
+      const targetNombre = razonSocial || (typeof razon_social === 'string' ? razon_social : '') || targetRfc;
+      const fielObj = fiel || (typeof razon_social === 'object' ? razon_social : null) || {};
+
+      const cerInput = cer || fielObj.certificado || fielObj.cer;
+      const keyInput = key || fielObj.key;
+      const passInput = password || fielObj.passPfx || fielObj.password;
+
+      if (targetRfc && cerInput && keyInput && passInput) {
+        try {
+          const { cert, serialNumber } = cargarCredencialesFiel(cerInput, keyInput, passInput);
+          const vigenteHasta = cert.validity?.notAfter || null;
+          const cleanCer = cerInput.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+          const cleanKey = keyInput.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+
+          await prisma.sat_empresas_fiel.upsert({
+            where: { rfc: targetRfc },
+            update: {
+              razon_social: targetNombre,
+              cer_base64: cleanCer,
+              key_base64: cleanKey,
+              password_fiel: passInput,
+              no_certificado: serialNumber || null,
+              vigente_hasta: vigenteHasta,
+              updated_at: new Date()
+            },
+            create: {
+              rfc: targetRfc,
+              razon_social: targetNombre,
+              cer_base64: cleanCer,
+              key_base64: cleanKey,
+              password_fiel: passInput,
+              no_certificado: serialNumber || null,
+              vigente_hasta: vigenteHasta,
+              created_at: new Date(),
+              updated_at: new Date()
+            }
+          });
+
+          return NextResponse.json({
+            codigo: 200,
+            ok: true,
+            mensaje: `Empresa ${targetRfc} dada de alta y vinculada directamente con el SAT.`
+          }, { status: 200 });
+        } catch (fielErr) {
+          return NextResponse.json({
+            codigo: 400,
+            error: `Error al validar e.firma: ${fielErr.message}`
+          }, { status: 400 });
+        }
+      }
+
+      // Si no vienen los archivos en crudo pero ya existe en DB, responder exitoso
+      if (targetRfc) {
+        const existe = await prisma.sat_empresas_fiel.findUnique({ where: { rfc: targetRfc } });
+        if (existe) {
+          return NextResponse.json({
+            codigo: 200,
+            ok: true,
+            mensaje: `Empresa ${targetRfc} ya cuenta con FIEL activa en el sistema.`
+          }, { status: 200 });
+        }
+      }
+    }
+
+    // =========================================================================
+    // 1. BANDEJA DE PETICIONES Y HISTORIAL SAT (BD LOCAL)
+    // =========================================================================
+    if (
+      endpoint === 'sat/peticiones' ||
+      endpoint === 'peticiones' ||
+      endpoint.endsWith('peticiones')
+    ) {
+      const rfcFiltro = body.rfc || '';
+      const whereClause = {};
+      if (rfcFiltro && rfcFiltro !== 'todos') {
+        whereClause.rfc = rfcFiltro;
+      }
+
+      const lista = await prisma.sat_solicitudes_descarga.findMany({
+        where: whereClause,
+        orderBy: { created_at: 'desc' },
+        take: 100
+      });
+
+      return NextResponse.json({
+        codigo: 200,
+        ok: true,
+        peticiones: lista.map(item => ({
+          id: item.id_solicitud,
+          id_solicitud: item.id_solicitud,
+          solicitud: item.id_solicitud,
+          folio: item.id_solicitud,
+          rfc: item.rfc,
+          tipo: item.tipo_descarga,
+          tipo_descarga: item.tipo_descarga,
+          tipo_flujo: item.tipo_solicitud,
+          direccion: item.tipo_solicitud,
+          fecha_inicio: item.fecha_inicio,
+          fecha_fin: item.fecha_fin,
+          estatus: item.estado_texto,
+          estado: item.estado_texto,
+          estado_solicitud: item.estado_solicitud,
+          codigo_estatus: item.codigo_estatus,
+          numero_cfdis: item.numero_cfdis,
+          mensaje: item.mensaje,
+          ids_paquetes: item.ids_paquetes,
+          zip_base64: item.paquete_zip_base64 || null,
+          fecha_solicitud: item.created_at
+        }))
+      }, { status: 200 });
+    }
+
+    // Sincronizar / actualizar todas las peticiones pendientes con el SAT
+    if (endpoint === 'sat/sincronizar' || endpoint === 'sincronizar') {
+      const rfcTarget = body.rfc || '';
+      const whereClause = {
+        estado_texto: {
+          in: ['Aceptada', 'En Proceso']
+        }
+      };
+      if (rfcTarget && rfcTarget !== 'todos') {
+        whereClause.rfc = rfcTarget;
+      }
+
+      const pendientes = await prisma.sat_solicitudes_descarga.findMany({
+        where: whereClause,
+        take: 15
+      });
+
+      let actualizadas = 0;
+      for (const pend of pendientes) {
+        try {
+          const empFiel = await prisma.sat_empresas_fiel.findUnique({
+            where: { rfc: pend.rfc }
+          });
+          if (!empFiel) continue;
+
+          const resVerifica = await verificarSolicitudSat({
+            idSolicitud: pend.id_solicitud,
+            cerInput: empFiel.cer_base64,
+            keyInput: empFiel.key_base64,
+            password: empFiel.password_fiel
+          });
+
+          await prisma.sat_solicitudes_descarga.update({
+            where: { id_solicitud: pend.id_solicitud },
+            data: {
+              estado_solicitud: resVerifica.estado_solicitud,
+              estado_texto: resVerifica.estado_texto,
+              codigo_estatus: String(resVerifica.codigo_estatus),
+              numero_cfdis: resVerifica.numero_cfdis,
+              mensaje: resVerifica.mensaje,
+              ids_paquetes: resVerifica.ids_paquetes || [],
+              updated_at: new Date()
+            }
+          });
+          actualizadas++;
+        } catch (e) {
+          console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
+        }
+      }
+
+      return NextResponse.json({
+        codigo: 200,
+        ok: true,
+        mensaje: `Sincronización completada. ${actualizadas} solicitud(es) consultadas con el SAT.`
+      }, { status: 200 });
+    }
+
+    // =========================================================================
+    // 2. CONVERTIR CER + KEY (FIEL) A PFX EN SERVIDOR
     // =========================================================================
     if (endpoint === 'fiel/convertir' || endpoint === 'convertir-fiel') {
       const { cer, key, password } = body;
@@ -52,7 +436,7 @@ export async function POST(request, context) {
     }
 
     // =========================================================================
-    // 1. SOLICITAR DESCARGA DIRECTA AL SAT (CFDI o METADATA)
+    // 3. SOLICITAR DESCARGA DIRECTA AL SAT (CFDI o METADATA)
     // =========================================================================
     if (
       endpoint === 'metadata/solicitar' ||
@@ -76,10 +460,59 @@ export async function POST(request, context) {
         return NextResponse.json({ error: 'Debe especificar el RFC solicitante.' }, { status: 400 });
       }
 
-      if (!cer || !key || !password) {
+      // Si no envió los archivos en la llamada, buscar la FIEL guardada en la base de datos
+      let cerFinal = cer;
+      let keyFinal = key;
+      let passFinal = password;
+
+      if (!cerFinal || !keyFinal || !passFinal) {
+        const empresaFiel = await prisma.sat_empresas_fiel.findUnique({
+          where: { rfc: rfcSolicitante }
+        });
+        if (empresaFiel) {
+          cerFinal = empresaFiel.cer_base64;
+          keyFinal = empresaFiel.key_base64;
+          passFinal = empresaFiel.password_fiel;
+        }
+      }
+
+      if (!cerFinal || !keyFinal || !passFinal) {
         return NextResponse.json({
-          error: 'Para solicitar descarga directa al SAT, es necesario proporcionar los archivos de la e.firma (.cer, .key) y la contraseña de la clave privada.'
+          error: `No se encontraron credenciales de e.firma (FIEL) para la empresa ${rfcSolicitante}. Por favor adjunte los archivos .cer y .key o vincúlela en Gestión de Empresas.`
         }, { status: 400 });
+      }
+
+      // Si el usuario subió cer y key frescos en la solicitud y no estaban en DB, guardarlos/actualizarlos
+      try {
+        const cleanCer = cerFinal.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+        const cleanKey = keyFinal.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+        const { cert, serialNumber } = cargarCredencialesFiel(cleanCer, cleanKey, passFinal);
+        const vigenteHasta = cert.validity?.notAfter || null;
+
+        await prisma.sat_empresas_fiel.upsert({
+          where: { rfc: rfcSolicitante },
+          update: {
+            cer_base64: cleanCer,
+            key_base64: cleanKey,
+            password_fiel: passFinal,
+            no_certificado: serialNumber || null,
+            vigente_hasta: vigenteHasta,
+            updated_at: new Date()
+          },
+          create: {
+            rfc: rfcSolicitante,
+            razon_social: rfcSolicitante,
+            cer_base64: cleanCer,
+            key_base64: cleanKey,
+            password_fiel: passFinal,
+            no_certificado: serialNumber || null,
+            vigente_hasta: vigenteHasta,
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        });
+      } catch (fielSaveErr) {
+        console.warn('[FIEL Auto-save warning]:', fielSaveErr.message);
       }
 
       // Determinar si es Emitidos o Recibidos
@@ -95,9 +528,9 @@ export async function POST(request, context) {
         fechaFin,
         tipoDescarga: tipoDescargaSat,
         tipoSolicitud: tipoSolicitudSat,
-        cerInput: cer,
-        keyInput: key,
-        password
+        cerInput: cerFinal,
+        keyInput: keyFinal,
+        password: passFinal
       };
 
       if (tipoSolicitudSat === 'Emitidos') {
@@ -107,6 +540,41 @@ export async function POST(request, context) {
       }
 
       const resSat = await solicitarDescargaSat(paramsSat);
+
+      // Guardar solicitud en la tabla sat_solicitudes_descarga
+      try {
+        await prisma.sat_solicitudes_descarga.upsert({
+          where: { id_solicitud: resSat.id_solicitud },
+          update: {
+            rfc: rfcSolicitante,
+            tipo_descarga: tipoDescargaSat,
+            tipo_solicitud: tipoSolicitudSat,
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            estado_solicitud: 1,
+            estado_texto: 'Aceptada',
+            codigo_estatus: String(resSat.codigo_estatus || 5000),
+            mensaje: resSat.mensaje || 'Solicitud aceptada por el SAT',
+            updated_at: new Date()
+          },
+          create: {
+            id_solicitud: resSat.id_solicitud,
+            rfc: rfcSolicitante,
+            tipo_descarga: tipoDescargaSat,
+            tipo_solicitud: tipoSolicitudSat,
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            estado_solicitud: 1,
+            estado_texto: 'Aceptada',
+            codigo_estatus: String(resSat.codigo_estatus || 5000),
+            mensaje: resSat.mensaje || 'Solicitud aceptada por el SAT',
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        });
+      } catch (dbErr) {
+        console.error('[Error guardando solicitud en BD]:', dbErr);
+      }
 
       return NextResponse.json({
         codigo: 5000,
@@ -118,7 +586,7 @@ export async function POST(request, context) {
     }
 
     // =========================================================================
-    // 2. VERIFICAR ESTATUS DE LA SOLICITUD EN EL SAT
+    // 4. VERIFICAR ESTATUS DE LA SOLICITUD EN EL SAT
     // =========================================================================
     if (
       endpoint === 'metadata/verificar' ||
@@ -135,38 +603,122 @@ export async function POST(request, context) {
       } = body;
 
       const idSol = solicitud || id_solicitud;
-      const rfcSol = Array.isArray(rfc) ? rfc[0] : (rfc || '');
-
-      if (!idSol || !rfcSol) {
-        return NextResponse.json({ error: 'Se requiere el ID de solicitud y el RFC del solicitante.' }, { status: 400 });
+      if (!idSol) {
+        return NextResponse.json({ error: 'Se requiere el ID de solicitud.' }, { status: 400 });
       }
 
-      if (!cer || !key || !password) {
+      // Buscar en BD la solicitud para inferir el RFC si no fue enviado
+      let rfcSol = Array.isArray(rfc) ? rfc[0] : (rfc || '');
+      let solRecord = null;
+      if (!rfcSol) {
+        solRecord = await prisma.sat_solicitudes_descarga.findUnique({
+          where: { id_solicitud: idSol }
+        });
+        if (solRecord) {
+          rfcSol = solRecord.rfc;
+        }
+      }
+
+      if (!rfcSol) {
+        return NextResponse.json({ error: 'Se requiere el RFC de la empresa solicitante.' }, { status: 400 });
+      }
+
+      // Buscar FIEL en BD si no se enviaron archivos
+      let cerFinal = cer;
+      let keyFinal = key;
+      let passFinal = password;
+
+      if (!cerFinal || !keyFinal || !passFinal) {
+        const empresaFiel = await prisma.sat_empresas_fiel.findUnique({
+          where: { rfc: rfcSol }
+        });
+        if (empresaFiel) {
+          cerFinal = empresaFiel.cer_base64;
+          keyFinal = empresaFiel.key_base64;
+          passFinal = empresaFiel.password_fiel;
+        }
+      }
+
+      if (!cerFinal || !keyFinal || !passFinal) {
         return NextResponse.json({
-          error: 'Credenciales de e.firma requeridas (.cer, .key y contraseña) para consultar al SAT.'
+          error: `Credenciales de e.firma no encontradas para ${rfcSol}. Adjunte .cer, .key y contraseña o vincule la empresa.`
         }, { status: 400 });
       }
 
       const resVerifica = await verificarSolicitudSat({
         idSolicitud: idSol,
-        cerInput: cer,
-        keyInput: key,
-        password
+        cerInput: cerFinal,
+        keyInput: keyFinal,
+        password: passFinal
       });
+
+      // Si la solicitud ya está Terminada y tiene paquetes, y aún no tenemos el ZIP en BD, descargarlo de una vez
+      let paqueteZipB64 = solRecord?.paquete_zip_base64 || null;
+      if (resVerifica.estado_solicitud === 3 && resVerifica.ids_paquetes?.length > 0 && !paqueteZipB64) {
+        try {
+          const idPrimerPaquete = resVerifica.ids_paquetes[0];
+          const resDescarga = await descargarPaqueteSat({
+            idPaquete: idPrimerPaquete,
+            cerInput: cerFinal,
+            keyInput: keyFinal,
+            password: passFinal
+          });
+          paqueteZipB64 = resDescarga.paquete_zip_base64;
+        } catch (downErr) {
+          console.warn(`[Auto-descarga paquete aviso]: ${downErr.message}`);
+        }
+      }
+
+      // Actualizar registro en BD
+      try {
+        await prisma.sat_solicitudes_descarga.upsert({
+          where: { id_solicitud: idSol },
+          update: {
+            rfc: rfcSol,
+            estado_solicitud: resVerifica.estado_solicitud,
+            estado_texto: resVerifica.estado_texto,
+            codigo_estatus: String(resVerifica.codigo_estatus),
+            numero_cfdis: resVerifica.numero_cfdis,
+            mensaje: resVerifica.mensaje,
+            ids_paquetes: resVerifica.ids_paquetes || [],
+            paquete_zip_base64: paqueteZipB64 || undefined,
+            updated_at: new Date()
+          },
+          create: {
+            id_solicitud: idSol,
+            rfc: rfcSol,
+            tipo_descarga: 'CFDI',
+            tipo_solicitud: 'Emitidos',
+            estado_solicitud: resVerifica.estado_solicitud,
+            estado_texto: resVerifica.estado_texto,
+            codigo_estatus: String(resVerifica.codigo_estatus),
+            numero_cfdis: resVerifica.numero_cfdis,
+            mensaje: resVerifica.mensaje,
+            ids_paquetes: resVerifica.ids_paquetes || [],
+            paquete_zip_base64: paqueteZipB64 || null,
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        });
+      } catch (dbErr) {
+        console.error('[Error actualizando verificacion en BD]:', dbErr);
+      }
 
       return NextResponse.json({
         codigo: 5000,
         id_solicitud: idSol,
+        solicitud: idSol,
         estado_solicitud: resVerifica.estado_solicitud,
         estado: resVerifica.estado_texto,
         mensaje: resVerifica.mensaje || `Estado SAT: ${resVerifica.estado_texto}`,
         numero_cfdis: resVerifica.numero_cfdis,
-        ids_paquetes: resVerifica.ids_paquetes
+        ids_paquetes: resVerifica.ids_paquetes,
+        zip_base64: paqueteZipB64
       }, { status: 200 });
     }
 
     // =========================================================================
-    // 3. DESCARGAR PAQUETES ZIP DE COMPROBANTES DEL SAT
+    // 5. DESCARGAR PAQUETES ZIP DE COMPROBANTES DEL SAT
     // =========================================================================
     if (
       endpoint === 'descargar' ||
@@ -176,41 +728,108 @@ export async function POST(request, context) {
       const {
         id_paquete,
         idPaquete,
+        id_solicitud,
+        solicitud,
         rfc,
         cer,
         key,
         password
       } = body;
 
-      const targetPaquete = id_paquete || idPaquete;
-      const rfcSol = Array.isArray(rfc) ? rfc[0] : (rfc || '');
+      let targetPaquete = id_paquete || idPaquete;
+      let rfcSol = Array.isArray(rfc) ? rfc[0] : (rfc || '');
+      const idSol = id_solicitud || solicitud;
 
-      if (!targetPaquete || !rfcSol) {
-        return NextResponse.json({ error: 'Se requiere el ID de paquete y RFC.' }, { status: 400 });
+      // Si no tenemos id_paquete pero tenemos id_solicitud, buscarlo en BD
+      if (!targetPaquete && idSol) {
+        const sol = await prisma.sat_solicitudes_descarga.findUnique({
+          where: { id_solicitud: idSol }
+        });
+        if (sol) {
+          if (!rfcSol) rfcSol = sol.rfc;
+          if (sol.paquete_zip_base64) {
+            return NextResponse.json({
+              codigo: 5000,
+              id_paquete: (sol.ids_paquetes && sol.ids_paquetes[0]) || targetPaquete || idSol,
+              paquete_b64: sol.paquete_zip_base64,
+              zip_base64: sol.paquete_zip_base64
+            }, { status: 200 });
+          }
+          if (Array.isArray(sol.ids_paquetes) && sol.ids_paquetes.length > 0) {
+            targetPaquete = sol.ids_paquetes[0];
+          }
+        }
       }
 
-      if (!cer || !key || !password) {
+      if (!targetPaquete) {
+        return NextResponse.json({ error: 'Se requiere el ID de paquete del SAT para descargar.' }, { status: 400 });
+      }
+
+      // Buscar FIEL en BD si no se enviaron archivos
+      let cerFinal = cer;
+      let keyFinal = key;
+      let passFinal = password;
+
+      if (!cerFinal || !keyFinal || !passFinal) {
+        if (!rfcSol && idSol) {
+          const sol = await prisma.sat_solicitudes_descarga.findUnique({ where: { id_solicitud: idSol } });
+          if (sol) rfcSol = sol.rfc;
+        }
+
+        if (rfcSol) {
+          const empresaFiel = await prisma.sat_empresas_fiel.findUnique({ where: { rfc: rfcSol } });
+          if (empresaFiel) {
+            cerFinal = empresaFiel.cer_base64;
+            keyFinal = empresaFiel.key_base64;
+            passFinal = empresaFiel.password_fiel;
+          }
+        } else {
+          // Tomar la primera FIEL disponible si no hay RFC explícito
+          const primeraFiel = await prisma.sat_empresas_fiel.findFirst();
+          if (primeraFiel) {
+            cerFinal = primeraFiel.cer_base64;
+            keyFinal = primeraFiel.key_base64;
+            passFinal = primeraFiel.password_fiel;
+          }
+        }
+      }
+
+      if (!cerFinal || !keyFinal || !passFinal) {
         return NextResponse.json({
-          error: 'Credenciales de e.firma requeridas (.cer, .key y contraseña) para descargar del SAT.'
+          error: 'Credenciales de e.firma requeridas (.cer, .key y contraseña) para descargar el paquete del SAT.'
         }, { status: 400 });
       }
 
       const resDescarga = await descargarPaqueteSat({
         idPaquete: targetPaquete,
-        cerInput: cer,
-        keyInput: key,
-        password
+        cerInput: cerFinal,
+        keyInput: keyFinal,
+        password: passFinal
       });
+
+      // Guardar el ZIP en la tabla de solicitudes si corresponde
+      if (idSol) {
+        try {
+          await prisma.sat_solicitudes_descarga.update({
+            where: { id_solicitud: idSol },
+            data: {
+              paquete_zip_base64: resDescarga.paquete_zip_base64,
+              updated_at: new Date()
+            }
+          });
+        } catch {}
+      }
 
       return NextResponse.json({
         codigo: 5000,
         id_paquete: targetPaquete,
-        paquete_b64: resDescarga.paquete_zip_base64
+        paquete_b64: resDescarga.paquete_zip_base64,
+        zip_base64: resDescarga.paquete_zip_base64
       }, { status: 200 });
     }
 
     // =========================================================================
-    // 4. FALLBACK HACIA EL BACKEND REMOTO (si aplica otra función secundaria)
+    // 6. FALLBACK HACIA EL BACKEND REMOTO
     // =========================================================================
     const baseRaw =
       process.env.NEXT_PUBLIC_API_URL ||

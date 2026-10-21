@@ -55,6 +55,10 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
   const [keyFile, setKeyFile] = useState(null);
   const [passwordFiel, setPasswordFiel] = useState('');
 
+  // Empresas que ya tienen FIEL guardada en la base de datos
+  const [empresasConFiel, setEmpresasConFiel] = useState([]);
+  const [fielGuardadaActiva, setFielGuardadaActiva] = useState(false);
+
   // Filtros avanzados
   const [rfcContraparte, setRfcContraparte] = useState('');
   const [tipoComprobante, setTipoComprobante] = useState('todos'); // 'todos', 'I', 'E', 'T', 'N', 'P'
@@ -64,6 +68,28 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
   const [mensajeExito, setMensajeExito] = useState(null);
   const [mensajeError, setMensajeError] = useState(null);
   const [detallesError, setDetallesError] = useState(null);
+
+  // Cargar lista de empresas que ya tienen FIEL almacenada
+  React.useEffect(() => {
+    const verificarFielsGuardadas = async () => {
+      try {
+        const res = await descargaMasivaService.listarEmpresasFiel(token);
+        if (res && Array.isArray(res.empresas)) {
+          setEmpresasConFiel(res.empresas);
+        }
+      } catch (err) {
+        console.warn('No se pudieron verificar empresas con FIEL:', err);
+      }
+    };
+    verificarFielsGuardadas();
+  }, [token]);
+
+  // Actualizar indicador si la empresa seleccionada tiene FIEL guardada
+  React.useEffect(() => {
+    const rfcUpper = (selectedRfc || '').toUpperCase().trim();
+    const tiene = empresasConFiel.some((e) => (e.rfc || '').toUpperCase().trim() === rfcUpper);
+    setFielGuardadaActiva(tiene);
+  }, [selectedRfc, empresasConFiel]);
 
   // Atajos de fecha
   const setPeriodo = (tipo) => {
@@ -108,7 +134,8 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       return;
     }
 
-    if (!cerFile || !keyFile || !passwordFiel) {
+    // Si NO tiene FIEL guardada en la base de datos, los archivos y contraseña son obligatorios
+    if (!fielGuardadaActiva && (!cerFile || !keyFile || !passwordFiel)) {
       setMensajeError('Para conectar con el SAT, debe adjuntar su Certificado (.cer), Llave (.key) e ingresar la Contraseña de su e.firma (FIEL).');
       return;
     }
@@ -117,13 +144,15 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
 
     let cerBase64 = '';
     let keyBase64 = '';
-    try {
-      cerBase64 = await readFileAsBase64(cerFile);
-      keyBase64 = await readFileAsBase64(keyFile);
-    } catch (readErr) {
-      setMensajeError('Error al leer archivos de la e.firma: ' + readErr.message);
-      setLoading(false);
-      return;
+    if (cerFile && keyFile) {
+      try {
+        cerBase64 = await readFileAsBase64(cerFile);
+        keyBase64 = await readFileAsBase64(keyFile);
+      } catch (readErr) {
+        setMensajeError('Error al leer archivos de la e.firma: ' + readErr.message);
+        setLoading(false);
+        return;
+      }
     }
 
     // En el SAT, la fecha y hora final NO puede ser posterior al momento actual del servidor.
@@ -344,15 +373,37 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
 
               {/* SECCIÓN DE AUTENTICACIÓN CON E.FIRMA (FIEL) ANTE EL SAT */}
               <Grid item xs={12}>
-                <Box sx={{ p: 2, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2 }}>
-                  <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                    <VpnKeyIcon color="success" />
-                    <Typography variant="subtitle2" fontWeight="bold" color="success.dark">
-                      Credenciales de e.firma (FIEL) para Autenticación Directa ante el SAT
-                    </Typography>
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: fielGuardadaActiva ? '#f0fdf4' : '#fffbeb',
+                    border: '1px solid',
+                    borderColor: fielGuardadaActiva ? '#bbf7d0' : '#fde68a',
+                    borderRadius: 2
+                  }}
+                >
+                  <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1} mb={1.5}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <VpnKeyIcon color={fielGuardadaActiva ? "success" : "warning"} />
+                      <Typography variant="subtitle2" fontWeight="bold" color={fielGuardadaActiva ? "success.dark" : "warning.dark"}>
+                        {fielGuardadaActiva
+                          ? `✓ e.firma (FIEL) Configurada para ${selectedRfc}`
+                          : 'Credenciales de e.firma (FIEL) Requeridas'}
+                      </Typography>
+                    </Box>
+                    {fielGuardadaActiva && (
+                      <Chip
+                        size="small"
+                        color="success"
+                        label="FIEL Almacenada en Base de Datos"
+                        variant="filled"
+                      />
+                    )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-                    El SAT exige firmar digitalmente cada petición con el certificado y llave de la e.firma de la empresa seleccionada.
+                    {fielGuardadaActiva
+                      ? 'Esta empresa ya cuenta con su e.firma guardada en el sistema. Las solicitudes y descargas se firman de manera automática sin tener que subir archivos ni ingresar contraseña. Si desea actualizarla para esta solicitud, puede adjuntar nuevos archivos a continuación:'
+                      : 'El SAT exige firmar digitalmente cada petición. Ingrese el .cer, .key y contraseña de la e.firma (se guardará automáticamente para futuras solicitudes):'}
                   </Typography>
 
                   <Grid container spacing={2}>
@@ -365,7 +416,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                         color={cerFile ? "success" : "primary"}
                         sx={{ height: 48, textTransform: 'none' }}
                       >
-                        {cerFile ? `✓ ${cerFile.name}` : 'Seleccionar .CER'}
+                        {cerFile ? `✓ ${cerFile.name}` : (fielGuardadaActiva ? 'Cambiar .CER (Opcional)' : 'Seleccionar .CER')}
                         <input
                           type="file"
                           accept=".cer"
@@ -384,7 +435,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                         color={keyFile ? "success" : "primary"}
                         sx={{ height: 48, textTransform: 'none' }}
                       >
-                        {keyFile ? `✓ ${keyFile.name}` : 'Seleccionar .KEY'}
+                        {keyFile ? `✓ ${keyFile.name}` : (fielGuardadaActiva ? 'Cambiar .KEY (Opcional)' : 'Seleccionar .KEY')}
                         <input
                           type="file"
                           accept=".key"
@@ -399,11 +450,11 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                         fullWidth
                         type="password"
                         size="small"
-                        label="Contraseña de la Clave Privada"
+                        label={fielGuardadaActiva ? "Contraseña FIEL (Opcional si no cambia)" : "Contraseña de la Clave Privada"}
                         value={passwordFiel}
                         onChange={(e) => setPasswordFiel(e.target.value)}
-                        placeholder="Contraseña e.firma"
-                        required
+                        placeholder={fielGuardadaActiva ? "Usar contraseña guardada" : "Contraseña e.firma"}
+                        required={!fielGuardadaActiva}
                       />
                     </Grid>
                   </Grid>

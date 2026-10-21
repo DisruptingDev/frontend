@@ -305,6 +305,36 @@ export const descargaMasivaService = {
     };
     return apiRequest('/comprobante', payload, token);
   },
+
+  // ==========================================
+  // 6. Descarga Directa de Paquetes y Gestión FIEL
+  // ==========================================
+
+  /**
+   * Descarga el paquete ZIP de comprobantes o metadata desde el SAT o BD local
+   * @param {Object} data - { id_paquete, id_solicitud, rfc }
+   * @param {string} token
+   */
+  async descargarPaquete(data, token = '') {
+    return apiRequest('/descargar', data, token);
+  },
+
+  /**
+   * Lista las empresas que ya tienen su FIEL almacenada en la base de datos
+   * @param {string} token
+   */
+  async listarEmpresasFiel(token = '') {
+    return apiRequest('/fiel/listar', {}, token);
+  },
+
+  /**
+   * Guarda o actualiza la FIEL de una empresa en la base de datos
+   * @param {Object} data - { rfc, razonSocial, cer, key, password }
+   * @param {string} token
+   */
+  async guardarFiel(data, token = '') {
+    return apiRequest('/fiel/guardar', data, token);
+  },
 };
 
 export default descargaMasivaService;
