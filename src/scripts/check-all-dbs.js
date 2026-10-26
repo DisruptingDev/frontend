@@ -12,8 +12,8 @@ async function check() {
       }
     });
     try {
-      const res = await p.$queryRawUnsafe("SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'sat_%'");
-      console.log(`Database: ${db} -> Tables:`, res);
+      const res = await p.$queryRawUnsafe("SELECT id, id_solicitud, rfc, created_at, estado_texto FROM public.sat_solicitudes_descarga ORDER BY id DESC LIMIT 5");
+      console.log(`Database: ${db} -> Solicitudes:`, res);
       await p.$disconnect();
     } catch (e) {
       console.error(`Database: ${db} error:`, e.message);

@@ -46,7 +46,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
 
   const [selectedRfc, setSelectedRfc] = useState(empresas[0]?.Rfc || '');
   const [tipoDescarga, setTipoDescarga] = useState('multicomprobantes'); // 'multicomprobantes' | 'metadata'
-  const [tipoFlujo, setTipoFlujo] = useState('emitidas'); // 'emitidas' | 'recibidas'
+  const [tipoFlujo, setTipoFlujo] = useState('recibidas'); // 'recibidas' (por defecto para contabilidad) | 'emitidas'
   const [fechaInicio, setFechaInicio] = useState(firstDay);
   const [fechaFin, setFechaFin] = useState(today);
 

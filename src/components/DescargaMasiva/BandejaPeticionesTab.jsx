@@ -319,11 +319,14 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
                 sx={{ minWidth: 200 }}
               >
                 <MenuItem value="todos">Todas mis empresas</MenuItem>
-                {empresas.map((emp) => (
-                  <MenuItem key={emp.ID || emp.Rfc} value={emp.Rfc}>
-                    {emp.Rfc}
-                  </MenuItem>
-                ))}
+                {empresas.map((emp) => {
+                  const rfcVal = emp.Rfc || emp.rfc;
+                  return (
+                    <MenuItem key={emp.ID || emp.id || rfcVal} value={rfcVal}>
+                      {rfcVal} {emp.RazonSocial || emp.razon_social ? `— ${emp.RazonSocial || emp.razon_social}` : ''}
+                    </MenuItem>
+                  );
+                })}
               </TextField>
 
               <Button

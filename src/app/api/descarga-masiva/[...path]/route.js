@@ -1044,6 +1044,46 @@ export async function POST(request, context) {
     });
 
     const data = await response.json().catch(() => ({}));
+
+    // Si la respuesta del backend remoto o PAC devolvió una solicitud exitosa, guardarla en sat_solicitudes_descarga local
+    const idSolExito = data?.solicitud || data?.id_solicitud || data?.id || data?.folio || data?.peticion_id;
+    if (idSolExito && typeof idSolExito === 'string') {
+      try {
+        const rfcSol = (Array.isArray(body?.rfc) ? body.rfc[0] : (body?.rfc || '')).toUpperCase().trim();
+        const tipoDesc = (endpoint.includes('meta') ? 'Metadata' : 'CFDI');
+        const petStr = String(body?.peticion || body?.tipoPeticion || '').toLowerCase();
+        const tipoSol = petStr.includes('recib') ? 'Recibidos' : 'Emitidos';
+
+        await prisma.sat_solicitudes_descarga.upsert({
+          where: { id_solicitud: idSolExito },
+          update: {
+            rfc: rfcSol || undefined,
+            tipo_descarga: tipoDesc,
+            tipo_solicitud: tipoSol,
+            fecha_inicio: body?.fechaInicio || body?.fecha_inicio || undefined,
+            fecha_fin: body?.fechaFin || body?.fecha_fin || undefined,
+            estado_texto: data?.estado || data?.mensaje || 'Aceptada',
+            updated_at: new Date()
+          },
+          create: {
+            id_solicitud: idSolExito,
+            rfc: rfcSol || 'N/A',
+            tipo_descarga: tipoDesc,
+            tipo_solicitud: tipoSol,
+            fecha_inicio: body?.fechaInicio || body?.fecha_inicio || '',
+            fecha_fin: body?.fechaFin || body?.fecha_fin || '',
+            estado_solicitud: 1,
+            estado_texto: data?.estado || data?.mensaje || 'Aceptada',
+            mensaje: data?.mensaje || 'Solicitud generada ante el SAT',
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        });
+      } catch (errSave) {
+        console.warn('[Proxy Fallback]: No se pudo persistir solicitud en DB local:', errSave.message);
+      }
+    }
+
     return NextResponse.json(data, { status: response.status });
 
   } catch (error) {

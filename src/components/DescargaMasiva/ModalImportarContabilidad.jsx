@@ -184,6 +184,15 @@ const ModalImportarContabilidad = ({ open, onClose, token, zipData, solicitudInf
 
           const saveData = await saveResp.json();
 
+          // Sincronizar también con la tabla de contabilidad de facturas recibidas si corresponde
+          try {
+            await fetch('/api/contabilidad/resumen', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ rfc: facturaObj?.Receptor?.Rfc || facturaObj?.Receptor?.rfc })
+            });
+          } catch {}
+
           if (saveResp.ok) {
             exitosos++;
             setDetalles((prev) => [
