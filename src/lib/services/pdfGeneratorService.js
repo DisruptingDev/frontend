@@ -1,6 +1,14 @@
+// En Vercel Serverless, simular el runtime de AWS Lambda Node 20 para que @sparticuz/chromium
+// extraiga automáticamente las dependencias del sistema (al2023.tar.br que contiene libnss3.so)
+if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    process.env.AWS_EXECUTION_ENV = process.env.AWS_EXECUTION_ENV || 'AWS_Lambda_nodejs20.x';
+    process.env.AWS_LAMBDA_JS_RUNTIME = process.env.AWS_LAMBDA_JS_RUNTIME || 'nodejs20.x';
+}
+
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import fs from 'fs';
+import path from 'path';
 
 let browserInstance = null;
 let browserLaunchingPromise = null;
@@ -36,7 +44,29 @@ async function resolveExecutablePath() {
 
     const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
     if (isProduction) {
-        return await chromium.executablePath();
+        // En Vercel, buscar si la carpeta bin fue copiada o ubicada en node_modules
+        const possibleBinPaths = [
+            path.join(process.cwd(), 'node_modules', '@sparticuz', 'chromium', 'bin'),
+            path.join(__dirname, '..', '..', '..', 'node_modules', '@sparticuz', 'chromium', 'bin'),
+            '/var/task/node_modules/@sparticuz/chromium/bin'
+        ];
+
+        let binDir = null;
+        for (const p of possibleBinPaths) {
+            if (fs.existsSync(p)) {
+                binDir = p;
+                break;
+            }
+        }
+
+        const execPath = binDir ? await chromium.executablePath(binDir) : await chromium.executablePath();
+        
+        // Asegurar que el cargador dinámico de Linux busque librerías en /tmp y /tmp/al2023/lib
+        const libPaths = ['/tmp/al2023/lib', '/tmp/al2/lib', '/tmp'];
+        const existingLd = process.env.LD_LIBRARY_PATH ? process.env.LD_LIBRARY_PATH.split(':') : [];
+        process.env.LD_LIBRARY_PATH = [...new Set([...libPaths, ...existingLd])].join(':');
+
+        return execPath;
     }
 
     const commonPaths = [
