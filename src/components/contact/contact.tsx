@@ -5,11 +5,11 @@ import React from 'react';
 
 export default function Contact() {
     return (
-        <div className='w-full flex mt-24 mb-20'>
+        <div id="contact" className='w-full flex mt-24 mb-20'>
             <div className='w-11/12 md:w-3/4 m-auto flex flex-col md:flex-row gap-8 md:gap-0'>
                 <div className='w-full md:w-1/2 flex flex-col justify-center items-center p-5'>
-                    <h1 className='text-4xl font-bold '>Contacto</h1>
-                    <p className='text-xl mt-2'>Dejanos tus dudas y comentarios y nosotros nos pondremos en contacto lo antes posible.</p>
+                    <h2 className='text-3xl md:text-4xl font-bold text-center text-[#063F53]'>Contacto</h2>
+                    <p className='text-xl mt-2 text-center'>Déjanos tus dudas y comentarios y nosotros nos pondremos en contacto lo antes posible.</p>
                     <p className='text-md mt-2'>Puedes contactarnos a través de los siguientes medios:</p>
                     <p className='text-md mt-2'><span className='font-bold'>Correo</span> admin@wisefacturacion.com</p>
                     <p className='text-md mt-2'><span className='font-bold'>Teléfono</span> (222) 725 4392 </p>

@@ -262,7 +262,31 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                 setSnackbarSeverity('error');
                 setOpenSnackbar(true);
             } else {
-                setSnackbarMessage('Empresa guardada correctamente.');
+                // Si es un registro nuevo (no edición), intentar aplicar bono de 5 folios a la primera empresa
+                let mensajeExito = 'Empresa guardada correctamente.';
+                if (!editar) {
+                    try {
+                        const bonoRes = await fetch('/api/empresas/bono-bienvenida', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                rfc: data.Rfc,
+                                nombre: data.Nombre
+                            })
+                        });
+                        const bonoData = await bonoRes.json();
+                        if (bonoData?.bonoAplicado) {
+                            mensajeExito = '¡Empresa registrada! Te obsequiamos 5 folios listos para timbrar.';
+                        }
+                    } catch (bonoErr) {
+                        console.warn('Error al verificar bono de bienvenida:', bonoErr);
+                    }
+                }
+
+                setSnackbarMessage(mensajeExito);
                 setSnackbarSeverity('success');
                 setOpenSnackbar(true);
                 if (setActualizar) setActualizar(true);
@@ -270,7 +294,7 @@ export default function AltaEmpresa({ onClose, issuerName, issuerRfc, empresa, e
                     if (setRegistroEmpresa) setRegistroEmpresa(true);
                     if (onClose) onClose();
                     if (setActualizar) setActualizar(false);
-                }, 2000);
+                }, 2200);
             }
         } catch (error) {
             console.error('Error al guardar los datos:', error);

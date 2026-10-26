@@ -116,7 +116,7 @@ export default function ContactForm() {
                 {isSubmitting ? 'Enviando...' : 'Enviar'}
             </button>
             {submissionStatus === 'success' && (
-                <div className="alert alert-success">Mensaje encviado exitosamente </div>
+                <div className="alert alert-success">Mensaje enviado exitosamente </div>
             )}
             {submissionStatus === 'error' && (
                 <div className="alert alert-error">No se pudo enviar tu mensaje</div>

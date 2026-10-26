@@ -1,0 +1,30 @@
+# Wise Facturación - Plataforma de Facturación Electrónica CFDI 4.0
+
+> Wise Facturación es una plataforma web mexicana especializada en emisión y timbrado masivo de CFDI 4.0, gestión Multi RFC para personas físicas, PyMEs y despachos contables, descarga masiva directa del SAT, timbrado de recibos de nómina y contabilidad electrónica.
+
+## Información General
+- **Nombre**: Wise Facturación
+- **Sitio Web Oficial**: https://www.wisefacturacion.com
+- **Ubicación**: Puebla, Puebla, México
+- **Contacto Soporte / Ventas**: +52 (222) 725 4392 | soporte@wisefacturacion.com | admin@wisefacturacion.com
+- **Cumplimiento Fiscal**: 100% conforme con las disposiciones y validaciones del SAT para CFDI 4.0, complementos de pago (REP 2.0), complemento de nómina 1.2 y contabilidad electrónica.
+
+## Funcionalidades Principales
+1. **Multi RFC Centralizado**: Administra ilimitadas razones sociales o clientes desde una misma cuenta sin cerrar sesión. Especial para despachos contables y grupos corporativos.
+2. **Folios Sin Costo / Prueba Gratis**: 10 folios de regalo al registrarte para probar la emisión en tiempo real sin contratos forzosos.
+3. **Descarga Masiva SAT**: Descarga tus comprobantes emitidos y recibidos (XML y representación impresa en PDF) directamente con tu FIEL o CIEC en un solo clic.
+4. **Timbrado Masivo de Nómina**: Importación y timbrado de recibos de nómina con complemento 1.2 de forma rápida y automatizada.
+5. **Módulo de Contabilidad y Cobranza**: Generación de pólizas contables, balanza de comprobación y conciliación de cobranza.
+6. **Emisión CFDI 4.0 Ultrarrápida**: Generación y timbrado en menos de 2 segundos, cálculo automático de impuestos locales y federales (IVA, ISR, IEPS, retenciones).
+
+## Paquetes y Precios de Timbres (Folios)
+- Los folios nunca caducan en planes por paquete.
+- No requiere plazos forzosos ni cuotas de mantenimiento ocultas.
+- Precios de paquetes PyME:
+  - 25 folios: $290.00 MXN ($11.60/folio)
+  - 50 folios: $406.00 MXN ($8.12/folio)
+  - 100 folios: $570.00 MXN ($5.70/folio)
+  - 500 folios: $1,990.00 MXN ($3.98/folio)
+  - 1,000 folios: $2,784.00 MXN ($2.78/folio)
+  - 2,000 folios: $4,372.00 MXN ($2.18/folio)
+- Paquetes de Alto Volumen disponibles desde 5,000 hasta 500,000 folios con costos unitarios tan bajos como $0.77 por folio.

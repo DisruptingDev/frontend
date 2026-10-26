@@ -1,4 +1,6 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
+import fs from 'fs';
 
 let browserInstance = null;
 let browserLaunchingPromise = null;
@@ -23,8 +25,43 @@ function resetIdleTimer() {
 }
 
 /**
- * Obtiene o inicializa una instancia compartida (singleton) de Puppeteer
- * para evitar sobrecarga de memoria y arranque de procesos por cada factura.
+ * Obtiene la ruta ejecutable de Chrome/Chromium según el entorno:
+ * - En producción (Vercel/Serverless): usa el binario ligero @sparticuz/chromium.
+ * - En desarrollo local (Windows/Mac/Linux): busca Chrome/Edge instalado o variable de entorno.
+ */
+async function resolveExecutablePath() {
+    if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
+        return process.env.CHROME_PATH;
+    }
+
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+    if (isProduction) {
+        return await chromium.executablePath();
+    }
+
+    const commonPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    ];
+
+    for (const path of commonPaths) {
+        if (fs.existsSync(path)) {
+            return path;
+        }
+    }
+
+    // Fallback a chromium si está disponible
+    return await chromium.executablePath();
+}
+
+/**
+ * Obtiene o inicializa una instancia de Puppeteer
  */
 async function getBrowser() {
     if (browserInstance && browserInstance.connected) {
@@ -38,16 +75,23 @@ async function getBrowser() {
 
     browserLaunchingPromise = (async () => {
         try {
+            const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+            const executablePath = await resolveExecutablePath();
+
             browserInstance = await puppeteer.launch({
-                headless: 'new',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--no-first-run',
-                    '--disable-extensions'
-                ]
+                args: isProduction
+                    ? chromium.args
+                    : [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--no-first-run',
+                        '--disable-extensions'
+                    ],
+                defaultViewport: chromium.defaultViewport,
+                executablePath,
+                headless: isProduction ? chromium.headless : 'new'
             });
 
             browserInstance.on('disconnected', () => {

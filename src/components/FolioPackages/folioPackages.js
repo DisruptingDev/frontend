@@ -1,313 +1,437 @@
-import React from 'react';
+'use client';
+import React, { useState } from 'react';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Box from '@mui/material/Box';
-import TabContext from '@mui/lab/TabContext';
-import Button from "@mui/material/Button";
-import TabPanel from '@mui/lab/TabPanel';
-
-
-// Datos de los paquetes
-const folioPackagesData = [
-  { nombre: 'Paquete 25', folios: 25, precio: '$ 290.00' },
-  { nombre: 'Paquete 50', folios: 50, precio: '$ 406.00' },
-  { nombre: 'Paquete 100', folios: 100, precio: '$ 570.00' },
-  { nombre: 'Paquete 500', folios: 500, precio: '$ 1990.00' },
-  { nombre: 'Paquete 1,000', folios: 1000, precio: '$ 2,784.00' },
-  { nombre: 'Paquete 2,000', folios: 2500, precio: '$ 4,372.00' },
-];
-
-const highVolumePackagesData = [
-  { nombre: 'Paquete 5,000', folios: 5000, precio: '$ 5,800.00' },
-  { nombre: 'Paquete 25,000', folios: 25000, precio: '$ 27,550.00' },
-  { nombre: 'Paquete 50,000', folios: 50000, precio: '$ 49,300.00' },
-  { nombre: 'Paquete 100,000', folios: 100000, precio: '$ 87,000.00' },
-  { nombre: 'Paquete 200,000', folios: 200000, precio: '$ 162,400.00' },
-  { nombre: 'Paquete 500,000', folios: 500000, precio: '$ 382,800.00' },
-];
-
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import StarRoundedIcon from '@mui/icons-material/StarRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ShoppingCartRoundedIcon from '@mui/icons-material/ShoppingCartRounded';
 import { useRouter } from 'next/navigation';
 
-const CustomTabPanel = (props) => {
-  const { children, value, index, padding = 3, ...other } = props;
+// Paquetes PyME de compra única (sin caducidad)
+const pymePackages = [
+  { nombre: 'Paquete 25', folios: 25, precio: 290.00 },
+  { nombre: 'Paquete 50', folios: 50, precio: 406.00 },
+  { nombre: 'Paquete 100', folios: 100, precio: 570.00 },
+  { nombre: 'Paquete 500', folios: 500, precio: 1990.00 },
+  { nombre: 'Paquete 1,000', folios: 1000, precio: 2784.00, popular: true },
+  { nombre: 'Paquete 2,000', folios: 2000, precio: 4372.00 },
+];
 
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: padding }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
+// Paquetes de Alto Volumen
+const highVolumePackages = [
+  { nombre: 'Paquete 5,000', folios: 5000, precio: 5800.00 },
+  { nombre: 'Paquete 25,000', folios: 25000, precio: 27550.00 },
+  { nombre: 'Paquete 50,000', folios: 50000, precio: 49300.00 },
+  { nombre: 'Paquete 100,000', folios: 100000, precio: 87000.00 },
+  { nombre: 'Paquete 200,000', folios: 200000, precio: 162400.00 },
+  { nombre: 'Paquete 500,000', folios: 500000, precio: 382800.00 },
+];
+
+// Propuesta de planes mensuales para facturación y servicios continuos
+const monthlyPlans = [
+  {
+    nombre: 'Emprendedor',
+    precio: 199.00,
+    folios: '30 folios / mes',
+    rfc: '1 RFC',
+    caracteristicas: [
+      'Emisión CFDI 4.0 ilimitada en el mes',
+      'Descarga masiva del SAT básica',
+      'Envío por correo de XML y PDF',
+      'Soporte por WhatsApp y correo',
+    ],
+  },
+  {
+    nombre: 'PyME',
+    precio: 499.00,
+    folios: '150 folios / mes',
+    rfc: 'Hasta 3 RFCs',
+    popular: true,
+    caracteristicas: [
+      'Multi RFC (hasta 3 empresas)',
+      'Timbrado de nómina masiva',
+      'Descarga masiva de XML y PDF del SAT',
+      'Módulo de cobranza y complementos de pago',
+      'Soporte prioritario',
+    ],
+  },
+  {
+    nombre: 'Despacho / Contador',
+    precio: 1190.00,
+    folios: '600 folios / mes',
+    rfc: 'RFCs Ilimitados',
+    caracteristicas: [
+      'Multi RFC sin límite de empresas',
+      'Módulo de contabilidad y pólizas',
+      'Nómina masiva con complemento 1.2',
+      'Descarga masiva ilimitada del SAT',
+      'Multiusuarios con roles y permisos',
+    ],
+  },
+  {
+    nombre: 'Empresarial / Alto Volumen',
+    precio: null,
+    folios: 'A la medida',
+    rfc: 'Ilimitados + API',
+    caracteristicas: [
+      'Integración vía API REST',
+      'Timbrados de alto volumen dedicados',
+      'Soporte técnico y asesor dedicado',
+      'Personalización de plantillas PDF',
+    ],
+  },
+];
+
+const formatCurrency = (val) => {
+  return val.toLocaleString('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 };
 
-const a11yProps = (index) => {
-  return {
-    id: `simple-tab-${index}`,
-    'aria-controls': `simple-tabpanel-${index}`,
-  };
-};
-
-const FolioPackages = () => {
+export default function FolioPackages() {
   const router = useRouter();
-  const [value, setValue] = React.useState(0);
+  const [tabIndex, setTabIndex] = useState(0);
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+  const handleBuy = () => {
+    router.push('/AltaUsuarios');
   };
 
-  return (
-    <Box id="paquetes" sx={{ scrollMarginTop: '100px' }}>
-      <TabContext value={value}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', width: '100%' }}>
-          <Tabs value={value} onChange={handleChange} centered >
-            <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes</span><span>PyMEs</span></Box>} {...a11yProps(0)} />
-            <Tab sx={{ fontSize: '1.0rem', fontWeight: 'bold' }} label={<Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'center', gap: { xs: 0, md: 0.5 } }}><span>Paquetes de</span><span>alto volumen</span></Box>} {...a11yProps(1)} />
-          </Tabs>
-        </Box>
-        <CustomTabPanel value={value} index={0} padding={0}>
-          <Box
-            className="section sectionNormal w-full p-0 " // Aplicamos clase para fondo y estilos comunes
-
+  const renderMobileCards = (packages) => (
+    <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 2, width: '100%', px: 1 }}>
+      {packages.map((pkg) => {
+        const unitCost = (pkg.precio / pkg.folios).toFixed(2);
+        return (
+          <Card
+            key={pkg.nombre}
             sx={{
-              // padding, color, display, flexDirection, alignItems son manejados por la clase .section
-              flex: { md: 1 }, // Para que ocupe espacio igual en layout de fila (md)
-              padding: { md: 0 },
+              borderRadius: '16px',
+              border: pkg.popular ? '2px solid #10968A' : '1px solid #e2e8f0',
+              boxShadow: pkg.popular ? '0 8px 16px rgba(16, 150, 138, 0.15)' : '0 2px 4px rgba(0,0,0,0.04)',
+              backgroundColor: '#ffffff',
             }}
           >
-            <h2 className="sectionTitle">Paquetes PyMEs de folios.</h2>
-            <p className="sectionDescription">
-              Ideales para aquellos emprendedores y pequeñas empresas que tienen un volumen de facturación bajo
-            </p>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="th">Nombre</th>
-                  <th className="th">Folios</th>
-                  <th className="th">Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {folioPackagesData.map((pkg) => (
-                  <tr key={pkg.nombre} className="tr">
-                    <td className="td">{pkg.nombre}</td>
-                    <td className="td">{pkg.folios}</td>
-                    <td className="td">{pkg.precio}</td>
-                    <td className="td">
-                      <Button
-                        variant="contained"
-                        sx={{
-                          backgroundColor: "#10968A",
-                          ml: 2,
-                          "&:hover": {
-                            backgroundColor: "#0398a6",
-                          },
-                        }}
-                        onClick={() => router.push("/AltaUsuarios")}
-                      >
-                        Comprar
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Box>
-        </CustomTabPanel>
-        <CustomTabPanel value={value} index={1} padding={0}>
-          <Box
-            component="section" // Mantenemos la semántica de <section>
-            className="section sectionHighVolume w-full p-0"
-            sx={{
-              flex: { md: 1 },
-              padding: { md: 0 }, // Para que ocupe espacio igual en layout de fila (md)
-            }}
-          >
-            <h2 className="sectionTitle">Paquetes de alto volumen</h2>
-            <p className="sectionDescription">
-              Cumple con la demanda de folios en un alto volumen, dando un servicio de calidad apto para las empresas más exigentes.
-            </p>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="th">Nombre</th>
-                  <th className="th">Folios</th>
-                  <th className="th">Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {highVolumePackagesData.map((pkg) => (
-                  <tr key={pkg.nombre} className="tr">
-                    <td className="td">{pkg.nombre}</td>
-                    <td className="td">{pkg.folios}</td>
-                    <td className="td">{pkg.precio}</td>
-                    <td className="td">
-                      <Button
-                        variant="outlined"
-                        color="inherit"
-                        sx={{
-                          ml: 2,
-                          borderColor: "#ffffff ",
-                          color: "#ffffff",
-                          "&:hover": {
-                            backgroundColor: "rgba(4, 75, 69, 1)",
-                            borderColor: "#ffffff",
-                          },
-                        }}
-                        onClick={() => router.push("/AltaUsuarios")}
-                      >
-                        Comprar
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Box>
-        </CustomTabPanel>
-      </TabContext>
+            <CardContent sx={{ p: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#063F53' }}>
+                  {pkg.nombre}
+                </Typography>
+                {pkg.popular && (
+                  <Chip
+                    icon={<StarRoundedIcon sx={{ fontSize: 16, color: '#10968A !important' }} />}
+                    label="Más popular"
+                    size="small"
+                    sx={{ backgroundColor: '#e6fffa', color: '#10968A', fontWeight: 700, fontSize: '0.75rem' }}
+                  />
+                )}
+              </Box>
 
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', my: 1.5 }}>
+                <div>
+                  <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                    Folios incluidos:
+                  </Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#1e293b' }}>
+                    {pkg.folios.toLocaleString('es-MX')} folios
+                  </Typography>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <Typography variant="caption" sx={{ color: '#10968A', fontWeight: 600, display: 'block' }}>
+                    ${unitCost} / folio
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#063F53' }}>
+                    {formatCurrency(pkg.precio)}
+                  </Typography>
+                </div>
+              </Box>
 
-      <style>{`
-        .section {
-          padding: 40px 20px;
-          color: white;
-          flex: 1; /* Cada sección toma el mismo espacio si están en fila */
-          display: flex;
-          flex-direction: column;
-          align-items: center; /* Centra el contenido de la sección */
-        }
-
-        .sectionNormal {
-          background-color: #0a2e3f; /* Azul oscuro de la imagen */
-        }
-
-        .sectionHighVolume {
-          background-color: #16837B; /* Verde azulado de la imagen */
-        }
-
-        .sectionTitle {
-          font-size: 28px;
-          font-weight: bold;
-          margin-bottom: 10px;
-          text-align: center;
-        }
-
-        .sectionDescription {
-          font-size: 16px;
-          margin-bottom: 30px;
-          max-width: 450px; /* Limita el ancho de la descripción */
-          text-align: center;
-          line-height: 1.6;
-        }
-
-        .table {
-          width: 100%;
-          max-width: 500px; /* Limita el ancho de la tabla */
-          border-collapse: collapse; /* Elimina espacios entre bordes de celdas */
-          margin-bottom: 20px;
-        }
-
-        .th,
-        .td {
-          text-align: left;
-          padding: 12px 15px; /* Espaciado interno de las celdas */
-          border-bottom: 1px solid rgba(255, 255, 255, 1); /* Línea divisoria sutil */
-        }
-
-        .th {
-          font-weight: bold;
-          font-size: 18px;
-          color:#ffffff;
-        }
-
-        .td {
-          font-size: 16px;
-        }
-
-        .tr:last-child .td {
-          border-bottom: none;
-        }
-
-        .buttonContainer {
-          display: flex;
-          justify-content: center; /* Centra el botón */
-          padding: 20px 0; 
-          width: 100%; 
-          background-color: #0a2e3f; /* Coincide con el fondo de la primera sección por defecto en móvil */
-        }
-        
-        @media (max-width: 767px) { /* Móvil (hasta 767px) */
-            .sectionHighVolume {
-                padding-bottom: 80px; /* Más espacio para el botón que se superpone */
-            }
-            .buttonContainer {
-                position: relative; 
-                margin-top: -45px; /* Mueve el botón hacia arriba para superponerse */
-                z-index: 10;
-                background-color: transparent; /* Para que no oculte la sección de abajo */
-            }
-        }
-
-        .buyButton {
-          background-color: #c74b4f; /* Rojo del botón */
-          color: white;
-          border: none;
-          padding: 15px 30px;
-          font-size: 18px;
-          font-weight: bold;
-          border-radius: 5px;
-          cursor: pointer;
-          transition: background-color 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 11; 
-        }
-
-        .buyButton:hover {
-          background-color: #a93b40; 
-        }
-
-        @media (min-width: 768px) { /* Desktop (768px en adelante) */
-          /* El Box principal ya maneja flex-direction: row */
-          .buttonContainer {
-            position: absolute; 
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: -25px; 
-            background-color: transparent; 
-            padding: 0; 
-            margin-top: 0; 
-            z-index: 10;
-            width: auto; /* El botón define su propio ancho */
-          }
-          .section {
-            padding-bottom: 60px; /* Más espacio en la parte inferior para el botón */
-          }
-          /* Si el botón debe tener un fondo específico en desktop cuando está sobre las secciones */
-          /* .buttonContainer { background-color: #someColor; } */
-        }
-        
-        @media (min-width: 1024px) {
-            .sectionTitle {
-                font-size: 32px;
-            }
-            .sectionDescription {
-                font-size: 18px;
-            }
-        }
-      `}
-      </style>
+              <Button
+                variant={pkg.popular ? 'contained' : 'outlined'}
+                fullWidth
+                onClick={handleBuy}
+                startIcon={<ShoppingCartRoundedIcon />}
+                sx={{
+                  minHeight: '44px',
+                  fontWeight: 700,
+                  borderRadius: '10px',
+                  mt: 1,
+                  backgroundColor: pkg.popular ? '#10968A' : 'transparent',
+                  borderColor: '#10968A',
+                  color: pkg.popular ? '#ffffff' : '#10968A',
+                  '&:hover': {
+                    backgroundColor: pkg.popular ? '#0d8076' : 'rgba(16, 150, 138, 0.08)',
+                    borderColor: '#10968A',
+                  },
+                }}
+              >
+                Comprar Paquete
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })}
     </Box>
   );
-};
 
-export default FolioPackages;
+  const renderTable = (packages) => (
+    <TableContainer
+      component={Paper}
+      sx={{
+        display: { xs: 'none', md: 'block' },
+        borderRadius: '16px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+        overflowX: 'auto',
+        maxWidth: 900,
+        mx: 'auto',
+      }}
+    >
+      <Table sx={{ minWidth: 650 }}>
+        <TableHead sx={{ backgroundColor: '#063F53' }}>
+          <TableRow>
+            <TableCell sx={{ color: '#ffffff', fontWeight: 700, py: 2, whiteSpace: 'nowrap' }}>Paquete</TableCell>
+            <TableCell align="center" sx={{ color: '#ffffff', fontWeight: 700, py: 2 }}>Folios</TableCell>
+            <TableCell align="center" sx={{ color: '#ffffff', fontWeight: 700, py: 2 }}>Costo por Folio</TableCell>
+            <TableCell align="right" sx={{ color: '#ffffff', fontWeight: 700, py: 2 }}>Precio Total (MXN)</TableCell>
+            <TableCell align="center" sx={{ color: '#ffffff', fontWeight: 700, py: 2 }}></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {packages.map((pkg) => {
+            const unitCost = (pkg.precio / pkg.folios).toFixed(2);
+            return (
+              <TableRow
+                key={pkg.nombre}
+                sx={{
+                  backgroundColor: pkg.popular ? 'rgba(16, 150, 138, 0.04)' : '#ffffff',
+                  '&:hover': { backgroundColor: '#f8fafc' },
+                }}
+              >
+                <TableCell sx={{ fontWeight: 700, color: '#063F53', whiteSpace: 'nowrap', py: 2 }}>
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                    <span>{pkg.nombre}</span>
+                    {pkg.popular && (
+                      <Chip
+                        icon={<StarRoundedIcon sx={{ fontSize: 14, color: '#10968A !important' }} />}
+                        label="Más popular"
+                        size="small"
+                        sx={{ backgroundColor: '#e6fffa', color: '#10968A', fontWeight: 700, fontSize: '0.7rem' }}
+                      />
+                    )}
+                  </Box>
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600, color: '#334155' }}>
+                  {pkg.folios.toLocaleString('es-MX')}
+                </TableCell>
+                <TableCell align="center" sx={{ fontWeight: 700, color: '#10968A' }}>
+                  ${unitCost} / folio
+                </TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#063F53', fontSize: '1.05rem' }}>
+                  {formatCurrency(pkg.precio)}
+                </TableCell>
+                <TableCell align="center" sx={{ py: 1.5 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleBuy}
+                    sx={{
+                      minHeight: '44px',
+                      px: 2.5,
+                      fontWeight: 700,
+                      borderRadius: '8px',
+                      backgroundColor: pkg.popular ? '#10968A' : '#063F53',
+                      '&:hover': {
+                        backgroundColor: pkg.popular ? '#0d8076' : '#042834',
+                      },
+                    }}
+                  >
+                    Comprar
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
+  return (
+    <Box id="paquetes" sx={{ py: { xs: 8, sm: 12 }, backgroundColor: '#f1f5f9', scrollMarginTop: '90px' }}>
+      <Container maxWidth="lg">
+        {/* Encabezado */}
+        <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Typography
+            component="h2"
+            variant="h4"
+            sx={{ fontWeight: 800, color: '#063F53', mb: 1.5, fontSize: { xs: '1.8rem', md: '2.5rem' } }}
+          >
+            Precios transparentes y sin sorpresas
+          </Typography>
+          <Typography variant="body1" sx={{ color: '#64748b', maxWidth: 650, mx: 'auto', mb: 3 }}>
+            Elige entre <strong>paquetes de folios sin caducidad</strong> (pago único) o <strong>planes mensuales</strong> para mayor volumen de timbrado y servicios continuos.
+          </Typography>
+
+          {/* Selector de Pestañas con Pestaña Planes Mensuales incluida */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Tabs
+              value={tabIndex}
+              onChange={(e, val) => setTabIndex(val)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                backgroundColor: '#ffffff',
+                borderRadius: '14px',
+                p: 0.5,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                '& .MuiTabs-indicator': { backgroundColor: '#10968A', height: 3, borderRadius: 2 },
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  minHeight: '44px',
+                  color: '#64748b',
+                  '&.Mui-selected': { color: '#10968A' },
+                },
+              }}
+            >
+              <Tab label="Paquetes PyMEs (Sin caducidad)" />
+              <Tab label="Paquetes de Alto Volumen" />
+              <Tab label="Planes Mensuales" />
+            </Tabs>
+          </Box>
+        </Box>
+
+        {/* Tab 0: Paquetes PyME */}
+        {tabIndex === 0 && (
+          <Box>
+            <Typography variant="body2" sx={{ textAlign: 'center', color: '#475569', mb: 3, fontWeight: 500 }}>
+              💡 Compra única: los timbres nunca caducan y puedes usarlos en cualquiera de tus RFCs.
+            </Typography>
+            {renderMobileCards(pymePackages)}
+            {renderTable(pymePackages)}
+          </Box>
+        )}
+
+        {/* Tab 1: Alto Volumen */}
+        {tabIndex === 1 && (
+          <Box>
+            <Typography variant="body2" sx={{ textAlign: 'center', color: '#475569', mb: 3, fontWeight: 500 }}>
+              💡 El menor costo por folio en México: desde $0.77 MXN por comprobante fiscal.
+            </Typography>
+            {renderMobileCards(highVolumePackages)}
+            {renderTable(highVolumePackages)}
+          </Box>
+        )}
+
+        {/* Tab 2: Planes Mensuales */}
+        {tabIndex === 2 && (
+          <Box>
+            <Typography variant="body2" sx={{ textAlign: 'center', color: '#475569', mb: 3, fontWeight: 500 }}>
+              💡 Suscripción mensual con renovación automática, timbres mensuales y soporte prioritario.
+            </Typography>
+            <Grid container spacing={3} justifyContent="center">
+              {monthlyPlans.map((plan) => (
+                <Grid item xs={12} sm={6} md={3} key={plan.nombre}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      borderRadius: '16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      border: plan.popular ? '2px solid #10968A' : '1px solid #e2e8f0',
+                      boxShadow: plan.popular ? '0 10px 24px rgba(16, 150, 138, 0.15)' : '0 2px 6px rgba(0,0,0,0.04)',
+                      backgroundColor: '#ffffff',
+                    }}
+                  >
+                    <CardContent sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#063F53' }}>
+                          {plan.nombre}
+                        </Typography>
+                        {plan.popular && (
+                          <Chip
+                            icon={<StarRoundedIcon sx={{ fontSize: 14, color: '#10968A !important' }} />}
+                            label="Recomendado"
+                            size="small"
+                            sx={{ backgroundColor: '#e6fffa', color: '#10968A', fontWeight: 700, fontSize: '0.7rem' }}
+                          />
+                        )}
+                      </Box>
+
+                      <Box sx={{ my: 2 }}>
+                        {plan.precio !== null ? (
+                          <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
+                            <Typography variant="h4" sx={{ fontWeight: 800, color: '#063F53' }}>
+                              {formatCurrency(plan.precio)}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#64748b', ml: 0.5, fontWeight: 600 }}>
+                              / mes
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Typography variant="h5" sx={{ fontWeight: 800, color: '#10968A', my: 0.5 }}>
+                            Cotización personalizada
+                          </Typography>
+                        )}
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#10968A', mt: 0.5 }}>
+                          {plan.folios} · {plan.rfc}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3, flexGrow: 1 }}>
+                        {plan.caracteristicas.map((c, cIdx) => (
+                          <Box key={cIdx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                            <CheckCircleRoundedIcon sx={{ fontSize: 16, color: '#10968A', mt: 0.3, flexShrink: 0 }} />
+                            <Typography variant="body2" sx={{ color: '#475569', fontSize: '0.85rem' }}>
+                              {c}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+
+                      <Button
+                        variant={plan.popular ? 'contained' : 'outlined'}
+                        fullWidth
+                        onClick={handleBuy}
+                        sx={{
+                          minHeight: '44px',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          backgroundColor: plan.popular ? '#10968A' : 'transparent',
+                          borderColor: '#10968A',
+                          color: plan.popular ? '#ffffff' : '#10968A',
+                          '&:hover': {
+                            backgroundColor: plan.popular ? '#0d8076' : 'rgba(16, 150, 138, 0.08)',
+                            borderColor: '#10968A',
+                          },
+                        }}
+                      >
+                        {plan.precio ? 'Contratar Plan' : 'Cotizar con Asesor'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        )}
+      </Container>
+    </Box>
+  );
+}

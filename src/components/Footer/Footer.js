@@ -24,21 +24,21 @@ const Footer = () => {
           <Grid item xs={12} md={4}>
             <Image
               src="/images/Log_blanco_wise_factura.png"
-              alt="Descripción del logo"
+              alt="Wise Facturación Logo"
               width={203}
               height={64}
             />
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Sistema integral de facturación electrónica y gestión empresarial.
+              Sistema integral de facturación electrónica CFDI 4.0, Multi RFC y gestión empresarial.
             </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <IconButton aria-label="Facebook" color="inherit" href='https://www.facebook.com/wisefacturacion/'>
+              <IconButton aria-label="Facebook" color="inherit" href='https://www.facebook.com/wisefacturacion/' target="_blank" rel="noopener noreferrer">
                 <Facebook />
               </IconButton>
-              <IconButton aria-label="Instagram" color="inherit" href='https://www.instagram.com/wisefacturacion/'>
+              <IconButton aria-label="Instagram" color="inherit" href='https://www.instagram.com/wisefacturacion/' target="_blank" rel="noopener noreferrer">
                 <Instagram />
               </IconButton>
-              <IconButton aria-label="LinkedIn" color="inherit" href='https://www.linkedin.com/company/'>
+              <IconButton aria-label="LinkedIn" color="inherit" href='https://www.linkedin.com/company/wisefacturacion' target="_blank" rel="noopener noreferrer">
                 <LinkedIn />
               </IconButton>
             </Box>
@@ -49,8 +49,14 @@ const Footer = () => {
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
               Enlaces
             </Typography>
-            <Link href="/Home" color="inherit" underline="hover" display="block" mb={1}>
+            <Link href="/" color="inherit" underline="hover" sx={{ display: 'flex', alignItems: 'center', minHeight: 44, mb: 0.5 }}>
               Inicio
+            </Link>
+            <Link href="#funcionalidades" color="inherit" underline="hover" sx={{ display: 'flex', alignItems: 'center', minHeight: 44, mb: 0.5 }}>
+              Funcionalidades
+            </Link>
+            <Link href="#paquetes" color="inherit" underline="hover" sx={{ display: 'flex', alignItems: 'center', minHeight: 44, mb: 0.5 }}>
+              Precios
             </Link>
           </Grid>
 

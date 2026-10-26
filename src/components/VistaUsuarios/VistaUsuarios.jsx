@@ -201,7 +201,7 @@ const VistaUsuarios = ({ token }) => {
                                     >
                                         {/* <MenuItem onClick={ handleSuplantar}>Suplantar</MenuItem> */}
                                         <MenuItem onClick={() => handleSuplantar(row)}>Suplantar</MenuItem>
-
+                                        <MenuItem onClick={() => { handleMenuClose(); router.push('/Permisos'); }}>Gestionar Módulos</MenuItem>
                                     </Menu>
                                 </TableCell>
                             </TableRow>

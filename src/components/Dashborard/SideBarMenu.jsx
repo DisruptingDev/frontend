@@ -32,7 +32,8 @@ import {
   School as SchoolIcon,
   AccountBalance as ConciliacionIcon,
   BarChart as BarChartIcon,
-  CloudDownload as DescargaMasivaIcon
+  CloudDownload as DescargaMasivaIcon,
+  Security as SecurityIcon
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { WithPermission } from '@/components/WithPermission';
@@ -127,7 +128,14 @@ const baseMenuItems = [
     title: "Descarga Masiva SAT",
     icon: <DescargaMasivaIcon />,
     path: "/DescargaMasiva",
-    permission: "ver_emisores",
+    permission: "DESCARGA_MASIVA_ACCESO",
+    subItems: null
+  },
+  {
+    title: "Contabilidad Fiscal",
+    icon: <ConciliacionIcon />,
+    path: "/Contabilidad",
+    permission: "CONTABILIDAD_ACCESO",
     subItems: null
   }
 ];

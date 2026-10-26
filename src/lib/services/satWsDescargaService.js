@@ -204,7 +204,7 @@ export async function solicitarDescargaSat({
 
   const requestType = tipoDescarga.toLowerCase().includes('meta')
     ? new RequestType('metadata')
-    : new RequestType('cfdi');
+    : new RequestType('xml');
 
   let qp = QueryParameters.create()
     .withPeriod(period)

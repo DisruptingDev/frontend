@@ -10,6 +10,6 @@ export default function robots() {
         disallow: ['/admin/', '/private/'], // Bloquea rutas que no quieres que se indexen
       },
     ],
-    sitemap: 'https://your-domain.com/sitemap.xml', // Reemplaza con tu dominio
+    sitemap: 'https://www.wisefacturacion.com/sitemap.xml',
   };
 }

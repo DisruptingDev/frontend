@@ -21,7 +21,7 @@ const nextConfig = {
         config.cache = false;
         return config;
     },
-    serverExternalPackages: ['pdf-parse'],
+    serverExternalPackages: ['pdf-parse', '@sparticuz/chromium', 'puppeteer-core'],
     eslint: {
         ignoreDuringBuilds: true,
     },

@@ -158,7 +158,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
     }
     let base64Data = peticion.zip_base64 || peticion.archivo_zip;
 
-    // Si aún no tenemos el base64 directo, solicitarlo al backend que lo descargará del SAT
+    // Si aún no tenemos el base64 directo, solicitarlo al backend que lo descargará del SAT o BD
     if (!base64Data) {
       try {
         const idSol = peticion.id_solicitud || peticion.solicitud || peticion.id;
@@ -172,6 +172,14 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
       }
     }
 
+    // Si aún no se pudo, intentar verificar la solicitud que también auto-descarga el ZIP
+    if (!base64Data) {
+      try {
+        const resVer = await handleVerificar(peticion);
+        base64Data = resVer?.zip_base64 || resVer?.paquete_b64;
+      } catch (e) {}
+    }
+
     if (base64Data) {
       const link = document.createElement('a');
       link.href = `data:application/zip;base64,${base64Data}`;
@@ -179,7 +187,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
       link.click();
       return;
     }
-    setErrorMsg('El paquete aún no cuenta con un archivo ZIP disponible para descarga directa. Verifique el estatus ante el SAT.');
+    setErrorMsg('El paquete aún no cuenta con un archivo ZIP disponible para descarga directa. El SAT puede tardar unos minutos en prepararlo, verifique el estatus o sincronice.');
   };
 
   const handleAbrirImportacionContable = async (peticion) => {
@@ -220,6 +228,48 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
       } else {
         data = await descargaMasivaService.verificarMulticomprobantes({ id_solicitud: id, rfc: peticion.rfc }, token);
       }
+
+      // Si data tiene zip_base64 pero no comprobantes, o comprobantes vacío, extraer con JSZip en cliente si es necesario
+      if ((!data?.comprobantes || data.comprobantes.length === 0) && (data?.zip_base64 || peticion.zip_base64)) {
+        try {
+          const JSZip = (await import('jszip')).default;
+          const zip = new JSZip();
+          const zipContent = await zip.loadAsync(data?.zip_base64 || peticion.zip_base64, { base64: true });
+          const items = [];
+          for (const [filename, fileObj] of Object.entries(zipContent.files)) {
+            if (fileObj.dir) continue;
+            if (filename.toLowerCase().endsWith('.txt')) {
+              const text = await fileObj.async('text');
+              const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+              if (lines.length >= 2) {
+                const header = lines[0].split('~');
+                for (let i = 1; i < lines.length; i++) {
+                  const cols = lines[i].split('~');
+                  const row = {};
+                  header.forEach((h, idx) => { row[h] = cols[idx] || ''; });
+                  items.push({
+                    uuid: row.Uuid || '',
+                    rfc_emisor: row.RfcEmisor || '',
+                    nombre_emisor: row.NombreEmisor || '',
+                    rfc_receptor: row.RfcReceptor || '',
+                    nombre_receptor: row.NombreReceptor || '',
+                    total: parseFloat(row.Monto || 0),
+                    fecha_emision: row.FechaEmision || '',
+                    estatus: row.Estatus === '1' ? 'Vigente' : 'Cancelado',
+                    tipo_origen: 'metadata'
+                  });
+                }
+              }
+            }
+          }
+          if (items.length > 0) {
+            data = { ...(data || {}), comprobantes: items };
+          }
+        } catch (e) {
+          console.warn('Error extrayendo metadata cliente:', e);
+        }
+      }
+
       setDetalleContenido(data);
     } catch (err) {
       console.error(err);
@@ -462,39 +512,91 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
             </Box>
           ) : (
             <Box>
-              <Typography variant="body2" mb={1.5}>
-                <strong>RFC Solicitante:</strong> {selectedSolicitud?.rfc} |{' '}
-                <strong>Estatus:</strong> {selectedSolicitud?.estatus || 'Procesado'}
-              </Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={2}>
+                <Box>
+                  <Typography variant="body2">
+                    <strong>RFC Solicitante:</strong> {selectedSolicitud?.rfc} &nbsp;|&nbsp;{' '}
+                    <strong>Dirección:</strong>{' '}
+                    <Chip
+                      size="small"
+                      label={selectedSolicitud?.tipo_flujo || selectedSolicitud?.direccion || 'Emitidas'}
+                      color={(selectedSolicitud?.tipo_flujo || selectedSolicitud?.direccion || '').toLowerCase().includes('recib') ? 'secondary' : 'primary'}
+                      sx={{ ml: 0.5 }}
+                    />
+                    &nbsp;|&nbsp; <strong>Estatus SAT:</strong> {selectedSolicitud?.estatus || 'Terminada'}
+                  </Typography>
+                </Box>
+                {selectedSolicitud?.zip_base64 && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => handleDescargarZIP(selectedSolicitud)}
+                  >
+                    Descargar Paquete ZIP
+                  </Button>
+                )}
+              </Box>
 
               {detalleContenido?.comprobantes && Array.isArray(detalleContenido.comprobantes) && (
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
-                    <TableHead sx={{ bgcolor: 'grey.50' }}>
+                    <TableHead sx={{ bgcolor: 'grey.100' }}>
                       <TableRow>
-                        <TableCell>UUID</TableCell>
-                        <TableCell>RFC Emisor</TableCell>
-                        <TableCell>RFC Receptor</TableCell>
-                        <TableCell align="right">Total</TableCell>
-                        <TableCell align="center">Descarga</TableCell>
+                        <TableCell><strong>UUID</strong></TableCell>
+                        <TableCell><strong>Fecha Emisión</strong></TableCell>
+                        <TableCell><strong>Emisor (Proveedor)</strong></TableCell>
+                        <TableCell><strong>Receptor (Cliente)</strong></TableCell>
+                        <TableCell><strong>Estatus</strong></TableCell>
+                        <TableCell align="right"><strong>Total</strong></TableCell>
+                        <TableCell align="center"><strong>Acción</strong></TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {detalleContenido.comprobantes.map((cfdi, i) => (
-                        <TableRow key={i}>
+                        <TableRow key={i} hover>
                           <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
                             {cfdi.uuid || cfdi.UUID}
                           </TableCell>
-                          <TableCell>{cfdi.rfc_emisor || cfdi.RfcEmisor}</TableCell>
-                          <TableCell>{cfdi.rfc_receptor || cfdi.RfcReceptor}</TableCell>
-                          <TableCell align="right">
+                          <TableCell sx={{ fontSize: '0.75rem' }}>
+                            {cfdi.fecha_emision ? cfdi.fecha_emision.replace('T', ' ') : '-'}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: '0.75rem' }}>
+                            <strong>{cfdi.rfc_emisor || cfdi.RfcEmisor}</strong>
+                            {cfdi.nombre_emisor && (
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                {cfdi.nombre_emisor}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: '0.75rem' }}>
+                            <strong>{cfdi.rfc_receptor || cfdi.RfcReceptor}</strong>
+                            {cfdi.nombre_receptor && (
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                {cfdi.nombre_receptor}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              size="small"
+                              label={cfdi.estatus || 'Vigente'}
+                              color={(cfdi.estatus || '').toLowerCase().includes('cancel') ? 'error' : 'success'}
+                              variant="outlined"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                             ${parseFloat(cfdi.total || cfdi.Total || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell align="center">
                             <Button
                               size="small"
-                              startIcon={<DownloadIcon />}
+                              variant="outlined"
+                              startIcon={<DownloadIcon fontSize="small" />}
                               onClick={() => handleDescargarComprobanteIndividual(cfdi.uuid || cfdi.UUID, selectedSolicitud?.rfc)}
+                              sx={{ textTransform: 'none', py: 0.2, px: 1, fontSize: '0.75rem' }}
                             >
                               XML
                             </Button>
@@ -506,10 +608,10 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
                 </TableContainer>
               )}
 
-              {(!detalleContenido?.comprobantes || !Array.isArray(detalleContenido.comprobantes)) && (
-                <Box p={2} bgcolor="grey.50" borderRadius={1}>
-                  <Typography variant="caption" fontFamily="monospace" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(detalleContenido || selectedSolicitud, null, 2)}
+              {(!detalleContenido?.comprobantes || !Array.isArray(detalleContenido.comprobantes) || detalleContenido.comprobantes.length === 0) && (
+                <Box p={3} textAlign="center" bgcolor="grey.50" borderRadius={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    No se encontraron comprobantes listados en esta solicitud o el paquete aún se encuentra en procesamiento por parte del SAT.
                   </Typography>
                 </Box>
               )}

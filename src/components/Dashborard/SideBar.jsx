@@ -6,6 +6,7 @@ import EmpresasIcon from '@mui/icons-material/Business';
 import ReportesIcon from '@mui/icons-material/Assessment';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import PaymentsIcon from '@mui/icons-material/Payments';
+import SecurityIcon from '@mui/icons-material/Security';
 import Image from 'next/image';
 import Link from "next/link";
 
@@ -15,8 +16,8 @@ const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon /> },
     // { text: 'Usuarios', icon: <FacturacionIcon /> },
     { text: 'Usuarios', icon: <ClientesIcon /> },
-
     { text: 'Pagos', icon: <PaymentsIcon /> },
+    { text: 'Roles y Permisos', icon: <SecurityIcon /> },
     // { text: 'Reportes', icon: <ReportesIcon /> },
 ];
 
@@ -88,6 +89,15 @@ const SideBar = () => {
                                 <PaymentsIcon />
                             </ListItemIcon>
                             <ListItemText primary={'Pagos'} sx={{ color: '#ffffff' }} />
+                        </ListItem>
+                    </Link>
+
+                    <Link href="/Permisos">
+                        <ListItem button >
+                            <ListItemIcon sx={{ color: '#ffffff' }}>
+                                <SecurityIcon />
+                            </ListItemIcon>
+                            <ListItemText primary={'Roles y Permisos'} sx={{ color: '#ffffff' }} />
                         </ListItem>
                     </Link>
                         {/* <ListItem button >

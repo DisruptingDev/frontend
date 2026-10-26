@@ -29,7 +29,7 @@ const items = [
   },
   {
     icon: <ThumbUpAltRoundedIcon sx={{ fontSize: 150 }} />,
-    title: 'Una expericia unica',
+    title: 'Una experiencia única',
     description:
       ' Navega por una interfaz intuitiva y amigable, diseñada para que la facturación sea un proceso sencillo y placentero.',
   },
@@ -106,7 +106,7 @@ export default function Highlights() {
               >
                 <Box sx={{ opacity: '100%', display: 'flex', justifyContent: 'center' }}>{item.icon}</Box>
                 <div>
-                  <Typography gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                  <Typography component="h3" variant="h6" gutterBottom sx={{ fontWeight: 'bold', textAlign: 'center' }}>
                     {item.title}
                   </Typography>
                   <Typography variant="body2" sx={{ color: 'grey.400' }}>

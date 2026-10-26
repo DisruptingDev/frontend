@@ -12,6 +12,20 @@ a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 * Se incrementa **MINOR**, cuando se agregue una o más **nueva(s) funcionalidad(es) a la aplicación**.
 * Se incrementa **PATCH**, cuando se implemente un **fix**.
 
+## [1.0.0] - 2026-10-25
+### [FEAT]
+* FEAT - Nuevo Módulo Mayor de **Contabilidad Fiscal e IVA** (`/Contabilidad`):
+  * Conciliación automática entre Facturas Emitidas (Ingresos) vs Facturas Recibidas (Gastos / Proveedores).
+  * Determinación de Balance de IVA mensual/anual: cálculo de IVA Trasladado (16% y 8%), IVA Acreditable, Retenciones de IVA/ISR, e IVA neto a pagar o a favor del contribuyente.
+  * Generador de Cédula oficial **DIOT** (Declaración Informativa de Operaciones con Terceros) con exportación directa en formato `.txt` para carga en el sistema del SAT.
+  * Sincronización y auto-importación de comprobantes XML descargados mediante los paquetes SAT de Descarga Masiva.
+  * Soporte Multi-Tenant: Carga y selección de empresas vinculadas al token y permisos del usuario activo (`/api/catalogos/Catalogos/Emisor`), permitiendo a distintos usuarios gestionar únicamente sus empresas autorizadas.
+  * Filtro estricto de comprobantes fiscales: Únicamente se computan facturas efectivamente **timbradas ante el SAT** (con UUID válido y excluyendo borradores, canceladas y pendientes de timbrado).
+
+### [FIX]
+* FIX - Corrección de `ReferenceError: isAuthenticated is not defined` en `Contabilidad/page.jsx` agregando la importación de autenticación desde `@/utils/authRedirect`.
+* FIX - Corrección en el selector de empresa contable para no limitarse a la tabla local de certificados FIEL, evitando mostrar empresas de otros entornos o no asignadas al usuario.
+
 ## [0.01.10] - 2026-10-12
 ### [FEAT]
 * FEAT - Envío de facturas por correo electrónico con soporte dinámico de plantillas PDF según la empresa emisora configurada (`plantilla_id`).

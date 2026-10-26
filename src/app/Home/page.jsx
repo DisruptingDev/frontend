@@ -66,22 +66,54 @@ export default function Home() {
 
     useEffect(() => {
         // Solo se ejecuta en el cliente
-        const storedNewUser = localStorage.getItem('newUser');
-        setNewUser(storedNewUser);
         const bodValue = localStorage.getItem('BOD');
         setIsBOD(bodValue === 'true');
     }, []);
 
+    // Verificación persistente del estado del Wizard contra el servidor
     useEffect(() => {
-        if (newUser === "true") {
-            setOpenWizard(true);
-            localStorage.setItem('newUser', "false");
-            setDrawerOpen(true);
+        if (!token) return;
+
+        async function checkWizardStatus() {
+            try {
+                // Si en esta sesión local ya se marcó que se cerró/vio el wizard, no lo mostramos
+                const wizardVistoLocal = sessionStorage.getItem('wizard_completado') || localStorage.getItem('wizard_completado');
+                if (wizardVistoLocal === 'true') {
+                    setOpenWizard(false);
+                    return;
+                }
+
+                const res = await fetch('/api/usuarios/wizard-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.mostrarWizard === true) {
+                        setOpenWizard(true);
+                        setDrawerOpen(true);
+                    } else {
+                        // El usuario ya tiene empresa o ya vio el wizard en otra máquina
+                        setOpenWizard(false);
+                        localStorage.setItem('wizard_completado', 'true');
+                        localStorage.setItem('newUser', 'false');
+                    }
+                }
+            } catch (err) {
+                console.warn('Error al verificar wizard-status:', err);
+            }
         }
-    }, [newUser]);
+
+        checkWizardStatus();
+    }, [token]);
 
     const handleCloseWizard = () => {
         setOpenWizard(false);
+        localStorage.setItem('wizard_completado', 'true');
+        localStorage.setItem('newUser', 'false');
+        sessionStorage.setItem('wizard_completado', 'true');
         // Iniciar el tour después de cerrar el wizard
         setTimeout(() => {
             startTour();

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import forge from 'node-forge';
+import JSZip from 'jszip';
 import prisma from '@/lib/prisma';
 import {
   cargarCredencialesFiel,
@@ -8,6 +9,94 @@ import {
   verificarSolicitudSat,
   descargarPaqueteSat
 } from '@/lib/services/satWsDescargaService';
+
+async function extraerComprobantesDeZip(zipBase64) {
+  if (!zipBase64) return [];
+  try {
+    const zip = new JSZip();
+    const content = await zip.loadAsync(zipBase64, { base64: true });
+    const comprobantes = [];
+
+    for (const [filename, fileObj] of Object.entries(content.files)) {
+      if (fileObj.dir) continue;
+      const lower = filename.toLowerCase();
+
+      // Caso 1: Archivo TXT de Metadata del SAT
+      if (lower.endsWith('.txt')) {
+        const text = await fileObj.async('text');
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length >= 2) {
+          const header = lines[0].split('~');
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('~');
+            const row = {};
+            header.forEach((h, idx) => { row[h] = cols[idx] || ''; });
+            comprobantes.push({
+              uuid: row.Uuid || '',
+              UUID: row.Uuid || '',
+              rfc_emisor: row.RfcEmisor || '',
+              RfcEmisor: row.RfcEmisor || '',
+              nombre_emisor: row.NombreEmisor || '',
+              NombreEmisor: row.NombreEmisor || '',
+              rfc_receptor: row.RfcReceptor || '',
+              RfcReceptor: row.RfcReceptor || '',
+              nombre_receptor: row.NombreReceptor || '',
+              NombreReceptor: row.NombreReceptor || '',
+              total: parseFloat(row.Monto || 0),
+              Total: parseFloat(row.Monto || 0),
+              fecha_emision: row.FechaEmision || '',
+              fecha_certificacion: row.FechaCertificacionSat || '',
+              pac: row.PacCertifico || '',
+              efecto: row.EfectoComprobante || 'I',
+              estatus: row.Estatus === '1' ? 'Vigente' : 'Cancelado',
+              fecha_cancelacion: row.FechaCancelacion || '',
+              tipo_origen: 'metadata'
+            });
+          }
+        }
+      }
+
+      // Caso 2: Archivo XML directo
+      if (lower.endsWith('.xml')) {
+        const xmlText = await fileObj.async('text');
+        // Parsear atributos básicos del comprobante mediante regex ligero
+        const uuidMatch = xmlText.match(/UUID=["']([^"']+)["']/i);
+        const totalMatch = xmlText.match(/Total=["']([^"']+)["']/i);
+        const rfcEmisorMatch = xmlText.match(/<cfdi:Emisor[^>]*Rfc=["']([^"']+)["']/i) || xmlText.match(/Rfc=["']([^"']+)["']/i);
+        const nomEmisorMatch = xmlText.match(/<cfdi:Emisor[^>]*Nombre=["']([^"']+)["']/i);
+        const rfcReceptorMatch = xmlText.match(/<cfdi:Receptor[^>]*Rfc=["']([^"']+)["']/i);
+        const nomReceptorMatch = xmlText.match(/<cfdi:Receptor[^>]*Nombre=["']([^"']+)["']/i);
+        const fechaMatch = xmlText.match(/Fecha=["']([^"']+)["']/i);
+        const efectoMatch = xmlText.match(/TipoDeComprobante=["']([^"']+)["']/i);
+
+        comprobantes.push({
+          uuid: uuidMatch ? uuidMatch[1] : filename.replace(/\.xml$/i, ''),
+          UUID: uuidMatch ? uuidMatch[1] : filename.replace(/\.xml$/i, ''),
+          rfc_emisor: rfcEmisorMatch ? rfcEmisorMatch[1] : '',
+          RfcEmisor: rfcEmisorMatch ? rfcEmisorMatch[1] : '',
+          nombre_emisor: nomEmisorMatch ? nomEmisorMatch[1] : '',
+          NombreEmisor: nomEmisorMatch ? nomEmisorMatch[1] : '',
+          rfc_receptor: rfcReceptorMatch ? rfcReceptorMatch[1] : '',
+          RfcReceptor: rfcReceptorMatch ? rfcReceptorMatch[1] : '',
+          nombre_receptor: nomReceptorMatch ? nomReceptorMatch[1] : '',
+          NombreReceptor: nomReceptorMatch ? nomReceptorMatch[1] : '',
+          total: totalMatch ? parseFloat(totalMatch[1]) : 0,
+          Total: totalMatch ? parseFloat(totalMatch[1]) : 0,
+          fecha_emision: fechaMatch ? fechaMatch[1] : '',
+          efecto: efectoMatch ? efectoMatch[1] : 'I',
+          estatus: 'Vigente',
+          xml: xmlText,
+          tipo_origen: 'xml'
+        });
+      }
+    }
+
+    return comprobantes;
+  } catch (err) {
+    console.warn('[extraerComprobantesDeZip Error]:', err.message);
+    return [];
+  }
+}
 
 export async function GET(request, context) {
   let endpoint = '';
@@ -454,6 +543,22 @@ export async function POST(request, context) {
               password: empFiel.password_fiel
             });
 
+            let paqueteZipB64 = pend.paquete_zip_base64 || null;
+            if (resVerifica.estado_solicitud === 3 && resVerifica.ids_paquetes?.length > 0 && !paqueteZipB64) {
+              try {
+                const idPrimerPaquete = resVerifica.ids_paquetes[0];
+                const resDescarga = await descargarPaqueteSat({
+                  idPaquete: idPrimerPaquete,
+                  cerInput: empFiel.cer_base64,
+                  keyInput: empFiel.key_base64,
+                  password: empFiel.password_fiel
+                });
+                paqueteZipB64 = resDescarga.paquete_zip_base64;
+              } catch (downErr) {
+                console.warn(`[Auto-descarga paquete en sync]: ${downErr.message}`);
+              }
+            }
+
             await prisma.sat_solicitudes_descarga.update({
               where: { id_solicitud: pend.id_solicitud },
               data: {
@@ -463,6 +568,7 @@ export async function POST(request, context) {
                 numero_cfdis: resVerifica.numero_cfdis,
                 mensaje: resVerifica.mensaje,
                 ids_paquetes: resVerifica.ids_paquetes || [],
+                paquete_zip_base64: paqueteZipB64 || undefined,
                 updated_at: new Date()
               }
             });
@@ -784,6 +890,9 @@ export async function POST(request, context) {
         console.error('[Error actualizando verificacion en BD]:', dbErr);
       }
 
+      // Extraer comprobantes para previsualización inmediata
+      const comprobantesExtraidos = await extraerComprobantesDeZip(paqueteZipB64);
+
       return NextResponse.json({
         codigo: 5000,
         id_solicitud: idSol,
@@ -791,9 +900,10 @@ export async function POST(request, context) {
         estado_solicitud: resVerifica.estado_solicitud,
         estado: resVerifica.estado_texto,
         mensaje: resVerifica.mensaje || `Estado SAT: ${resVerifica.estado_texto}`,
-        numero_cfdis: resVerifica.numero_cfdis,
+        numero_cfdis: resVerifica.numero_cfdis || comprobantesExtraidos.length,
         ids_paquetes: resVerifica.ids_paquetes,
-        zip_base64: paqueteZipB64
+        zip_base64: paqueteZipB64,
+        comprobantes: comprobantesExtraidos
       }, { status: 200 });
     }
 
@@ -900,11 +1010,15 @@ export async function POST(request, context) {
         } catch {}
       }
 
+      // Extraer comprobantes para previsualización inmediata si el llamante los requiere
+      const comprobantesExtraidos = await extraerComprobantesDeZip(resDescarga.paquete_zip_base64);
+
       return NextResponse.json({
         codigo: 5000,
         id_paquete: targetPaquete,
         paquete_b64: resDescarga.paquete_zip_base64,
-        zip_base64: resDescarga.paquete_zip_base64
+        zip_base64: resDescarga.paquete_zip_base64,
+        comprobantes: comprobantesExtraidos
       }, { status: 200 });
     }
 

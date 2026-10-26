@@ -18,7 +18,7 @@ const items = [
     title: 'Control total de empresas y usuarios',
     description:
       'Gestiona múltiples empresas y usuarios desde una sola plataforma. Define roles y permisos para tu equipo, asegurando un flujo de trabajo organizado y seguro.',
-    imageLight: `url("/images/features/1.png")`,
+    imageLight: `url("/images/features/1.webp")`,
 
   },
   {
@@ -34,7 +34,7 @@ const items = [
     title: 'Úsalo en cualquier dispositivo',
     description:
       'Accede a tu cuenta y genera facturas desde cualquier lugar y en cualquier momento. Nuestra plataforma es compatible con computadoras, tablets y smartphones, permitiéndote gestionar tu facturación sobre la marcha ',
-    imageLight: `url("/images/features/2.png")`,
+    imageLight: `url("/images/features/2.webp")`,
   },
 
 ];
@@ -142,9 +142,9 @@ export default function Features() {
     <Container id="features" className='mt-30 md:mt-20' sx={{ py: { xs: 8, sm: 16 } }}>
       <Box sx={{ width: 100 % { sm: '100%', md: '60%' } }}>
         <Typography
-          component="h1"
+          component="h2"
           variant="h4"
-          fontSize="clamp(4rem, 5vw, 4rem)"
+          fontSize="clamp(2.5rem, 4vw, 3.5rem)"
           fontWeight="bold"
           sx={{ color: '#063F53', marginBottom: '1rem' }}
         >

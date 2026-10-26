@@ -2,7 +2,7 @@ import { promises as fsPromises } from 'fs';
 import fs from 'fs'; // Importa fs normal para createWriteStream
 import path from 'path';
 import archiver from 'archiver';
-import puppeteer from 'puppeteer';
+import { generarPdfDesdeHtml } from '@/lib/services/pdfGeneratorService';
 export async function POST(req) {
   try {
     const { htmlContent, xmlContent, fileName } = await req.json();
@@ -16,11 +16,7 @@ export async function POST(req) {
 
     // Generar archivo PDF temporal
     const pdfPath = path.join(tempDir, `${fileName}.pdf`);
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({ format: 'Letter', printBackground: true });
-    await browser.close();
+    const pdfBuffer = await generarPdfDesdeHtml(htmlContent, { format: 'Letter' });
     await fsPromises.writeFile(pdfPath, pdfBuffer);
 
     // Crear el archivo ZIP

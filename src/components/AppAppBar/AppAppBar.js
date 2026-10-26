@@ -77,8 +77,21 @@ export default function AppAppBar() {
             />
           </Link>
           <Box
-            sx={{ flexGrow: 1, display: "flex", alignItems: "center", px: 0 }}
-          />
+            sx={{ flexGrow: 1, display: { xs: "none", md: "flex" }, alignItems: "center", gap: 3, ml: 2 }}
+          >
+            <Link href="#funcionalidades" className="text-gray-200 hover:text-white font-medium text-sm transition-colors">
+              Funcionalidades
+            </Link>
+            <Link href="#paquetes" className="text-gray-200 hover:text-white font-medium text-sm transition-colors">
+              Precios
+            </Link>
+            <Link href="#faq" className="text-gray-200 hover:text-white font-medium text-sm transition-colors">
+              Preguntas
+            </Link>
+            <Link href="#contact" className="text-gray-200 hover:text-white font-medium text-sm transition-colors">
+              Soporte
+            </Link>
+          </Box>
           <Box
             sx={{
               display: { xs: "none", md: "flex" },

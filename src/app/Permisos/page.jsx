@@ -20,15 +20,19 @@ import {
   Snackbar,
   Alert,
   IconButton,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab
 } from "@mui/material";
 import { isAuthenticated } from "@/utils/authRedirect";
-import SideBarMenu from "@/components/Dashborard/SideBarMenu";
-import { AssignmentInd, Close, Save, CheckBox, CheckBoxOutlineBlank } from "@mui/icons-material";
+import SideBar from "@/components/Dashborard/SideBar";
+import GestionModulosGrupos from "@/components/VistaRoles/GestionModulosGrupos";
+import { AssignmentInd, Close, Save, CheckBox, CheckBoxOutlineBlank, Apps, AdminPanelSettings } from "@mui/icons-material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdministraRoles() {
+  const [tabActiva, setTabActiva] = useState(0); // 0 = Modulos por Cuenta (Super Admin), 1 = Roles y Permisos Granulares
   const [rolIdEditar, setRolIdEditar] = useState('');
   const [rol, setRol] = useState(null);
   const [editar, setEditar] = useState(false);
@@ -99,6 +103,36 @@ export default function AdministraRoles() {
         }
       } catch (e) {
         console.warn('Error fetching local cobranza permissions:', e.message);
+      }
+
+      // Obtener y unificar permisos del módulo de descarga masiva SAT
+      try {
+        const resDescarga = await fetch('/api/descarga-masiva/permisos').then(r => r.json()).catch(() => []);
+        if (Array.isArray(resDescarga) && resDescarga.length > 0) {
+          const clavesExistentes = new Set(data.map(p => (p.Clave || p.clave)));
+          resDescarga.forEach(p => {
+            if (!clavesExistentes.has(p.Clave || p.clave)) {
+              data.push(p);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error fetching local descarga masiva permissions:', e.message);
+      }
+
+      // Obtener y unificar permisos del módulo de contabilidad fiscal
+      try {
+        const resContab = await fetch('/api/contabilidad/permisos').then(r => r.json()).catch(() => []);
+        if (Array.isArray(resContab) && resContab.length > 0) {
+          const clavesExistentes = new Set(data.map(p => (p.Clave || p.clave)));
+          resContab.forEach(p => {
+            if (!clavesExistentes.has(p.Clave || p.clave)) {
+              data.push(p);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Error fetching local contabilidad permissions:', e.message);
       }
 
       setPermisos(data);
@@ -421,29 +455,37 @@ export default function AdministraRoles() {
   };
 
   return (
-    <div>
+    <Box sx={{ backgroundColor: '#f3f4f6', minHeight: '98vh' }}>
       <Header />
-      <Grid container>
-        <Grid>
-          <SideBarMenu />
-        </Grid>
-        <Grid>
-          <Box
-            ml={10}
-            mb={1}
-            width='93vw'
-            sx={{
-              backgroundColor: '#fff',
-              borderRadius: 2,
-              boxShadow: 3,
-              p: 2,
-              minHeight: 'auto',
-            }}
-          >
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6">
-                Administración de Roles y Permisos
+      <SideBar />
+      <Box
+        sx={{
+          width: 'calc(100% - 250px)',
+          minHeight: 'calc(99vh - 6em)',
+          marginLeft: 'auto',
+          padding: '1.5rem',
+          backgroundColor: '#f3f4f6'
+        }}
+      >
+        <Box
+          sx={{
+            backgroundColor: '#fff',
+            borderRadius: 2,
+            boxShadow: 3,
+            p: 3,
+            minHeight: 'auto',
+          }}
+        >
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Box>
+              <Typography variant="h5" fontWeight="bold" color="#1d394d">
+                Control de Módulos, Roles y Permisos
               </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Gestiona los módulos activos por cuenta/cliente y los permisos granulares para cada rol
+              </Typography>
+            </Box>
+            {tabActiva === 1 && (
               <Button
                 variant="contained"
                 startIcon={<AssignmentInd />}
@@ -455,8 +497,38 @@ export default function AdministraRoles() {
               >
                 Crear Nuevo Rol
               </Button>
-            </Box>
+            )}
+          </Box>
 
+          <Tabs
+            value={tabActiva}
+            onChange={(e, val) => setTabActiva(val)}
+            sx={{
+              borderBottom: 1,
+              borderColor: 'divider',
+              mb: 3,
+              '& .MuiTab-root': { fontWeight: 'bold', textTransform: 'none', fontSize: '0.95rem' }
+            }}
+          >
+            <Tab
+              icon={<Apps fontSize="small" />}
+              iconPosition="start"
+              label="Módulos por Cuenta (Super Admin)"
+            />
+            <Tab
+              icon={<AdminPanelSettings fontSize="small" />}
+              iconPosition="start"
+              label="Roles y Permisos Granulares"
+            />
+          </Tabs>
+
+          {/* TAB 0: Módulos Completos por Cuenta */}
+          {tabActiva === 0 && (
+            <GestionModulosGrupos showToast={showToast} />
+          )}
+
+          {/* TAB 1: Roles y Permisos Granulares */}
+          {tabActiva === 1 && (
             <VistaRoles
               roles={roles}
               setRolIdEditar={setRolIdEditar}
@@ -464,6 +536,7 @@ export default function AdministraRoles() {
               handleEliminarRol={handleEliminarRol}
               loading={loading.page || loading.roles}
             />
+          )}
 
             <Dialog
               open={openModal}
@@ -664,8 +737,7 @@ export default function AdministraRoles() {
               </DialogContent>
             </Dialog>
           </Box>
-        </Grid>
-      </Grid>
+        </Box>
 
       <Snackbar
         open={toast.open}
@@ -681,6 +753,6 @@ export default function AdministraRoles() {
           {toast.message}
         </Alert>
       </Snackbar>
-    </div>
+    </Box>
   );
 }

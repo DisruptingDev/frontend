@@ -10,10 +10,10 @@ const WhatsAppButton = () => {
             href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110 z-50 flex items-center justify-center"
-            aria-label="Chat on WhatsApp"
+            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 bg-green-500 hover:bg-green-600 text-white p-3 sm:p-4 rounded-full shadow-2xl transition-transform hover:scale-110 z-50 flex items-center justify-center min-w-[48px] min-h-[48px]"
+            aria-label="Contactar por WhatsApp"
         >
-            <WhatsApp sx={{ fontSize: 40 }} />
+            <WhatsApp sx={{ fontSize: { xs: 28, sm: 36 } }} />
         </a>
     );
 };

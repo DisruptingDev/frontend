@@ -1022,3 +1022,41 @@ model sat_solicitudes_descarga {
   updated_at         DateTime? @default(now()) @db.Timestamptz(6)
 }
 
+model contabilidad_facturas_recibidas {
+  id               BigInt    @id @default(autoincrement())
+  uuid             String    @unique @db.VarChar(36)
+  rfc_receptor     String    @db.VarChar(13)
+  nombre_receptor  String?   @db.VarChar(255)
+  rfc_emisor       String    @db.VarChar(13)
+  nombre_emisor    String?   @db.VarChar(255)
+  fecha            DateTime
+  fecha_timbrado   DateTime?
+  serie            String?   @db.VarChar(50)
+  folio            String?   @db.VarChar(50)
+  tipo_comprobante String?   @default("I") @db.VarChar(10)
+  metodo_pago      String?   @db.VarChar(10)
+  forma_pago       String?   @db.VarChar(10)
+  moneda           String?   @default("MXN") @db.VarChar(10)
+  tipo_cambio      Decimal?  @default(1.0) @db.Decimal(14, 4)
+  subtotal         Decimal   @default(0) @db.Decimal(16, 2)
+  descuento        Decimal?  @default(0) @db.Decimal(16, 2)
+  total            Decimal   @db.Decimal(16, 2)
+  base_16          Decimal?  @default(0) @db.Decimal(16, 2)
+  iva_16           Decimal?  @default(0) @db.Decimal(16, 2)
+  base_8           Decimal?  @default(0) @db.Decimal(16, 2)
+  iva_8            Decimal?  @default(0) @db.Decimal(16, 2)
+  base_0           Decimal?  @default(0) @db.Decimal(16, 2)
+  base_exento      Decimal?  @default(0) @db.Decimal(16, 2)
+  iva_retenido     Decimal?  @default(0) @db.Decimal(16, 2)
+  isr_retenido     Decimal?  @default(0) @db.Decimal(16, 2)
+  ieps             Decimal?  @default(0) @db.Decimal(16, 2)
+  es_deducible     Boolean?  @default(true)
+  estatus          String?   @default("Vigente") @db.VarChar(20)
+  xml_content      String?   @db.Text
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now())
+
+  @@index([rfc_receptor, fecha], map: "idx_contab_rec_rfc_fecha")
+  @@index([rfc_emisor], map: "idx_contab_rec_emisor")
+}
+

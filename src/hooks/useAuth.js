@@ -231,9 +231,10 @@ export function useAuth() {
         localStorage.removeItem("BOD");
       }
 
-      // Establecer 'newUser' solo si no existe en sessionStorage
+      // Si el flag no existe en storage, se deja en 'false' por defecto para no mostrar el wizard en re-inicios de sesión o incógnito.
+      // El componente Home consulta directamente al servidor (/api/usuarios/wizard-status) para saber si de verdad es un usuario nuevo sin empresa.
       if (localStorage.getItem("newUser") === null) {
-        localStorage.setItem("newUser", "true");
+        localStorage.setItem("newUser", "false");
       }
 
       // Obtener permisos
@@ -256,10 +257,6 @@ export function useAuth() {
         isBOD: result.BOD,
         permissionsLoaded: true,
       });
-
-      if (localStorage.getItem("newUser") === null) {
-        localStorage.setItem("newUser", "true");
-      }
 
       // Redirigir según el tipo de usuario
       router.push(result.sudo ? "/Dashboard" : "/Home");

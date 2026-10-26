@@ -1,27 +1,12 @@
-import puppeteer from 'puppeteer';
+import { generarPdfDesdeHtml } from '@/lib/services/pdfGeneratorService';
 
 export async function POST(req) {
   try {
     // Obtener el HTML y el nombre del archivo desde el body de la solicitud
     const { htmlContent, fileName } = await req.json();
 
-    // Iniciar Puppeteer
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
-
-    // Establecer el contenido HTML de la página
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-    // Generar el PDF
-    const pdfBuffer = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-    });
-
-    // Cerrar el navegador
-    await browser.close();
+    // Generar el PDF mediante el servicio optimizado
+    const pdfBuffer = await generarPdfDesdeHtml(htmlContent, { format: 'Letter' });
 
     // Nombre del archivo PDF, o por defecto "generated.pdf" si no se proporciona fileName
     const pdfFileName = fileName ? `${fileName}.pdf` : 'factura.pdf';

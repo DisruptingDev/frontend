@@ -13,6 +13,7 @@ import {
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import BusinessIcon from '@mui/icons-material/Business';
+import { useAuth } from '@/hooks/useAuth';
 import SolicitarDescargaTab from './SolicitarDescargaTab';
 import BandejaPeticionesTab from './BandejaPeticionesTab';
 import GestionEmpresasTab from './GestionEmpresasTab';
@@ -20,10 +21,15 @@ import GestionEmpresasTab from './GestionEmpresasTab';
 const mainApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.sandbox.wisefacturacion.com';
 
 const DescargaMasivaView = ({ token }) => {
+  const { hasPermission, isSuperUser } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
   const [empresas, setEmpresas] = useState([]);
   const [loadingEmpresas, setLoadingEmpresas] = useState(true);
   const [errorEmpresas, setErrorEmpresas] = useState(null);
+
+  // Permisos granulares (con bypass para SuperUser)
+  const puedeSolicitar = isSuperUser || hasPermission('DESCARGA_MASIVA_SOLICITAR') || hasPermission('DESCARGA_MASIVA_ACCESO');
+  const puedeAdministrarFiel = isSuperUser || hasPermission('DESCARGA_MASIVA_FIEL');
 
   useEffect(() => {
     fetchEmpresasUsuario();
@@ -185,12 +191,14 @@ const DescargaMasivaView = ({ token }) => {
             label="Bandeja de Peticiones y Descargas"
             sx={{ fontWeight: 'bold', textTransform: 'none', minHeight: 48 }}
           />
-          <Tab
-            icon={<BusinessIcon />}
-            iconPosition="start"
-            label="Gestión de Empresas SAT"
-            sx={{ fontWeight: 'bold', textTransform: 'none', minHeight: 48 }}
-          />
+          {puedeAdministrarFiel && (
+            <Tab
+              icon={<BusinessIcon />}
+              iconPosition="start"
+              label="Gestión de Empresas SAT"
+              sx={{ fontWeight: 'bold', textTransform: 'none', minHeight: 48 }}
+            />
+          )}
         </Tabs>
       </Paper>
 
@@ -210,7 +218,7 @@ const DescargaMasivaView = ({ token }) => {
         />
       )}
 
-      {activeTab === 2 && (
+      {activeTab === 2 && puedeAdministrarFiel && (
         <GestionEmpresasTab
           empresasUsuario={empresas}
           token={token}
