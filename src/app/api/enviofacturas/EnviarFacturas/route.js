@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { enviarFacturasEnLote } from '@/lib/services/envioFacturaService';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Hasta 60 segundos para procesar descargas de plantillas, PDF y envío de correos en Vercel
 
 export async function POST(request) {
     try {

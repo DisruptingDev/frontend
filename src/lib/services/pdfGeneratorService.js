@@ -76,11 +76,23 @@ async function getBrowser() {
     browserLaunchingPromise = (async () => {
         try {
             const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+            
+            if (isProduction) {
+                chromium.setHeadlessMode = true;
+                chromium.setGraphicsMode = false;
+            }
+
             const executablePath = await resolveExecutablePath();
 
             browserInstance = await puppeteer.launch({
                 args: isProduction
-                    ? chromium.args
+                    ? [
+                        ...chromium.args,
+                        '--disable-gpu',
+                        '--disable-dev-shm-usage',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox'
+                    ]
                     : [
                         '--no-sandbox',
                         '--disable-setuid-sandbox',

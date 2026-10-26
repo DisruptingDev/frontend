@@ -22,6 +22,9 @@ const nextConfig = {
         return config;
     },
     serverExternalPackages: ['pdf-parse', '@sparticuz/chromium', 'puppeteer-core'],
+    outputFileTracingIncludes: {
+        '/api/**/*': ['./node_modules/@sparticuz/chromium/bin/**'],
+    },
     eslint: {
         ignoreDuringBuilds: true,
     },
