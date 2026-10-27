@@ -1,6 +1,12 @@
 import QRCode from 'qrcode';
 import prisma from '@/lib/prisma';
-import { getDescripcionRegimen, getDescripcionUsoCFDI } from '@/utils/catalogoSAT';
+import { 
+    getDescripcionRegimen, 
+    getDescripcionUsoCFDI, 
+    getDescripcionFormaPago, 
+    getDescripcionMetodoPago 
+} from '@/utils/catalogoSAT';
+
 
 // Paletas de diseño según el ID de plantilla registrado en la BD
 const PALETAS_PLANTILLAS = {
@@ -151,24 +157,35 @@ export async function generarHtmlFactura(comprobante) {
     const paleta = PALETAS_PLANTILLAS[plantillaId] || PALETAS_PLANTILLAS[1];
 
     const xml = comprobante.xml_timbrado || '';
+
+    // Función auxiliar para extraer atributos de una etiqueta XML con soporte multilínea y espacios
+    const getTagAttr = (tagName, attrName) => {
+        if (!xml) return '';
+        const tagMatch = xml.match(new RegExp(`<${tagName}\\b[^>]*>`, 'i'));
+        if (!tagMatch) return '';
+        const attrMatch = tagMatch[0].match(new RegExp(`\\b${attrName}=["']([^"']*)["']`, 'i'));
+        return attrMatch ? attrMatch[1] : '';
+    };
+
     const getXmlAttr = (pattern) => {
         const m = xml.match(pattern);
         return m ? m[1] : '';
     };
 
-    const xmlUuid = getXmlAttr(/UUID=["']([^"']+)["']/i);
+    // Extraer datos fiscales de Comprobante (XML es fuente de verdad si está timbrado)
+    const xmlUuid = getTagAttr('tfd:TimbreFiscalDigital', 'UUID') || getXmlAttr(/UUID=["']([^"']+)["']/i);
     const uuidFiscal = comprobante.uuid || xmlUuid || 'PENDIENTE DE TIMBRADO FISCAL';
     const esTimbrado = Boolean(uuidFiscal && uuidFiscal.trim().length > 10 && !uuidFiscal.includes('PENDIENTE'));
 
-    const xmlFechaEmision = getXmlAttr(/Fecha=["']([^"']+)["']/i);
-    const xmlFechaTimbrado = getXmlAttr(/FechaTimbrado=["']([^"']+)["']/i);
+    const xmlFechaEmision = getTagAttr('cfdi:Comprobante', 'Fecha') || getXmlAttr(/Fecha=["']([^"']+)["']/i);
+    const xmlFechaTimbrado = getTagAttr('tfd:TimbreFiscalDigital', 'FechaTimbrado') || getXmlAttr(/FechaTimbrado=["']([^"']+)["']/i);
 
     const fechaEmision = comprobante.fecha ? new Date(comprobante.fecha).toLocaleString('es-MX') : (xmlFechaEmision ? new Date(xmlFechaEmision).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'));
     const fechaCertificacion = comprobante.fecha_timbrado ? new Date(comprobante.fecha_timbrado).toLocaleString('es-MX') : (xmlFechaTimbrado ? new Date(xmlFechaTimbrado).toLocaleString('es-MX') : (esTimbrado ? fechaEmision : 'SIN TIMBRAR'));
 
-    const xmlTotal = parseFloat(getXmlAttr(/Total=["']([^"']+)["']/i) || '0');
-    const xmlSubTotal = parseFloat(getXmlAttr(/SubTotal=["']([^"']+)["']/i) || '0');
-    const xmlDescuento = parseFloat(getXmlAttr(/Descuento=["']([^"']+)["']/i) || '0');
+    const xmlTotal = parseFloat(getTagAttr('cfdi:Comprobante', 'Total') || '0');
+    const xmlSubTotal = parseFloat(getTagAttr('cfdi:Comprobante', 'SubTotal') || '0');
+    const xmlDescuento = parseFloat(getTagAttr('cfdi:Comprobante', 'Descuento') || '0');
 
     const totalNum = parseFloat(comprobante.total_string || comprobante.total || xmlTotal || 0) || 0;
     const subtotalNum = parseFloat(comprobante.sub_total_string || comprobante.sub_total || xmlSubTotal || totalNum) || totalNum;
@@ -176,9 +193,30 @@ export async function generarHtmlFactura(comprobante) {
     const importeLetra = numeroALetras(totalNum);
 
     // =========================================================================
+    // DATOS DE EMISOR Y RECEPTOR (Extraer de XML timbrado si están vacíos en BD)
+    // =========================================================================
+    const nombreEmisorFinal = emisor.nombre || getTagAttr('cfdi:Emisor', 'Nombre') || 'EMISOR';
+    const rfcEmisorFinal = emisor.rfc || getTagAttr('cfdi:Emisor', 'Rfc') || 'N/A';
+    const regimenFiscalEmisorFinal = emisor.regimen_fiscal || getTagAttr('cfdi:Emisor', 'RegimenFiscal') || '601';
+    const lugarExpedicionFinal = comprobante.lugar_expedicion || emisor.lugar_expedicion || getTagAttr('cfdi:Comprobante', 'LugarExpedicion') || '01000';
+
+    const nombreReceptorFinal = receptor.nombre || getTagAttr('cfdi:Receptor', 'Nombre') || 'PÚBLICO EN GENERAL';
+    const rfcReceptorFinal = receptor.rfc || getTagAttr('cfdi:Receptor', 'Rfc') || 'XAXX010101000';
+    const regimenFiscalReceptorFinal = receptor.regimen_fiscal_receptor || getTagAttr('cfdi:Receptor', 'RegimenFiscalReceptor') || '616';
+    const cpReceptorFinal = receptor.domicilio_fiscal_receptor || getTagAttr('cfdi:Receptor', 'DomicilioFiscalReceptor') || '01000';
+    const usoCfdiFinal = receptor.uso_cfdi || comprobante.uso_cfdi || getTagAttr('cfdi:Receptor', 'UsoCFDI') || 'S01';
+
+    const formaPagoFinal = comprobante.forma_pago || getTagAttr('cfdi:Comprobante', 'FormaPago') || '03';
+    const metodoPagoFinal = comprobante.metodo_pago || getTagAttr('cfdi:Comprobante', 'MetodoPago') || 'PUE';
+    const monedaFinal = comprobante.moneda || getTagAttr('cfdi:Comprobante', 'Moneda') || 'MXN';
+    const tipoCambioFinal = comprobante.tipo_cambio || getTagAttr('cfdi:Comprobante', 'TipoCambio') || '1';
+    const noCertificadoEmisorFinal = comprobante.no_certificado || emisor.no_certificado || getTagAttr('cfdi:Comprobante', 'NoCertificado') || '00001000000504465028';
+    const exportacionFinal = comprobante.exportacion || getTagAttr('cfdi:Comprobante', 'Exportacion') || '01';
+
+    // =========================================================================
     // TIPO DE COMPROBANTE (I: Ingreso, E: Egreso/Nota Crédito, P: Pago)
     // =========================================================================
-    const rawTipo = (comprobante.tipo_de_comprobante || getXmlAttr(/TipoDeComprobante=["']([^"']+)["']/i) || 'I').toUpperCase();
+    const rawTipo = (comprobante.tipo_de_comprobante || getTagAttr('cfdi:Comprobante', 'TipoDeComprobante') || 'I').toUpperCase();
     const esComprobantePago = rawTipo === 'P';
     const esComprobanteEgreso = rawTipo === 'E';
 
@@ -217,7 +255,7 @@ export async function generarHtmlFactura(comprobante) {
         const pagoMatches = xml.match(/<pago[12]0:Pago[^>]*>([\s\S]*?)<\/pago[12]0:Pago>/gi) || [];
         for (const pMatch of pagoMatches) {
             const getPAttr = (attr) => {
-                const m = pMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                const m = pMatch.match(new RegExp(`\\b${attr}=["']([^"']*)["']`, 'i'));
                 return m ? m[1] : '';
             };
 
@@ -234,7 +272,7 @@ export async function generarHtmlFactura(comprobante) {
             const doctoMatches = pMatch.match(/<pago[12]0:DoctoRelacionado[^>]+(\/>|>[\s\S]*?<\/pago[12]0:DoctoRelacionado>)/gi) || [];
             for (const dMatch of doctoMatches) {
                 const getDAttr = (attr) => {
-                    const m = dMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                    const m = dMatch.match(new RegExp(`\\b${attr}=["']([^"']*)["']`, 'i'));
                     return m ? m[1] : '';
                 };
                 doctosRelacionadosPago.push({
@@ -256,10 +294,11 @@ export async function generarHtmlFactura(comprobante) {
     // 1. Si existe xml_timbrado, extraer TODOS los conceptos directamente del XML
     if (comprobante.xml_timbrado) {
         try {
-            const conceptoMatches = comprobante.xml_timbrado.match(/<cfdi:Concepto[^>]+(\/>|>[\s\S]*?<\/cfdi:Concepto>)/gi) || [];
+            // Se usa límite de palabra \\b y alternativas para etiquetas autocontenidas <cfdi:Concepto ... /> o cerradas </cfdi:Concepto>
+            const conceptoMatches = comprobante.xml_timbrado.match(/<cfdi:Concepto\b[^>]*\/>|<cfdi:Concepto\b[^>]*>[\s\S]*?<\/cfdi:Concepto>/gi) || [];
             for (const cMatch of conceptoMatches) {
                 const getAttr = (attr) => {
-                    const m = cMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                    const m = cMatch.match(new RegExp(`\\b${attr}=["']([^"']*)["']`, 'i'));
                     return m ? m[1] : '';
                 };
                 partidas.push({
@@ -277,6 +316,7 @@ export async function generarHtmlFactura(comprobante) {
             console.warn('[generarHtmlFactura] Error al extraer conceptos de XML:', xmlErr.message);
         }
     }
+
 
     // 2. Si no hay XML pero hay conceptos en la base de datos (prefactura o borrador)
     if (partidas.length === 0 && comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
@@ -332,10 +372,10 @@ export async function generarHtmlFactura(comprobante) {
         try {
             const trasMatch = comprobante.xml_timbrado.match(/<cfdi:Traslados>([\s\S]*?)<\/cfdi:Traslados>/i);
             if (trasMatch) {
-                const trasItems = trasMatch[1].match(/<cfdi:Traslado[^>]+>/gi) || [];
+                const trasItems = trasMatch[1].match(/<cfdi:Traslado\b[^>]*(\/>|>)/gi) || [];
                 for (const t of trasItems) {
                     const getAttr = (attr) => {
-                        const m = t.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                        const m = t.match(new RegExp(`\\b${attr}=["']([^"']*)["']`, 'i'));
                         return m ? m[1] : '';
                     };
                     const imp = getAttr('Impuesto');
@@ -348,10 +388,10 @@ export async function generarHtmlFactura(comprobante) {
 
             const retMatch = comprobante.xml_timbrado.match(/<cfdi:Retenciones>([\s\S]*?)<\/cfdi:Retenciones>/i);
             if (retMatch) {
-                const retItems = retMatch[1].match(/<cfdi:Retencion[^>]+>/gi) || [];
+                const retItems = retMatch[1].match(/<cfdi:Retencion\b[^>]*(\/>|>)/gi) || [];
                 for (const r of retItems) {
                     const getAttr = (attr) => {
-                        const m = r.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                        const m = r.match(new RegExp(`\\b${attr}=["']([^"']*)["']`, 'i'));
                         return m ? m[1] : '';
                     };
                     const imp = getAttr('Impuesto');
@@ -365,6 +405,7 @@ export async function generarHtmlFactura(comprobante) {
             console.warn('[generarHtmlFactura] Error al extraer impuestos de XML:', taxXmlErr.message);
         }
     }
+
 
     // 2. Si no hay XML pero hay tablas relacionales en BD (prefacturas)
     if (trasladosFederales.length === 0 && retencionesFederales.length === 0 && comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
@@ -488,25 +529,35 @@ export async function generarHtmlFactura(comprobante) {
     }
 
     // Sellos y QR
-    const xmlSelloEmisor = getXmlAttr(/Sello=["']([^"']+)["']/i);
-    const xmlSelloSAT = getXmlAttr(/SelloSAT=["']([^"']+)["']/i);
-    const xmlNoCertSat = getXmlAttr(/NoCertificadoSAT=["']([^"']+)["']/i);
-    const xmlNoCertEmisor = getXmlAttr(/NoCertificado=["']([^"']+)["']/i);
+    const xmlSelloEmisor = getTagAttr('cfdi:Comprobante', 'Sello') || getXmlAttr(/Sello=["']([^"']+)["']/i);
+    const xmlSelloSAT = getTagAttr('tfd:TimbreFiscalDigital', 'SelloSAT') || getXmlAttr(/SelloSAT=["']([^"']+)["']/i);
+    const xmlNoCertSat = getTagAttr('tfd:TimbreFiscalDigital', 'NoCertificadoSAT') || getXmlAttr(/NoCertificadoSAT=["']([^"']+)["']/i);
+    const xmlNoCertEmisor = getTagAttr('cfdi:Comprobante', 'NoCertificado') || getXmlAttr(/NoCertificado=["']([^"']+)["']/i);
 
     const selloEmisor = comprobante.sello || xmlSelloEmisor || 'SELLO DIGITAL DEL EMISOR';
     const selloSAT = comprobante.sello_sat || xmlSelloSAT || 'SELLO DIGITAL DEL SAT';
-    const noCertificadoFinal = comprobante.no_certificado || emisor.no_certificado || xmlNoCertEmisor || '00001000000504465028';
+    const noCertificadoFinal = noCertificadoEmisorFinal || xmlNoCertEmisor || '00001000000504465028';
     const cadenaOriginal = comprobante.cadena_original_sat || (esTimbrado ? `||1.1|${uuidFiscal}|${fechaCertificacion}|SAT970701NN3|${selloEmisor}|${xmlNoCertSat || noCertificadoFinal}||` : 'CADENA ORIGINAL DISPONIBLE AL TIMBRAR');
 
     let qrCodeDataUrl = '';
-    if (esTimbrado) {
+    if (comprobante.qr_code && typeof comprobante.qr_code === 'string') {
+        const qrRaw = comprobante.qr_code.trim();
+        if (qrRaw.startsWith('data:image')) {
+            qrCodeDataUrl = qrRaw;
+        } else if (qrRaw.startsWith('R0lG') || qrRaw.startsWith('iVBORw')) {
+            qrCodeDataUrl = `data:image/gif;base64,${qrRaw}`;
+        }
+    }
+
+    if (!qrCodeDataUrl && esTimbrado) {
         try {
-            const qrText = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${uuidFiscal}&re=${emisor.rfc || ''}&rr=${receptor.rfc || ''}&tt=${totalNum.toFixed(6)}&fe=${selloEmisor.slice(-8)}`;
+            const qrText = `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${uuidFiscal}&re=${rfcEmisorFinal}&rr=${rfcReceptorFinal}&tt=${totalNum.toFixed(6)}&fe=${selloEmisor.slice(-8)}`;
             qrCodeDataUrl = await QRCode.toDataURL(qrText, { width: 140, margin: 1 });
         } catch (e) {
             console.error('Error generando QR code:', e);
         }
     }
+
 
     const logoHtml = (emisor.logo_url || emisor.logo_path) ?
         `<img src="${emisor.logo_url || emisor.logo_path}" alt="Logo" style="max-height: 75px; max-width: 220px; object-fit: contain; margin-bottom: 6px;"/>` :
@@ -709,10 +760,10 @@ export async function generarHtmlFactura(comprobante) {
         <tr>
             <td style="width: 55%;">
                 ${logoHtml}
-                <div class="emisor-title">${emisor.nombre || 'EMISOR'}</div>
-                <div><strong>RFC Emisor:</strong> ${emisor.rfc || 'N/A'}</div>
-                <div><strong>Régimen Fiscal:</strong> ${emisor.regimen_fiscal ? getDescripcionRegimen(emisor.regimen_fiscal) : '601 - General de Ley'}</div>
-                <div><strong>Lugar de Expedición:</strong> C.P. ${comprobante.lugar_expedicion || emisor.lugar_expedicion || '01000'}</div>
+                <div class="emisor-title">${nombreEmisorFinal}</div>
+                <div><strong>RFC Emisor:</strong> ${rfcEmisorFinal}</div>
+                <div><strong>Régimen Fiscal:</strong> ${getDescripcionRegimen(regimenFiscalEmisorFinal)}</div>
+                <div><strong>Lugar de Expedición:</strong> C.P. ${lugarExpedicionFinal}</div>
                 <div><strong>Tipo de Comprobante:</strong> ${tipoComprobanteDesc}</div>
                 <div class="badge-plantilla">Diseño Aplicado: ${paleta.nombre}</div>
             </td>
@@ -738,25 +789,26 @@ export async function generarHtmlFactura(comprobante) {
             <td>
                 <div class="info-card">
                     <div class="card-title">Datos del Receptor / Cliente</div>
-                    <div><strong>Nombre:</strong> ${receptor.nombre || 'PÚBLICO EN GENERAL'}</div>
-                    <div><strong>RFC:</strong> ${receptor.rfc || 'XAXX010101000'}</div>
-                    <div><strong>Régimen Fiscal:</strong> ${receptor.regimen_fiscal_receptor ? getDescripcionRegimen(receptor.regimen_fiscal_receptor) : '616 - Sin obligaciones'}</div>
-                    <div><strong>Domicilio Fiscal:</strong> C.P. ${receptor.domicilio_fiscal_receptor || '01000'}</div>
-                    <div><strong>Uso de CFDI:</strong> ${receptor.uso_cfdi ? getDescripcionUsoCFDI(receptor.uso_cfdi) : 'S01 - Sin efectos fiscales'}</div>
+                    <div><strong>Nombre:</strong> ${nombreReceptorFinal}</div>
+                    <div><strong>RFC:</strong> ${rfcReceptorFinal}</div>
+                    <div><strong>Régimen Fiscal:</strong> ${getDescripcionRegimen(regimenFiscalReceptorFinal)}</div>
+                    <div><strong>Domicilio Fiscal:</strong> C.P. ${cpReceptorFinal}</div>
+                    <div><strong>Uso de CFDI:</strong> ${getDescripcionUsoCFDI(usoCfdiFinal)}</div>
                 </div>
             </td>
             <td>
                 <div class="info-card last">
                     <div class="card-title">Detalles de Emisión y Pago</div>
-                    <div><strong>Forma de Pago:</strong> ${comprobante.forma_pago || '03 - Transferencia electrónica'}</div>
-                    <div><strong>Método de Pago:</strong> ${comprobante.metodo_pago || 'PUE - Pago en una sola exhibición'}</div>
-                    <div><strong>Moneda:</strong> ${comprobante.moneda || 'MXN'} (Tipo de Cambio: ${comprobante.tipo_cambio || '1'})</div>
-                    <div><strong>No. Certificado Emisor:</strong> ${comprobante.no_certificado || emisor.no_certificado || '00001000000504465028'}</div>
-                    <div><strong>Exportación:</strong> ${comprobante.exportacion || '01 - No aplica'}</div>
+                    <div><strong>Forma de Pago:</strong> ${getDescripcionFormaPago(formaPagoFinal)}</div>
+                    <div><strong>Método de Pago:</strong> ${getDescripcionMetodoPago(metodoPagoFinal)}</div>
+                    <div><strong>Moneda:</strong> ${monedaFinal} (Tipo de Cambio: ${tipoCambioFinal})</div>
+                    <div><strong>No. Certificado Emisor:</strong> ${noCertificadoEmisorFinal}</div>
+                    <div><strong>Exportación:</strong> ${exportacionFinal === '01' ? '01 - No aplica' : exportacionFinal}</div>
                 </div>
             </td>
         </tr>
     </table>
+
 
     ${cfdiRelacionados.length > 0 ? `
     <!-- CUADRO ESPECIAL: DOCUMENTOS RELACIONADOS (EGRESOS / NOTAS DE CRÉDITO) -->
@@ -950,9 +1002,10 @@ export async function generarHtmlFactura(comprobante) {
 
     <!-- PIE DE PÁGINA SAT -->
     <div class="footer-sat">
-        Este documento es una representación impresa de un CFDI Versión 4.0 expedido por ${emisor.nombre || 'el Emisor'}.<br/>
-        RFC Emisor: ${emisor.rfc || 'N/A'} | Régimen: ${emisor.regimen_fiscal || '601'} | RFC Prov. Certif.: SAT970701NN3
+        Este documento es una representación impresa de un CFDI Versión 4.0 expedido por ${nombreEmisorFinal}.<br/>
+        RFC Emisor: ${rfcEmisorFinal} | Régimen: ${getDescripcionRegimen(regimenFiscalEmisorFinal)} | RFC Prov. Certif.: SAT970701NN3
     </div>
+
 </body>
 </html>`;
 }

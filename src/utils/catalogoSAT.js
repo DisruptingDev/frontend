@@ -32,12 +32,57 @@ export const USOS_CFDI = [
     { clave: 'CN01', descripcion: 'CN01 - Nómina' }
 ];
 
+export const FORMAS_PAGO = [
+    { clave: '01', descripcion: '01 - Efectivo' },
+    { clave: '02', descripcion: '02 - Cheque nominativo' },
+    { clave: '03', descripcion: '03 - Transferencia electrónica de fondos' },
+    { clave: '04', descripcion: '04 - Tarjeta de crédito' },
+    { clave: '05', descripcion: '05 - Monedero electrónico' },
+    { clave: '06', descripcion: '06 - Dinero electrónico' },
+    { clave: '08', descripcion: '08 - Vales de despensa' },
+    { clave: '12', descripcion: '12 - Dación en pago' },
+    { clave: '13', descripcion: '13 - Pago por subrogación' },
+    { clave: '14', descripcion: '14 - Pago por consignación' },
+    { clave: '15', descripcion: '15 - Condonación' },
+    { clave: '17', descripcion: '17 - Compensación' },
+    { clave: '23', descripcion: '23 - Novación' },
+    { clave: '24', descripcion: '24 - Confusión' },
+    { clave: '25', descripcion: '25 - Remisión de deuda' },
+    { clave: '26', descripcion: '26 - Prescripción o caducidad' },
+    { clave: '27', descripcion: '27 - A satisfacción del acreedor' },
+    { clave: '28', descripcion: '28 - Tarjeta de débito' },
+    { clave: '29', descripcion: '29 - Tarjeta de servicios' },
+    { clave: '30', descripcion: '30 - Aplicación de anticipos' },
+    { clave: '31', descripcion: '31 - Intermediario pagos' },
+    { clave: '99', descripcion: '99 - Por definir' }
+];
+
+export const METODOS_PAGO = [
+    { clave: 'PUE', descripcion: 'PUE - Pago en una sola exhibición' },
+    { clave: 'PPD', descripcion: 'PPD - Pago en parcialidades o diferido' }
+];
+
 export function getDescripcionRegimen(clave) {
+    if (!clave) return 'Sin régimen fiscal';
     const reg = REGIMENES_FISCALES.find(r => r.clave === String(clave).trim());
     return reg ? reg.descripcion : `${clave} - Régimen Fiscal`;
 }
 
 export function getDescripcionUsoCFDI(clave) {
+    if (!clave) return 'S01 - Sin efectos fiscales';
     const uso = USOS_CFDI.find(u => u.clave === String(clave).trim());
     return uso ? uso.descripcion : `${clave} - Uso de CFDI`;
 }
+
+export function getDescripcionFormaPago(clave) {
+    if (!clave) return '03 - Transferencia electrónica de fondos';
+    const fp = FORMAS_PAGO.find(f => f.clave === String(clave).trim());
+    return fp ? fp.descripcion : `${clave} - Forma de Pago`;
+}
+
+export function getDescripcionMetodoPago(clave) {
+    if (!clave) return 'PUE - Pago en una sola exhibición';
+    const mp = METODOS_PAGO.find(m => m.clave.toUpperCase() === String(clave).trim().toUpperCase());
+    return mp ? mp.descripcion : `${clave} - Método de Pago`;
+}
+
