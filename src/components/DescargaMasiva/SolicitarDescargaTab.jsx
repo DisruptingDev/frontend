@@ -192,8 +192,16 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       password: passwordFiel,
     };
 
+    if (rfcContraparte && rfcContraparte.trim()) {
+      payload.rfcContraparte = rfcContraparte.trim().toUpperCase();
+    }
+
     if (tipoComprobante && tipoComprobante !== 'todos') {
       payload.tipo = tipoComprobante;
+    }
+
+    if (estadoComprobante && estadoComprobante !== 'todos') {
+      payload.estadoComprobante = estadoComprobante;
     }
 
     try {

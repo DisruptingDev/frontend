@@ -638,7 +638,10 @@ export async function POST(request, context) {
         fechaInicio,
         fechaFin,
         peticion,
-        tipoPeticion
+        tipoPeticion,
+        rfcContraparte,
+        tipo,
+        estadoComprobante
       } = body;
 
       const rfcSolicitante = Array.isArray(rfc) ? rfc[0] : (rfc || '');
@@ -716,13 +719,17 @@ export async function POST(request, context) {
         tipoSolicitud: tipoSolicitudSat,
         cerInput: cerFinal,
         keyInput: keyFinal,
-        password: passFinal
+        password: passFinal,
+        estadoComprobante,
+        tipoComprobante: tipo
       };
 
       if (tipoSolicitudSat === 'Emitidos') {
         paramsSat.rfcEmisor = rfcSolicitante;
+        if (rfcContraparte) paramsSat.rfcReceptor = rfcContraparte;
       } else {
         paramsSat.rfcReceptor = rfcSolicitante;
+        if (rfcContraparte) paramsSat.rfcEmisor = rfcContraparte;
       }
 
       const resSat = await solicitarDescargaSat(paramsSat);

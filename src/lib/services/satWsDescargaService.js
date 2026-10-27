@@ -9,7 +9,9 @@ import {
   DateTimePeriod,
   DownloadType,
   RequestType,
-  RfcMatch
+  RfcMatch,
+  DocumentStatus,
+  DocumentType
 } from '@nodecfdi/sat-ws-descarga-masiva';
 
 // Registrar OIDs para llaves privadas PKCS#8 del SAT
@@ -189,7 +191,9 @@ export async function solicitarDescargaSat({
   tipoDescarga = 'CFDI', // 'CFDI' o 'Metadata'
   tipoSolicitud = 'Emitidos', // 'Emitidos' o 'Recibidos'
   rfcEmisor = null,
-  rfcReceptor = null
+  rfcReceptor = null,
+  estadoComprobante = null,
+  tipoComprobante = null
 }) {
   const { service } = crearSatService(cerInput, keyInput, password);
 
@@ -210,6 +214,40 @@ export async function solicitarDescargaSat({
     .withPeriod(period)
     .withDownloadType(downloadType)
     .withRequestType(requestType);
+
+  // Filtro de Estado del Comprobante:
+  // Regla del Web Service del SAT: Al descargar archivos XML de comprobantes Recibidos,
+  // el SAT prohíbe terminantemente solicitar cancelados (error 301 / 5012).
+  // Por lo tanto, si la descarga es de XML (CFDI), siempre debe ser 'active' (Vigentes).
+  const esRecibidos = tipoSolicitud.toLowerCase().includes('recib');
+  const esXml = !tipoDescarga.toLowerCase().includes('meta');
+
+  if (esXml && esRecibidos) {
+    qp = qp.withDocumentStatus(new DocumentStatus('active'));
+  } else if (estadoComprobante && estadoComprobante !== 'todos') {
+    if (estadoComprobante === 'vigentes') {
+      qp = qp.withDocumentStatus(new DocumentStatus('active'));
+    } else if (estadoComprobante === 'cancelados') {
+      qp = qp.withDocumentStatus(new DocumentStatus('cancelled'));
+    }
+  }
+
+  // Filtro de Tipo de Comprobante (Ingreso, Egreso, Traslado, Nómina, Pago)
+  if (tipoComprobante && tipoComprobante !== 'todos') {
+    const tiposMap = {
+      'I': 'ingreso',
+      'E': 'egreso',
+      'T': 'traslado',
+      'N': 'nomina',
+      'P': 'pago'
+    };
+    const tipoValor = tiposMap[tipoComprobante.toUpperCase()] || tipoComprobante.toLowerCase();
+    try {
+      qp = qp.withDocumentType(new DocumentType(tipoValor));
+    } catch (e) {
+      console.warn('[SAT withDocumentType warning]:', e.message);
+    }
+  }
 
   // Si hay filtro de contraparte RFC
   const rfcContraparte = tipoSolicitud.toLowerCase().includes('recib') ? rfcEmisor : rfcReceptor;

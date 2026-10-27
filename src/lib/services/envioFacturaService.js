@@ -91,20 +91,49 @@ export async function enviarFacturaIndividual({ facturaId, emailDestino = null }
     const emisor = comprobante.emisors || {};
     const receptor = comprobante.receptors || {};
 
-    // Determinar destinatario
-    let correoDestino = emailDestino;
-    if (!correoDestino) {
-        if (comprobante.PagoAlumno && comprobante.PagoAlumno.length > 0) {
-            correoDestino = comprobante.PagoAlumno[0].alumno?.email;
-        }
-    }
-    if (!correoDestino) {
-        correoDestino = receptor.email;
+    // Determinar destinatarios (Receptor / Trabajador + Emisor)
+    const listaCorreos = [];
+
+    // 1. Correo del Receptor (Cliente, Trabajador o Destino específico)
+    //    Prioridad:
+    //    a) emailDestino explícito si se proporcionó
+    //    b) receptor.email (Factura estándar comercial, cliente general)
+    //    c) comprobante.receptor_nomina?.email / comprobante.trabajador?.email (Recibos de Nómina)
+    //    d) comprobante.PagoAlumno[0].alumno?.email (Módulo de Colegiaturas / Alumnos)
+    let correoReceptor = emailDestino;
+
+    if (!correoReceptor) {
+        correoReceptor = receptor.email;
     }
 
-    if (!correoDestino || !correoDestino.includes('@')) {
-        throw new Error(`La factura ${comprobante.serie}-${comprobante.folio} no tiene un correo de receptor válido registrado.`);
+    if (!correoReceptor) {
+        // En nómina: verificar si viene el email del trabajador en el complemento o receptor de nómina
+        correoReceptor = comprobante.receptor_nomina?.email || comprobante.trabajador?.email;
     }
+
+    if (!correoReceptor && comprobante.PagoAlumno && comprobante.PagoAlumno.length > 0) {
+        correoReceptor = comprobante.PagoAlumno[0].alumno?.email;
+    }
+
+    if (correoReceptor && correoReceptor.includes('@')) {
+        listaCorreos.push(correoReceptor.trim());
+    }
+
+    // 2. Correo del Emisor (si está registrado)
+    const correoEmisor = emisor.email;
+    if (correoEmisor && correoEmisor.includes('@')) {
+        // Evitar duplicar si el emisor y receptor tuvieran el mismo correo
+        const emisorTrim = correoEmisor.trim();
+        if (!listaCorreos.includes(emisorTrim)) {
+            listaCorreos.push(emisorTrim);
+        }
+    }
+
+    if (listaCorreos.length === 0) {
+        throw new Error(`La factura ${comprobante.serie}-${comprobante.folio} no tiene un correo de receptor ni de emisor válido registrado.`);
+    }
+
+    const destinatariosTo = listaCorreos.join(', ');
 
     // 1. Obtener o construir el XML timbrado
     let xmlContent = comprobante.xml_timbrado;
@@ -154,9 +183,9 @@ export async function enviarFacturaIndividual({ facturaId, emailDestino = null }
         `${emisor.nombre} <facturacion@mg.wisefacturacion.com>` :
         `Facturación Electrónica <facturacion@mg.wisefacturacion.com>`;
 
-    // 6. Enviar vía Mailgun
+    // 6. Enviar vía Mailgun a la lista de destinatarios (Receptor y Emisor)
     await sendEmailViaMailgun({
-        to: correoDestino.trim(),
+        to: destinatariosTo,
         subject,
         html: cuerpoHtml,
         attachments,
@@ -168,7 +197,7 @@ export async function enviarFacturaIndividual({ facturaId, emailDestino = null }
         id: comprobante.id.toString(),
         serie: comprobante.serie,
         folio: comprobante.folio,
-        destinatario: correoDestino,
+        destinatarios: listaCorreos,
         status: 'enviado'
     };
 }

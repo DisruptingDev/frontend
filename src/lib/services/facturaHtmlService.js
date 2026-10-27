@@ -150,19 +150,63 @@ export async function generarHtmlFactura(comprobante) {
     const plantillaId = Number(emisor.plantilla_id || 1);
     const paleta = PALETAS_PLANTILLAS[plantillaId] || PALETAS_PLANTILLAS[1];
 
-    const esTimbrado = Boolean(comprobante.uuid && comprobante.uuid.trim().length > 10);
-    const uuidFiscal = comprobante.uuid || 'PENDIENTE DE TIMBRADO FISCAL';
-    const fechaEmision = comprobante.fecha ? new Date(comprobante.fecha).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
-    const fechaCertificacion = comprobante.fecha_timbrado ? new Date(comprobante.fecha_timbrado).toLocaleString('es-MX') : (esTimbrado ? fechaEmision : 'SIN TIMBRAR');
+    const xml = comprobante.xml_timbrado || '';
+    const getXmlAttr = (pattern) => {
+        const m = xml.match(pattern);
+        return m ? m[1] : '';
+    };
 
-    const totalNum = parseFloat(comprobante.total_string || comprobante.total || 0) || 0;
-    const subtotalNum = parseFloat(comprobante.sub_total_string || comprobante.sub_total || totalNum) || totalNum;
-    const descuentoNum = parseFloat(comprobante.descuento_string || comprobante.descuento || 0) || 0;
+    const xmlUuid = getXmlAttr(/UUID=["']([^"']+)["']/i);
+    const uuidFiscal = comprobante.uuid || xmlUuid || 'PENDIENTE DE TIMBRADO FISCAL';
+    const esTimbrado = Boolean(uuidFiscal && uuidFiscal.trim().length > 10 && !uuidFiscal.includes('PENDIENTE'));
+
+    const xmlFechaEmision = getXmlAttr(/Fecha=["']([^"']+)["']/i);
+    const xmlFechaTimbrado = getXmlAttr(/FechaTimbrado=["']([^"']+)["']/i);
+
+    const fechaEmision = comprobante.fecha ? new Date(comprobante.fecha).toLocaleString('es-MX') : (xmlFechaEmision ? new Date(xmlFechaEmision).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'));
+    const fechaCertificacion = comprobante.fecha_timbrado ? new Date(comprobante.fecha_timbrado).toLocaleString('es-MX') : (xmlFechaTimbrado ? new Date(xmlFechaTimbrado).toLocaleString('es-MX') : (esTimbrado ? fechaEmision : 'SIN TIMBRAR'));
+
+    const xmlTotal = parseFloat(getXmlAttr(/Total=["']([^"']+)["']/i) || '0');
+    const xmlSubTotal = parseFloat(getXmlAttr(/SubTotal=["']([^"']+)["']/i) || '0');
+    const xmlDescuento = parseFloat(getXmlAttr(/Descuento=["']([^"']+)["']/i) || '0');
+
+    const totalNum = parseFloat(comprobante.total_string || comprobante.total || xmlTotal || 0) || 0;
+    const subtotalNum = parseFloat(comprobante.sub_total_string || comprobante.sub_total || xmlSubTotal || totalNum) || totalNum;
+    const descuentoNum = parseFloat(comprobante.descuento_string || comprobante.descuento || xmlDescuento || 0) || 0;
     const importeLetra = numeroALetras(totalNum);
 
-    // Partidas / Conceptos
+    // =========================================================================
+    // PARTIDAS / CONCEPTOS: EL XML ES LA FUENTE DE VERDAD ABSOLUTA (100% FIDELIDAD)
+    // =========================================================================
     let partidas = [];
-    if (comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
+
+    // 1. Si existe xml_timbrado, extraer TODOS los conceptos directamente del XML
+    if (comprobante.xml_timbrado) {
+        try {
+            const conceptoMatches = comprobante.xml_timbrado.match(/<cfdi:Concepto[^>]+(\/>|>[\s\S]*?<\/cfdi:Concepto>)/gi) || [];
+            for (const cMatch of conceptoMatches) {
+                const getAttr = (attr) => {
+                    const m = cMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                    return m ? m[1] : '';
+                };
+                partidas.push({
+                    clave_prod_serv: getAttr('ClaveProdServ') || '',
+                    clave_unidad: getAttr('ClaveUnidad') || '',
+                    unidad: getAttr('Unidad') || '',
+                    cantidad: parseFloat(getAttr('Cantidad') || '1'),
+                    descripcion: getAttr('Descripcion') || '',
+                    valor_unitario: parseFloat(getAttr('ValorUnitario') || '0'),
+                    importe: parseFloat(getAttr('Importe') || '0'),
+                    objeto_imp: getAttr('ObjetoImp') || '02'
+                });
+            }
+        } catch (xmlErr) {
+            console.warn('[generarHtmlFactura] Error al extraer conceptos de XML:', xmlErr.message);
+        }
+    }
+
+    // 2. Si no hay XML pero hay conceptos en la base de datos (prefactura o borrador)
+    if (partidas.length === 0 && comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
         for (const cGroup of comprobante.Conceptos) {
             if (cGroup.Concepto && Array.isArray(cGroup.Concepto)) {
                 for (const item of cGroup.Concepto) {
@@ -171,7 +215,7 @@ export async function generarHtmlFactura(comprobante) {
                         clave_unidad: item.clave_unidad || 'E48',
                         unidad: item.unidad || 'Servicio',
                         cantidad: Number(item.cantidad || 1),
-                        descripcion: item.descripcion || 'Servicio Facturado',
+                        descripcion: item.descripcion || '',
                         valor_unitario: parseFloat(item.valor_unitario_string || item.valor_unitario || 0) || 0,
                         importe: parseFloat(item.importe_string || item.importe || 0) || 0,
                         objeto_imp: item.objeto_imp || '02'
@@ -181,10 +225,11 @@ export async function generarHtmlFactura(comprobante) {
         }
     }
 
+    // 3. Si no hay XML ni tabla Conceptos, pero existe PagoAlumno (módulo cobranza)
     if (partidas.length === 0 && comprobante.PagoAlumno && Array.isArray(comprobante.PagoAlumno)) {
         for (const p of comprobante.PagoAlumno) {
             const nombreAlumno = p.alumno ? `${p.alumno.nombre} ${p.alumno.apellido_paterno} ${p.alumno.apellido_materno || ''}`.trim() : '';
-            const desc = `${p.cargo?.concepto?.nombre || 'Colegiatura y Servicios Educativos'}${nombreAlumno ? ' - ' + nombreAlumno : ''}${p.alumno?.matricula ? ' (Matrícula: ' + p.alumno.matricula + ')' : ''}`;
+            const desc = `${p.cargo?.concepto?.nombre || 'Servicio'}${nombreAlumno ? ' - ' + nombreAlumno : ''}${p.alumno?.matricula ? ' (Matrícula: ' + p.alumno.matricula + ')' : ''}`;
             partidas.push({
                 clave_prod_serv: p.cargo?.producto?.clave_prod_sat || p.cargo?.concepto?.clave_prod_serv || '86121500',
                 clave_unidad: 'E48',
@@ -198,26 +243,58 @@ export async function generarHtmlFactura(comprobante) {
         }
     }
 
+    // Si la factura no contiene ninguna partida legítima, lanzar error en lugar de inventar conceptos
     if (partidas.length === 0) {
-        partidas.push({
-            clave_prod_serv: '86121500',
-            clave_unidad: 'E48',
-            unidad: 'Servicio',
-            cantidad: 1,
-            descripcion: comprobante.descripcion || 'Servicios Educativos / Facturación',
-            valor_unitario: subtotalNum,
-            importe: subtotalNum,
-            objeto_imp: '02'
-        });
+        throw new Error(`La factura ${comprobante.serie || 'F'}-${comprobante.folio || '0'} no contiene conceptos válidos en el XML timbrado ni en la base de datos.`);
     }
 
     // =========================================================================
-    // IMPUESTOS FEDERALES (Traslados y Retenciones)
+    // IMPUESTOS FEDERALES (Traslados y Retenciones): XML COMO FUENTE DE VERDAD
     // =========================================================================
     const trasladosFederales = [];
     const retencionesFederales = [];
 
-    if (comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
+    // 1. Extraer impuestos directamente del XML timbrado oficial
+    if (comprobante.xml_timbrado) {
+        try {
+            const trasMatch = comprobante.xml_timbrado.match(/<cfdi:Traslados>([\s\S]*?)<\/cfdi:Traslados>/i);
+            if (trasMatch) {
+                const trasItems = trasMatch[1].match(/<cfdi:Traslado[^>]+>/gi) || [];
+                for (const t of trasItems) {
+                    const getAttr = (attr) => {
+                        const m = t.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                        return m ? m[1] : '';
+                    };
+                    const imp = getAttr('Impuesto');
+                    const nom = imp === '002' ? 'IVA' : (imp === '003' ? 'IEPS' : 'Traslado');
+                    const tasa = parseFloat(getAttr('TasaOCuota') || '0.16');
+                    const importe = parseFloat(getAttr('Importe') || '0');
+                    trasladosFederales.push({ nombre: nom, tasa, importe });
+                }
+            }
+
+            const retMatch = comprobante.xml_timbrado.match(/<cfdi:Retenciones>([\s\S]*?)<\/cfdi:Retenciones>/i);
+            if (retMatch) {
+                const retItems = retMatch[1].match(/<cfdi:Retencion[^>]+>/gi) || [];
+                for (const r of retItems) {
+                    const getAttr = (attr) => {
+                        const m = r.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                        return m ? m[1] : '';
+                    };
+                    const imp = getAttr('Impuesto');
+                    const nom = imp === '001' ? 'ISR' : (imp === '002' ? 'IVA' : 'Retención');
+                    const tasa = parseFloat(getAttr('TasaOCuota') || '0');
+                    const importe = parseFloat(getAttr('Importe') || '0');
+                    retencionesFederales.push({ nombre: nom, tasa, importe });
+                }
+            }
+        } catch (taxXmlErr) {
+            console.warn('[generarHtmlFactura] Error al extraer impuestos de XML:', taxXmlErr.message);
+        }
+    }
+
+    // 2. Si no hay XML pero hay tablas relacionales en BD (prefacturas)
+    if (trasladosFederales.length === 0 && retencionesFederales.length === 0 && comprobante.Conceptos && Array.isArray(comprobante.Conceptos)) {
         for (const cGroup of comprobante.Conceptos) {
             if (cGroup.Concepto && Array.isArray(cGroup.Concepto)) {
                 for (const item of cGroup.Concepto) {
@@ -338,9 +415,15 @@ export async function generarHtmlFactura(comprobante) {
     }
 
     // Sellos y QR
-    const selloEmisor = comprobante.sello || 'SELLO DIGITAL DEL EMISOR';
-    const selloSAT = comprobante.sello_sat || 'SELLO DIGITAL DEL SAT';
-    const cadenaOriginal = comprobante.cadena_original_sat || (esTimbrado ? `||1.1|${uuidFiscal}|${new Date().toISOString()}|SAT970701NN3|${selloEmisor}|${comprobante.no_certificado || '00001000000504465028'}||` : 'CADENA ORIGINAL DISPONIBLE AL TIMBRAR');
+    const xmlSelloEmisor = getXmlAttr(/Sello=["']([^"']+)["']/i);
+    const xmlSelloSAT = getXmlAttr(/SelloSAT=["']([^"']+)["']/i);
+    const xmlNoCertSat = getXmlAttr(/NoCertificadoSAT=["']([^"']+)["']/i);
+    const xmlNoCertEmisor = getXmlAttr(/NoCertificado=["']([^"']+)["']/i);
+
+    const selloEmisor = comprobante.sello || xmlSelloEmisor || 'SELLO DIGITAL DEL EMISOR';
+    const selloSAT = comprobante.sello_sat || xmlSelloSAT || 'SELLO DIGITAL DEL SAT';
+    const noCertificadoFinal = comprobante.no_certificado || emisor.no_certificado || xmlNoCertEmisor || '00001000000504465028';
+    const cadenaOriginal = comprobante.cadena_original_sat || (esTimbrado ? `||1.1|${uuidFiscal}|${fechaCertificacion}|SAT970701NN3|${selloEmisor}|${xmlNoCertSat || noCertificadoFinal}||` : 'CADENA ORIGINAL DISPONIBLE AL TIMBRAR');
 
     let qrCodeDataUrl = '';
     if (esTimbrado) {
