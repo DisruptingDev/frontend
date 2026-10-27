@@ -151,6 +151,12 @@ export async function enviarFacturaIndividual({ facturaId, emailDestino = null }
     // 3. Generar el PDF Buffer usando Puppeteer singleton
     const pdfBuffer = await generarPdfDesdeHtml(htmlFactura);
 
+    if (!pdfBuffer || pdfBuffer.length < 500) {
+        throw new Error(`Error crítico: El PDF generado para la factura ${comprobante.serie || 'F'}-${comprobante.folio || '0'} está vacío o corrupto (tamaño: ${pdfBuffer ? pdfBuffer.length : 0} bytes).`);
+    }
+
+    console.log(`[envioFacturaService] PDF generado exitosamente: ${pdfBuffer.length} bytes para ${comprobante.serie || 'F'}-${comprobante.folio || '0'}`);
+
     // 4. Preparar archivos adjuntos
     const serieFolio = `${comprobante.serie || 'F'}_${comprobante.folio || '0'}`;
     const attachments = [

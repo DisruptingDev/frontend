@@ -20,12 +20,13 @@ export async function sendEmailViaMailgun({ to, subject, html, attachments = [],
     formData.append('subject', subject);
     formData.append('html', html);
 
-    // Procesamos adjuntos (Buffer a Blob)
+    // Procesamos adjuntos (crear instancia File para garantizar serialización multipart en Node/Mailgun)
     if (attachments && attachments.length > 0) {
         for (const att of attachments) {
-            // att.content debe ser un Buffer en este contexto
-            const blob = new Blob([att.content], { type: att.contentType || 'application/pdf' });
-            formData.append('attachment', blob, att.filename);
+            const buf = Buffer.isBuffer(att.content) ? att.content : Buffer.from(att.content);
+            const file = new File([buf], att.filename, { type: att.contentType || 'application/octet-stream' });
+            console.log(`[Mailgun] Adjuntando archivo: ${att.filename} (${buf.length} bytes, tipo: ${att.contentType})`);
+            formData.append('attachment', file);
         }
     }
 
