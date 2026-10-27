@@ -24,8 +24,9 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No se enviaron IDs de facturas válidos.' }, { status: 400 });
         }
 
-        // Si se configura delegar al servicio en Go (USE_BACKEND_ENVIO=true), reenviar la petición al backend central
-        if (process.env.USE_BACKEND_ENVIO === 'true') {
+        // Delegar directamente al servicio probado y oficial en Go (que genera el PDF completo con la plantilla del emisor)
+        // a menos que se defina explícitamente USE_LOCAL_ENVIO=true
+        if (process.env.USE_LOCAL_ENVIO !== 'true') {
             const baseRaw = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'https://api.sandbox.wisefacturacion.com';
             const baseUrl = (baseRaw.startsWith('http') ? baseRaw : `https://${baseRaw}`).replace(/\/+$/, '');
             const targetUrl = `${baseUrl}/api/enviofacturas/EnviarFacturas`;
@@ -43,6 +44,7 @@ export async function POST(request) {
             const data = await backendRes.json().catch(() => ({}));
             return NextResponse.json(data, { status: backendRes.status });
         }
+
 
         const resultado = await enviarFacturasEnLote(ids);
 

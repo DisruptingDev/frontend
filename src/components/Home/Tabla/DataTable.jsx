@@ -591,7 +591,7 @@ export default function DataTable({ token }) {
                 throw new Error('No se seleccionaron facturas válidas para enviar.');
             }
 
-            const response = await fetch('/api/enviofacturas/EnviarFacturas', {
+            const response = await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -599,6 +599,7 @@ export default function DataTable({ token }) {
                 },
                 body: JSON.stringify(cleanIds),
             });
+
 
             if (response.ok) {
                 setConfirmationMessage('Las facturas se han enviado correctamente por correo.');
@@ -650,7 +651,7 @@ export default function DataTable({ token }) {
 
             // 2. Envío por correo
             const idsTimbrados = facturasTimbradasExitosas.map(factura => factura.facturaID);
-            await fetch('/api/enviofacturas/EnviarFacturas', {
+            await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -658,6 +659,7 @@ export default function DataTable({ token }) {
                 },
                 body: JSON.stringify(idsTimbrados),
             });
+
 
             let message = '';
             if (facturasTimbradasExitosas.length === ids.length) {
@@ -1025,7 +1027,7 @@ export default function DataTable({ token }) {
 
 
     const enviarFacturasPorCorreo = async (ids) => {
-        await fetch('/api/enviofacturas/EnviarFacturas', {
+        await fetch(`${apiUrl}/api/enviofacturas/EnviarFacturas`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1034,6 +1036,7 @@ export default function DataTable({ token }) {
             body: JSON.stringify(ids),
         });
     };
+
 
 
 
