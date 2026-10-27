@@ -176,8 +176,81 @@ export async function generarHtmlFactura(comprobante) {
     const importeLetra = numeroALetras(totalNum);
 
     // =========================================================================
-    // PARTIDAS / CONCEPTOS: EL XML ES LA FUENTE DE VERDAD ABSOLUTA (100% FIDELIDAD)
+    // TIPO DE COMPROBANTE (I: Ingreso, E: Egreso/Nota Crédito, P: Pago)
     // =========================================================================
+    const rawTipo = (comprobante.tipo_de_comprobante || getXmlAttr(/TipoDeComprobante=["']([^"']+)["']/i) || 'I').toUpperCase();
+    const esComprobantePago = rawTipo === 'P';
+    const esComprobanteEgreso = rawTipo === 'E';
+
+    let tipoComprobanteDesc = 'I - Ingreso';
+    if (esComprobantePago) tipoComprobanteDesc = 'P - Pago (Complemento de Recepción de Pagos)';
+    else if (esComprobanteEgreso) tipoComprobanteDesc = 'E - Egreso (Nota de Crédito)';
+    else if (rawTipo === 'T') tipoComprobanteDesc = 'T - Traslado';
+    else if (rawTipo === 'N') tipoComprobanteDesc = 'N - Nómina';
+
+    // =========================================================================
+    // DOCUMENTOS RELACIONADOS (CFDIRelacionados para Egresos/Notas de Crédito y Facturas)
+    // =========================================================================
+    const cfdiRelacionados = [];
+    let tipoRelacionSAT = '';
+
+    if (xml) {
+        const relGroupMatch = xml.match(/<cfdi:CfdiRelacionados[^>]*TipoRelacion=["']([^"']+)["'][^>]*>([\s\S]*?)<\/cfdi:CfdiRelacionados>/i);
+        if (relGroupMatch) {
+            tipoRelacionSAT = relGroupMatch[1];
+            const relUuidMatches = relGroupMatch[2].match(/<cfdi:CfdiRelacionado[^>]*UUID=["']([^"']+)["']/gi) || [];
+            for (const rMatch of relUuidMatches) {
+                const u = rMatch.match(/UUID=["']([^"']+)["']/i);
+                if (u && u[1]) cfdiRelacionados.push(u[1]);
+            }
+        }
+    }
+
+    // =========================================================================
+    // COMPLEMENTO DE RECEPCIÓN DE PAGOS (Tipo P)
+    // =========================================================================
+    const pagosRecibidos = [];
+    const doctosRelacionadosPago = [];
+
+    if (esComprobantePago && xml) {
+        // 1. Extraer cada nodo <pago20:Pago> o <pago10:Pago>
+        const pagoMatches = xml.match(/<pago[12]0:Pago[^>]*>([\s\S]*?)<\/pago[12]0:Pago>/gi) || [];
+        for (const pMatch of pagoMatches) {
+            const getPAttr = (attr) => {
+                const m = pMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                return m ? m[1] : '';
+            };
+
+            pagosRecibidos.push({
+                fechaPago: getPAttr('FechaPago'),
+                formaPago: getPAttr('FormaDePagoP') || getPAttr('FormaPago') || '03',
+                moneda: getPAttr('MonedaP') || getPAttr('Moneda') || 'MXN',
+                monto: parseFloat(getPAttr('Monto') || '0'),
+                tipoCambio: getPAttr('TipoCambioP') || '1',
+                numOperacion: getPAttr('NumOperacion') || ''
+            });
+
+            // 2. Extraer los doctos relacionados dentro de este pago
+            const doctoMatches = pMatch.match(/<pago[12]0:DoctoRelacionado[^>]+(\/>|>[\s\S]*?<\/pago[12]0:DoctoRelacionado>)/gi) || [];
+            for (const dMatch of doctoMatches) {
+                const getDAttr = (attr) => {
+                    const m = dMatch.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                    return m ? m[1] : '';
+                };
+                doctosRelacionadosPago.push({
+                    idDocumento: getDAttr('IdDocumento'),
+                    serie: getDAttr('Serie'),
+                    folio: getDAttr('Folio'),
+                    monedaDR: getDAttr('MonedaDR') || 'MXN',
+                    numParcialidad: getDAttr('NumParcialidad') || '1',
+                    saldoAnterior: parseFloat(getDAttr('ImpSaldoAnt') || '0'),
+                    importePagado: parseFloat(getDAttr('ImpPagado') || '0'),
+                    saldoInsoluto: parseFloat(getDAttr('ImpSaldoInsoluto') || '0'),
+                    objetoImpDR: getDAttr('ObjetoImpDR') || '01'
+                });
+            }
+        }
+    }
     let partidas = [];
 
     // 1. Si existe xml_timbrado, extraer TODOS los conceptos directamente del XML
@@ -446,18 +519,24 @@ export async function generarHtmlFactura(comprobante) {
     <title>CFDI 4.0 - ${comprobante.serie || 'F'}-${comprobante.folio || '0'}</title>
     <style>
         * { box-sizing: border-box; }
+        @page {
+            size: letter portrait;
+            margin: 8mm 8mm 8mm 8mm;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             color: #1e293b;
             margin: 0;
-            padding: 24px;
-            font-size: 10.5px;
+            padding: 10px 14px;
+            font-size: 10px;
             line-height: 1.35;
             background: #ffffff;
+            width: 100%;
+            max-width: 216mm;
         }
-        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         .header-table td { vertical-align: top; }
-        .emisor-title { font-size: 15px; font-weight: bold; color: ${paleta.primario}; margin-bottom: 2px; }
+        .emisor-title { font-size: 14px; font-weight: bold; color: ${paleta.primario}; margin-bottom: 2px; }
         
         .factura-badge-box {
             background: ${paleta.fondoHeader};
@@ -466,22 +545,22 @@ export async function generarHtmlFactura(comprobante) {
             padding: 8px 12px;
             text-align: right;
         }
-        .factura-folio-title { font-size: 14px; font-weight: bold; color: ${paleta.primario}; }
-        .factura-folio-num { font-size: 15px; font-weight: bold; color: ${paleta.acento}; margin-top: 1px; }
-        .uuid-code { font-family: monospace; font-size: 9.5px; font-weight: bold; color: ${esTimbrado ? paleta.secundario : '#dc2626'}; word-break: break-all; }
+        .factura-folio-title { font-size: 13px; font-weight: bold; color: ${paleta.primario}; }
+        .factura-folio-num { font-size: 14px; font-weight: bold; color: ${paleta.acento}; margin-top: 1px; }
+        .uuid-code { font-family: monospace; font-size: 9px; font-weight: bold; color: ${esTimbrado ? paleta.secundario : '#dc2626'}; word-break: break-all; }
         
         .badge-status {
             display: inline-block;
             padding: 2px 8px;
             border-radius: 4px;
             font-weight: bold;
-            font-size: 9.5px;
+            font-size: 9px;
             margin-top: 4px;
             background: ${esTimbrado ? '#dcfce7' : '#fee2e2'};
             color: ${esTimbrado ? '#15803d' : '#b91c1c'};
         }
 
-        .cards-row { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .cards-row { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         .cards-row td { vertical-align: top; width: 50%; }
         .info-card {
             border: 1px solid ${paleta.borde};
@@ -489,11 +568,11 @@ export async function generarHtmlFactura(comprobante) {
             border-radius: 6px;
             padding: 8px 12px;
             margin-right: 6px;
-            min-height: 95px;
+            min-height: 90px;
         }
         .info-card.last { margin-right: 0; margin-left: 6px; }
         .card-title {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: bold;
             color: ${paleta.primario};
             border-bottom: 1px solid ${paleta.borde};
@@ -503,23 +582,75 @@ export async function generarHtmlFactura(comprobante) {
             letter-spacing: 0.5px;
         }
 
-        .table-conceptos { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 12px; }
+        /* Cuadro especial de CFDI Relacionados / Egresos / Notas de Crédito */
+        .cuadro-relacionados {
+            border: 1.5px solid ${paleta.secundario};
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+        }
+        .cuadro-relacionados-title {
+            font-size: 10.5px;
+            font-weight: bold;
+            color: ${paleta.secundario};
+            text-transform: uppercase;
+            border-bottom: 1px dashed ${paleta.borde};
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+
+        /* Cuadro especial de Complemento de Recepción de Pagos */
+        .cuadro-pagos {
+            border: 1.5px solid ${paleta.primario};
+            background: ${paleta.fondoHeader};
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+        }
+        .cuadro-pagos-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: ${paleta.primario};
+            text-transform: uppercase;
+            border-bottom: 1px solid ${paleta.borde};
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+
+        .table-custom { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 8px; }
+        .table-custom th {
+            background: ${paleta.tablaHeaderBg};
+            color: ${paleta.tablaHeaderColor};
+            padding: 5px 6px;
+            text-align: left;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        .table-custom td {
+            padding: 5px 6px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 9px;
+        }
+        .table-custom tr:nth-child(even) td { background: #ffffff; }
+
+        .table-conceptos { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 10px; }
         .table-conceptos th {
             background: ${paleta.tablaHeaderBg};
             color: ${paleta.tablaHeaderColor};
-            padding: 6px 8px;
+            padding: 5px 7px;
             text-align: left;
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
         }
         .table-conceptos td {
-            padding: 6px 8px;
+            padding: 5px 7px;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 10px;
+            font-size: 9.5px;
         }
         .table-conceptos tr:nth-child(even) td { background: #f8fafc; }
 
-        .totals-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .totals-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
         .totals-table td { vertical-align: top; }
         .letra-box {
             border: 1px solid ${paleta.borde};
@@ -528,16 +659,16 @@ export async function generarHtmlFactura(comprobante) {
             background: ${paleta.fondoHeader};
         }
         .totals-box {
-            width: 260px;
+            width: 250px;
             border: 1px solid ${paleta.borde};
             border-radius: 6px;
             background: ${paleta.fondoHeader};
-            padding: 8px 12px;
+            padding: 6px 10px;
             float: right;
         }
-        .totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10.5px; }
+        .totals-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px; }
         .totals-final {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
             color: ${paleta.primario};
             border-top: 2px solid ${paleta.primario};
@@ -550,24 +681,25 @@ export async function generarHtmlFactura(comprobante) {
             border-radius: 6px;
             padding: 8px;
             background: #ffffff;
-            margin-top: 10px;
+            margin-top: 8px;
+            page-break-inside: avoid;
         }
-        .stamp-label { font-size: 9px; font-weight: bold; color: ${paleta.primario}; margin-top: 3px; }
-        .stamp-val { font-family: monospace; font-size: 8px; color: #475569; word-break: break-all; margin-bottom: 3px; line-height: 1.2; }
+        .stamp-label { font-size: 8.5px; font-weight: bold; color: ${paleta.primario}; margin-top: 2px; }
+        .stamp-val { font-family: monospace; font-size: 7.5px; color: #475569; word-break: break-all; margin-bottom: 2px; line-height: 1.15; }
         
         .footer-sat {
             text-align: center;
-            margin-top: 14px;
-            font-size: 8.5px;
+            margin-top: 10px;
+            font-size: 8px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
-            padding-top: 8px;
+            padding-top: 6px;
         }
         .badge-plantilla {
             display: inline-block;
             font-size: 8px;
             color: #94a3b8;
-            margin-top: 3px;
+            margin-top: 2px;
         }
     </style>
 </head>
@@ -581,7 +713,7 @@ export async function generarHtmlFactura(comprobante) {
                 <div><strong>RFC Emisor:</strong> ${emisor.rfc || 'N/A'}</div>
                 <div><strong>Régimen Fiscal:</strong> ${emisor.regimen_fiscal ? getDescripcionRegimen(emisor.regimen_fiscal) : '601 - General de Ley'}</div>
                 <div><strong>Lugar de Expedición:</strong> C.P. ${comprobante.lugar_expedicion || emisor.lugar_expedicion || '01000'}</div>
-                <div><strong>Tipo de Comprobante:</strong> ${comprobante.tipo_de_comprobante || 'I'} - Ingreso</div>
+                <div><strong>Tipo de Comprobante:</strong> ${tipoComprobanteDesc}</div>
                 <div class="badge-plantilla">Diseño Aplicado: ${paleta.nombre}</div>
             </td>
             <td style="width: 45%;">
@@ -625,6 +757,96 @@ export async function generarHtmlFactura(comprobante) {
             </td>
         </tr>
     </table>
+
+    ${cfdiRelacionados.length > 0 ? `
+    <!-- CUADRO ESPECIAL: DOCUMENTOS RELACIONADOS (EGRESOS / NOTAS DE CRÉDITO) -->
+    <div class="cuadro-relacionados">
+        <div class="cuadro-relacionados-title">
+            📄 CFDI Relacionados / Documentos Vinculados (Tipo Relación SAT: ${tipoRelacionSAT || '01 - Nota de crédito de los documentos relacionados'})
+        </div>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">#</th>
+                    <th style="width: 90%;">Folio Fiscal (UUID) Relacionado</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${cfdiRelacionados.map((uuidRel, idx) => `
+                <tr>
+                    <td><strong>${idx + 1}</strong></td>
+                    <td style="font-family: monospace; font-size: 9.5px; font-weight: bold; color: ${paleta.primario};">${uuidRel}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+    ` : ''}
+
+    ${esComprobantePago && (pagosRecibidos.length > 0 || doctosRelacionadosPago.length > 0) ? `
+    <!-- CUADRO ESPECIAL: COMPLEMENTO DE RECEPCIÓN DE PAGOS (TIPO P) -->
+    <div class="cuadro-pagos">
+        <div class="cuadro-pagos-title">💰 Complemento de Recepción de Pagos 2.0</div>
+        
+        ${pagosRecibidos.length > 0 ? `
+        <div style="font-weight: bold; font-size: 9.5px; margin-bottom: 4px; color: ${paleta.primario};">Información General del Pago Recibido:</div>
+        <table class="table-custom" style="margin-bottom: 8px;">
+            <thead>
+                <tr>
+                    <th>Fecha de Pago</th>
+                    <th>Forma de Pago</th>
+                    <th>Moneda</th>
+                    <th>Tipo Cambio</th>
+                    <th>Monto Pagado</th>
+                    <th>No. Operación</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${pagosRecibidos.map(p => `
+                <tr>
+                    <td>${p.fechaPago || 'N/A'}</td>
+                    <td>${p.formaPago}</td>
+                    <td>${p.moneda}</td>
+                    <td>${p.tipoCambio}</td>
+                    <td style="font-weight: bold; color: ${paleta.primario};">$${p.monto.toFixed(2)}</td>
+                    <td>${p.numOperacion || 'N/A'}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        ` : ''}
+
+        ${doctosRelacionadosPago.length > 0 ? `
+        <div style="font-weight: bold; font-size: 9.5px; margin-top: 6px; margin-bottom: 4px; color: ${paleta.primario};">Documentos Relacionados y Liquidación de Saldos:</div>
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th style="width: 32%;">UUID Documento Relacionado</th>
+                    <th style="width: 10%;">Serie-Folio</th>
+                    <th style="width: 8%;">Parcialidad</th>
+                    <th style="width: 15%; text-align: right;">Saldo Anterior</th>
+                    <th style="width: 15%; text-align: right;">Importe Pagado</th>
+                    <th style="width: 15%; text-align: right;">Saldo Insoluto</th>
+                    <th style="width: 5%;">Obj.</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${doctosRelacionadosPago.map(dr => `
+                <tr>
+                    <td style="font-family: monospace; font-size: 8.5px;">${dr.idDocumento}</td>
+                    <td>${dr.serie || ''}${dr.folio ? '-' + dr.folio : ''}</td>
+                    <td style="text-align: center;">${dr.numParcialidad}</td>
+                    <td style="text-align: right;">$${dr.saldoAnterior.toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: bold; color: ${paleta.primario};">$${dr.importePagado.toFixed(2)}</td>
+                    <td style="text-align: right;">$${dr.saldoInsoluto.toFixed(2)}</td>
+                    <td style="text-align: center;">${dr.objetoImpDR}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        ` : ''}
+    </div>
+    ` : ''}
 
     <!-- TABLA DE CONCEPTOS -->
     <table class="table-conceptos">
