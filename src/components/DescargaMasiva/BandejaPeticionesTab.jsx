@@ -54,7 +54,7 @@ const renderStatusChip = (status = '') => {
   return <Chip size="small" label={status || 'Pendiente'} variant="outlined" />;
 };
 
-const BandejaPeticionesTab = ({ empresas = [], token }) => {
+const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
   const [rfcFiltro, setRfcFiltro] = useState('todos');
   const [peticiones, setPeticiones] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ const BandejaPeticionesTab = ({ empresas = [], token }) => {
   useEffect(() => {
     cargarPeticiones();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rfcFiltro, token]);
+  }, [rfcFiltro, token, refreshTrigger]);
 
   const cargarPeticiones = async () => {
     setLoading(true);

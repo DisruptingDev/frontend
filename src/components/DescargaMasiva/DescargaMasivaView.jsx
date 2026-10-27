@@ -120,12 +120,15 @@ const DescargaMasivaView = ({ token }) => {
     }
   };
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
   const handleSolicitudCreada = () => {
-    // Al generar solicitud, redirigir automáticamente a la bandeja de peticiones
+    // Al generar solicitud, incrementar trigger y redirigir automáticamente a la bandeja de peticiones
+    setRefreshTrigger((prev) => prev + 1);
     setActiveTab(1);
   };
 
@@ -215,6 +218,7 @@ const DescargaMasivaView = ({ token }) => {
         <BandejaPeticionesTab
           empresas={empresas}
           token={token}
+          refreshTrigger={refreshTrigger}
         />
       )}
 

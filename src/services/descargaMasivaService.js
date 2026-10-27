@@ -230,6 +230,10 @@ export const descargaMasivaService = {
     if (data.cer) payload.cer = data.cer;
     if (data.key) payload.key = data.key;
     if (data.password) payload.password = data.password;
+    if (data.rfcContraparte) payload.rfcContraparte = data.rfcContraparte;
+    if (data.estadoComprobante) payload.estadoComprobante = data.estadoComprobante;
+    if (data.tipo && data.tipo !== 'todos') payload.tipo = data.tipo;
+
     return apiRequest('/metadata/solicitar', payload, token);
   },
 
@@ -271,6 +275,8 @@ export const descargaMasivaService = {
     if (data.cer) payload.cer = data.cer;
     if (data.key) payload.key = data.key;
     if (data.password) payload.password = data.password;
+    if (data.rfcContraparte) payload.rfcContraparte = data.rfcContraparte;
+    if (data.estadoComprobante) payload.estadoComprobante = data.estadoComprobante;
 
     if (data.uuid) payload.uuid = String(data.uuid);
     if (data.tipo && data.tipo !== 'todos') payload.tipo = String(data.tipo);

@@ -628,6 +628,7 @@ export async function POST(request, context) {
       endpoint === 'metadata/solicitar' ||
       endpoint === 'solicitar' ||
       endpoint === 'multicomprobantes' ||
+      endpoint === 'multicomprobantes/solicitar' ||
       endpoint.endsWith('solicitar')
     ) {
       const {
@@ -783,6 +784,7 @@ export async function POST(request, context) {
     // =========================================================================
     if (
       endpoint === 'metadata/verificar' ||
+      endpoint === 'multicomprobantes/verificar' ||
       endpoint === 'verificar' ||
       endpoint.endsWith('verificar')
     ) {
