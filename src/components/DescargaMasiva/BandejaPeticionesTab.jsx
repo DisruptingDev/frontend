@@ -102,6 +102,58 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
   const [debugData, setDebugData] = useState(null);
   const [loadingDebug, setLoadingDebug] = useState(false);
 
+  // Temporizador visual y sincronización automática (5 minutos)
+  const [segundosRestantes, setSegundosRestantes] = useState(300);
+
+  useEffect(() => {
+    const calcularRestante = () => {
+      const ultimo = typeof window !== 'undefined' ? localStorage.getItem('sat_last_background_sync') : null;
+      if (ultimo) {
+        const transcurrido = Math.floor((Date.now() - parseInt(ultimo, 10)) / 1000);
+        const restante = Math.max(0, 300 - (transcurrido % 300));
+        setSegundosRestantes(restante);
+      } else {
+        setSegundosRestantes(300);
+      }
+    };
+
+    calcularRestante();
+    const timer = setInterval(calcularRestante, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleSyncEvent = (e) => {
+      console.log('[BandejaPeticionesTab] Actualización automática recibida:', e?.detail);
+      cargarPeticiones();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('sat-sync-event', handleSyncEvent);
+      return () => window.removeEventListener('sat-sync-event', handleSyncEvent);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const tienePendientes = peticiones.some((p) => {
+    const s = String(p.estatus || p.estado || '').toLowerCase();
+    const esFinal =
+      s.includes('terminad') ||
+      s.includes('rechazad') ||
+      s.includes('sin comprob') ||
+      s.includes('duplicad') ||
+      s.includes('vencid') ||
+      p.estado_solicitud === 3 ||
+      p.estado_solicitud === 4 ||
+      p.estado_solicitud === 5 ||
+      p.estado_solicitud === 6;
+    return !esFinal;
+  });
+
+  const minutosStr = Math.floor(segundosRestantes / 60);
+  const segundosStr = String(segundosRestantes % 60).padStart(2, '0');
+  const countdownText = `${minutosStr}:${segundosStr} min`;
+
   const handleAbrirDebug = async () => {
     setModalDebugOpen(true);
     setLoadingDebug(true);
@@ -418,6 +470,35 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
           {errorMsg && (
             <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg(null)}>
               {errorMsg}
+            </Alert>
+          )}
+
+          {tienePendientes && (
+            <Alert
+              severity="info"
+              variant="outlined"
+              icon={<HourglassEmptyIcon color="info" />}
+              sx={{ mb: 2, alignItems: 'center', bgcolor: '#f0f9ff', borderColor: '#bae6fd' }}
+              action={
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="info"
+                  onClick={handleSincronizarSAT}
+                  disabled={syncing || loading}
+                  startIcon={<SyncIcon fontSize="small" />}
+                  sx={{ textTransform: 'none', ml: 1 }}
+                >
+                  Sincronizar ahora
+                </Button>
+              }
+            >
+              <Typography variant="body2" component="span" fontWeight="bold">
+                Actualización automática activa (cada 5 min):
+              </Typography>{' '}
+              <Typography variant="body2" component="span">
+                Hay solicitudes en proceso ante el SAT. El sistema seguirá consultándolas automáticamente incluso si cambias de pestaña o módulo. Próxima consulta en: <strong>{countdownText}</strong>.
+              </Typography>
             </Alert>
           )}
 

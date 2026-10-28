@@ -1,6 +1,7 @@
 import './globals.css'; // Importa tus estilos globales
 import Script from 'next/script';
-import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google'
+import { GoogleTagManager, GoogleAnalytics } from '@next/third-parties/google';
+import SatBackgroundSync from '@/components/DescargaMasiva/SatBackgroundSync';
 
 export const metadata = {
   metadataBase: new URL('https://www.wisefacturacion.com'),
@@ -184,6 +185,7 @@ export default function VerticalLayout({ children }) {
         </noscript>
         {/* End Meta Pixel Code */}
 
+        <SatBackgroundSync />
         {children}
       </body>
     </html>
