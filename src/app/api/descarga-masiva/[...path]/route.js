@@ -99,6 +99,97 @@ async function extraerComprobantesDeZip(zipBase64) {
   }
 }
 
+async function sincronizarSolicitudesPendientes(rfcTarget = 'TODOS') {
+  const whereClause = {
+    OR: [
+      { estado_texto: { in: ['Aceptada', 'En Proceso', '1', '2'] } },
+      { estado_solicitud: { in: [1, 2] } }
+    ]
+  };
+  if (rfcTarget && rfcTarget !== 'TODOS') {
+    whereClause.rfc = { equals: rfcTarget, mode: 'insensitive' };
+  }
+
+  logSatEvent('INFO', 'SYNC_INICIO', { rfcTarget });
+
+  const pendientes = await prisma.sat_solicitudes_descarga.findMany({
+    where: whereClause,
+    take: 20
+  });
+
+  logSatEvent('INFO', 'SYNC_PENDIENTES_ENCONTRADAS', { cantidad: pendientes.length });
+
+  const SAT_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let actualizadas = 0;
+  for (const pend of pendientes) {
+    try {
+      if (!pend.id_solicitud || !SAT_UUID_REGEX.test(pend.id_solicitud)) {
+        logSatEvent('INFO', 'SYNC_SALTADA_NO_UUID', { id_solicitud: pend.id_solicitud });
+        continue;
+      }
+
+      const empFiel = await prisma.sat_empresas_fiel.findUnique({
+        where: { rfc: pend.rfc }
+      });
+      if (!empFiel) {
+        logSatEvent('WARN', 'SYNC_SIN_FIEL', { rfc: pend.rfc, id_solicitud: pend.id_solicitud });
+        continue;
+      }
+
+      const resVerifica = await verificarSolicitudSat({
+        idSolicitud: pend.id_solicitud,
+        cerInput: empFiel.cer_base64,
+        keyInput: empFiel.key_base64,
+        password: empFiel.password_fiel
+      });
+
+      logSatEvent('INFO', 'SYNC_VERIFICACION_SAT', {
+        id_solicitud: pend.id_solicitud,
+        rfc: pend.rfc,
+        estado_solicitud: resVerifica.estado_solicitud,
+        estado_texto: resVerifica.estado_texto,
+        mensaje: resVerifica.mensaje
+      });
+
+      let paqueteZipB64 = pend.paquete_zip_base64 || null;
+      if (resVerifica.estado_solicitud === 3 && resVerifica.ids_paquetes?.length > 0 && !paqueteZipB64) {
+        try {
+          const idPrimerPaquete = resVerifica.ids_paquetes[0];
+          const resDescarga = await descargarPaqueteSat({
+            idPaquete: idPrimerPaquete,
+            cerInput: empFiel.cer_base64,
+            keyInput: empFiel.key_base64,
+            password: empFiel.password_fiel
+          });
+          paqueteZipB64 = resDescarga.paquete_zip_base64;
+        } catch (downErr) {
+          console.warn(`[Auto-descarga paquete en sync]: ${downErr.message}`);
+        }
+      }
+
+      await prisma.sat_solicitudes_descarga.update({
+        where: { id_solicitud: pend.id_solicitud },
+        data: {
+          estado_solicitud: resVerifica.estado_solicitud,
+          estado_texto: resVerifica.estado_texto,
+          codigo_estatus: String(resVerifica.codigo_estatus),
+          numero_cfdis: resVerifica.numero_cfdis,
+          mensaje: resVerifica.mensaje,
+          ids_paquetes: resVerifica.ids_paquetes || [],
+          paquete_zip_base64: paqueteZipB64 || undefined,
+          updated_at: new Date()
+        }
+      });
+      actualizadas++;
+    } catch (e) {
+      logSatEvent('WARN', 'SYNC_ERROR_SOLICITUD', { id_solicitud: pend.id_solicitud, error: e.message });
+      console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
+    }
+  }
+
+  return { pendientes: pendientes.length, actualizadas };
+}
+
 export async function GET(request, context) {
   let endpoint = '';
   try {
@@ -221,6 +312,22 @@ export async function GET(request, context) {
     } catch (err) {
       console.error('[Descarga Masiva GET sat/peticiones Error]:', err);
       return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+  }
+
+  // Sincronización automática periódica (Vercel Cron o GET externo)
+  if (endpoint === 'cron' || endpoint === 'sat/cron' || endpoint === 'sat/sincronizar' || endpoint === 'sincronizar') {
+    try {
+      const resSync = await sincronizarSolicitudesPendientes(rfcFilter || 'TODOS');
+      return NextResponse.json({
+        codigo: 200,
+        ok: true,
+        mensaje: `Cron SAT ejecutado exitosamente. ${resSync.actualizadas} de ${resSync.pendientes} solicitud(es) actualizadas ante el SAT.`,
+        ...resSync
+      }, { status: 200 });
+    } catch (err) {
+      console.error('[Descarga Masiva GET Cron Error]:', err);
+      return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
     }
   }
 
@@ -569,103 +676,23 @@ export async function POST(request, context) {
     }
 
     // Sincronizar / actualizar todas las peticiones pendientes con el SAT
-    if (endpoint === 'sat/sincronizar' || endpoint === 'sincronizar') {
+    if (
+      endpoint === 'sat/sincronizar' ||
+      endpoint === 'sincronizar' ||
+      endpoint === 'cron' ||
+      endpoint === 'sat/cron'
+    ) {
       const rfcTarget = (body.rfc || '').toUpperCase().trim();
-      const whereClause = {
-        OR: [
-          { estado_texto: { in: ['Aceptada', 'En Proceso', '1', '2'] } },
-          { estado_solicitud: { in: [1, 2] } }
-        ]
-      };
-      if (rfcTarget && rfcTarget !== 'TODOS') {
-        whereClause.rfc = { equals: rfcTarget, mode: 'insensitive' };
-      }
-
-      logSatEvent('INFO', 'SYNC_INICIO', { rfcTarget: rfcTarget || 'TODOS' });
-
       try {
-        const pendientes = await prisma.sat_solicitudes_descarga.findMany({
-          where: whereClause,
-          take: 20
-        });
-
-        logSatEvent('INFO', 'SYNC_PENDIENTES_ENCONTRADAS', { cantidad: pendientes.length });
-
-        const SAT_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        let actualizadas = 0;
-        for (const pend of pendientes) {
-          try {
-            if (!pend.id_solicitud || !SAT_UUID_REGEX.test(pend.id_solicitud)) {
-              logSatEvent('INFO', 'SYNC_SALTADA_NO_UUID', { id_solicitud: pend.id_solicitud });
-              continue;
-            }
-
-            const empFiel = await prisma.sat_empresas_fiel.findUnique({
-              where: { rfc: pend.rfc }
-            });
-            if (!empFiel) {
-              logSatEvent('WARN', 'SYNC_SIN_FIEL', { rfc: pend.rfc, id_solicitud: pend.id_solicitud });
-              continue;
-            }
-
-            const resVerifica = await verificarSolicitudSat({
-              idSolicitud: pend.id_solicitud,
-              cerInput: empFiel.cer_base64,
-              keyInput: empFiel.key_base64,
-              password: empFiel.password_fiel
-            });
-
-            logSatEvent('INFO', 'SYNC_VERIFICACION_SAT', {
-              id_solicitud: pend.id_solicitud,
-              rfc: pend.rfc,
-              estado_solicitud: resVerifica.estado_solicitud,
-              estado_texto: resVerifica.estado_texto,
-              mensaje: resVerifica.mensaje
-            });
-
-            let paqueteZipB64 = pend.paquete_zip_base64 || null;
-            if (resVerifica.estado_solicitud === 3 && resVerifica.ids_paquetes?.length > 0 && !paqueteZipB64) {
-              try {
-                const idPrimerPaquete = resVerifica.ids_paquetes[0];
-                const resDescarga = await descargarPaqueteSat({
-                  idPaquete: idPrimerPaquete,
-                  cerInput: empFiel.cer_base64,
-                  keyInput: empFiel.key_base64,
-                  password: empFiel.password_fiel
-                });
-                paqueteZipB64 = resDescarga.paquete_zip_base64;
-              } catch (downErr) {
-                console.warn(`[Auto-descarga paquete en sync]: ${downErr.message}`);
-              }
-            }
-
-            await prisma.sat_solicitudes_descarga.update({
-              where: { id_solicitud: pend.id_solicitud },
-              data: {
-                estado_solicitud: resVerifica.estado_solicitud,
-                estado_texto: resVerifica.estado_texto,
-                codigo_estatus: String(resVerifica.codigo_estatus),
-                numero_cfdis: resVerifica.numero_cfdis,
-                mensaje: resVerifica.mensaje,
-                ids_paquetes: resVerifica.ids_paquetes || [],
-                paquete_zip_base64: paqueteZipB64 || undefined,
-                updated_at: new Date()
-              }
-            });
-            actualizadas++;
-          } catch (e) {
-            logSatEvent('WARN', 'SYNC_ERROR_SOLICITUD', { id_solicitud: pend.id_solicitud, error: e.message });
-            console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
-          }
-        }
-
+        const resSync = await sincronizarSolicitudesPendientes(rfcTarget || 'TODOS');
         return NextResponse.json({
           codigo: 200,
           ok: true,
-          mensaje: `Sincronización completada. ${actualizadas} solicitud(es) consultadas con el SAT.`
+          mensaje: `Sincronización completada. ${resSync.actualizadas} de ${resSync.pendientes} solicitud(es) consultadas con el SAT.`,
+          ...resSync
         }, { status: 200 });
       } catch (dbErr) {
-        console.error('[Descarga Masiva sat/sincronizar DB Error]:', dbErr.message);
+        console.error('[Descarga Masiva sat/sincronizar Error]:', dbErr.message);
         return NextResponse.json({
           codigo: 200,
           ok: true,
