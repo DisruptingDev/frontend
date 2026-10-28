@@ -359,6 +359,30 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
                 }
               }
             }
+
+            if (filename.toLowerCase().endsWith('.xml')) {
+              const xmlText = await fileObj.async('text');
+              const uuidMatch = xmlText.match(/UUID=["']([0-9a-fA-F-]{36})["']/i) || xmlText.match(/UUID=["']([^"']+)["']/i);
+              const totalMatch = xmlText.match(/Total=["']([^"']+)["']/i);
+              const rfcEmisorMatch = xmlText.match(/<cfdi:Emisor[^>]*Rfc=["']([^"']+)["']/i) || xmlText.match(/Rfc=["']([^"']+)["']/i);
+              const nomEmisorMatch = xmlText.match(/<cfdi:Emisor[^>]*Nombre=["']([^"']+)["']/i);
+              const rfcReceptorMatch = xmlText.match(/<cfdi:Receptor[^>]*Rfc=["']([^"']+)["']/i);
+              const nomReceptorMatch = xmlText.match(/<cfdi:Receptor[^>]*Nombre=["']([^"']+)["']/i);
+              const fechaMatch = xmlText.match(/Fecha=["']([^"']+)["']/i);
+
+              items.push({
+                uuid: uuidMatch ? uuidMatch[1] : filename.replace(/\.xml$/i, ''),
+                rfc_emisor: rfcEmisorMatch ? rfcEmisorMatch[1] : '',
+                nombre_emisor: nomEmisorMatch ? nomEmisorMatch[1] : '',
+                rfc_receptor: rfcReceptorMatch ? rfcReceptorMatch[1] : '',
+                nombre_receptor: nomReceptorMatch ? nomReceptorMatch[1] : '',
+                total: totalMatch ? parseFloat(totalMatch[1]) : 0,
+                fecha_emision: fechaMatch ? fechaMatch[1] : '',
+                estatus: 'Vigente',
+                xml: xmlText,
+                tipo_origen: 'xml'
+              });
+            }
           }
           if (items.length > 0) {
             data = { ...(data || {}), comprobantes: items };

@@ -122,124 +122,64 @@ const ModalImportarContabilidad = ({ open, onClose, token, zipData, solicitudInf
         return;
       }
 
-      for (let i = 0; i < listaXMLs.length; i++) {
-        const item = listaXMLs[i];
-        setArchivoActual(i + 1);
-        setProgreso(Math.round(((i + 1) / listaXMLs.length) * 100));
+      // Procesar en lotes de 15 comprobantes a la tabla de contabilidad de facturas recibidas
+      const BATCH_SIZE = 15;
+      for (let i = 0; i < listaXMLs.length; i += BATCH_SIZE) {
+        const batch = listaXMLs.slice(i, i + BATCH_SIZE);
+        const procesadosHastaAhora = Math.min(i + batch.length, listaXMLs.length);
+        setArchivoActual(procesadosHastaAhora);
+        setProgreso(Math.round((procesadosHastaAhora / listaXMLs.length) * 100));
 
         try {
-          // 1. Validar XML con el backend de Wise
-          const valResp = await fetch(`${apiUrl}/api/importarxml/validar-xml`, {
+          const resp = await fetch('/api/contabilidad/importar-recibidas', {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
             },
-            body: JSON.stringify({ xml_content: item.content }),
+            body: JSON.stringify({
+              rfc: solicitudInfo?.rfc,
+              id_solicitud: solicitudInfo?.id_solicitud || solicitudInfo?.solicitud || solicitudInfo?.id,
+              xmls: batch,
+            }),
           });
 
-          const valData = await valResp.json();
-
-          if (!valResp.ok) {
-            errores++;
-            setDetalles((prev) => [
-              {
-                nombre: item.filename,
-                estado: 'error',
-                mensaje: valData.mensaje || valData.error || 'Error al validar estructura del XML',
-              },
-              ...prev,
-            ]);
-            continue;
-          }
-
-          const facturaObj = valData.factura_completa || valData.comprobante;
-          const uuid =
-            facturaObj?.timbre?.UUID ||
-            facturaObj?.UUID ||
-            valData.validaciones?.uuid;
-
-          // 2. Guardar en base de datos para contabilidad
-          const payloadGuardar = {
-            ...facturaObj,
-            xml_content: item.content,
-            UUID: uuid,
-            FormaPago: facturaObj?.FormaPago || '99',
-            MetodoPago: facturaObj?.MetodoPago || 'PUE',
-            EmisorID: facturaObj?.EmisorID || 0,
-            ReceptorID: facturaObj?.ReceptorID || 0,
-            Emisor: facturaObj?.Emisor || {},
-            Receptor: facturaObj?.Receptor || {},
-            UsoCFDI: facturaObj?.Receptor?.UsoCFDI || 'G03',
-          };
-
-          const saveResp = await fetch(`${apiUrl}/api/facturas/GuardarFacturaTimbrada`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payloadGuardar),
-          });
-
-          const saveData = await saveResp.json();
-
-          // Sincronizar también con la tabla de contabilidad de facturas recibidas si corresponde
-          try {
-            await fetch('/api/contabilidad/resumen', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ rfc: facturaObj?.Receptor?.Rfc || facturaObj?.Receptor?.rfc })
-            });
-          } catch {}
-
-          if (saveResp.ok) {
-            exitosos++;
-            setDetalles((prev) => [
-              {
-                nombre: item.filename,
-                estado: 'exito',
-                mensaje: `Guardada para cálculos contables (${uuid || 'Registrada'})`,
-              },
-              ...prev,
-            ]);
-          } else {
-            const msgError = saveData.error || saveData.mensaje || 'Error al guardar';
-            if (msgError.toLowerCase().includes('ya existe') || msgError.toLowerCase().includes('duplicad')) {
-              advertencias++;
-              setDetalles((prev) => [
-                {
-                  nombre: item.filename,
-                  estado: 'advertencia',
-                  mensaje: `Ya registrada previamente en Wise (${uuid || ''})`,
-                },
-                ...prev,
-              ]);
-            } else {
-              errores++;
-              setDetalles((prev) => [
-                {
-                  nombre: item.filename,
-                  estado: 'error',
-                  mensaje: msgError,
-                },
-                ...prev,
-              ]);
+          const resData = await resp.json();
+          if (resp.ok && resData.ok) {
+            exitosos += (resData.importadas || 0);
+            errores += (resData.omitidas || 0);
+            if (Array.isArray(resData.detalles)) {
+              setDetalles((prev) => [...resData.detalles, ...prev]);
             }
+          } else {
+            errores += batch.length;
+            setDetalles((prev) => [
+              {
+                nombre: `Lote de ${batch.length} archivo(s)`,
+                estado: 'error',
+                mensaje: resData.error || 'Error al guardar en contabilidad',
+              },
+              ...prev,
+            ]);
           }
-        } catch (err) {
-          errores++;
+        } catch (batchErr) {
+          errores += batch.length;
           setDetalles((prev) => [
             {
-              nombre: item.filename,
+              nombre: `Lote de ${batch.length} archivo(s)`,
               estado: 'error',
-              mensaje: err.message || 'Fallo de conexión',
+              mensaje: batchErr.message || 'Fallo de conexión al importar',
             },
             ...prev,
           ]);
         }
 
-        setResumen({ exitosos, advertencias, errores });
+        setResumen({ exitosos, advertencias: 0, errores });
+      }
+
+      setCompletado(true);
+      if (onFinished) {
+        onFinished();
       }
     } catch (err) {
       console.error('Error procesando importación:', err);

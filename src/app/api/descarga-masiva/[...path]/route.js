@@ -965,16 +965,13 @@ export async function POST(request, context) {
         }, { status: 200 });
       }
 
-      // Buscar en BD la solicitud para inferir el RFC si no fue enviado
+      // Buscar en BD la solicitud
       let rfcSol = Array.isArray(rfc) ? rfc[0] : (rfc || '');
-      let solRecord = null;
-      if (!rfcSol) {
-        solRecord = await prisma.sat_solicitudes_descarga.findUnique({
-          where: { id_solicitud: idSol }
-        });
-        if (solRecord) {
-          rfcSol = solRecord.rfc;
-        }
+      const solRecord = await prisma.sat_solicitudes_descarga.findUnique({
+        where: { id_solicitud: idSol }
+      });
+      if (solRecord && !rfcSol) {
+        rfcSol = solRecord.rfc;
       }
 
       if (!rfcSol) {
