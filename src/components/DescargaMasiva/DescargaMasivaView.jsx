@@ -121,12 +121,17 @@ const DescargaMasivaView = ({ token }) => {
   };
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedRfcBandeja, setSelectedRfcBandeja] = useState('');
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
-  const handleSolicitudCreada = () => {
+  const handleSolicitudCreada = (solicitudData) => {
+    if (solicitudData?.rfc) {
+      const rfc = Array.isArray(solicitudData.rfc) ? solicitudData.rfc[0] : solicitudData.rfc;
+      setSelectedRfcBandeja((rfc || '').toUpperCase().trim());
+    }
     // Al generar solicitud, incrementar trigger y redirigir automáticamente a la bandeja de peticiones
     setRefreshTrigger((prev) => prev + 1);
     setActiveTab(1);
@@ -219,6 +224,7 @@ const DescargaMasivaView = ({ token }) => {
           empresas={empresas}
           token={token}
           refreshTrigger={refreshTrigger}
+          rfcInicial={selectedRfcBandeja}
         />
       )}
 

@@ -460,10 +460,10 @@ export async function POST(request, context) {
       endpoint === 'peticiones' ||
       endpoint.endsWith('peticiones')
     ) {
-      const rfcFiltro = body.rfc || '';
+      const rfcFiltro = (body.rfc || '').toUpperCase().trim();
       const whereClause = {};
-      if (rfcFiltro && rfcFiltro !== 'todos') {
-        whereClause.rfc = rfcFiltro;
+      if (rfcFiltro && rfcFiltro !== 'TODOS') {
+        whereClause.rfc = { equals: rfcFiltro, mode: 'insensitive' };
       }
 
       try {
@@ -645,7 +645,7 @@ export async function POST(request, context) {
         estadoComprobante
       } = body;
 
-      const rfcSolicitante = Array.isArray(rfc) ? rfc[0] : (rfc || '');
+      const rfcSolicitante = (Array.isArray(rfc) ? rfc[0] : (rfc || '')).toUpperCase().trim();
       if (!rfcSolicitante) {
         return NextResponse.json({ error: 'Debe especificar el RFC solicitante.' }, { status: 400 });
       }
@@ -735,33 +735,50 @@ export async function POST(request, context) {
 
       const resSat = await solicitarDescargaSat(paramsSat);
 
-      // Guardar solicitud en la tabla sat_solicitudes_descarga
+      const isAccepted = resSat.ok === true || String(resSat.codigo_estatus) === '5000';
+      const folioId = resSat.id_solicitud || `SAT-${tipoSolicitudSat.toUpperCase()}-${Date.now()}`;
+
+      let estadoTexto = 'Aceptada';
+      let estadoNum = 1;
+
+      if (!isAccepted) {
+        estadoNum = 4; // Rechazada / Error
+        if (String(resSat.codigo_estatus) === '5004') {
+          estadoTexto = 'Sin Comprobantes';
+        } else if (String(resSat.codigo_estatus) === '5005') {
+          estadoTexto = 'Solicitud Duplicada';
+        } else {
+          estadoTexto = 'Rechazada';
+        }
+      }
+
+      // Guardar solicitud en la tabla sat_solicitudes_descarga SIEMPRE para que aparezca en el historial
       try {
         await prisma.sat_solicitudes_descarga.upsert({
-          where: { id_solicitud: resSat.id_solicitud },
+          where: { id_solicitud: folioId },
           update: {
             rfc: rfcSolicitante,
             tipo_descarga: tipoDescargaSat,
             tipo_solicitud: tipoSolicitudSat,
             fecha_inicio: fechaInicio,
             fecha_fin: fechaFin,
-            estado_solicitud: 1,
-            estado_texto: 'Aceptada',
-            codigo_estatus: String(resSat.codigo_estatus || 5000),
-            mensaje: resSat.mensaje || 'Solicitud aceptada por el SAT',
+            estado_solicitud: estadoNum,
+            estado_texto: estadoTexto,
+            codigo_estatus: String(resSat.codigo_estatus || (isAccepted ? '5000' : '5004')),
+            mensaje: resSat.mensaje || (isAccepted ? 'Solicitud aceptada por el SAT' : `Estatus SAT: [${resSat.codigo_estatus}]`),
             updated_at: new Date()
           },
           create: {
-            id_solicitud: resSat.id_solicitud,
+            id_solicitud: folioId,
             rfc: rfcSolicitante,
             tipo_descarga: tipoDescargaSat,
             tipo_solicitud: tipoSolicitudSat,
             fecha_inicio: fechaInicio,
             fecha_fin: fechaFin,
-            estado_solicitud: 1,
-            estado_texto: 'Aceptada',
-            codigo_estatus: String(resSat.codigo_estatus || 5000),
-            mensaje: resSat.mensaje || 'Solicitud aceptada por el SAT',
+            estado_solicitud: estadoNum,
+            estado_texto: estadoTexto,
+            codigo_estatus: String(resSat.codigo_estatus || (isAccepted ? '5000' : '5004')),
+            mensaje: resSat.mensaje || (isAccepted ? 'Solicitud aceptada por el SAT' : `Estatus SAT: [${resSat.codigo_estatus}]`),
             created_at: new Date(),
             updated_at: new Date()
           }
@@ -771,11 +788,12 @@ export async function POST(request, context) {
       }
 
       return NextResponse.json({
-        codigo: 5000,
-        solicitud: resSat.id_solicitud,
-        id_solicitud: resSat.id_solicitud,
-        mensaje: resSat.mensaje,
-        estado: 'Aceptada'
+        ok: isAccepted,
+        codigo: isAccepted ? 5000 : Number(resSat.codigo_estatus) || 400,
+        solicitud: folioId,
+        id_solicitud: folioId,
+        mensaje: resSat.mensaje || (isAccepted ? 'Solicitud aceptada por el SAT' : 'El SAT no aceptó la solicitud'),
+        estado: estadoTexto
       }, { status: 200 });
     }
 

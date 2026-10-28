@@ -197,9 +197,35 @@ export async function solicitarDescargaSat({
 }) {
   const { service } = crearSatService(cerInput, keyInput, password);
 
-  // Formato y periodo de fechas
-  const fIni = fechaInicio.includes(' ') ? fechaInicio : `${fechaInicio} 00:00:00`;
-  const fFin = fechaFin.includes(' ') ? fechaFin : `${fechaFin} 23:59:59`;
+  // Formato y periodo de fechas con protección de hora para el SAT
+  const pad = (n) => String(n).padStart(2, '0');
+  const now = new Date();
+  // Obtener fecha y hora actual en la zona de la Ciudad de México (UTC-6)
+  const nowMx = new Date(now.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+  const todayMx = `${nowMx.getFullYear()}-${pad(nowMx.getMonth() + 1)}-${pad(nowMx.getDate())}`;
+
+  let fIni = fechaInicio;
+  if (!fIni.includes(' ') && !fIni.includes('T')) {
+    fIni = `${fIni} 00:00:00`;
+  } else {
+    fIni = fIni.replace('T', ' ');
+  }
+
+  let fFin = fechaFin;
+  const fFinDatePart = fFin.split('T')[0].split(' ')[0];
+  if (!fFin.includes(' ') && !fFin.includes('T')) {
+    if (fFinDatePart >= todayMx) {
+      // Regla estricta del SAT: La FechaFinal no puede ser posterior a la hora actual del SAT.
+      // Si la fecha elegida es hoy o en el futuro, usamos la hora actual en México menos 2 minutos para absorber desfases de reloj.
+      const safeMinutes = Math.max(0, nowMx.getMinutes() - 2);
+      fFin = `${todayMx} ${pad(nowMx.getHours())}:${pad(safeMinutes)}:${pad(nowMx.getSeconds())}`;
+    } else {
+      fFin = `${fFin} 23:59:59`;
+    }
+  } else {
+    fFin = fFin.replace('T', ' ');
+  }
+
   const period = DateTimePeriod.createFromValues(fIni, fFin);
 
   const downloadType = tipoSolicitud.toLowerCase().includes('recib')
@@ -257,15 +283,15 @@ export async function solicitarDescargaSat({
 
   const queryResult = await service.query(qp);
   const status = queryResult.getStatus();
-
-  if (!status.isAccepted()) {
-    throw new Error(`El SAT no aceptó la solicitud: [${status.getCode()}] ${status.getMessage()}`);
-  }
+  const statusCode = status.getCode();
+  const requestId = queryResult.getRequestId() || '';
+  const statusMessage = status.getMessage() || '';
 
   return {
-    codigo_estatus: status.getCode(),
-    id_solicitud: queryResult.getRequestId(),
-    mensaje: status.getMessage() || 'Solicitud Aceptada'
+    ok: status.isAccepted(),
+    codigo_estatus: statusCode,
+    id_solicitud: requestId,
+    mensaje: statusMessage || (status.isAccepted() ? 'Solicitud Aceptada' : `Estatus SAT: [${statusCode}]`)
   };
 }
 

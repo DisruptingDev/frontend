@@ -229,37 +229,63 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
         resultado?.peticion_id ||
         'SAT-PENDING';
 
-      const msgPAC = resultado?.mensaje || 'Solicitud procesada con éxito por el SAT';
+      const isAceptada = resultado?.ok !== false && (resultado?.codigo === 5000 || resultado?.estado === 'Aceptada');
+      const msgPAC = resultado?.mensaje || (isAceptada ? 'Solicitud procesada con éxito por el SAT' : 'Respuesta del SAT recibida');
 
-      setMensajeError(null);
-      setDetallesError(null);
-      setMensajeExito(
-        `SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}. Redirigiendo a la bandeja...`
-      );
+      if (isAceptada) {
+        setMensajeError(null);
+        setDetallesError(null);
+        setMensajeExito(
+          `SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}. Redirigiendo a la bandeja...`
+        );
+      } else {
+        setMensajeExito(null);
+        setMensajeError(
+          `Respuesta del SAT: [Código ${resultado?.codigo || 'SAT'}] ${msgPAC}. La solicitud se guardó en el historial con estatus "${resultado?.estado || 'Rechazada'}". Redirigiendo a la bandeja...`
+        );
+      }
 
-      // Breve pausa para que el usuario aprecie el folio y confirmación antes del cambio de pestaña
+      // Pausa para que el usuario aprecie el folio y confirmación antes del cambio de pestaña
       setTimeout(() => {
         if (onSolicitudCreada) {
           onSolicitudCreada({
             ...payload,
+            rfc: selectedRfc,
             id_solicitud: idSolicitud,
             tipo_descarga: tipoDescarga,
             fecha_solicitud: new Date().toISOString(),
-            estatus: resultado?.mensaje || 'Aceptada',
+            estatus: resultado?.estado || (isAceptada ? 'Aceptada' : 'Rechazada'),
             respuestaPAC: resultado,
           });
         }
-      }, 1200);
+      }, isAceptada ? 1500 : 3500);
     } catch (err) {
       console.error('Error al solicitar descarga al SAT:', err);
       setMensajeExito(null);
-      setMensajeError(err.message || 'Error al conectar con el servicio del SAT/Prodigia.');
+      setMensajeError(err.message || 'Error al conectar con el servicio del SAT.');
       setDetallesError({
         payload: err.payload || payload,
         responseData: err.responseData || null,
         targetUrl: err.responseData?._proxy_target_url || null,
         status: err.status || null,
       });
+
+      const errFolio = err.responseData?.id_solicitud || err.responseData?.solicitud;
+      if (errFolio) {
+        setTimeout(() => {
+          if (onSolicitudCreada) {
+            onSolicitudCreada({
+              ...payload,
+              rfc: selectedRfc,
+              id_solicitud: errFolio,
+              tipo_descarga: tipoDescarga,
+              fecha_solicitud: new Date().toISOString(),
+              estatus: err.responseData?.estado || 'Rechazada',
+              respuestaPAC: err.responseData,
+            });
+          }
+        }, 3500);
+      }
     } finally {
       setLoading(false);
     }
