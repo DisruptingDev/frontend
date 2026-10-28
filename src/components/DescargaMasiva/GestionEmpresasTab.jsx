@@ -641,10 +641,11 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
                           variant={cerFile ? 'contained' : 'outlined'}
                           color={cerFile ? 'success' : 'primary'}
                           component="label"
+                          htmlFor="input-gestion-cer"
                           sx={{ flex: 1, minWidth: 200, textTransform: 'none' }}
                         >
                           {cerFile ? `✓ CER: ${cerFileName}` : '1. Subir Certificado (.cer)'}
-                          <input type="file" accept=".cer" hidden onChange={handleCerFileUpload} />
+                          <input id="input-gestion-cer" type="file" accept=".cer" hidden onChange={handleCerFileUpload} />
                         </Button>
 
                         {/* Botón Llave Privada .key */}
@@ -652,10 +653,11 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
                           variant={keyFile ? 'contained' : 'outlined'}
                           color={keyFile ? 'success' : 'primary'}
                           component="label"
+                          htmlFor="input-gestion-key"
                           sx={{ flex: 1, minWidth: 200, textTransform: 'none' }}
                         >
                           {keyFile ? `✓ KEY: ${keyFileName}` : '2. Subir Llave Privada (.key)'}
-                          <input type="file" accept=".key" hidden onChange={handleKeyFileUpload} />
+                          <input id="input-gestion-key" type="file" accept=".key" hidden onChange={handleKeyFileUpload} />
                         </Button>
                       </Box>
 
@@ -679,12 +681,13 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
                         variant={pfxBase64 ? 'contained' : 'outlined'}
                         color={pfxBase64 ? 'success' : 'primary'}
                         component="label"
+                        htmlFor="input-gestion-pfx"
                         fullWidth
                       >
                         {pfxBase64
                           ? `✓ Archivo Cargado: ${pfxFileName}`
                           : 'Subir Archivo .PFX / .P12'}
-                        <input type="file" accept=".pfx,.p12" hidden onChange={handlePfxFileUpload} />
+                        <input id="input-gestion-pfx" type="file" accept=".pfx,.p12" hidden onChange={handlePfxFileUpload} />
                       </Button>
                       <TextField
                         label="Contraseña del Archivo PFX"

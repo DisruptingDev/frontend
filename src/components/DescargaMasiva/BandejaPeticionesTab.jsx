@@ -55,12 +55,20 @@ const renderStatusChip = (status = '') => {
 };
 
 const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
-  const [rfcFiltro, setRfcFiltro] = useState('todos');
+  // Inicializar con la primera empresa si existe, o vacío
+  const [rfcFiltro, setRfcFiltro] = useState(empresas[0]?.Rfc || empresas[0]?.rfc || '');
   const [peticiones, setPeticiones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
+
+  // Sincronizar rfcFiltro si cargan las empresas y aún no hay selección
+  useEffect(() => {
+    if (!rfcFiltro && empresas.length > 0) {
+      setRfcFiltro(empresas[0].Rfc || empresas[0].rfc || '');
+    }
+  }, [empresas, rfcFiltro]);
 
   // Modal de importación contable
   const [modalImportarOpen, setModalImportarOpen] = useState(false);
@@ -73,18 +81,25 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
 
   useEffect(() => {
-    cargarPeticiones();
+    if (rfcFiltro && rfcFiltro !== 'todos') {
+      cargarPeticiones();
+    } else {
+      setPeticiones([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rfcFiltro, token, refreshTrigger]);
 
   const cargarPeticiones = async () => {
+    if (!rfcFiltro || rfcFiltro === 'todos') {
+      setErrorMsg('Seleccione un RFC de empresa para consultar o actualizar sus peticiones.');
+      setPeticiones([]);
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     try {
-      const params = {};
-      if (rfcFiltro && rfcFiltro !== 'todos') {
-        params.rfc = rfcFiltro;
-      }
+      const params = { rfc: rfcFiltro };
       const data = await descargaMasivaService.listarPeticionesSAT(params, token);
       console.log('[BandejaPeticionesTab] Datos recibidos de listarPeticionesSAT:', data);
       let lista = [];
@@ -104,6 +119,7 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
       setPeticiones(lista);
     } catch (err) {
       console.error('[BandejaPeticionesTab] Error al cargar peticiones SAT:', err);
+      setErrorMsg(err.message || 'No se pudieron consultar las peticiones en la base de datos.');
       setPeticiones([]);
     } finally {
       setLoading(false);
@@ -111,16 +127,21 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
   };
 
   const handleSincronizarSAT = async () => {
+    if (!rfcFiltro || rfcFiltro === 'todos') {
+      setErrorMsg('Debe seleccionar un RFC de empresa específico para sincronizar sus solicitudes con el SAT.');
+      return;
+    }
+
     setSyncing(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
       const payload = {
-        rfc: rfcFiltro !== 'todos' ? rfcFiltro : '',
+        rfc: rfcFiltro,
         habilitado: 'true',
       };
       const res = await descargaMasivaService.sincronizarSAT(payload, token);
-      setSuccessMsg(res?.mensaje || 'Sincronización con el SAT completada. Actualizando estados...');
+      setSuccessMsg(res?.mensaje || `Sincronización con el SAT completada para ${rfcFiltro}.`);
       await cargarPeticiones();
     } catch (err) {
       setErrorMsg(err.message || 'Error al ejecutar sincronización con SAT.');
@@ -309,21 +330,27 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
             </Box>
 
             <Box display="flex" gap={1.5} alignItems="center">
-              {/* Filtro por RFC de las empresas del usuario */}
+              {/* Selector de RFC de la empresa obligatoria */}
               <TextField
                 select
                 size="small"
-                label="Filtrar por Empresa"
+                label="Empresa (RFC Obligatorio)"
                 value={rfcFiltro}
                 onChange={(e) => setRfcFiltro(e.target.value)}
-                sx={{ minWidth: 200 }}
+                sx={{ minWidth: 240 }}
+                helperText={!rfcFiltro ? "Seleccione un RFC" : undefined}
+                error={!rfcFiltro}
               >
-                <MenuItem value="todos">Todas mis empresas</MenuItem>
+                {empresas.length === 0 && (
+                  <MenuItem value="" disabled>
+                    No hay empresas registradas
+                  </MenuItem>
+                )}
                 {empresas.map((emp) => {
                   const rfcVal = emp.Rfc || emp.rfc;
                   return (
                     <MenuItem key={emp.ID || emp.id || rfcVal} value={rfcVal}>
-                      {rfcVal} {emp.RazonSocial || emp.razon_social ? `— ${emp.RazonSocial || emp.razon_social}` : ''}
+                      <strong>{rfcVal}</strong> {emp.RazonSocial || emp.razon_social ? `— ${emp.RazonSocial || emp.razon_social}` : ''}
                     </MenuItem>
                   );
                 })}
@@ -475,7 +502,9 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0 }) => {
                     <TableRow>
                       <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
                         <Typography variant="body2" color="text.secondary">
-                          No hay solicitudes de descarga registradas. Envíe una nueva solicitud en la pestaña superior.
+                          {!rfcFiltro
+                            ? 'Seleccione una empresa (RFC) en el selector superior para consultar sus solicitudes.'
+                            : `No hay solicitudes de descarga registradas para la empresa ${rfcFiltro}. Envíe una nueva solicitud en la primera pestaña.`}
                         </Typography>
                       </TableCell>
                     </TableRow>

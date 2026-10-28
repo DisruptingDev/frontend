@@ -84,6 +84,15 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
     verificarFielsGuardadas();
   }, [token]);
 
+  // Sincronizar RFC seleccionado si cambia o cargan las empresas
+  React.useEffect(() => {
+    if (!selectedRfc && empresas.length > 0) {
+      setSelectedRfc(empresas[0].Rfc || empresas[0].rfc || '');
+    } else if (!selectedRfc && empresasConFiel.length > 0) {
+      setSelectedRfc(empresasConFiel[0].rfc || '');
+    }
+  }, [empresas, empresasConFiel, selectedRfc]);
+
   // Actualizar indicador si la empresa seleccionada tiene FIEL guardada
   React.useEffect(() => {
     const rfcUpper = (selectedRfc || '').toUpperCase().trim();
@@ -220,24 +229,27 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
         resultado?.peticion_id ||
         'SAT-PENDING';
 
-      const msgPAC = resultado?.mensaje || 'Solicitud procesada con éxito por el PAC';
+      const msgPAC = resultado?.mensaje || 'Solicitud procesada con éxito por el SAT';
 
       setMensajeError(null);
       setDetallesError(null);
       setMensajeExito(
-        `SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}`
+        `SAT: ${msgPAC} — ID / Folio de solicitud: ${idSolicitud}. Redirigiendo a la bandeja...`
       );
 
-      if (onSolicitudCreada) {
-        onSolicitudCreada({
-          ...payload,
-          id_solicitud: idSolicitud,
-          tipo_descarga: tipoDescarga,
-          fecha_solicitud: new Date().toISOString(),
-          estatus: resultado?.mensaje || 'Aceptada',
-          respuestaPAC: resultado,
-        });
-      }
+      // Breve pausa para que el usuario aprecie el folio y confirmación antes del cambio de pestaña
+      setTimeout(() => {
+        if (onSolicitudCreada) {
+          onSolicitudCreada({
+            ...payload,
+            id_solicitud: idSolicitud,
+            tipo_descarga: tipoDescarga,
+            fecha_solicitud: new Date().toISOString(),
+            estatus: resultado?.mensaje || 'Aceptada',
+            respuestaPAC: resultado,
+          });
+        }
+      }, 1200);
     } catch (err) {
       console.error('Error al solicitar descarga al SAT:', err);
       setMensajeExito(null);
@@ -422,6 +434,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                       <Button
                         variant="outlined"
                         component="label"
+                        htmlFor="input-fiel-cer"
                         fullWidth
                         size="medium"
                         color={cerFile ? "success" : "primary"}
@@ -429,6 +442,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                       >
                         {cerFile ? `✓ ${cerFile.name}` : (fielGuardadaActiva ? 'Cambiar .CER (Opcional)' : 'Seleccionar .CER')}
                         <input
+                          id="input-fiel-cer"
                           type="file"
                           accept=".cer"
                           hidden
@@ -441,6 +455,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                       <Button
                         variant="outlined"
                         component="label"
+                        htmlFor="input-fiel-key"
                         fullWidth
                         size="medium"
                         color={keyFile ? "success" : "primary"}
@@ -448,6 +463,7 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
                       >
                         {keyFile ? `✓ ${keyFile.name}` : (fielGuardadaActiva ? 'Cambiar .KEY (Opcional)' : 'Seleccionar .KEY')}
                         <input
+                          id="input-fiel-key"
                           type="file"
                           accept=".key"
                           hidden
