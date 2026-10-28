@@ -8,49 +8,59 @@ export function parseCFDIXml(xmlContent) {
     throw new Error('Contenido XML no válido o vacío');
   }
 
-  // 1. Datos del Comprobante
-  const uuidMatch =
-    xmlContent.match(/UUID=["']([0-9a-fA-F-]{36})["']/i) ||
-    xmlContent.match(/UUID=["']([^"']+)["']/i);
-  const uuid = uuidMatch ? uuidMatch[1].toUpperCase().trim() : null;
+  // 1. Datos del Comprobante (extraídos de la etiqueta <cfdi:Comprobante>)
+  const comprobanteTagMatch = xmlContent.match(/<cfdi:Comprobante[^>]*>/i);
+  const comprobanteTag = comprobanteTagMatch ? comprobanteTagMatch[0] : xmlContent;
 
-  const fechaMatch = xmlContent.match(/Fecha=["']([^"']+)["']/i);
+  const fechaMatch = comprobanteTag.match(/\bFecha=["']([^"']+)["']/i);
   const fechaStr = fechaMatch ? fechaMatch[1] : new Date().toISOString();
 
-  const fechaTimbradoMatch = xmlContent.match(/FechaTimbrado=["']([^"']+)["']/i);
+  const serieMatch = comprobanteTag.match(/\bSerie=["']([^"']+)["']/i);
+  const folioMatch = comprobanteTag.match(/\bFolio=["']([^"']+)["']/i);
+  const tipoCompMatch = comprobanteTag.match(/\bTipoDeComprobante=["']([^"']+)["']/i);
+  const metodoPagoMatch = comprobanteTag.match(/\bMetodoPago=["']([^"']+)["']/i);
+  const formaPagoMatch = comprobanteTag.match(/\bFormaPago=["']([^"']+)["']/i);
+  const monedaMatch = comprobanteTag.match(/\bMoneda=["']([^"']+)["']/i);
+  const tipoCambioMatch = comprobanteTag.match(/\bTipoCambio=["']([^"']+)["']/i);
+
+  const subtotalMatch = comprobanteTag.match(/\bSubTotal=["']([^"']+)["']/i);
+  const descuentoMatch = comprobanteTag.match(/\bDescuento=["']([^"']+)["']/i);
+  const totalMatch = comprobanteTag.match(/\bTotal=["']([^"']+)["']/i);
+
+  // Timbre Fiscal Digital (UUID y FechaTimbrado)
+  const timbreMatch = xmlContent.match(/<(?:tfd:)?TimbreFiscalDigital[^>]*>/i);
+  const timbreTag = timbreMatch ? timbreMatch[0] : xmlContent;
+  const uuidMatch =
+    timbreTag.match(/\bUUID=["']([0-9a-fA-F-]{36})["']/i) ||
+    xmlContent.match(/\bUUID=["']([0-9a-fA-F-]{36})["']/i);
+  const uuid = uuidMatch ? uuidMatch[1].toUpperCase().trim() : null;
+
+  const fechaTimbradoMatch = timbreTag.match(/\bFechaTimbrado=["']([^"']+)["']/i);
   const fechaTimbradoStr = fechaTimbradoMatch ? fechaTimbradoMatch[1] : null;
-
-  const serieMatch = xmlContent.match(/Serie=["']([^"']+)["']/i);
-  const folioMatch = xmlContent.match(/Folio=["']([^"']+)["']/i);
-  const tipoCompMatch = xmlContent.match(/TipoDeComprobante=["']([^"']+)["']/i);
-  const metodoPagoMatch = xmlContent.match(/MetodoPago=["']([^"']+)["']/i);
-  const formaPagoMatch = xmlContent.match(/FormaPago=["']([^"']+)["']/i);
-  const monedaMatch = xmlContent.match(/Moneda=["']([^"']+)["']/i);
-  const tipoCambioMatch = xmlContent.match(/TipoCambio=["']([^"']+)["']/i);
-
-  const subtotalMatch = xmlContent.match(/SubTotal=["']([^"']+)["']/i);
-  const descuentoMatch = xmlContent.match(/Descuento=["']([^"']+)["']/i);
-  const totalMatch = xmlContent.match(/Total=["']([^"']+)["']/i);
 
   // 2. Emisor
   const emisorMatch = xmlContent.match(/<cfdi:Emisor[^>]*>/i);
-  const rfcEmisorMatch = emisorMatch
-    ? emisorMatch[0].match(/Rfc=["']([^"']+)["']/i)
-    : xmlContent.match(/Rfc=["']([^"']+)["']/i);
-  const nomEmisorMatch = emisorMatch
-    ? emisorMatch[0].match(/Nombre=["']([^"']+)["']/i)
-    : null;
+  const emisorTag = emisorMatch ? emisorMatch[0] : '';
+  const rfcEmisorMatch = emisorTag.match(/\bRfc=["']([^"']+)["']/i);
+  const nomEmisorMatch = emisorTag.match(/\bNombre=["']([^"']+)["']/i);
 
   // 3. Receptor
   const receptorMatch = xmlContent.match(/<cfdi:Receptor[^>]*>/i);
-  const rfcReceptorMatch = receptorMatch
-    ? receptorMatch[0].match(/Rfc=["']([^"']+)["']/i)
-    : null;
-  const nomReceptorMatch = receptorMatch
-    ? receptorMatch[0].match(/Nombre=["']([^"']+)["']/i)
-    : null;
+  const receptorTag = receptorMatch ? receptorMatch[0] : '';
+  const rfcReceptorMatch = receptorTag.match(/\bRfc=["']([^"']+)["']/i);
+  const nomReceptorMatch = receptorTag.match(/\bNombre=["']([^"']+)["']/i);
 
   // 4. Impuestos Globales y por Concepto
+  // En CFDI 4.0, el SAT desglosa los traslados y retenciones en cada <cfdi:Concepto>
+  // Y ADEMÁS los acumula en el nodo global <cfdi:Impuestos>.
+  // Para evitar duplicar bases e importes, aislamos <cfdi:Conceptos>.
+  const conceptosMatch = xmlContent.match(/<cfdi:Conceptos[\s\S]*?<\/cfdi:Conceptos>/i);
+  const conceptosXml = conceptosMatch ? conceptosMatch[0] : '';
+
+  const xmlSinConceptos = xmlContent.replace(/<cfdi:Conceptos[\s\S]*?<\/cfdi:Conceptos>/gi, '');
+  const globalImpuestosMatch = xmlSinConceptos.match(/<cfdi:Impuestos[\s\S]*?<\/cfdi:Impuestos>/i);
+  const globalImpuestosXml = globalImpuestosMatch ? globalImpuestosMatch[0] : '';
+
   let base_16 = 0;
   let iva_16 = 0;
   let base_8 = 0;
@@ -61,59 +71,61 @@ export function parseCFDIXml(xmlContent) {
   let isr_retenido = 0;
   let ieps = 0;
 
-  // Buscar todos los bloques de Traslados (Conceptos y Globales)
-  // Traslado: Base, Impuesto="002", TipoFactor="Tasa", TasaOCuota="0.160000", Importe="160.00"
+  // Priorizar traslados a nivel de conceptos si existen; de lo contrario, tomar el nodo global
+  const hasConceptTraslados = /<cfdi:Traslado/i.test(conceptosXml);
+  const trasladosSource = hasConceptTraslados ? conceptosXml : globalImpuestosXml;
+
   const trasladosRegex = /<cfdi:Traslado\s+([^>]+)>/gi;
   let matchTraslado;
-  const trasladosEncontrados = [];
 
-  while ((matchTraslado = trasladosRegex.exec(xmlContent)) !== null) {
+  while ((matchTraslado = trasladosRegex.exec(trasladosSource)) !== null) {
     const attrStr = matchTraslado[1];
-    const impMatch = attrStr.match(/Impuesto=["']([^"']+)["']/i);
-    const tasaMatch = attrStr.match(/TasaOCuota=["']([^"']+)["']/i);
-    const factorMatch = attrStr.match(/TipoFactor=["']([^"']+)["']/i);
-    const importeMatch = attrStr.match(/Importe=["']([^"']+)["']/i);
-    const baseMatch = attrStr.match(/Base=["']([^"']+)["']/i);
+    const impMatch = attrStr.match(/\bImpuesto=["']([^"']+)["']/i);
+    const tasaMatch = attrStr.match(/\bTasaOCuota=["']([^"']+)["']/i) || attrStr.match(/\bTasa=["']([^"']+)["']/i);
+    const factorMatch = attrStr.match(/\bTipoFactor=["']([^"']+)["']/i);
+    const importeMatch = attrStr.match(/\bImporte=["']([^"']+)["']/i);
+    const baseMatch = attrStr.match(/\bBase=["']([^"']+)["']/i);
 
-    const impuesto = impMatch ? impMatch[1] : '';
+    const impuesto = impMatch ? impMatch[1] : '002';
     const tipoFactor = factorMatch ? factorMatch[1] : 'Tasa';
     const tasa = tasaMatch ? parseFloat(tasaMatch[1]) : 0;
     const importe = importeMatch ? parseFloat(importeMatch[1]) : 0;
-    const base = baseMatch ? parseFloat(baseMatch[1]) : 0;
+    let base = baseMatch ? parseFloat(baseMatch[1]) : 0;
 
-    trasladosEncontrados.push({ impuesto, tipoFactor, tasa, importe, base });
-  }
+    // Si por estructura de XML 3.3 no venía la Base en el nodo pero sí Tasa e Importe
+    if (base === 0 && tasa > 0 && importe > 0) {
+      base = parseFloat((importe / tasa).toFixed(2));
+    }
 
-  // Si hay traslados en partidas de Concepto, priorizarlos para sumar bases exactas
-  if (trasladosEncontrados.length > 0) {
-    for (const t of trasladosEncontrados) {
-      if (t.impuesto === '002' || !t.impuesto) {
-        // IVA
-        if (t.tipoFactor === 'Exento') {
-          base_exento += t.base;
-        } else if (Math.abs(t.tasa - 0.16) < 0.001) {
-          base_16 += t.base;
-          iva_16 += t.importe;
-        } else if (Math.abs(t.tasa - 0.08) < 0.001) {
-          base_8 += t.base;
-          iva_8 += t.importe;
-        } else if (Math.abs(t.tasa - 0) < 0.001) {
-          base_0 += t.base;
-        }
-      } else if (t.impuesto === '003') {
-        // IEPS
-        ieps += t.importe;
+    if (impuesto === '002' || !impuesto) {
+      // IVA
+      if (tipoFactor === 'Exento') {
+        base_exento += base;
+      } else if (Math.abs(tasa - 0.16) < 0.005) {
+        base_16 += base;
+        iva_16 += importe;
+      } else if (Math.abs(tasa - 0.08) < 0.005) {
+        base_8 += base;
+        iva_8 += importe;
+      } else if (Math.abs(tasa - 0) < 0.001) {
+        base_0 += base;
       }
+    } else if (impuesto === '003') {
+      // IEPS
+      ieps += importe;
     }
   }
 
-  // Buscar Retenciones (002 = IVA, 001 = ISR)
+  // Priorizar retenciones a nivel de conceptos si existen; de lo contrario, tomar el nodo global
+  const hasConceptRetenciones = /<cfdi:Retencion/i.test(conceptosXml);
+  const retencionesSource = hasConceptRetenciones ? conceptosXml : globalImpuestosXml;
+
   const retencionesRegex = /<cfdi:Retencion\s+([^>]+)>/gi;
   let matchRetencion;
-  while ((matchRetencion = retencionesRegex.exec(xmlContent)) !== null) {
+  while ((matchRetencion = retencionesRegex.exec(retencionesSource)) !== null) {
     const attrStr = matchRetencion[1];
-    const impMatch = attrStr.match(/Impuesto=["']([^"']+)["']/i);
-    const importeMatch = attrStr.match(/Importe=["']([^"']+)["']/i);
+    const impMatch = attrStr.match(/\bImpuesto=["']([^"']+)["']/i);
+    const importeMatch = attrStr.match(/\bImporte=["']([^"']+)["']/i);
     const importe = importeMatch ? parseFloat(importeMatch[1]) : 0;
     const impuesto = impMatch ? impMatch[1] : '';
 
@@ -136,7 +148,7 @@ export function parseCFDIXml(xmlContent) {
   }
   if (base_16 === 0 && base_8 === 0 && base_0 === 0 && base_exento === 0 && subtotalVal > 0) {
     // Si no hubo desglose explícito de partidas pero hay IVA en totales
-    const totalImpTrasladadosMatch = xmlContent.match(/TotalImpuestosTrasladados=["']([^"']+)["']/i);
+    const totalImpTrasladadosMatch = xmlContent.match(/\bTotalImpuestosTrasladados=["']([^"']+)["']/i);
     if (totalImpTrasladadosMatch) {
       const impTot = parseFloat(totalImpTrasladadosMatch[1]);
       if (Math.abs(impTot - (subtotalVal * 0.16)) < 1.0) {
@@ -145,6 +157,17 @@ export function parseCFDIXml(xmlContent) {
       }
     }
   }
+
+  // Redondear a 2 decimales para evitar imprecisiones de coma flotante
+  base_16 = parseFloat(base_16.toFixed(2));
+  iva_16 = parseFloat(iva_16.toFixed(2));
+  base_8 = parseFloat(base_8.toFixed(2));
+  iva_8 = parseFloat(iva_8.toFixed(2));
+  base_0 = parseFloat(base_0.toFixed(2));
+  base_exento = parseFloat(base_exento.toFixed(2));
+  iva_retenido = parseFloat(iva_retenido.toFixed(2));
+  isr_retenido = parseFloat(isr_retenido.toFixed(2));
+  ieps = parseFloat(ieps.toFixed(2));
 
   return {
     uuid,
