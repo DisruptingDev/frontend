@@ -25,6 +25,7 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Grid,
 } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -34,6 +35,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import descargaMasivaService from '@/services/descargaMasivaService';
 import ModalImportarContabilidad from './ModalImportarContabilidad';
 
@@ -95,6 +97,24 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
   const [detalleContenido, setDetalleContenido] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
 
+  // Modal de Diagnóstico / Debug SAT
+  const [modalDebugOpen, setModalDebugOpen] = useState(false);
+  const [debugData, setDebugData] = useState(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
+
+  const handleAbrirDebug = async () => {
+    setModalDebugOpen(true);
+    setLoadingDebug(true);
+    try {
+      const data = await descargaMasivaService.obtenerDebugLogs(token);
+      setDebugData(data);
+    } catch (err) {
+      setDebugData({ ok: false, error: err.message, logs: [] });
+    } finally {
+      setLoadingDebug(false);
+    }
+  };
+
   useEffect(() => {
     cargarPeticiones();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,6 +127,11 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
       const params = { rfc: rfcFiltro || 'todos' };
       const data = await descargaMasivaService.listarPeticionesSAT(params, token);
       console.log('[BandejaPeticionesTab] Datos recibidos de listarPeticionesSAT:', data);
+
+      if (data && data.ok === false) {
+        setErrorMsg(data.mensaje || data.error || 'Aviso de base de datos al listar peticiones.');
+      }
+
       let lista = [];
       if (Array.isArray(data)) {
         lista = data;
@@ -132,21 +157,16 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
   };
 
   const handleSincronizarSAT = async () => {
-    if (!rfcFiltro || rfcFiltro === 'todos') {
-      setErrorMsg('Debe seleccionar un RFC de empresa específico para sincronizar sus solicitudes con el SAT.');
-      return;
-    }
-
     setSyncing(true);
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
       const payload = {
-        rfc: rfcFiltro,
+        rfc: rfcFiltro || 'todos',
         habilitado: 'true',
       };
       const res = await descargaMasivaService.sincronizarSAT(payload, token);
-      setSuccessMsg(res?.mensaje || `Sincronización con el SAT completada para ${rfcFiltro}.`);
+      setSuccessMsg(res?.mensaje || 'Sincronización con el SAT completada.');
       await cargarPeticiones();
     } catch (err) {
       setErrorMsg(err.message || 'Error al ejecutar sincronización con SAT.');
@@ -374,6 +394,17 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
                 disabled={loading || syncing}
               >
                 {syncing ? 'Sincronizando...' : 'Sincronizar con SAT'}
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<BugReportIcon />}
+                onClick={handleAbrirDebug}
+                disabled={loading || syncing}
+                sx={{ textTransform: 'none' }}
+              >
+                Diagnóstico / Logs
               </Button>
             </Box>
           </Box>
@@ -653,6 +684,145 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setModalDetalleOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de Diagnóstico y Logs del SAT / BD */}
+      <Dialog
+        open={modalDebugOpen}
+        onClose={() => setModalDebugOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <BugReportIcon color="secondary" />
+            <Typography variant="h6" fontWeight="bold">
+              Diagnóstico y Logs del SAT en Vivo
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={handleAbrirDebug}
+            disabled={loadingDebug}
+            startIcon={loadingDebug ? <CircularProgress size={16} /> : <RefreshIcon />}
+          >
+            Actualizar Logs
+          </Button>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2 }}>
+          {loadingDebug && (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {!loadingDebug && debugData && (
+            <Box>
+              {/* Información del Servidor y Base de Datos */}
+              <Box sx={{ mb: 2, p: 2, bgcolor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 2 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Base de Datos Conectada:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="bold">
+                      {debugData.database || 'No especificada'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Total de Solicitudes Registradas en BD:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="bold" color="primary">
+                      {debugData.total_solicitudes !== undefined ? `${debugData.total_solicitudes} solicitud(es)` : '0'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Archivo de Log Local:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                      frontend/sat_debug.log
+                    </Typography>
+                  </Grid>
+                </Grid>
+                {debugData.error_db && (
+                  <Alert severity="error" sx={{ mt: 1.5 }}>
+                    Error de conexión a la Base de Datos: {debugData.error_db}
+                  </Alert>
+                )}
+              </Box>
+
+              {/* Registro de Eventos Recientes */}
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Eventos y Respuestas del SAT (Últimos {debugData.logs?.length || 0}):
+              </Typography>
+
+              {(!debugData.logs || debugData.logs.length === 0) ? (
+                <Box p={3} textAlign="center" bgcolor="grey.50" borderRadius={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    No hay eventos registrados recientemente. Realice una solicitud o sincronización para ver el registro en vivo.
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 450, overflowY: 'auto' }}>
+                  {debugData.logs.map((log, index) => {
+                    const colorChip =
+                      log.nivel === 'ERROR' ? 'error' :
+                      log.nivel === 'WARN' ? 'warning' :
+                      log.nivel === 'SAT_RES' ? 'success' : 'info';
+
+                    return (
+                      <Paper
+                        key={index}
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 1.5,
+                          bgcolor: log.nivel === 'ERROR' ? '#fef2f2' : log.nivel === 'WARN' ? '#fffbeb' : '#ffffff'
+                        }}
+                      >
+                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={0.5}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Chip size="small" label={log.nivel} color={colorChip} />
+                            <Typography variant="subtitle2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                              {log.accion}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(log.timestamp).toLocaleString('es-MX')}
+                          </Typography>
+                        </Box>
+
+                        <Box
+                          component="pre"
+                          sx={{
+                            m: 0,
+                            p: 1,
+                            fontSize: '0.75rem',
+                            bgcolor: '#0f172a',
+                            color: '#38bdf8',
+                            borderRadius: 1,
+                            overflowX: 'auto',
+                            maxHeight: 180
+                          }}
+                        >
+                          {typeof log.detalle === 'object'
+                            ? JSON.stringify(log.detalle, null, 2)
+                            : String(log.detalle)}
+                        </Box>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setModalDebugOpen(false)}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Box>

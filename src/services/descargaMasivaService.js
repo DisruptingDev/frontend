@@ -345,6 +345,14 @@ export const descargaMasivaService = {
   async guardarFiel(data, token = '') {
     return apiRequest('/fiel/guardar', data, token);
   },
+
+  /**
+   * Obtiene los logs y diagnóstico en vivo del SAT y la base de datos
+   * @param {string} token
+   */
+  async obtenerDebugLogs(token = '') {
+    return apiRequest('/debug-logs', {}, token);
+  },
 };
 
 export default descargaMasivaService;

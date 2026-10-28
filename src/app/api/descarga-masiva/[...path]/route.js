@@ -9,6 +9,7 @@ import {
   verificarSolicitudSat,
   descargarPaqueteSat
 } from '@/lib/services/satWsDescargaService';
+import { logSatEvent, getRecentLogs } from '@/lib/services/satLogger';
 
 async function extraerComprobantesDeZip(zipBase64) {
   if (!zipBase64) return [];
@@ -123,6 +124,30 @@ export async function GET(request, context) {
   endpoint = (endpoint || '').replace(/^\/+|\/+$/g, '');
   console.log(`[Descarga Masiva Proxy GET] Endpoint recibido: "${endpoint}"`);
 
+  // Endpoint de Diagnóstico y Logs del SAT
+  if (endpoint === 'debug-logs' || endpoint === 'debug') {
+    try {
+      const totalSols = await prisma.sat_solicitudes_descarga.count();
+      const ultimas = await prisma.sat_solicitudes_descarga.findMany({
+        orderBy: { id: 'desc' },
+        take: 10
+      });
+      return NextResponse.json({
+        ok: true,
+        database: process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'Desconocida',
+        total_solicitudes: totalSols,
+        ultimas_solicitudes: ultimas.map(u => ({ ...u, id: u.id.toString() })),
+        logs: getRecentLogs(50)
+      }, { status: 200 });
+    } catch (err) {
+      return NextResponse.json({
+        ok: false,
+        error_db: err.message,
+        logs: getRecentLogs(50)
+      }, { status: 200 });
+    }
+  }
+
   const { searchParams } = new URL(request.url);
   const rfcFilter = searchParams.get('rfc');
 
@@ -234,6 +259,30 @@ export async function POST(request, context) {
       body = await request.json();
     } catch {
       body = {};
+    }
+
+    // Endpoint de Diagnóstico y Logs del SAT (POST)
+    if (endpoint === 'debug-logs' || endpoint === 'debug') {
+      try {
+        const totalSols = await prisma.sat_solicitudes_descarga.count();
+        const ultimas = await prisma.sat_solicitudes_descarga.findMany({
+          orderBy: { id: 'desc' },
+          take: 15
+        });
+        return NextResponse.json({
+          ok: true,
+          database: process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'Desconocida',
+          total_solicitudes: totalSols,
+          ultimas_solicitudes: ultimas.map(u => ({ ...u, id: u.id.toString() })),
+          logs: getRecentLogs(50)
+        }, { status: 200 });
+      } catch (err) {
+        return NextResponse.json({
+          ok: false,
+          error_db: err.message,
+          logs: getRecentLogs(50)
+        }, { status: 200 });
+      }
     }
 
     // =========================================================================
@@ -466,11 +515,18 @@ export async function POST(request, context) {
         whereClause.rfc = { equals: rfcFiltro, mode: 'insensitive' };
       }
 
+      logSatEvent('INFO', 'PETICIONES_CONSULTA', { rfcFiltro: rfcFiltro || 'TODOS' });
+
       try {
         const lista = await prisma.sat_solicitudes_descarga.findMany({
           where: whereClause,
-          orderBy: { created_at: 'desc' },
+          orderBy: { id: 'desc' },
           take: 100
+        });
+
+        logSatEvent('INFO', 'PETICIONES_RESULTADO', {
+          rfcFiltro: rfcFiltro || 'TODOS',
+          total_encontradas: lista.length
         });
 
         return NextResponse.json({
@@ -500,33 +556,40 @@ export async function POST(request, context) {
           }))
         }, { status: 200 });
       } catch (dbErr) {
+        logSatEvent('ERROR', 'PETICIONES_DB_ERROR', { error: dbErr.message, rfcFiltro });
         console.error('[Descarga Masiva sat/peticiones DB Error]:', dbErr.message);
         return NextResponse.json({
-          codigo: 200,
-          ok: true,
+          codigo: 500,
+          ok: false,
           peticiones: [],
-          mensaje: 'No se pudieron recuperar peticiones previas: ' + dbErr.message
+          error: dbErr.message,
+          mensaje: 'Error de base de datos al recuperar peticiones: ' + dbErr.message
         }, { status: 200 });
       }
     }
 
     // Sincronizar / actualizar todas las peticiones pendientes con el SAT
     if (endpoint === 'sat/sincronizar' || endpoint === 'sincronizar') {
-      const rfcTarget = body.rfc || '';
+      const rfcTarget = (body.rfc || '').toUpperCase().trim();
       const whereClause = {
-        estado_texto: {
-          in: ['Aceptada', 'En Proceso']
-        }
+        OR: [
+          { estado_texto: { in: ['Aceptada', 'En Proceso', '1', '2'] } },
+          { estado_solicitud: { in: [1, 2] } }
+        ]
       };
-      if (rfcTarget && rfcTarget !== 'todos') {
-        whereClause.rfc = rfcTarget;
+      if (rfcTarget && rfcTarget !== 'TODOS') {
+        whereClause.rfc = { equals: rfcTarget, mode: 'insensitive' };
       }
+
+      logSatEvent('INFO', 'SYNC_INICIO', { rfcTarget: rfcTarget || 'TODOS' });
 
       try {
         const pendientes = await prisma.sat_solicitudes_descarga.findMany({
           where: whereClause,
-          take: 15
+          take: 20
         });
+
+        logSatEvent('INFO', 'SYNC_PENDIENTES_ENCONTRADAS', { cantidad: pendientes.length });
 
         let actualizadas = 0;
         for (const pend of pendientes) {
@@ -534,13 +597,24 @@ export async function POST(request, context) {
             const empFiel = await prisma.sat_empresas_fiel.findUnique({
               where: { rfc: pend.rfc }
             });
-            if (!empFiel) continue;
+            if (!empFiel) {
+              logSatEvent('WARN', 'SYNC_SIN_FIEL', { rfc: pend.rfc, id_solicitud: pend.id_solicitud });
+              continue;
+            }
 
             const resVerifica = await verificarSolicitudSat({
               idSolicitud: pend.id_solicitud,
               cerInput: empFiel.cer_base64,
               keyInput: empFiel.key_base64,
               password: empFiel.password_fiel
+            });
+
+            logSatEvent('INFO', 'SYNC_VERIFICACION_SAT', {
+              id_solicitud: pend.id_solicitud,
+              rfc: pend.rfc,
+              estado_solicitud: resVerifica.estado_solicitud,
+              estado_texto: resVerifica.estado_texto,
+              mensaje: resVerifica.mensaje
             });
 
             let paqueteZipB64 = pend.paquete_zip_base64 || null;
@@ -574,6 +648,7 @@ export async function POST(request, context) {
             });
             actualizadas++;
           } catch (e) {
+            logSatEvent('WARN', 'SYNC_ERROR_SOLICITUD', { id_solicitud: pend.id_solicitud, error: e.message });
             console.warn(`[Sync SAT]: No se pudo actualizar ${pend.id_solicitud}: ${e.message}`);
           }
         }
@@ -733,6 +808,15 @@ export async function POST(request, context) {
         if (rfcContraparte) paramsSat.rfcEmisor = rfcContraparte;
       }
 
+      logSatEvent('INFO', 'SOLICITUD_SAT_ENVIANDO', {
+        rfcSolicitante,
+        tipoDescargaSat,
+        tipoSolicitudSat,
+        fechaInicio,
+        fechaFin,
+        rfcContraparte: rfcContraparte || 'NINGUNA'
+      });
+
       const resSat = await solicitarDescargaSat(paramsSat);
 
       const isAccepted = resSat.ok === true || String(resSat.codigo_estatus) === '5000';
@@ -751,6 +835,14 @@ export async function POST(request, context) {
           estadoTexto = 'Rechazada';
         }
       }
+
+      logSatEvent(isAccepted ? 'INFO' : 'WARN', 'SOLICITUD_SAT_RESPUESTA', {
+        ok: resSat.ok,
+        codigo_estatus: resSat.codigo_estatus,
+        id_solicitud: folioId,
+        mensaje: resSat.mensaje,
+        estadoTexto
+      });
 
       // Guardar solicitud en la tabla sat_solicitudes_descarga SIEMPRE para que aparezca en el historial
       try {
@@ -783,7 +875,9 @@ export async function POST(request, context) {
             updated_at: new Date()
           }
         });
+        logSatEvent('INFO', 'SOLICITUD_GUARDADA_BD', { folioId, rfc: rfcSolicitante, estadoTexto });
       } catch (dbErr) {
+        logSatEvent('ERROR', 'SOLICITUD_GUARDADO_BD_ERROR', { folioId, error: dbErr.message });
         console.error('[Error guardando solicitud en BD]:', dbErr);
       }
 
@@ -1114,6 +1208,7 @@ export async function POST(request, context) {
     return NextResponse.json(data, { status: response.status });
 
   } catch (error) {
+    logSatEvent('ERROR', 'PROXY_EXCEPTION', { endpoint, error: error.message, stack: error.stack });
     console.error(`[Descarga Masiva SAT Error]:`, error);
     return NextResponse.json(
       {
