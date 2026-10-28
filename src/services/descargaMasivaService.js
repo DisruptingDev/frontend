@@ -245,6 +245,7 @@ export const descargaMasivaService = {
   async verificarMetadata(data, token = '') {
     const payload = {
       solicitud: data.solicitud || data.id_solicitud || data.id || '',
+      rfc: data.rfc || data.RFC || '',
     };
     return apiRequest('/metadata/verificar', payload, token);
   },
@@ -295,6 +296,7 @@ export const descargaMasivaService = {
   async verificarMulticomprobantes(data, token = '') {
     const payload = {
       solicitud: data.solicitud || data.id_solicitud || data.id || '',
+      rfc: data.rfc || data.RFC || '',
     };
     return apiRequest('/multicomprobantes/verificar', payload, token);
   },

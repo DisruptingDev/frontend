@@ -591,9 +591,15 @@ export async function POST(request, context) {
 
         logSatEvent('INFO', 'SYNC_PENDIENTES_ENCONTRADAS', { cantidad: pendientes.length });
 
+        const SAT_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         let actualizadas = 0;
         for (const pend of pendientes) {
           try {
+            if (!pend.id_solicitud || !SAT_UUID_REGEX.test(pend.id_solicitud)) {
+              logSatEvent('INFO', 'SYNC_SALTADA_NO_UUID', { id_solicitud: pend.id_solicitud });
+              continue;
+            }
+
             const empFiel = await prisma.sat_empresas_fiel.findUnique({
               where: { rfc: pend.rfc }
             });
@@ -912,6 +918,24 @@ export async function POST(request, context) {
       const idSol = solicitud || id_solicitud;
       if (!idSol) {
         return NextResponse.json({ error: 'Se requiere el ID de solicitud.' }, { status: 400 });
+      }
+
+      const SAT_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!SAT_UUID_REGEX.test(idSol)) {
+        logSatEvent('WARN', 'VERIFICACION_ID_NO_UUID', { idSol });
+        return NextResponse.json({
+          codigo: 200,
+          ok: false,
+          id_solicitud: idSol,
+          solicitud: idSol,
+          estado_solicitud: 4,
+          estado: 'Rechazada',
+          mensaje: 'El folio no es un UUID válido ante el SAT (solicitud no aceptada previamente).',
+          numero_cfdis: 0,
+          ids_paquetes: [],
+          zip_base64: null,
+          comprobantes: []
+        }, { status: 200 });
       }
 
       // Buscar en BD la solicitud para inferir el RFC si no fue enviado

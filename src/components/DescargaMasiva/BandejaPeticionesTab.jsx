@@ -181,7 +181,7 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
     try {
       let res;
       const esMeta = (peticion.tipo || peticion.tipo_descarga || '').toLowerCase().includes('meta');
-      const payload = { solicitud: id };
+      const payload = { solicitud: id, rfc: peticion.rfc };
       if (esMeta) {
         res = await descargaMasivaService.verificarMetadata(payload, token);
       } else {
@@ -483,7 +483,11 @@ const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcIni
                               : '-'}
                           </Typography>
                         </TableCell>
-                        <TableCell>{renderStatusChip(estatusStr)}</TableCell>
+                        <TableCell>
+                          <Tooltip title={pet.mensaje || estatusStr} arrow>
+                            <span>{renderStatusChip(estatusStr)}</span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell align="center">
                           <Box display="flex" justifyContent="center" gap={0.5}>
                             <Tooltip title="Verificar estatus actual ante el SAT">

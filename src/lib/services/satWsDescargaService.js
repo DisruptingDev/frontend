@@ -310,7 +310,16 @@ export async function verificarSolicitudSat({
   const status = verifyResult.getStatus();
 
   if (!status.isAccepted()) {
-    throw new Error(`El SAT rechazó la verificación: [${status.getCode()}] ${status.getMessage()}`);
+    return {
+      ok: false,
+      estado_solicitud: 4,
+      estado_texto: 'Rechazada',
+      codigo_estatus: status.getCode(),
+      codigo_estado_solicitud: verifyResult.getCodeRequest ? verifyResult.getCodeRequest()?.getValue() : null,
+      numero_cfdis: 0,
+      mensaje: `El SAT rechazó la verificación: [${status.getCode()}] ${status.getMessage()}`,
+      ids_paquetes: []
+    };
   }
 
   const statusRequest = verifyResult.getStatusRequest();
@@ -326,6 +335,7 @@ export async function verificarSolicitudSat({
   };
 
   return {
+    ok: true,
     estado_solicitud: estadoNum,
     estado_texto: estadosTexto[estadoNum] || 'Desconocido',
     codigo_estatus: status.getCode(),
