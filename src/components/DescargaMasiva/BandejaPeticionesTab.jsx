@@ -62,7 +62,7 @@ const renderStatusChip = (status = '') => {
   return <Chip size="small" label={status || 'Pendiente'} variant="outlined" />;
 };
 
-const BandejaPeticionesTab = ({ empresas = [], token, refreshTrigger = 0, rfcInicial = '' }) => {
+const BandejaPeticionesTab = ({ empresas = [], token, isSuperUser = false, refreshTrigger = 0, rfcInicial = '' }) => {
   // Inicializar con la empresa solicitada, la primera empresa si existe, o 'todos'
   const [rfcFiltro, setRfcFiltro] = useState(
     rfcInicial || (empresas.length > 0 ? (empresas[0]?.Rfc || empresas[0]?.rfc || '') : 'todos')

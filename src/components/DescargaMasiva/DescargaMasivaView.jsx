@@ -93,7 +93,8 @@ const DescargaMasivaView = ({ token }) => {
               if (mapEmpresas.has(rfc)) {
                 const actual = mapEmpresas.get(rfc);
                 actual.tieneFiel = true;
-              } else {
+              } else if (isSuperUser) {
+                // Solo si es Super Admin puede ver empresas con FIEL fuera del catálogo del grupo
                 mapEmpresas.set(rfc, {
                   ID: f.id || rfc,
                   Rfc: rfc,
@@ -215,6 +216,7 @@ const DescargaMasivaView = ({ token }) => {
         <SolicitarDescargaTab
           empresas={empresas}
           token={token}
+          isSuperUser={isSuperUser}
           onSolicitudCreada={handleSolicitudCreada}
         />
       )}
@@ -223,6 +225,7 @@ const DescargaMasivaView = ({ token }) => {
         <BandejaPeticionesTab
           empresas={empresas}
           token={token}
+          isSuperUser={isSuperUser}
           refreshTrigger={refreshTrigger}
           rfcInicial={selectedRfcBandeja}
         />
@@ -232,6 +235,7 @@ const DescargaMasivaView = ({ token }) => {
         <GestionEmpresasTab
           empresasUsuario={empresas}
           token={token}
+          isSuperUser={isSuperUser}
           onEmpresasActualizadas={fetchEmpresasUsuario}
         />
       )}

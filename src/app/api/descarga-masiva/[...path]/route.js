@@ -190,6 +190,100 @@ async function sincronizarSolicitudesPendientes(rfcTarget = 'TODOS') {
   return { pendientes: pendientes.length, actualizadas };
 }
 
+async function getAuthContextFromRequest(request, body = null) {
+  const { searchParams } = new URL(request.url);
+  const isSuperUserRequested =
+    searchParams.get('is_superadmin') === 'true' ||
+    searchParams.get('super_user') === 'true' ||
+    request.headers.get('x-super-user') === 'true' ||
+    request.headers.get('x-is-superadmin') === 'true';
+
+  let activeGrupoId = body?.grupo_id || body?.grupoId;
+  let grupoIdParam = searchParams.get('grupo_id') || searchParams.get('grupoId') || request.headers.get('x-grupo-id');
+  let tokenGrupoId = null;
+  let dbGrupoId = null;
+  let isSuperAdmin = isSuperUserRequested;
+
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.includes('Bearer ')) {
+    try {
+      const tokenStr = authHeader.replace(/^Bearer\s+/i, '').trim();
+      const parts = tokenStr.split('.');
+      if (parts.length >= 2) {
+        const payloadStr = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+        const parsed = JSON.parse(payloadStr);
+
+        if (parsed.grupo_id || parsed.grupoId || parsed.GrupoID || parsed.grupoID) {
+          tokenGrupoId = (parsed.grupo_id || parsed.grupoId || parsed.GrupoID || parsed.grupoID).toString();
+        }
+
+        const userEmail = parsed.email || parsed.correo || parsed.sub || parsed.username;
+        const userId = parsed.id || parsed.user_id || parsed.usuario_id || parsed.idUsuario;
+
+        if (parsed.superUser === true || parsed.isSuperUser === true || parsed.super_user === true || parsed.is_superadmin === true) {
+          isSuperAdmin = true;
+        }
+
+        if (userEmail || userId) {
+          const userWhere = [];
+          if (userId) {
+            try { userWhere.push({ id: BigInt(userId) }); } catch(e){}
+          }
+          if (userEmail && typeof userEmail === 'string' && userEmail.includes('@')) {
+            userWhere.push({ email: userEmail.trim().toLowerCase() });
+          }
+
+          if (userWhere.length > 0) {
+            const dbUser = await prisma.usuarios.findFirst({
+              where: { OR: userWhere },
+              select: { id: true, grupo_id: true, tipo_usuario: true, rol_id: true }
+            });
+            if (dbUser) {
+              if (dbUser.grupo_id) {
+                dbGrupoId = dbUser.grupo_id.toString();
+              }
+              const tipoLower = (dbUser.tipo_usuario || '').toLowerCase();
+              if (tipoLower.includes('super') || tipoLower === 'root' || dbUser.rol_id === BigInt(1)) {
+                isSuperAdmin = true;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[Descarga Masiva Auth] Error parseando token:', e.message);
+    }
+  }
+
+  const finalGrupoId = activeGrupoId || grupoIdParam || tokenGrupoId || dbGrupoId;
+
+  let rfcsPermitidos = null;
+  if (!isSuperAdmin) {
+    if (finalGrupoId) {
+      try {
+        const emisoresGrupo = await prisma.emisors.findMany({
+          where: { grupo_id: BigInt(finalGrupoId) },
+          select: { rfc: true }
+        });
+        rfcsPermitidos = emisoresGrupo
+          .map(e => (e.rfc || '').toUpperCase().trim())
+          .filter(Boolean);
+      } catch (err) {
+        console.error('[Descarga Masiva Auth] Error consultando emisores del grupo:', err);
+      }
+    }
+    if (!rfcsPermitidos) {
+      rfcsPermitidos = [];
+    }
+  }
+
+  return {
+    isSuperAdmin,
+    grupoId: finalGrupoId,
+    rfcsPermitidos
+  };
+}
+
 export async function GET(request, context) {
   let endpoint = '';
   try {
@@ -245,7 +339,18 @@ export async function GET(request, context) {
   // Listar empresas con FIEL guardada
   if (endpoint === 'fiel/listar' || endpoint === 'fiel' || endpoint.endsWith('fiel/listar')) {
     try {
+      const authCtx = await getAuthContextFromRequest(request);
+      const whereClause = authCtx.isSuperAdmin
+        ? {}
+        : {
+            OR: [
+              { rfc: { in: authCtx.rfcsPermitidos } },
+              { rfc: { in: authCtx.rfcsPermitidos.map(r => r.toLowerCase()) } }
+            ]
+          };
+
       const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+        where: whereClause,
         select: {
           id: true,
           rfc: true,
@@ -274,9 +379,33 @@ export async function GET(request, context) {
   // Listar peticiones registradas
   if (endpoint === 'sat/peticiones' || endpoint === 'peticiones') {
     try {
-      const whereClause = {};
-      if (rfcFilter && rfcFilter !== 'todos') {
-        whereClause.rfc = rfcFilter;
+      const authCtx = await getAuthContextFromRequest(request);
+      let whereClause = {};
+      const rfcFiltroClean = (rfcFilter || '').toUpperCase().trim();
+
+      if (!authCtx.isSuperAdmin) {
+        if (rfcFiltroClean && rfcFiltroClean !== 'TODOS') {
+          if (authCtx.rfcsPermitidos.includes(rfcFiltroClean)) {
+            whereClause = {
+              OR: [
+                { rfc: { equals: rfcFiltroClean, mode: 'insensitive' } }
+              ]
+            };
+          } else {
+            return NextResponse.json({ ok: true, peticiones: [] }, { status: 200 });
+          }
+        } else {
+          whereClause = {
+            OR: [
+              { rfc: { in: authCtx.rfcsPermitidos } },
+              { rfc: { in: authCtx.rfcsPermitidos.map(r => r.toLowerCase()) } }
+            ]
+          };
+        }
+      } else {
+        if (rfcFiltroClean && rfcFiltroClean !== 'TODOS') {
+          whereClause.rfc = { equals: rfcFiltroClean, mode: 'insensitive' };
+        }
       }
 
       const lista = await prisma.sat_solicitudes_descarga.findMany({
@@ -456,7 +585,18 @@ export async function POST(request, context) {
     // B) Listar empresas con FIEL guardada
     if (endpoint === 'fiel/listar' || endpoint === 'fiel') {
       try {
+        const authCtx = await getAuthContextFromRequest(request, body);
+        const whereClause = authCtx.isSuperAdmin
+          ? {}
+          : {
+              OR: [
+                { rfc: { in: authCtx.rfcsPermitidos } },
+                { rfc: { in: authCtx.rfcsPermitidos.map(r => r.toLowerCase()) } }
+              ]
+            };
+
         const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+          where: whereClause,
           select: {
             id: true,
             rfc: true,
@@ -491,7 +631,18 @@ export async function POST(request, context) {
       endpoint.endsWith('razonsocial/listar')
     ) {
       try {
+        const authCtx = await getAuthContextFromRequest(request, body);
+        const whereClause = authCtx.isSuperAdmin
+          ? {}
+          : {
+              OR: [
+                { rfc: { in: authCtx.rfcsPermitidos } },
+                { rfc: { in: authCtx.rfcsPermitidos.map(r => r.toLowerCase()) } }
+              ]
+            };
+
         const empresasFiel = await prisma.sat_empresas_fiel.findMany({
+          where: whereClause,
           select: {
             id: true,
             rfc: true,
@@ -616,10 +767,33 @@ export async function POST(request, context) {
       endpoint === 'peticiones' ||
       endpoint.endsWith('peticiones')
     ) {
+      const authCtx = await getAuthContextFromRequest(request, body);
       const rfcFiltro = (body.rfc || '').toUpperCase().trim();
-      const whereClause = {};
-      if (rfcFiltro && rfcFiltro !== 'TODOS') {
-        whereClause.rfc = { equals: rfcFiltro, mode: 'insensitive' };
+      let whereClause = {};
+
+      if (!authCtx.isSuperAdmin) {
+        if (rfcFiltro && rfcFiltro !== 'TODOS') {
+          if (authCtx.rfcsPermitidos.includes(rfcFiltro)) {
+            whereClause.rfc = { equals: rfcFiltro, mode: 'insensitive' };
+          } else {
+            return NextResponse.json({
+              codigo: 200,
+              ok: true,
+              peticiones: []
+            }, { status: 200 });
+          }
+        } else {
+          whereClause = {
+            OR: [
+              { rfc: { in: authCtx.rfcsPermitidos } },
+              { rfc: { in: authCtx.rfcsPermitidos.map(r => r.toLowerCase()) } }
+            ]
+          };
+        }
+      } else {
+        if (rfcFiltro && rfcFiltro !== 'TODOS') {
+          whereClause.rfc = { equals: rfcFiltro, mode: 'insensitive' };
+        }
       }
 
       logSatEvent('INFO', 'PETICIONES_CONSULTA', { rfcFiltro: rfcFiltro || 'TODOS' });

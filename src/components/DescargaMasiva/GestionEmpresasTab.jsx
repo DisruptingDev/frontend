@@ -40,8 +40,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import descargaMasivaService from '@/services/descargaMasivaService';
 import { generarPfxDesdeFiel, readFileAsArrayBuffer, readFileAsBase64 } from '@/utils/fielUtils';
+import { useAuth } from '@/hooks/useAuth';
 
-const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizadas }) => {
+const GestionEmpresasTab = ({ empresasUsuario = [], token, isSuperUser = false, onEmpresasActualizadas }) => {
+  const { isSuperUser: authIsSuperUser } = useAuth();
+  const isSuper = isSuperUser || authIsSuperUser;
   const [razonesSocialesSAT, setRazonesSocialesSAT] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -345,26 +348,24 @@ const GestionEmpresasTab = ({ empresasUsuario = [], token, onEmpresasActualizada
       });
     });
 
-    // 2. Agregar empresas que ya tienen su FIEL guardada en la base de datos (por si no estaban en el catálogo inicial)
-    razonesSocialesSAT.forEach((satEmp) => {
-      const rfc = (satEmp.rfc || satEmp.Rfc || '').toUpperCase().trim();
-      if (!rfc) return;
-      if (!mapEmpresas.has(rfc)) {
-        mapEmpresas.set(rfc, {
-          ID: satEmp.id || rfc,
-          Rfc: rfc,
-          rfc: rfc,
-          RazonSocial: satEmp.razon_social || satEmp.RazonSocial || rfc,
-          RegimenFiscal: 'General',
-          registradaEnSAT: true,
-          datosSAT: satEmp,
-        });
-      } else {
-        const actual = mapEmpresas.get(rfc);
-        actual.registradaEnSAT = true;
-        actual.datosSAT = satEmp;
-      }
-    });
+    // 2. Solo si es Super Usuario agregar empresas con FIEL que no estén en el catálogo de empresas del grupo
+    if (isSuper) {
+      razonesSocialesSAT.forEach((satEmp) => {
+        const rfc = (satEmp.rfc || satEmp.Rfc || '').toUpperCase().trim();
+        if (!rfc) return;
+        if (!mapEmpresas.has(rfc)) {
+          mapEmpresas.set(rfc, {
+            ID: satEmp.id || rfc,
+            Rfc: rfc,
+            rfc: rfc,
+            RazonSocial: satEmp.razon_social || satEmp.RazonSocial || rfc,
+            RegimenFiscal: 'General',
+            registradaEnSAT: true,
+            datosSAT: satEmp,
+          });
+        }
+      });
+    }
 
     return Array.from(mapEmpresas.values());
   })();

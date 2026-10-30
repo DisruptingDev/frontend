@@ -29,6 +29,7 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import descargaMasivaService from '@/services/descargaMasivaService';
 import { readFileAsBase64 } from '@/utils/fielUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 const getInitialDates = () => {
   const now = new Date();
@@ -41,7 +42,9 @@ const getInitialDates = () => {
   return { firstDay, today };
 };
 
-const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
+const SolicitarDescargaTab = ({ empresas = [], token, isSuperUser = false, onSolicitudCreada }) => {
+  const { isSuperUser: authIsSuperUser } = useAuth();
+  const isSuper = isSuperUser || authIsSuperUser;
   const { firstDay, today } = getInitialDates();
 
   const [selectedRfc, setSelectedRfc] = useState(empresas[0]?.Rfc || '');
@@ -75,23 +78,28 @@ const SolicitarDescargaTab = ({ empresas = [], token, onSolicitudCreada }) => {
       try {
         const res = await descargaMasivaService.listarEmpresasFiel(token);
         if (res && Array.isArray(res.empresas)) {
-          setEmpresasConFiel(res.empresas);
+          if (!isSuper && empresas.length > 0) {
+            const rfcsAutorizados = new Set(empresas.map((e) => (e.Rfc || e.rfc || '').toUpperCase().trim()));
+            setEmpresasConFiel(res.empresas.filter((e) => rfcsAutorizados.has((e.rfc || e.Rfc || '').toUpperCase().trim())));
+          } else {
+            setEmpresasConFiel(res.empresas);
+          }
         }
       } catch (err) {
         console.warn('No se pudieron verificar empresas con FIEL:', err);
       }
     };
     verificarFielsGuardadas();
-  }, [token]);
+  }, [token, empresas, isSuper]);
 
   // Sincronizar RFC seleccionado si cambia o cargan las empresas
   React.useEffect(() => {
     if (!selectedRfc && empresas.length > 0) {
       setSelectedRfc(empresas[0].Rfc || empresas[0].rfc || '');
-    } else if (!selectedRfc && empresasConFiel.length > 0) {
+    } else if (!selectedRfc && isSuper && empresasConFiel.length > 0) {
       setSelectedRfc(empresasConFiel[0].rfc || '');
     }
-  }, [empresas, empresasConFiel, selectedRfc]);
+  }, [empresas, empresasConFiel, selectedRfc, isSuper]);
 
   // Actualizar indicador si la empresa seleccionada tiene FIEL guardada
   React.useEffect(() => {
