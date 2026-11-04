@@ -10,9 +10,138 @@ import EditarPago from "@/components/FormFactura/Pagos/EditarPago.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+// Función para normalizar cualquier estructura devuelta por el servicio de Go o XML
+function normalizarFacturaPago(data) {
+    if (!data) return null;
+    const f = data.factura || data.comprobante || data;
+    if (!f || typeof f !== 'object') return null;
+
+    // 1. Buscar Complemento en todas sus variantes
+    let complemento = f.Complemento || f.complemento || 
+                      (Array.isArray(f.Complementos) ? f.Complementos[0] : null) ||
+                      (Array.isArray(f.complementos) ? f.complementos[0] : null) ||
+                      {};
+
+    // 2. Buscar Pagos en todas sus variantes
+    let pagosNode = complemento?.Pagos || complemento?.pagos || f.Pagos || f.pagos;
+
+    let listaPagos = [];
+    let totales = complemento?.Pagos?.Totales || complemento?.pagos?.totales || complemento?.Totales || f.Totales || {};
+
+    if (Array.isArray(pagosNode)) {
+        listaPagos = pagosNode;
+    } else if (pagosNode && typeof pagosNode === 'object') {
+        const arr = pagosNode.Pagos || pagosNode.pagos || pagosNode.Pago || pagosNode.pago;
+        if (Array.isArray(arr)) {
+            listaPagos = arr;
+        } else if (pagosNode.FechaPago || pagosNode.Monto || pagosNode.DoctoRelacionados) {
+            // Es un solo pago como objeto
+            listaPagos = [pagosNode];
+        }
+        if (pagosNode.Totales) totales = pagosNode.Totales;
+        else if (pagosNode.totales) totales = pagosNode.totales;
+    }
+
+    // 3. Fallback: Parsear XML timbrado si la estructura JSON no trajo Pagos
+    if ((!listaPagos || listaPagos.length === 0) && (f.xml_timbrado || f.xml || f.XML)) {
+        const xml = f.xml_timbrado || f.xml || f.XML;
+        try {
+            const getAttr = (str, attr) => {
+                const m = str.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
+                return m ? m[1] : '';
+            };
+
+            const totalesMatch = xml.match(/<pago20:Totales\s+([^>]+)\/?>/i);
+            if (totalesMatch) {
+                const tAttrs = totalesMatch[1];
+                totales = {
+                    TotalTrasladosBaseIVA16: getAttr(tAttrs, 'TotalTrasladosBaseIVA16') || '0.00',
+                    TotalTrasladosImpuestoIVA16: getAttr(tAttrs, 'TotalTrasladosImpuestoIVA16') || '0.00',
+                    TotalRetencionesISR: getAttr(tAttrs, 'TotalRetencionesISR') || '0.00',
+                    TotalRetencionesIVA: getAttr(tAttrs, 'TotalRetencionesIVA') || '0.00',
+                    MontoTotalPagos: getAttr(tAttrs, 'MontoTotalPagos') || '0.00'
+                };
+            }
+
+            const pagoMatches = xml.match(/<pago[12]0:Pago\b[\s\S]*?<\/pago[12]0:Pago>/gi) || 
+                                xml.match(/<pago[12]0:Pago\b[^>]*\/>/gi) || [];
+
+            for (const pMatch of pagoMatches) {
+                const fechaPago = getAttr(pMatch, 'FechaPago');
+                const formaPago = getAttr(pMatch, 'FormaDePagoP') || getAttr(pMatch, 'FormaPago') || '03';
+                const monedaP = getAttr(pMatch, 'MonedaP') || 'MXN';
+                const monto = parseFloat(getAttr(pMatch, 'Monto') || '0');
+
+                const doctoMatches = pMatch.match(/<pago[12]0:DoctoRelacionado\b[^>]*\/?>/gi) || [];
+                const doctosRel = doctoMatches.map(dStr => ({
+                    IdDocumento: getAttr(dStr, 'IdDocumento'),
+                    Serie: getAttr(dStr, 'Serie'),
+                    Folio: getAttr(dStr, 'Folio'),
+                    MonedaDR: getAttr(dStr, 'MonedaDR') || 'MXN',
+                    NumParcialidad: parseInt(getAttr(dStr, 'NumParcialidad') || '1'),
+                    ImpSaldoAnt: parseFloat(getAttr(dStr, 'ImpSaldoAnt') || '0'),
+                    ImpPagado: parseFloat(getAttr(dStr, 'ImpPagado') || monto.toString()),
+                    ImpSaldoInsoluto: parseFloat(getAttr(dStr, 'ImpSaldoInsoluto') || '0')
+                }));
+
+                const traslados = [];
+                const retenciones = [];
+                const trasMatches = pMatch.match(/<pago20:TrasladoP\b[^>]*\/?>/gi) || [];
+                trasMatches.forEach(tStr => {
+                    traslados.push({
+                        Base: getAttr(tStr, 'BaseP') || '0',
+                        ImpuestoClave: getAttr(tStr, 'ImpuestoP') || '002',
+                        TipoFactor: getAttr(tStr, 'TipoFactorP') || 'Tasa',
+                        TasaOCuota: getAttr(tStr, 'TasaOCuotaP') || '0.160000',
+                        Importe: getAttr(tStr, 'ImporteP') || '0'
+                    });
+                });
+
+                const retMatches = pMatch.match(/<pago20:RetencionP\b[^>]*\/?>/gi) || [];
+                retMatches.forEach(rStr => {
+                    retenciones.push({
+                        ImpuestoClave: getAttr(rStr, 'ImpuestoP') || '001',
+                        Importe: getAttr(rStr, 'ImporteP') || '0'
+                    });
+                });
+
+                listaPagos.push({
+                    FechaPago: fechaPago,
+                    FormaDePagoP: formaPago,
+                    MonedaP: monedaP,
+                    Monto: monto,
+                    MontoString: monto.toFixed(2),
+                    DoctoRelacionados: doctosRel,
+                    Impuestos: {
+                        Traslados: traslados,
+                        Retenciones: retenciones
+                    }
+                });
+            }
+        } catch (xmlErr) {
+            console.warn('Error parseando XML timbrado para pago:', xmlErr);
+        }
+    }
+
+    if (!listaPagos || listaPagos.length === 0) {
+        return null;
+    }
+
+    return {
+        ...f,
+        Complemento: {
+            ...complemento,
+            Pagos: {
+                Version: pagosNode?.Version || '2.0',
+                Totales: totales,
+                Pagos: listaPagos
+            }
+        }
+    };
+}
+
 export default function EditarComplementoPago() {
     const { id } = useParams();
-    const { handleSubmit, setValue } = useForm();
     const [facturaData, setFacturaData] = useState(null);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -59,14 +188,19 @@ export default function EditarComplementoPago() {
                     throw new Error(`Error en el servicio (${response.status}): ${errorText}`);
                 }
 
-                const data = await response.json();
+                const rawData = await response.json();
+                console.log("Datos brutos recibidos desde Go API:", rawData);
 
-                if (!data?.factura?.Complemento?.Pagos) {
+                const facturaNormalizada = normalizarFacturaPago(rawData);
+
+                if (!facturaNormalizada?.Complemento?.Pagos?.Pagos?.length) {
+                    console.error("Estructura de factura no válida para pagos:", rawData);
                     throw new Error('No se encontró el complemento de pago en la factura');
                 }
-                console.log("Datos del pago cargados desde Go API:", data);
-                setFacturaData(data);
-                return data;
+
+                console.log("Factura normalizada para edición:", facturaNormalizada);
+                setFacturaData({ factura: facturaNormalizada });
+                return facturaNormalizada;
 
             } catch (error) {
                 console.error("Error cargando pago:", error);
@@ -126,7 +260,8 @@ export default function EditarComplementoPago() {
 
             console.log("Factura actualizada enviando a Go API:", updatedFactura);
 
-            const response = await fetch(`${apiUrl}/api/facturas/EditarFactura`, {
+            const targetUrl = `${apiUrl || ''}/api/facturas/EditarFactura`;
+            const response = await fetch(targetUrl, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -137,7 +272,7 @@ export default function EditarComplementoPago() {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || errorData.error || 'Error al actualizar el pago en Go API');
+                throw new Error(errorData.message || errorData.error || errorData.Error || 'Error al actualizar el pago en Go API');
             }
 
             setSnackbarMessage('Pago actualizado correctamente');
