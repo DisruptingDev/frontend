@@ -9,33 +9,43 @@ import { ConstructionOutlined } from "@mui/icons-material";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function EditarPago({ factura, token, onSave, onCancel }) {
+    const primerPago = factura?.Complemento?.Pagos?.Pagos?.[0] || {};
+    const primerDocto = primerPago.DoctoRelacionados?.[0] || {};
+
+    const parseFechaSegura = (f) => {
+        if (!f) return new Date();
+        const d = new Date(f);
+        return isNaN(d.getTime()) ? new Date() : d;
+    };
+
+    const initialDate = parseFechaSegura(primerPago.FechaPago);
+
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
-            FechaPago: format(new Date(factura.Complemento.Pagos.Pagos[0].FechaPago), "yyyy-MM-dd'T'HH:mm:ss"),
-            FormaPagoComprobante: factura.Complemento.Pagos.Pagos[0].FormaDePagoP,
-            Monto: factura.Complemento.Pagos.Pagos[0].Monto,
-            SeriePagos: factura.Serie,
-            ImpSaldoInsoluto: factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoInsoluto
+            FechaPago: format(initialDate, "yyyy-MM-dd'T'HH:mm:ss"),
+            FormaPagoComprobante: primerPago.FormaDePagoP || "03",
+            Monto: primerPago.Monto ?? 0,
+            SeriePagos: factura?.Serie || "",
+            ImpSaldoInsoluto: primerDocto.ImpSaldoInsoluto ?? 0
         }
     });
 
-    const [fechaPago, setFechaPago] = useState(new Date(factura.Complemento.Pagos.Pagos[0].FechaPago));
+    const [fechaPago, setFechaPago] = useState(initialDate);
     const [opcionesSerie, setOpcionesSerie] = useState([]);
     const [opcionesFormaPago, setOpcionesFormaPago] = useState([]);
-    // const [impuestos, setImpuestos] = useState(factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || []);
     const monto = watch("Monto");
 
     const [impuestos, setImpuestos] = useState(() => {
-        const traslados = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || [])
+        const traslados = (primerPago.Impuestos?.Traslados || [])
             .map(imp => ({ ...imp, TipoImpuesto: "Traslado" }));
-        const retenciones = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Retenciones || [])
+        const retenciones = (primerPago.Impuestos?.Retenciones || [])
             .map(imp => ({ ...imp, TipoImpuesto: "Retencion" }));
         return [...traslados, ...retenciones];
     });
 
     // Función para recalcular impuestos correctamente
     const recalcularImpuestos = (nuevoMonto) => {
-        const montoOriginal = parseFloat(factura.Complemento.Pagos.Pagos[0].Monto) || 0;
+        const montoOriginal = parseFloat(primerPago.Monto) || 0;
         const nuevoMontoNum = parseFloat(nuevoMonto) || 0;
         if (montoOriginal <= 0) return;
 
@@ -54,9 +64,9 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
             };
         };
 
-        const traslados = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Traslados || [])
+        const traslados = (primerPago.Impuestos?.Traslados || [])
             .map(imp => escalar(imp, "Traslado"));
-        const retenciones = (factura.Complemento.Pagos.Pagos[0].Impuestos?.Retenciones || [])
+        const retenciones = (primerPago.Impuestos?.Retenciones || [])
             .map(imp => escalar(imp, "Retencion"));
 
         setImpuestos([...traslados, ...retenciones]);
@@ -65,32 +75,37 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     // Efecto que se dispara cuando cambia el monto
     useEffect(() => {
         recalcularImpuestos(monto);
-        // Añadimos imonSubmitpuestos como dependencia para evitar warnings
-    }, [monto]); // Solo se ejecuta cuando monto o la longitud de impuestos cambia
+    }, [monto]);
 
     const handleMontoChange = (e) => {
         const value = e.target.value.replace(/[^0-9.]/g, "");
         if ((value.match(/\./g) || []).length <= 1) {
             setValue("Monto", value);
-            const nuevoSaldo = (parseFloat(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt) - parseFloat(value || 0)).toFixed(2);
+            const saldoAnt = parseFloat(primerDocto.ImpSaldoAnt ?? 0);
+            const nuevoSaldo = (saldoAnt - parseFloat(value || 0)).toFixed(2);
             setValue("ImpSaldoInsoluto", nuevoSaldo);
         }
     };
 
     useEffect(() => {
+        const emisorId = factura?.Emisor?.ID || factura?.Emisor?.id || factura?.EmisorID;
+        if (!emisorId) return;
+
         const fetchSeries = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${factura.Emisor.ID}`, {
+                const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/Serie?emisorID=${emisorId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                setOpcionesSerie(data.filter(opcion => opcion.TipoComprobante === 'P'));
+                if (Array.isArray(data)) {
+                    setOpcionesSerie(data.filter(opcion => opcion.TipoComprobante === 'P'));
+                }
             } catch (error) {
                 console.error('Error fetching series:', error);
             }
         };
         fetchSeries();
-    }, [factura.Emisor.ID, token]);
+    }, [factura?.Emisor?.ID, factura?.Emisor?.id, factura?.EmisorID, token]);
 
     useEffect(() => {
         const fetchFormasPago = async () => {
@@ -99,7 +114,9 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                setOpcionesFormaPago(data);
+                if (Array.isArray(data)) {
+                    setOpcionesFormaPago(data);
+                }
             } catch (error) {
                 console.error('Error fetching formas de pago:', error);
             }
@@ -108,16 +125,20 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     }, [token]);
 
     useEffect(() => {
+        const facturaId = factura?.ID || factura?.id;
+        if (!facturaId) return;
+
         const fetchDoctosRelacionados = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${factura.ID}`, {
+                const response = await fetch(`${apiUrl}/api/doctosrelacionados/ObtenerDoctosRelacionados?FacturaMadreID=${facturaId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
                 console.log('Documentos relacionados fetched:', data);
-                if (data.length > 0) {
+                if (Array.isArray(data) && data.length > 0) {
                     const docRelacionado = data[0];
-                    const nuevoSaldoInsoluto = (parseFloat(docRelacionado.ImpSaldoAnt) - parseFloat(watch("Monto") || 0)).toFixed(2);
+                    const saldoAnt = parseFloat(docRelacionado.ImpSaldoAnt ?? primerDocto?.ImpSaldoAnt ?? 0);
+                    const nuevoSaldoInsoluto = (saldoAnt - parseFloat(monto || 0)).toFixed(2);
                     setValue("ImpSaldoInsoluto", nuevoSaldoInsoluto);
                 }
             } catch (error) {
@@ -125,7 +146,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
             }
         };
         fetchDoctosRelacionados();
-    }, [factura.ID, token, watch("Monto"), setValue]);
+    }, [factura?.ID, factura?.id, token, monto, primerDocto?.ImpSaldoAnt, setValue]);
 
     const onSubmit = (data) => {
         const traslados = impuestos.filter(i => i.TipoImpuesto === "Traslado");
@@ -186,7 +207,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("SeriePagos")}
                             label="Serie"
-                            value={watch("SeriePagos")}  // Usar watch en lugar de getValues
+                            value={watch("SeriePagos")}
                             onChange={(e) => {
                                 setValue("SeriePagos", e.target.value, { shouldValidate: true });
                             }}
@@ -202,7 +223,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("FormaPagoComprobante")}
                             label="Forma de Pago"
-                            value={watch("FormaPagoComprobante")}  // Usar watch
+                            value={watch("FormaPagoComprobante")}
                             onChange={(e) => {
                                 setValue("FormaPagoComprobante", e.target.value, { shouldValidate: true });
                             }}
@@ -218,7 +239,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                             required: "Campo obligatorio",
                             validate: value => {
                                 const monto = parseFloat(value);
-                                const max = parseFloat(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt);
+                                const max = parseFloat(primerDocto.ImpSaldoAnt ?? 999999999);
                                 return monto <= max || "Monto excede el saldo pendiente";
                             }
                         })}
@@ -254,20 +275,20 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                 }}>
                     <TextField
                         label="Numero de Operacion"
-                        value={factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].NumParcialidad}
+                        value={primerDocto.NumParcialidad ?? 1}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
                     <TextField
                         label="Saldo Anterior"
-                        value={Number(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpSaldoAnt).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                        value={Number(primerDocto.ImpSaldoAnt ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
 
                     <TextField
                         label="Saldo Pagado"
-                        value={Number(factura.Complemento.Pagos.Pagos[0].DoctoRelacionados[0].ImpPagado).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                        value={Number(primerDocto.ImpPagado ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
@@ -275,16 +296,16 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     <TextField
                         {...register("ImpSaldoInsoluto")}
                         label="Nuevo Saldo Insoluto"
-                        value={Number(watch("ImpSaldoInsoluto")).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                        value={Number(watch("ImpSaldoInsoluto") || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
                 </Box>
                 <Box mt={4}>
                     <Typography variant="h6">Impuestos</Typography>
-                    {impuestos.map((impuesto) => (
+                    {impuestos.map((impuesto, idx) => (
                         <Box
-                            key={`${impuesto.TipoImpuesto}-${impuesto.ImpuestoClave}-${impuesto.TasaOCuota}`}
+                            key={`${impuesto.TipoImpuesto}-${impuesto.ImpuestoClave}-${impuesto.TasaOCuota}-${idx}`}
                             display="grid"
                             gridTemplateColumns="repeat(4, 1fr)"
                             gap={2}

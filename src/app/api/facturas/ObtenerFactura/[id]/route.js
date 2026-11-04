@@ -79,6 +79,10 @@ export async function GET(request, context) {
             return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
         }
 
+        if (comprobante.tipo_de_comprobante === 'P') {
+            return NextResponse.json({ error: 'Comprobante tipo P (Complemento de pago) debe consultarse con el servicio de Go' }, { status: 404 });
+        }
+
         const emisorObj = comprobante.emisors || {
             id: 1,
             rfc: '',
@@ -264,7 +268,7 @@ export async function GET(request, context) {
                 Serie: comprobante.serie || 'F',
                 Folio: comprobante.folio || comprobante.id.toString(),
                 Fecha: comprobante.fecha ? new Date(comprobante.fecha).toISOString() : new Date().toISOString(),
-                TipoDeComprobante: comprobante.tipo_comprobante || 'I',
+                TipoDeComprobante: comprobante.tipo_de_comprobante || comprobante.tipo_comprobante || 'I',
                 MetodoPago: extraerClaveSAT(comprobante.metodo_pago, 'PUE'),
                 FormaPago: extraerClaveSAT(comprobante.forma_pago, '03'),
                 UsoCFDI: extraerClaveSAT(comprobante.uso_cfdi || receptorObj.uso_cfdi, 'S01'),

@@ -1110,7 +1110,8 @@ const DataTableMRT = ({ token, filterType = "EXCLUDE_N" }) => {
 
     const handleEdit = () => {
         const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
-        if (menuRow?.TipoDeComprobante === 'P') {
+        const tipoComp = menuRow?.TipoDeComprobante || menuRow?.tipo_de_comprobante || menuRow?.TipoComprobante;
+        if (tipoComp === 'P') {
             router.push(`/EditarComplementoPago/${rowId}`);
         } else {
             router.push(`/EditarFactura/${rowId}`);

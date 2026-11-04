@@ -138,6 +138,12 @@ export default function EditarFactura() {
 
                 // 3. Garantizar la recuperación de Impuestos Locales desde la base de datos
                 const targetComp = facturaConvertida.factura || facturaConvertida;
+                const tipoComp = targetComp.TipoDeComprobante || targetComp.tipo_de_comprobante || targetComp.TipoComprobante;
+                if (tipoComp === 'P') {
+                    console.log('Factura es de tipo Complemento de Pago (P), redirigiendo a EditarComplementoPago:', id);
+                    router.push('/EditarComplementoPago/' + id);
+                    return;
+                }
 
                 try {
                     const resLoc = await fetch(`/api/facturas/ImpuestosLocales/${id}`);

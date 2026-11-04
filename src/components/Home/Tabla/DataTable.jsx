@@ -938,10 +938,12 @@ export default function DataTable({ token }) {
 
     // Funciones del menú
     const handleEdit = useCallback(() => {
-        if (menuRow?.TipoDeComprobante === 'P') {
-            router.push(`/EditarComplementoPago/${menuRow.ID}`);
+        const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
+        const tipoComp = menuRow?.TipoDeComprobante || menuRow?.tipo_de_comprobante || menuRow?.TipoComprobante;
+        if (tipoComp === 'P') {
+            router.push(`/EditarComplementoPago/${rowId}`);
         } else {
-            router.push(`/EditarFactura/${menuRow.ID}`);
+            router.push(`/EditarFactura/${rowId}`);
         }
         setAnchorEl(null);
         setMenuRow(null);

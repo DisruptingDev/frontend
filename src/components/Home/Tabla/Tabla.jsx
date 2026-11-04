@@ -678,7 +678,13 @@ export default function DataTable({ token, filtro }) {
   const handleEdit = () => {
     if (menuRow) {
       console.log(menuRow);
-      router.push(`/EditarFactura/${menuRow.ID}`); // Redirige a la página de edición con el ID de la factura
+      const rowId = menuRow?.ID ?? menuRow?.id ?? menuRow?.Id;
+      const tipoComp = menuRow?.TipoDeComprobante || menuRow?.tipo_de_comprobante || menuRow?.TipoComprobante;
+      if (tipoComp === 'P') {
+        router.push(`/EditarComplementoPago/${rowId}`);
+      } else {
+        router.push(`/EditarFactura/${rowId}`);
+      }
     }
   };
 
