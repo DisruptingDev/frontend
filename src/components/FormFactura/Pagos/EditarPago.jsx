@@ -1,10 +1,9 @@
 "use client";
-import React, { useState, useEffect, useMemo, use } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { TextField, Box, Typography, FormControl, InputLabel, MenuItem, Button, Select as MuiSelect } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import ReactDatePicker from "./DatePickerComponent";
-import { ConstructionOutlined } from "@mui/icons-material";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -35,41 +34,131 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
     const [opcionesFormaPago, setOpcionesFormaPago] = useState([]);
     const monto = watch("Monto");
 
-    const [impuestos, setImpuestos] = useState(() => {
-        const traslados = (primerPago.Impuestos?.Traslados || [])
+    // Inicializar desglose de impuestos
+    const inicializarImpuestos = () => {
+        let traslados = (primerPago.Impuestos?.Traslados || [])
             .map(imp => ({ ...imp, TipoImpuesto: "Traslado" }));
-        const retenciones = (primerPago.Impuestos?.Retenciones || [])
+        let retenciones = (primerPago.Impuestos?.Retenciones || [])
             .map(imp => ({ ...imp, TipoImpuesto: "Retencion" }));
+
+        const totalesObj = factura?.Complemento?.Pagos?.Totales || {};
+        const baseIVA = parseFloat(totalesObj.TotalTrasladosBaseIVA16 || 0);
+        const impIVA = parseFloat(totalesObj.TotalTrasladosImpuestoIVA16 || 0);
+
+        if (traslados.length === 0 && (baseIVA > 0 || impIVA > 0)) {
+            traslados.push({
+                TipoImpuesto: "Traslado",
+                ImpuestoClave: "002",
+                NombreImpuesto: "IVA",
+                TasaOCuota: "0.160000",
+                TipoFactor: "Tasa",
+                Base: baseIVA > 0 ? baseIVA.toFixed(2) : (parseFloat(primerPago.Monto || 0) / 1.16).toFixed(2),
+                BaseString: baseIVA > 0 ? baseIVA.toFixed(2) : (parseFloat(primerPago.Monto || 0) / 1.16).toFixed(2),
+                Importe: impIVA > 0 ? impIVA.toFixed(2) : (parseFloat(primerPago.Monto || 0) - (parseFloat(primerPago.Monto || 0) / 1.16)).toFixed(2),
+                ImporteString: impIVA > 0 ? impIVA.toFixed(2) : (parseFloat(primerPago.Monto || 0) - (parseFloat(primerPago.Monto || 0) / 1.16)).toFixed(2),
+            });
+        }
+
+        const retISR = parseFloat(totalesObj.TotalRetencionesISR || 0);
+        if (retenciones.length === 0 && retISR > 0) {
+            retenciones.push({
+                TipoImpuesto: "Retencion",
+                ImpuestoClave: "001",
+                NombreImpuesto: "ISR",
+                TasaOCuota: "0.000000",
+                TipoFactor: "Tasa",
+                Base: (parseFloat(primerPago.Monto || 0) / 1.16).toFixed(2),
+                Importe: retISR.toFixed(2),
+                ImporteString: retISR.toFixed(2),
+            });
+        }
+
+        const retIVA = parseFloat(totalesObj.TotalRetencionesIVA || 0);
+        if (retenciones.filter(r => r.ImpuestoClave === "002").length === 0 && retIVA > 0) {
+            retenciones.push({
+                TipoImpuesto: "Retencion",
+                ImpuestoClave: "002",
+                NombreImpuesto: "IVA Retenido",
+                TasaOCuota: "0.000000",
+                TipoFactor: "Tasa",
+                Base: (parseFloat(primerPago.Monto || 0) / 1.16).toFixed(2),
+                Importe: retIVA.toFixed(2),
+                ImporteString: retIVA.toFixed(2),
+            });
+        }
+
+        // Si todavía está vacío y el monto > 0, desglosar IVA al 16% por defecto
+        const montoNum = parseFloat(primerPago.Monto || 0);
+        if (traslados.length === 0 && retenciones.length === 0 && montoNum > 0) {
+            const baseCalc = (montoNum / 1.16).toFixed(2);
+            const impCalc = (montoNum - parseFloat(baseCalc)).toFixed(2);
+            traslados.push({
+                TipoImpuesto: "Traslado",
+                ImpuestoClave: "002",
+                NombreImpuesto: "IVA",
+                TasaOCuota: "0.160000",
+                TipoFactor: "Tasa",
+                Base: baseCalc,
+                BaseString: baseCalc,
+                Importe: impCalc,
+                ImporteString: impCalc,
+            });
+        }
+
         return [...traslados, ...retenciones];
-    });
+    };
 
-    // Función para recalcular impuestos correctamente
+    const [impuestos, setImpuestos] = useState(inicializarImpuestos);
+
+    // Función para recalcular impuestos correctamente cuando cambia el monto
     const recalcularImpuestos = (nuevoMonto) => {
-        const montoOriginal = parseFloat(primerPago.Monto) || 0;
         const nuevoMontoNum = parseFloat(nuevoMonto) || 0;
-        if (montoOriginal <= 0) return;
+        if (nuevoMontoNum <= 0) return;
 
-        const proporcion = nuevoMontoNum / montoOriginal;
+        setImpuestos(prevImpuestos => {
+            if (!prevImpuestos || prevImpuestos.length === 0) {
+                const baseCalc = (nuevoMontoNum / 1.16).toFixed(2);
+                const impCalc = (nuevoMontoNum - parseFloat(baseCalc)).toFixed(2);
+                return [{
+                    TipoImpuesto: "Traslado",
+                    ImpuestoClave: "002",
+                    NombreImpuesto: "IVA",
+                    TasaOCuota: "0.160000",
+                    TipoFactor: "Tasa",
+                    Base: baseCalc,
+                    BaseString: baseCalc,
+                    Importe: impCalc,
+                    ImporteString: impCalc,
+                }];
+            }
 
-        const escalar = (imp, tipo) => {
-            const nuevaBase = (parseFloat(imp.Base) * proporcion).toFixed(2);
-            const nuevoImporte = (parseFloat(imp.Importe) * proporcion).toFixed(2);
-            return {
-                ...imp,
-                TipoImpuesto: tipo,
-                Base: nuevaBase,
-                BaseString: nuevaBase,
-                Importe: nuevoImporte,
-                ImporteString: nuevoImporte,
-            };
-        };
+            const montoOriginal = parseFloat(primerPago.Monto) || nuevoMontoNum;
+            const proporcion = montoOriginal > 0 ? (nuevoMontoNum / montoOriginal) : 1;
 
-        const traslados = (primerPago.Impuestos?.Traslados || [])
-            .map(imp => escalar(imp, "Traslado"));
-        const retenciones = (primerPago.Impuestos?.Retenciones || [])
-            .map(imp => escalar(imp, "Retencion"));
+            return prevImpuestos.map(imp => {
+                if (imp.ImpuestoClave === "002" && imp.TipoImpuesto === "Traslado") {
+                    const baseIVA = (nuevoMontoNum / 1.16).toFixed(2);
+                    const impIVA = (nuevoMontoNum - parseFloat(baseIVA)).toFixed(2);
+                    return {
+                        ...imp,
+                        Base: baseIVA,
+                        BaseString: baseIVA,
+                        Importe: impIVA,
+                        ImporteString: impIVA,
+                    };
+                }
 
-        setImpuestos([...traslados, ...retenciones]);
+                const baseEsc = (parseFloat(imp.Base || 0) * proporcion).toFixed(2);
+                const impEsc = (parseFloat(imp.Importe || 0) * proporcion).toFixed(2);
+                return {
+                    ...imp,
+                    Base: baseEsc,
+                    BaseString: baseEsc,
+                    Importe: impEsc,
+                    ImporteString: impEsc,
+                };
+            });
+        });
     };
 
     // Efecto que se dispara cuando cambia el monto
@@ -98,27 +187,46 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                 });
                 const data = await response.json();
                 if (Array.isArray(data)) {
-                    setOpcionesSerie(data.filter(opcion => opcion.TipoComprobante === 'P'));
+                    let seriesP = data.filter(opcion => opcion.TipoComprobante === 'P');
+                    if (factura?.Serie && !seriesP.some(s => s.Clave === factura.Serie)) {
+                        seriesP.unshift({ ID: 'actual', Clave: factura.Serie });
+                    }
+                    setOpcionesSerie(seriesP);
                 }
             } catch (error) {
                 console.error('Error fetching series:', error);
+                if (factura?.Serie) {
+                    setOpcionesSerie([{ ID: 'actual', Clave: factura.Serie }]);
+                }
             }
         };
         fetchSeries();
-    }, [factura?.Emisor?.ID, factura?.Emisor?.id, factura?.EmisorID, token]);
+    }, [factura?.Emisor?.ID, factura?.Emisor?.id, factura?.EmisorID, factura?.Serie, token]);
 
     useEffect(() => {
         const fetchFormasPago = async () => {
+            const fallbackFormas = [
+                { Clave: "01", Descripcion: "01 - Efectivo" },
+                { Clave: "02", Descripcion: "02 - Cheque nominativo" },
+                { Clave: "03", Descripcion: "03 - Transferencia electrónica de fondos" },
+                { Clave: "04", Descripcion: "04 - Tarjeta de crédito" },
+                { Clave: "28", Descripcion: "28 - Tarjeta de débito" },
+                { Clave: "99", Descripcion: "99 - Por definir" }
+            ];
+
             try {
                 const response = await fetch(`${apiUrl}/api/catalogos/Catalogos/FormaPago`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                if (Array.isArray(data)) {
+                if (Array.isArray(data) && data.length > 0) {
                     setOpcionesFormaPago(data);
+                } else {
+                    setOpcionesFormaPago(fallbackFormas);
                 }
             } catch (error) {
                 console.error('Error fetching formas de pago:', error);
+                setOpcionesFormaPago(fallbackFormas);
             }
         };
         fetchFormasPago();
@@ -154,16 +262,16 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
 
         const totalTrasladoIVA16 = traslados
             .filter(i => i.ImpuestoClave === "002" && parseFloat(i.TasaOCuota) === 0.16)
-            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
+            .reduce((sum, i) => sum + parseFloat(i.Importe || 0), 0);
         const baseTrasladoIVA16 = traslados
             .filter(i => i.ImpuestoClave === "002" && parseFloat(i.TasaOCuota) === 0.16)
-            .reduce((sum, i) => sum + parseFloat(i.Base), 0);
+            .reduce((sum, i) => sum + parseFloat(i.Base || 0), 0);
         const totalRetencionISR = retenciones
             .filter(i => i.ImpuestoClave === "001")
-            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
+            .reduce((sum, i) => sum + parseFloat(i.Importe || 0), 0);
         const totalRetencionIVA = retenciones
             .filter(i => i.ImpuestoClave === "002")
-            .reduce((sum, i) => sum + parseFloat(i.Importe), 0);
+            .reduce((sum, i) => sum + parseFloat(i.Importe || 0), 0);
 
         const payload = {
             ...data,
@@ -171,10 +279,15 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
             Impuestos: { Traslados: traslados, Retenciones: retenciones },
             Totales: {
                 TotalTrasladosBaseIVA16: baseTrasladoIVA16.toFixed(2),
+                TotalTrasladosBaseIVA16String: baseTrasladoIVA16.toFixed(2),
                 TotalTrasladosImpuestoIVA16: totalTrasladoIVA16.toFixed(2),
+                TotalTrasladosImpuestoIVA16String: totalTrasladoIVA16.toFixed(2),
                 TotalRetencionesISR: totalRetencionISR.toFixed(2),
+                TotalRetencionesISRString: totalRetencionISR.toFixed(2),
                 TotalRetencionesIVA: totalRetencionIVA.toFixed(2),
-                MontoTotalPagos: data.Monto
+                TotalRetencionesIVAString: totalRetencionIVA.toFixed(2),
+                MontoTotalPagos: data.Monto,
+                MontoTotalPagosString: String(data.Monto)
             }
         };
 
@@ -183,7 +296,9 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
 
     return (
         <Box p={2} borderRadius={2}>
-            <Typography variant="h6" mb={4}>Editar Pago</Typography>
+            <Typography variant="h6" mb={3} color="primary" fontWeight="bold">
+                Detalles del Pago
+            </Typography>
 
             <form onSubmit={handleSubmit(onSubmit)}>
                 <Box display="grid" gap={3} mt={2} sx={{
@@ -207,13 +322,13 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("SeriePagos")}
                             label="Serie"
-                            value={watch("SeriePagos")}
+                            value={watch("SeriePagos") || ""}
                             onChange={(e) => {
                                 setValue("SeriePagos", e.target.value, { shouldValidate: true });
                             }}
                         >
                             {opcionesSerie.map((opcion) => (
-                                <MenuItem key={opcion.ID} value={opcion.Clave}>{opcion.Clave}</MenuItem>
+                                <MenuItem key={opcion.ID || opcion.Clave} value={opcion.Clave}>{opcion.Clave}</MenuItem>
                             ))}
                         </MuiSelect>
                     </FormControl>
@@ -223,7 +338,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         <MuiSelect
                             {...register("FormaPagoComprobante")}
                             label="Forma de Pago"
-                            value={watch("FormaPagoComprobante")}
+                            value={watch("FormaPagoComprobante") || "03"}
                             onChange={(e) => {
                                 setValue("FormaPagoComprobante", e.target.value, { shouldValidate: true });
                             }}
@@ -238,9 +353,9 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         {...register("Monto", {
                             required: "Campo obligatorio",
                             validate: value => {
-                                const monto = parseFloat(value);
+                                const montoNum = parseFloat(value);
                                 const max = parseFloat(primerDocto.ImpSaldoAnt ?? 999999999);
-                                return monto <= max || "Monto excede el saldo pendiente";
+                                return montoNum <= max || "Monto excede el saldo pendiente";
                             }
                         })}
                         label="Monto"
@@ -265,6 +380,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                     />
                 </Box>
 
+                {/* Campos de saldos */}
                 <Box display="grid" gap={2} my={4} sx={{
                     gridTemplateColumns: {
                         xs: '1fr',
@@ -288,7 +404,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
 
                     <TextField
                         label="Saldo Pagado"
-                        value={Number(primerDocto.ImpPagado ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                        value={Number(primerDocto.ImpPagado ?? primerPago.Monto ?? 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                         fullWidth
                         InputProps={{ readOnly: true }}
                     />
@@ -301,48 +417,63 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
                         InputProps={{ readOnly: true }}
                     />
                 </Box>
+
+                {/* Desglose de impuestos */}
                 <Box mt={4}>
-                    <Typography variant="h6">Impuestos</Typography>
-                    {impuestos.map((impuesto, idx) => (
-                        <Box
-                            key={`${impuesto.TipoImpuesto}-${impuesto.ImpuestoClave}-${impuesto.TasaOCuota}-${idx}`}
-                            display="grid"
-                            gridTemplateColumns="repeat(4, 1fr)"
-                            gap={2}
-                            alignItems="center"
-                            my={2}
-                        >
-                            <TextField
-                                label="Impuesto"
-                                value={impuesto.ImpuestoCatalogo?.Impuesto || impuesto.ImpuestoClave}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                                disabled
-                            />
-                            <TextField
-                                label="Tasa o Cuota"
-                                value={impuesto.TasaOCuota}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                                disabled
-                            />
-                            <TextField
-                                label="Base Gravada"
-                                value={impuesto.Base}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                                disabled
-                            />
-                            <TextField
-                                label="Importe"
-                                value={impuesto.Importe}
-                                fullWidth
-                                InputProps={{ readOnly: true }}
-                                disabled
-                            />
-                        </Box>
-                    ))}
+                    <Typography variant="h6" mb={1} color="primary" fontWeight="bold">
+                        Desglose de Impuestos
+                    </Typography>
+                    {impuestos && impuestos.length > 0 ? (
+                        impuestos.map((impuesto, idx) => (
+                            <Box
+                                key={`${impuesto.TipoImpuesto}-${impuesto.ImpuestoClave}-${impuesto.TasaOCuota}-${idx}`}
+                                display="grid"
+                                gridTemplateColumns="repeat(4, 1fr)"
+                                gap={2}
+                                alignItems="center"
+                                my={2}
+                                p={2}
+                                bgcolor="#f8fafc"
+                                borderRadius={1}
+                                border="1px solid #e2e8f0"
+                            >
+                                <TextField
+                                    label="Impuesto"
+                                    value={impuesto.NombreImpuesto || impuesto.ImpuestoCatalogo?.Impuesto || (impuesto.ImpuestoClave === "002" ? "IVA (002)" : (impuesto.ImpuestoClave === "001" ? "ISR (001)" : impuesto.ImpuestoClave))}
+                                    fullWidth
+                                    InputProps={{ readOnly: true }}
+                                    disabled
+                                />
+                                <TextField
+                                    label="Tasa o Cuota"
+                                    value={impuesto.TasaOCuota}
+                                    fullWidth
+                                    InputProps={{ readOnly: true }}
+                                    disabled
+                                />
+                                <TextField
+                                    label="Base Gravada"
+                                    value={Number(impuesto.Base || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                                    fullWidth
+                                    InputProps={{ readOnly: true }}
+                                    disabled
+                                />
+                                <TextField
+                                    label="Importe"
+                                    value={Number(impuesto.Importe || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                                    fullWidth
+                                    InputProps={{ readOnly: true }}
+                                    disabled
+                                />
+                            </Box>
+                        ))
+                    ) : (
+                        <Typography variant="body2" color="textSecondary">
+                            No hay impuestos registrados para este pago.
+                        </Typography>
+                    )}
                 </Box>
+
                 <Box display="flex" justifyContent="flex-end" gap={2} mt={4}>
                     <Button variant="outlined" onClick={onCancel}>
                         Cancelar

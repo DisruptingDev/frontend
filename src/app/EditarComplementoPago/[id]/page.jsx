@@ -1,11 +1,15 @@
 "use client"
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useForm } from 'react-hook-form';
 import { Snackbar, Alert, Box, Button, Grid, CircularProgress, Typography } from '@mui/material';
 import { isAuthenticated } from "@/utils/authRedirect";
 import Header from "@/components/Header/Header.jsx";
 import SideBarMenu from "@/components/Dashborard/SideBarMenu";
+import Emisor from "@/components/FormFactura/Emisor/Emisor.jsx";
+import Receptor from "@/components/FormFactura/Receptor/Receptor.jsx";
 import EditarPago from "@/components/FormFactura/Pagos/EditarPago.jsx";
+import RecuperarFactura from "@/components/FormFactura/RecuperarFactura";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -30,7 +34,7 @@ function extraerPagosDeXML(xml) {
         MontoTotalPagosString: '0.00'
     };
 
-    const totalesMatch = xml.match(/<(?:\\w+:)?Totales\b([^>]*)\/?>/i);
+    const totalesMatch = xml.match(/<(?:\w+:)?Totales\b([^>]*)\/?>/i);
     if (totalesMatch) {
         const tAttrs = totalesMatch[1] || '';
         totales = {
@@ -47,13 +51,13 @@ function extraerPagosDeXML(xml) {
         };
     }
 
-    const pagoMatches = xml.match(/<(?:\\w+:)?Pago\b[^>]*>([\s\S]*?)<\/(?:\\w+:)?Pago>/gi) ||
-                        xml.match(/<(?:\\w+:)?Pago\b[^>]*\/>/gi) || [];
+    const pagoMatches = xml.match(/<(?:\w+:)?Pago\b[^>]*>([\s\S]*?)<\/(?:\w+:)?Pago>/gi) ||
+                        xml.match(/<(?:\w+:)?Pago\b[^>]*\/>/gi) || [];
 
     const listaPagos = [];
 
     for (const pMatch of pagoMatches) {
-        const openTagMatch = pMatch.match(/<(?:\\w+:)?Pago\b([^>]*)>/i) || [pMatch, pMatch];
+        const openTagMatch = pMatch.match(/<(?:\w+:)?Pago\b([^>]*)>/i) || [pMatch, pMatch];
         const openAttrs = openTagMatch[1] || pMatch;
 
         const fechaPago = getAttr(openAttrs, 'FechaPago');
@@ -61,8 +65,8 @@ function extraerPagosDeXML(xml) {
         const monedaP = getAttr(openAttrs, 'MonedaP') || getAttr(openAttrs, 'Moneda') || 'MXN';
         const monto = parseFloat(getAttr(openAttrs, 'Monto') || '0');
 
-        const doctoMatches = pMatch.match(/<(?:\\w+:)?DoctoRelacionado\b[^>]*>([\s\S]*?)<\/(?:\\w+:)?DoctoRelacionado>/gi) ||
-                             pMatch.match(/<(?:\\w+:)?DoctoRelacionado\b[^>]*\/>/gi) || [];
+        const doctoMatches = pMatch.match(/<(?:\w+:)?DoctoRelacionado\b[^>]*>([\s\S]*?)<\/(?:\w+:)?DoctoRelacionado>/gi) ||
+                             pMatch.match(/<(?:\w+:)?DoctoRelacionado\b[^>]*\/>/gi) || [];
         const doctosRel = doctoMatches.map(dStr => {
             const impPag = parseFloat(getAttr(dStr, 'ImpPagado') || monto.toString());
             const saldoAnt = parseFloat(getAttr(dStr, 'ImpSaldoAnt') || '0');
@@ -102,7 +106,7 @@ function extraerPagosDeXML(xml) {
 
         const traslados = [];
         const retenciones = [];
-        const trasMatches = pMatch.match(/<(?:\\w+:)?(?:TrasladoP|TrasladoDR)\b([^>]*)\/?>/gi) || [];
+        const trasMatches = pMatch.match(/<(?:\w+:)?(?:TrasladoP|TrasladoDR)\b([^>]*)\/?>/gi) || [];
         trasMatches.forEach(tStr => {
             const base = parseFloat(getAttr(tStr, 'BaseP') || getAttr(tStr, 'BaseDR') || '0');
             const imp = parseFloat(getAttr(tStr, 'ImporteP') || getAttr(tStr, 'ImporteDR') || '0');
@@ -117,7 +121,7 @@ function extraerPagosDeXML(xml) {
             });
         });
 
-        const retMatches = pMatch.match(/<(?:\\w+:)?(?:RetencionP|RetencionDR)\b([^>]*)\/?>/gi) || [];
+        const retMatches = pMatch.match(/<(?:\w+:)?(?:RetencionP|RetencionDR)\b([^>]*)\/?>/gi) || [];
         retMatches.forEach(rStr => {
             const imp = parseFloat(getAttr(rStr, 'ImporteP') || getAttr(rStr, 'ImporteDR') || '0');
             retenciones.push({
@@ -208,6 +212,9 @@ function normalizarFacturaPago(data) {
     const esTipoPago = (f.TipoDeComprobante || f.tipo_de_comprobante || f.tipo_comprobante || data.TipoDeComprobante || '').toUpperCase() === 'P';
     if ((!listaPagos || listaPagos.length === 0) && esTipoPago) {
         const totalNum = parseFloat(f.Total || f.total_string || f.total || data.Total || data.total_string || 0);
+        const baseCalculada = (totalNum / 1.16).toFixed(2);
+        const ivaCalculado = (totalNum - parseFloat(baseCalculada)).toFixed(2);
+
         listaPagos = [{
             FechaPago: f.Fecha || f.fecha || new Date().toISOString(),
             FormaDePagoP: f.FormaPago || f.forma_pago || '03',
@@ -242,14 +249,26 @@ function normalizarFacturaPago(data) {
                 ImpSaldoInsolutoString: '0.00',
                 ObjetoImpDR: '01'
             }],
-            Impuestos: { Traslados: [], Retenciones: [] }
+            Impuestos: {
+                Traslados: [{
+                    Base: parseFloat(baseCalculada),
+                    BaseString: baseCalculada,
+                    ImpuestoClave: "002",
+                    NombreImpuesto: "IVA",
+                    TipoFactor: "Tasa",
+                    TasaOCuota: "0.160000",
+                    Importe: parseFloat(ivaCalculado),
+                    ImporteString: ivaCalculado
+                }],
+                Retenciones: []
+            }
         }];
 
         totales = {
-            TotalTrasladosBaseIVA16: '0.00',
-            TotalTrasladosBaseIVA16String: '0.00',
-            TotalTrasladosImpuestoIVA16: '0.00',
-            TotalTrasladosImpuestoIVA16String: '0.00',
+            TotalTrasladosBaseIVA16: baseCalculada,
+            TotalTrasladosBaseIVA16String: baseCalculada,
+            TotalTrasladosImpuestoIVA16: ivaCalculado,
+            TotalTrasladosImpuestoIVA16String: ivaCalculado,
             TotalRetencionesISR: '0.00',
             TotalRetencionesISRString: '0.00',
             TotalRetencionesIVA: '0.00',
@@ -289,7 +308,11 @@ function normalizarFacturaPago(data) {
 
 export default function EditarComplementoPago() {
     const { id } = useParams();
+    const { register, watch, handleSubmit, setValue, getValues, trigger, formState: { errors } } = useForm();
     const [facturaData, setFacturaData] = useState(null);
+    const [emisorData, setEmisorData] = useState(null);
+    const [receptorData, setReceptorData] = useState(null);
+    const [lugarExpedicion, setLugarExpedicion] = useState("");
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [loadingError, setLoadingError] = useState('');
@@ -393,6 +416,38 @@ export default function EditarComplementoPago() {
 
                 console.log("Factura final lista para editar:", finalFactura);
                 setFacturaData({ factura: finalFactura });
+
+                // Recuperar Emisor y Receptor para modo lectura
+                try {
+                    const recovered = RecuperarFactura(finalFactura, setValue, null, setEmisorData, setReceptorData, setLugarExpedicion);
+                    if (recovered?.emisor) setEmisorData(recovered.emisor);
+                    if (recovered?.receptor) setReceptorData(recovered.receptor);
+                } catch (recErr) {
+                    console.warn("Advertencia al recuperar datos de emisor/receptor:", recErr);
+                    // Fallback directo desde finalFactura
+                    if (finalFactura.Emisor) {
+                        setEmisorData({
+                            ID: finalFactura.EmisorID || finalFactura.Emisor.id,
+                            RFCEmisor: finalFactura.Emisor.Rfc,
+                            NombreEmisor: finalFactura.Emisor.Nombre,
+                            RegimenFiscalEmisor: finalFactura.Emisor.RegimenFiscal,
+                            LugarExpedicion: finalFactura.Emisor.LugarExpedicion,
+                            Serie: finalFactura.Serie,
+                            TipoComprobante: 'P'
+                        });
+                    }
+                    if (finalFactura.Receptor) {
+                        setReceptorData({
+                            ID: finalFactura.ReceptorID || finalFactura.Receptor.id,
+                            Rfc: finalFactura.Receptor.Rfc,
+                            Nombre: finalFactura.Receptor.Nombre,
+                            DomicilioFiscalReceptor: finalFactura.Receptor.DomicilioFiscalReceptor,
+                            RegimenFiscal: finalFactura.Receptor.RegimenFiscalReceptor || finalFactura.Receptor.RegimenFiscal,
+                            UsoCFDI: finalFactura.UsoCFDI || 'CP01'
+                        });
+                    }
+                }
+
                 return finalFactura;
 
             } catch (error) {
@@ -404,7 +459,7 @@ export default function EditarComplementoPago() {
         };
 
         cargarDatos();
-    }, [id, token]);
+    }, [id, token, setValue]);
 
     const handleSave = async (editedPago) => {
         try {
@@ -546,7 +601,7 @@ export default function EditarComplementoPago() {
                 <Grid>
                     <SideBarMenu />
                 </Grid>
-                <Grid sx={{ flex: 1 }}>
+                <Grid sx={{ flex: 1, minWidth: 0 }}>
                     <Box
                         bgcolor="white"
                         ml={10}
@@ -555,12 +610,41 @@ export default function EditarComplementoPago() {
                         boxShadow={3}
                         borderRadius={2}
                     >
-                        <EditarPago
-                            factura={facturaData.factura || facturaData}
-                            token={token}
-                            onSave={handleSave}
-                            onCancel={() => router.push("/Home")}
+                        {/* 1. Emisor en modo lectura */}
+                        <Emisor
+                            register={register}
+                            setLugarExpedicion={setLugarExpedicion}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            errors={errors}
+                            emisorData={emisorData}
+                            disabled={true}
+                            esPago={true}
                         />
+
+                        {/* 2. Receptor en modo lectura */}
+                        <Receptor
+                            register={register}
+                            lugarExpedicion={lugarExpedicion}
+                            errors={errors}
+                            setValue={setValue}
+                            getValues={getValues}
+                            trigger={trigger}
+                            receptorData={receptorData}
+                            token={token}
+                            disabled={true}
+                        />
+
+                        {/* 3. Formulario de Pago y Desglose de Impuestos */}
+                        <Box mt={3}>
+                            <EditarPago
+                                factura={facturaData.factura || facturaData}
+                                token={token}
+                                onSave={handleSave}
+                                onCancel={() => router.push("/Home")}
+                            />
+                        </Box>
                     </Box>
                 </Grid>
             </Grid>
