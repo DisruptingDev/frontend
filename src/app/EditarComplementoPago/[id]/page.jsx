@@ -1,7 +1,6 @@
 "use client"
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useForm } from 'react-hook-form';
 import { Snackbar, Alert, Box, Button, Grid, CircularProgress, Typography } from '@mui/material';
 import { isAuthenticated } from "@/utils/authRedirect";
 import Header from "@/components/Header/Header.jsx";
@@ -10,7 +9,152 @@ import EditarPago from "@/components/FormFactura/Pagos/EditarPago.jsx";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// Función para normalizar cualquier estructura devuelta por el servicio de Go o XML
+function extraerPagosDeXML(xml) {
+    if (!xml || typeof xml !== 'string') return null;
+    const getAttr = (str, attr) => {
+        const m = str.match(new RegExp('\\b' + attr + '=["\']([^"\']*)["\']', 'i'));
+        return m ? m[1] : '';
+    };
+
+    let totales = {
+        TotalTrasladosBaseIVA16: '0.00',
+        TotalTrasladosBaseIVA16String: '0.00',
+        TotalTrasladosImpuestoIVA16: '0.00',
+        TotalTrasladosImpuestoIVA16String: '0.00',
+        TotalRetencionesISR: '0.00',
+        TotalRetencionesISRString: '0.00',
+        TotalRetencionesIVA: '0.00',
+        TotalRetencionesIVAString: '0.00',
+        MontoTotalPagos: '0.00',
+        MontoTotalPagosString: '0.00'
+    };
+
+    const totalesMatch = xml.match(/<[^:]*:?Totales\b\s+([^>]+)\/?>/i);
+    if (totalesMatch) {
+        const tAttrs = totalesMatch[1];
+        totales = {
+            TotalTrasladosBaseIVA16: getAttr(tAttrs, 'TotalTrasladosBaseIVA16') || '0.00',
+            TotalTrasladosBaseIVA16String: getAttr(tAttrs, 'TotalTrasladosBaseIVA16') || '0.00',
+            TotalTrasladosImpuestoIVA16: getAttr(tAttrs, 'TotalTrasladosImpuestoIVA16') || '0.00',
+            TotalTrasladosImpuestoIVA16String: getAttr(tAttrs, 'TotalTrasladosImpuestoIVA16') || '0.00',
+            TotalRetencionesISR: getAttr(tAttrs, 'TotalRetencionesISR') || '0.00',
+            TotalRetencionesISRString: getAttr(tAttrs, 'TotalRetencionesISR') || '0.00',
+            TotalRetencionesIVA: getAttr(tAttrs, 'TotalRetencionesIVA') || '0.00',
+            TotalRetencionesIVAString: getAttr(tAttrs, 'TotalRetencionesIVA') || '0.00',
+            MontoTotalPagos: getAttr(tAttrs, 'MontoTotalPagos') || '0.00',
+            MontoTotalPagosString: getAttr(tAttrs, 'MontoTotalPagos') || '0.00'
+        };
+    }
+
+    const pagoMatches = xml.match(/<[^:]*:?Pago\b[^>]*>([\s\S]*?)<\/[^:]*:?Pago>/gi) ||
+                        xml.match(/<[^:]*:?Pago\b[^>]*\/>/gi) || [];
+
+    const listaPagos = [];
+
+    for (const pMatch of pagoMatches) {
+        const openTagMatch = pMatch.match(/<[^:]*:?Pago\b([^>]*)>/i) || [pMatch, pMatch];
+        const openAttrs = openTagMatch[1] || pMatch;
+
+        const fechaPago = getAttr(openAttrs, 'FechaPago');
+        const formaPago = getAttr(openAttrs, 'FormaDePagoP') || getAttr(openAttrs, 'FormaPago') || '03';
+        const monedaP = getAttr(openAttrs, 'MonedaP') || getAttr(openAttrs, 'Moneda') || 'MXN';
+        const monto = parseFloat(getAttr(openAttrs, 'Monto') || '0');
+
+        const doctoMatches = pMatch.match(/<[^:]*:?DoctoRelacionado\b[^>]*\/?>|<[^:]*:?DoctoRelacionado\b[^>]*>[\s\S]*?<\/[^:]*:?DoctoRelacionado>/gi) || [];
+        const doctosRel = doctoMatches.map(dStr => {
+            const impPag = parseFloat(getAttr(dStr, 'ImpPagado') || monto.toString());
+            const saldoAnt = parseFloat(getAttr(dStr, 'ImpSaldoAnt') || '0');
+            const saldoIns = parseFloat(getAttr(dStr, 'ImpSaldoInsoluto') || Math.max(0, saldoAnt - impPag).toString());
+            return {
+                IdDocumento: getAttr(dStr, 'IdDocumento'),
+                Serie: getAttr(dStr, 'Serie'),
+                Folio: getAttr(dStr, 'Folio'),
+                MonedaDR: getAttr(dStr, 'MonedaDR') || 'MXN',
+                NumParcialidad: parseInt(getAttr(dStr, 'NumParcialidad') || '1'),
+                ImpSaldoAnt: saldoAnt,
+                ImpSaldoAntString: saldoAnt.toFixed(2),
+                ImpPagado: impPag,
+                ImpPagadoString: impPag.toFixed(2),
+                ImpSaldoInsoluto: saldoIns,
+                ImpSaldoInsolutoString: saldoIns.toFixed(2),
+                ObjetoImpDR: getAttr(dStr, 'ObjetoImpDR') || '01'
+            };
+        });
+
+        if (doctosRel.length === 0) {
+            doctosRel.push({
+                IdDocumento: '',
+                Serie: '',
+                Folio: '',
+                MonedaDR: 'MXN',
+                NumParcialidad: 1,
+                ImpSaldoAnt: monto,
+                ImpSaldoAntString: monto.toFixed(2),
+                ImpPagado: monto,
+                ImpPagadoString: monto.toFixed(2),
+                ImpSaldoInsoluto: 0,
+                ImpSaldoInsolutoString: '0.00',
+                ObjetoImpDR: '01'
+            });
+        }
+
+        const traslados = [];
+        const retenciones = [];
+        const trasMatches = pMatch.match(/<[^:]*:?TrasladoP\b[^>]*\/?>|<[^:]*:?TrasladoDR\b[^>]*\/?>/gi) || [];
+        trasMatches.forEach(tStr => {
+            const base = parseFloat(getAttr(tStr, 'BaseP') || getAttr(tStr, 'BaseDR') || '0');
+            const imp = parseFloat(getAttr(tStr, 'ImporteP') || getAttr(tStr, 'ImporteDR') || '0');
+            traslados.push({
+                Base: base,
+                BaseString: base.toFixed(2),
+                ImpuestoClave: getAttr(tStr, 'ImpuestoP') || getAttr(tStr, 'ImpuestoDR') || '002',
+                TipoFactor: getAttr(tStr, 'TipoFactorP') || getAttr(tStr, 'TipoFactorDR') || 'Tasa',
+                TasaOCuota: getAttr(tStr, 'TasaOCuotaP') || getAttr(tStr, 'TasaOCuotaDR') || '0.160000',
+                Importe: imp,
+                ImporteString: imp.toFixed(2)
+            });
+        });
+
+        const retMatches = pMatch.match(/<[^:]*:?RetencionP\b[^>]*\/?>|<[^:]*:?RetencionDR\b[^>]*\/?>/gi) || [];
+        retMatches.forEach(rStr => {
+            const imp = parseFloat(getAttr(rStr, 'ImporteP') || getAttr(rStr, 'ImporteDR') || '0');
+            retenciones.push({
+                ImpuestoClave: getAttr(rStr, 'ImpuestoP') || getAttr(rStr, 'ImpuestoDR') || '001',
+                Importe: imp,
+                ImporteString: imp.toFixed(2)
+            });
+        });
+
+        listaPagos.push({
+            FechaPago: fechaPago || new Date().toISOString(),
+            FormaDePagoP: formaPago,
+            MonedaP: monedaP,
+            Monto: monto,
+            MontoString: monto.toFixed(2),
+            DoctoRelacionados: doctosRel,
+            Impuestos: {
+                Traslados: traslados,
+                Retenciones: retenciones
+            }
+        });
+    }
+
+    if (listaPagos.length === 0) return null;
+
+    if (!totales.MontoTotalPagos || parseFloat(totales.MontoTotalPagos) === 0) {
+        const sumaMonto = listaPagos.reduce((acc, p) => acc + (parseFloat(p.Monto) || 0), 0);
+        totales.MontoTotalPagos = sumaMonto.toFixed(2);
+        totales.MontoTotalPagosString = sumaMonto.toFixed(2);
+    }
+
+    return {
+        Version: '2.0',
+        Totales: totales,
+        Pagos: listaPagos
+    };
+}
+
+// Función para normalizar cualquier estructura devuelta por el servicio de Go, BD local o XML
 function normalizarFacturaPago(data) {
     if (!data) return null;
     const f = data.factura || data.comprobante || data;
@@ -35,91 +179,19 @@ function normalizarFacturaPago(data) {
         if (Array.isArray(arr)) {
             listaPagos = arr;
         } else if (pagosNode.FechaPago || pagosNode.Monto || pagosNode.DoctoRelacionados) {
-            // Es un solo pago como objeto
             listaPagos = [pagosNode];
         }
         if (pagosNode.Totales) totales = pagosNode.Totales;
         else if (pagosNode.totales) totales = pagosNode.totales;
     }
 
-    // 3. Fallback: Parsear XML timbrado si la estructura JSON no trajo Pagos
-    if ((!listaPagos || listaPagos.length === 0) && (f.xml_timbrado || f.xml || f.XML)) {
-        const xml = f.xml_timbrado || f.xml || f.XML;
-        try {
-            const getAttr = (str, attr) => {
-                const m = str.match(new RegExp(`${attr}=["']([^"']*)["']`, 'i'));
-                return m ? m[1] : '';
-            };
-
-            const totalesMatch = xml.match(/<pago20:Totales\s+([^>]+)\/?>/i);
-            if (totalesMatch) {
-                const tAttrs = totalesMatch[1];
-                totales = {
-                    TotalTrasladosBaseIVA16: getAttr(tAttrs, 'TotalTrasladosBaseIVA16') || '0.00',
-                    TotalTrasladosImpuestoIVA16: getAttr(tAttrs, 'TotalTrasladosImpuestoIVA16') || '0.00',
-                    TotalRetencionesISR: getAttr(tAttrs, 'TotalRetencionesISR') || '0.00',
-                    TotalRetencionesIVA: getAttr(tAttrs, 'TotalRetencionesIVA') || '0.00',
-                    MontoTotalPagos: getAttr(tAttrs, 'MontoTotalPagos') || '0.00'
-                };
-            }
-
-            const pagoMatches = xml.match(/<pago[12]0:Pago\b[\s\S]*?<\/pago[12]0:Pago>/gi) || 
-                                xml.match(/<pago[12]0:Pago\b[^>]*\/>/gi) || [];
-
-            for (const pMatch of pagoMatches) {
-                const fechaPago = getAttr(pMatch, 'FechaPago');
-                const formaPago = getAttr(pMatch, 'FormaDePagoP') || getAttr(pMatch, 'FormaPago') || '03';
-                const monedaP = getAttr(pMatch, 'MonedaP') || 'MXN';
-                const monto = parseFloat(getAttr(pMatch, 'Monto') || '0');
-
-                const doctoMatches = pMatch.match(/<pago[12]0:DoctoRelacionado\b[^>]*\/?>/gi) || [];
-                const doctosRel = doctoMatches.map(dStr => ({
-                    IdDocumento: getAttr(dStr, 'IdDocumento'),
-                    Serie: getAttr(dStr, 'Serie'),
-                    Folio: getAttr(dStr, 'Folio'),
-                    MonedaDR: getAttr(dStr, 'MonedaDR') || 'MXN',
-                    NumParcialidad: parseInt(getAttr(dStr, 'NumParcialidad') || '1'),
-                    ImpSaldoAnt: parseFloat(getAttr(dStr, 'ImpSaldoAnt') || '0'),
-                    ImpPagado: parseFloat(getAttr(dStr, 'ImpPagado') || monto.toString()),
-                    ImpSaldoInsoluto: parseFloat(getAttr(dStr, 'ImpSaldoInsoluto') || '0')
-                }));
-
-                const traslados = [];
-                const retenciones = [];
-                const trasMatches = pMatch.match(/<pago20:TrasladoP\b[^>]*\/?>/gi) || [];
-                trasMatches.forEach(tStr => {
-                    traslados.push({
-                        Base: getAttr(tStr, 'BaseP') || '0',
-                        ImpuestoClave: getAttr(tStr, 'ImpuestoP') || '002',
-                        TipoFactor: getAttr(tStr, 'TipoFactorP') || 'Tasa',
-                        TasaOCuota: getAttr(tStr, 'TasaOCuotaP') || '0.160000',
-                        Importe: getAttr(tStr, 'ImporteP') || '0'
-                    });
-                });
-
-                const retMatches = pMatch.match(/<pago20:RetencionP\b[^>]*\/?>/gi) || [];
-                retMatches.forEach(rStr => {
-                    retenciones.push({
-                        ImpuestoClave: getAttr(rStr, 'ImpuestoP') || '001',
-                        Importe: getAttr(rStr, 'ImporteP') || '0'
-                    });
-                });
-
-                listaPagos.push({
-                    FechaPago: fechaPago,
-                    FormaDePagoP: formaPago,
-                    MonedaP: monedaP,
-                    Monto: monto,
-                    MontoString: monto.toFixed(2),
-                    DoctoRelacionados: doctosRel,
-                    Impuestos: {
-                        Traslados: traslados,
-                        Retenciones: retenciones
-                    }
-                });
-            }
-        } catch (xmlErr) {
-            console.warn('Error parseando XML timbrado para pago:', xmlErr);
+    // 3. Fallback: Parsear XML si la estructura JSON no trajo Pagos
+    const rawXml = f.XMLTimbrado || f.xml_timbrado || f.xml || f.XML || f.xmlTimbrado || data.XMLTimbrado || data.xml_timbrado || '';
+    if ((!listaPagos || listaPagos.length === 0) && rawXml) {
+        const pagosParsed = extraerPagosDeXML(rawXml);
+        if (pagosParsed) {
+            listaPagos = pagosParsed.Pagos;
+            totales = pagosParsed.Totales;
         }
     }
 
@@ -156,51 +228,79 @@ export default function EditarComplementoPago() {
         else setToken(token);
     }, [router]);
 
-    // Cargar datos utilizando directamente el servicio de Go
+    // Cargar datos
     useEffect(() => {
         if (!id || !token) return;
 
         const cargarDatos = async () => {
             try {
                 setLoadingError('');
-                const targetUrl = apiUrl 
-                    ? `${apiUrl}/api/facturas/ObtenerFactura/${id}`
-                    : `/api/facturas/ObtenerFactura/${id}`;
+                let goData = null;
+                let localData = null;
 
-                console.log("Obteniendo complemento de pago desde servicio Go:", targetUrl);
-
-                let response = await fetch(targetUrl, {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                // 1. Consultar el servicio de Go primero
+                if (apiUrl) {
+                    try {
+                        const targetGoUrl = `${apiUrl}/api/facturas/ObtenerFactura/${id}`;
+                        console.log("Consultando servicio Go:", targetGoUrl);
+                        const resGo = await fetch(targetGoUrl, {
+                            headers: { 
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (resGo.ok) {
+                            goData = await resGo.json();
+                            console.log("Respuesta recibida desde Go API:", goData);
+                        } else {
+                            console.warn("Go API respondió con código no OK:", resGo.status);
+                        }
+                    } catch (errGo) {
+                        console.warn("Fallo fetch a Go API:", errGo);
                     }
-                });
-
-                // Si por alguna razón la URL de Go falla (por ejemplo si apiUrl no está configurado), intentar fallback
-                if (!response.ok && !apiUrl) {
-                    response = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
                 }
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Error en el servicio (${response.status}): ${errorText}`);
+                // 2. Si no obtuvimos datos o los datos de Go no traen Pagos, consultar la ruta local de la BD
+                let normalizado = normalizarFacturaPago(goData);
+
+                if (!normalizado?.Complemento?.Pagos?.Pagos?.length) {
+                    console.log("Intentando recuperar factura desde BD local con XML...");
+                    try {
+                        const resLocal = await fetch(`/api/facturas/ObtenerFactura/${id}`, {
+                            headers: { 
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (resLocal.ok) {
+                            localData = await resLocal.json();
+                            console.log("Respuesta recibida desde BD local:", localData);
+                            const normalizadoLocal = normalizarFacturaPago(localData);
+                            if (normalizadoLocal?.Complemento?.Pagos?.Pagos?.length) {
+                                // Mezclar datos de Go (si los hubo) con los pagos extraídos
+                                normalizado = {
+                                    ...(goData?.factura || goData || {}),
+                                    ...normalizadoLocal,
+                                    Complemento: {
+                                        ...((goData?.factura || goData)?.Complemento || {}),
+                                        ...normalizadoLocal.Complemento
+                                    }
+                                };
+                            }
+                        }
+                    } catch (errLocal) {
+                        console.warn("Fallo fetch a ruta local:", errLocal);
+                    }
                 }
 
-                const rawData = await response.json();
-                console.log("Datos brutos recibidos desde Go API:", rawData);
-
-                const facturaNormalizada = normalizarFacturaPago(rawData);
-
-                if (!facturaNormalizada?.Complemento?.Pagos?.Pagos?.length) {
-                    console.error("Estructura de factura no válida para pagos:", rawData);
+                if (!normalizado?.Complemento?.Pagos?.Pagos?.length) {
+                    console.error("No se pudo estructurar el complemento de pago ni desde Go ni desde BD local:", { goData, localData });
                     throw new Error('No se encontró el complemento de pago en la factura');
                 }
 
-                console.log("Factura normalizada para edición:", facturaNormalizada);
-                setFacturaData({ factura: facturaNormalizada });
-                return facturaNormalizada;
+                console.log("Factura final lista para editar:", normalizado);
+                setFacturaData({ factura: normalizado });
+                return normalizado;
 
             } catch (error) {
                 console.error("Error cargando pago:", error);
