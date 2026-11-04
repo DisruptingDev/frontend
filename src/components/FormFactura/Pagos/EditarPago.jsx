@@ -10,7 +10,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function EditarPago({ factura, token, onSave, onCancel }) {
     const primerPago = factura?.Complemento?.Pagos?.Pagos?.[0] || {};
-    const primerDocto = primerPago.DoctoRelacionados?.[0] || {};
+    const primerDocto = primerPago.DoctoRelacionados?.[0] || primerPago.DoctosRelacionados?.[0] || {};
 
     const parseFechaSegura = (f) => {
         if (!f) return new Date();
