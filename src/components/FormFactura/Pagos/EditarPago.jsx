@@ -7,7 +7,7 @@ import ReactDatePicker from "./DatePickerComponent";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-export default function EditarPago({ factura, token, onSave, onCancel }) {
+export default function EditarPago({ factura, token, onSave, onCancel, defaultFechaEmision }) {
     const primerPago = factura?.Complemento?.Pagos?.Pagos?.[0] || {};
     const primerDocto = primerPago.DoctoRelacionados?.[0] || primerPago.DoctosRelacionados?.[0] || {};
 
@@ -17,11 +17,13 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
         return isNaN(d.getTime()) ? new Date() : d;
     };
 
-    const initialDate = parseFechaSegura(primerPago.FechaPago);
+    const initialDatePago = parseFechaSegura(primerPago.FechaPago);
+    const initialDateEmision = parseFechaSegura(defaultFechaEmision || factura?.Fecha || factura?.fecha);
 
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         defaultValues: {
-            FechaPago: format(initialDate, "yyyy-MM-dd'T'HH:mm:ss"),
+            FechaEmision: format(initialDateEmision, "yyyy-MM-dd'T'HH:mm:ss"),
+            FechaPago: format(initialDatePago, "yyyy-MM-dd'T'HH:mm:ss"),
             FormaPagoComprobante: primerPago.FormaDePagoP || "03",
             Monto: primerPago.Monto ?? 0,
             SeriePagos: factura?.Serie || "",
@@ -29,10 +31,23 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
         }
     });
 
-    const [fechaPago, setFechaPago] = useState(initialDate);
+    const [fechaEmision, setFechaEmision] = useState(initialDateEmision);
+    const [fechaPago, setFechaPago] = useState(initialDatePago);
     const [opcionesSerie, setOpcionesSerie] = useState([]);
     const [opcionesFormaPago, setOpcionesFormaPago] = useState([]);
     const monto = watch("Monto");
+
+    useEffect(() => {
+        if (defaultFechaEmision) {
+            const d = parseFechaSegura(defaultFechaEmision);
+            setFechaEmision(d);
+            setValue("FechaEmision", format(d, "yyyy-MM-dd'T'HH:mm:ss"));
+        } else if (factura?.Fecha || factura?.fecha) {
+            const d = parseFechaSegura(factura.Fecha || factura.fecha);
+            setFechaEmision(d);
+            setValue("FechaEmision", format(d, "yyyy-MM-dd'T'HH:mm:ss"));
+        }
+    }, [defaultFechaEmision, factura?.Fecha, factura?.fecha, setValue]);
 
     // Inicializar desglose de impuestos
     const inicializarImpuestos = () => {
@@ -275,6 +290,7 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
 
         const payload = {
             ...data,
+            FechaEmision: format(fechaEmision, "yyyy-MM-dd'T'HH:mm:ss"),
             FechaPago: format(fechaPago, "yyyy-MM-dd'T'HH:mm:ss"),
             Impuestos: { Traslados: traslados, Retenciones: retenciones },
             Totales: {
@@ -301,15 +317,26 @@ export default function EditarPago({ factura, token, onSave, onCancel }) {
             </Typography>
 
             <form onSubmit={handleSubmit(onSubmit)}>
-                <Box display="grid" gap={3} mt={2} sx={{
+                <Box display="grid" gap={2} mt={2} sx={{
                     gridTemplateColumns: {
                         xs: '1fr',
                         sm: 'repeat(2, 1fr)',
                         md: 'repeat(3, 1fr)',
-                        lg: 'repeat(6, 1fr)'
+                        lg: 'repeat(4, 1fr)',
+                        xl: 'repeat(7, 1fr)'
                     }
                 }}>
                     <ReactDatePicker
+                        label="Fecha emisión comprobante"
+                        selectedDate={fechaEmision}
+                        onChange={(date) => {
+                            setFechaEmision(date);
+                            setValue("FechaEmision", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+                        }}
+                    />
+
+                    <ReactDatePicker
+                        label="Fecha y hora de pago"
                         selectedDate={fechaPago}
                         onChange={(date) => {
                             setFechaPago(date);

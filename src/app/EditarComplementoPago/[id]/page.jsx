@@ -418,8 +418,9 @@ export default function EditarComplementoPago() {
                 setFacturaData({ factura: finalFactura });
 
                 const fechaOriginal = finalFactura.Fecha || finalFactura.fecha || normalizadoGo?.Fecha || (localData?.factura || localData)?.Fecha || normalizadoLocal?.Fecha;
-                if (fechaOriginal) {
-                    setValue("Fecha", fechaOriginal);
+                const soloFecha = fechaOriginal ? String(fechaOriginal).split('T')[0] : '';
+                if (soloFecha) {
+                    setValue("Fecha", soloFecha);
                 }
 
                 // Recuperar Emisor y Receptor para modo lectura
@@ -428,7 +429,7 @@ export default function EditarComplementoPago() {
                     if (recovered?.emisor) {
                         setEmisorData({
                             ...recovered.emisor,
-                            Fecha: fechaOriginal || recovered.emisor.Fecha
+                            Fecha: soloFecha || fechaOriginal || recovered.emisor.Fecha
                         });
                     }
                     if (recovered?.receptor) setReceptorData(recovered.receptor);
@@ -443,7 +444,7 @@ export default function EditarComplementoPago() {
                             RegimenFiscalEmisor: finalFactura.Emisor.RegimenFiscal,
                             LugarExpedicion: finalFactura.Emisor.LugarExpedicion,
                             Serie: finalFactura.Serie,
-                            Fecha: fechaOriginal,
+                            Fecha: soloFecha || fechaOriginal,
                             TipoComprobante: 'P'
                         });
                     }
@@ -486,12 +487,29 @@ export default function EditarComplementoPago() {
                 ImpSaldoInsolutoString: String(editedPago.ImpSaldoInsoluto),
             }];
 
-            // Mantener la fecha original de emisión de la factura
-            const fechaEmision = facturaObj.Fecha || facturaObj.fecha || getValues("Fecha");
+            // Priorizar la fecha de emisión ingresada/modificada por el usuario
+            const fechaUsuario = editedPago?.FechaEmision || getValues("Fecha");
+            let fechaEmisionFinal = "";
+
+            if (fechaUsuario && String(fechaUsuario).trim() !== "") {
+                const rawFecha = String(fechaUsuario).split("T")[0];
+                let hora = "12:00:00";
+                if (String(fechaUsuario).includes("T")) {
+                    hora = String(fechaUsuario).split("T")[1];
+                } else if (facturaObj?.Fecha && String(facturaObj.Fecha).includes("T")) {
+                    hora = String(facturaObj.Fecha).split("T")[1];
+                } else {
+                    hora = new Date().toTimeString().split(" ")[0];
+                }
+                if (hora.length > 8) hora = hora.substring(0, 8);
+                fechaEmisionFinal = `${rawFecha}T${hora}`;
+            } else {
+                fechaEmisionFinal = facturaObj?.Fecha || facturaObj?.fecha || new Date().toISOString().split(".")[0];
+            }
 
             const updatedFactura = {
                 ...facturaObj,
-                Fecha: fechaEmision,
+                Fecha: fechaEmisionFinal,
                 Complemento: {
                     ...facturaObj.Complemento,
                     Pagos: {
@@ -657,6 +675,7 @@ export default function EditarComplementoPago() {
                                 token={token}
                                 onSave={handleSave}
                                 onCancel={() => router.push("/Home")}
+                                defaultFechaEmision={watch("Fecha") || facturaData?.factura?.Fecha}
                             />
                         </Box>
                     </Box>

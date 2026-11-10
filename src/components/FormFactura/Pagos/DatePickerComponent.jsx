@@ -19,11 +19,11 @@ const StyledReactDatePicker = styled("div")(({ theme }) => ({
 }));
 
 // Componente de entrada personalizado
-const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
+const CustomDateInput = forwardRef(({ value, onClick, label }, ref) => (
   <TextField
     fullWidth
     variant="outlined"
-    label="Fecha y hora de pago"
+    label={label || "Fecha y hora de pago"}
     value={value || ""}
     onClick={onClick}
     inputRef={ref}
@@ -33,7 +33,7 @@ const CustomDateInput = forwardRef(({ value, onClick }, ref) => (
 CustomDateInput.displayName = "CustomDateInput";
 
 // Componente principal
-export default function DatePickerComponent({ selectedDate, onChange }) {
+export default function DatePickerComponent({ selectedDate, onChange, label }) {
   return (
     <StyledReactDatePicker>
       <ReactDatePicker
@@ -42,7 +42,7 @@ export default function DatePickerComponent({ selectedDate, onChange }) {
         showTimeSelect
         timeIntervals={15}
         dateFormat="MM/dd/yyyy h:mm aa"
-        customInput={<CustomDateInput />}
+        customInput={<CustomDateInput label={label} />}
       />
     </StyledReactDatePicker>
   );
