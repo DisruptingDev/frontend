@@ -417,10 +417,20 @@ export default function EditarComplementoPago() {
                 console.log("Factura final lista para editar:", finalFactura);
                 setFacturaData({ factura: finalFactura });
 
+                const fechaOriginal = finalFactura.Fecha || finalFactura.fecha || normalizadoGo?.Fecha || (localData?.factura || localData)?.Fecha || normalizadoLocal?.Fecha;
+                if (fechaOriginal) {
+                    setValue("Fecha", fechaOriginal);
+                }
+
                 // Recuperar Emisor y Receptor para modo lectura
                 try {
                     const recovered = RecuperarFactura(finalFactura, setValue, null, setEmisorData, setReceptorData, setLugarExpedicion);
-                    if (recovered?.emisor) setEmisorData(recovered.emisor);
+                    if (recovered?.emisor) {
+                        setEmisorData({
+                            ...recovered.emisor,
+                            Fecha: fechaOriginal || recovered.emisor.Fecha
+                        });
+                    }
                     if (recovered?.receptor) setReceptorData(recovered.receptor);
                 } catch (recErr) {
                     console.warn("Advertencia al recuperar datos de emisor/receptor:", recErr);
@@ -433,6 +443,7 @@ export default function EditarComplementoPago() {
                             RegimenFiscalEmisor: finalFactura.Emisor.RegimenFiscal,
                             LugarExpedicion: finalFactura.Emisor.LugarExpedicion,
                             Serie: finalFactura.Serie,
+                            Fecha: fechaOriginal,
                             TipoComprobante: 'P'
                         });
                     }
@@ -475,9 +486,12 @@ export default function EditarComplementoPago() {
                 ImpSaldoInsolutoString: String(editedPago.ImpSaldoInsoluto),
             }];
 
+            // Mantener la fecha original de emisión de la factura
+            const fechaEmision = facturaObj.Fecha || facturaObj.fecha || getValues("Fecha");
+
             const updatedFactura = {
                 ...facturaObj,
-                Fecha: editedPago.FechaPago,
+                Fecha: fechaEmision,
                 Complemento: {
                     ...facturaObj.Complemento,
                     Pagos: {
@@ -620,7 +634,7 @@ export default function EditarComplementoPago() {
                             errors={errors}
                             emisorData={emisorData}
                             disabled={true}
-                            esPago={true}
+                            esPago={false}
                         />
 
                         {/* 2. Receptor en modo lectura */}
