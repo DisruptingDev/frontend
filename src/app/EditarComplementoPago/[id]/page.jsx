@@ -507,39 +507,47 @@ export default function EditarComplementoPago() {
                 fechaEmisionFinal = facturaObj?.Fecha || facturaObj?.fecha || new Date().toISOString().split(".")[0];
             }
 
+            const pagosActualizados = {
+                ...facturaObj.Complemento?.Pagos,
+                Pagos: [{
+                    ...primerPago,
+                    FechaPago: editedPago.FechaPago,
+                    FormaDePagoP: editedPago.FormaPagoComprobante,
+                    Monto: parseFloat(editedPago.Monto),
+                    MontoString: String(editedPago.Monto),
+                    DoctoRelacionados: doctosActualizados,
+                    DoctosRelacionados: doctosActualizados,
+                    Impuestos: editedPago.Impuestos // {Traslados, Retenciones} ya viene listo de onSubmit
+                }],
+                Totales: {
+                    ...facturaObj.Complemento?.Pagos?.Totales,
+                    TotalTrasladosBaseIVA16: editedPago.Totales.TotalTrasladosBaseIVA16,
+                    TotalTrasladosBaseIVA16String: editedPago.Totales.TotalTrasladosBaseIVA16,
+                    TotalTrasladosImpuestoIVA16: editedPago.Totales.TotalTrasladosImpuestoIVA16,
+                    TotalTrasladosImpuestoIVA16String: editedPago.Totales.TotalTrasladosImpuestoIVA16,
+                    TotalRetencionesISR: editedPago.Totales.TotalRetencionesISR,
+                    TotalRetencionesISRString: editedPago.Totales.TotalRetencionesISR,
+                    TotalRetencionesIVA: editedPago.Totales.TotalRetencionesIVA,
+                    TotalRetencionesIVAString: editedPago.Totales.TotalRetencionesIVA,
+                    MontoTotalPagos: editedPago.Monto,
+                    MontoTotalPagosString: String(editedPago.Monto),
+                }
+            };
+
             const updatedFactura = {
                 ...facturaObj,
                 Fecha: fechaEmisionFinal,
+                fecha: fechaEmisionFinal,
+                fecha_emision: fechaEmisionFinal,
+                Pagos: pagosActualizados,
                 Complemento: {
                     ...facturaObj.Complemento,
-                    Pagos: {
-                        ...facturaObj.Complemento?.Pagos,
-                        Pagos: [{
-                            ...primerPago,
-                            FechaPago: editedPago.FechaPago,
-                            FormaDePagoP: editedPago.FormaPagoComprobante,
-                            Monto: parseFloat(editedPago.Monto),
-                            MontoString: String(editedPago.Monto),
-                            DoctoRelacionados: doctosActualizados,
-                            DoctosRelacionados: doctosActualizados,
-                            Impuestos: editedPago.Impuestos // {Traslados, Retenciones} ya viene listo de onSubmit
-                        }],
-                        Totales: {
-                            ...facturaObj.Complemento?.Pagos?.Totales,
-                            TotalTrasladosBaseIVA16: editedPago.Totales.TotalTrasladosBaseIVA16,
-                            TotalTrasladosBaseIVA16String: editedPago.Totales.TotalTrasladosBaseIVA16,
-                            TotalTrasladosImpuestoIVA16: editedPago.Totales.TotalTrasladosImpuestoIVA16,
-                            TotalTrasladosImpuestoIVA16String: editedPago.Totales.TotalTrasladosImpuestoIVA16,
-                            TotalRetencionesISR: editedPago.Totales.TotalRetencionesISR,
-                            TotalRetencionesISRString: editedPago.Totales.TotalRetencionesISR,
-                            TotalRetencionesIVA: editedPago.Totales.TotalRetencionesIVA,
-                            TotalRetencionesIVAString: editedPago.Totales.TotalRetencionesIVA,
-                            MontoTotalPagos: editedPago.Monto,
-                            MontoTotalPagosString: String(editedPago.Monto),
-                        }
-                    }
+                    Pagos: pagosActualizados
                 }
             };
+
+            delete updatedFactura.FechaPago;
+            delete updatedFactura.fecha_pago;
 
             console.log("Factura actualizada enviando a Go API:", updatedFactura);
 

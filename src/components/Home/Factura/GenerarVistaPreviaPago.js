@@ -257,7 +257,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{folioFactura}}", factura.Folio || "")
       .replace("{{folioFiscal}}", factura.uuid || "")
       .replace("{{serieCSD}}", factura.NoCertificado || "")
-      .replace("{{fechaEmision}}", data.FechaPago || "")
+      .replace("{{fechaEmision}}", factura.Fecha || data.Fecha || data.FechaPago || "")
       .replace("{{TipoComprobante}}", factura.TipoDeComprobante || "")
       .replace("{{Exportacion}}", factura.Exportacion || "")
 
@@ -300,7 +300,7 @@ const fillTemplate = async (template, data) => {
       .replace("{{version}}", factura.Version)
       .replace("{{serie}}", factura.Serie)
       .replace("{{folio}}", factura.Folio)
-      .replace("{{fecha}}", data.FechaPago)
+      .replace("{{fecha}}", factura.Fecha || data.Fecha || data.FechaPago || "")
       .replace("{{lugarExpedicion}}", factura.LugarExpedicion)
       .replace("{{conceptos}}", conceptosHTML)
       // .replace('{{formaPago}}', (factura.FormaPago+' '+ factura.FormaPagoDescripcion) || factura.FormaPago)

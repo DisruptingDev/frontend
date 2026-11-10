@@ -363,6 +363,7 @@ export default function Emisor({ register, setLugarExpedicion, setValue, getValu
                         min: esPago ? minPago : min,
                         max: esPago ? maxPago : max
                     }}
+                    disabled={disabled}
                     error={!!errors.Fecha}
                     helperText={errors.Fecha?.message}
                 />

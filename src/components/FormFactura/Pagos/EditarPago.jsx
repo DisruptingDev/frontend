@@ -37,17 +37,25 @@ export default function EditarPago({ factura, token, onSave, onCancel, defaultFe
     const [opcionesFormaPago, setOpcionesFormaPago] = useState([]);
     const monto = watch("Monto");
 
+    const emisionIniciadaRef = React.useRef(false);
     useEffect(() => {
-        if (defaultFechaEmision) {
-            const d = parseFechaSegura(defaultFechaEmision);
+        if (!emisionIniciadaRef.current && (defaultFechaEmision || factura?.Fecha || factura?.fecha)) {
+            const d = parseFechaSegura(defaultFechaEmision || factura?.Fecha || factura?.fecha);
             setFechaEmision(d);
             setValue("FechaEmision", format(d, "yyyy-MM-dd'T'HH:mm:ss"));
-        } else if (factura?.Fecha || factura?.fecha) {
-            const d = parseFechaSegura(factura.Fecha || factura.fecha);
-            setFechaEmision(d);
-            setValue("FechaEmision", format(d, "yyyy-MM-dd'T'HH:mm:ss"));
+            emisionIniciadaRef.current = true;
         }
     }, [defaultFechaEmision, factura?.Fecha, factura?.fecha, setValue]);
+
+    const pagoIniciadoRef = React.useRef(false);
+    useEffect(() => {
+        if (!pagoIniciadoRef.current && primerPago?.FechaPago) {
+            const d = parseFechaSegura(primerPago.FechaPago);
+            setFechaPago(d);
+            setValue("FechaPago", format(d, "yyyy-MM-dd'T'HH:mm:ss"));
+            pagoIniciadoRef.current = true;
+        }
+    }, [primerPago?.FechaPago, setValue]);
 
     // Inicializar desglose de impuestos
     const inicializarImpuestos = () => {
@@ -327,20 +335,28 @@ export default function EditarPago({ factura, token, onSave, onCancel, defaultFe
                     }
                 }}>
                     <ReactDatePicker
+                        id="picker-fecha-emision"
+                        name="FechaEmision"
                         label="Fecha emisión comprobante"
                         selectedDate={fechaEmision}
                         onChange={(date) => {
-                            setFechaEmision(date);
-                            setValue("FechaEmision", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+                            if (date) {
+                                setFechaEmision(date);
+                                setValue("FechaEmision", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+                            }
                         }}
                     />
 
                     <ReactDatePicker
+                        id="picker-fecha-pago"
+                        name="FechaPago"
                         label="Fecha y hora de pago"
                         selectedDate={fechaPago}
                         onChange={(date) => {
-                            setFechaPago(date);
-                            setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+                            if (date) {
+                                setFechaPago(date);
+                                setValue("FechaPago", format(date, "yyyy-MM-dd'T'HH:mm:ss"));
+                            }
                         }}
                     />
 
